@@ -1,11 +1,3 @@
-/**
- * @file src/platform/shadow-ui/pageBridge.ts
- *
- * 文件职责：在页面 MAIN world 安装 Shadow DOM 与路由变更 bridge，并返回可精确卸载的生命周期函数。
- * 主要内容：组合 pageBridgeCore 的环境适配，补丁 attachShadow 与 history 方法，转发开放 ShadowRoot 和 SPA 导航事件，同时保证重复安装及 dispose 可恢复宿主 API。 可核对的公开符号包括 installShadowAndRouteBridge。
- * 模块边界：本文件属于 platform 基础设施边界，只封装浏览器、网络、存储上下文或 Shadow DOM 机制；不决定翻译业务策略，不直接实现 feature，业务层通过类型化端口消费这里的能力。
- */
-
 import {
     installShadowRouteBridgeLifecycleCore,
     type AttachShadowPort,

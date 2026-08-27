@@ -1,11 +1,3 @@
-/**
- * @file src/services/translation/context/policy.ts
- *
- * 文件职责：定义页面上下文的纯预算与拼装策略，在不访问 DOM 的情况下约束文本、Markdown 和元数据长度。
- * 主要内容：声明 pageContextLimits 与输入结构，规范化空白，判断是否启用 bounded capture，并由 buildPageTranslationContext 按预算组合标题、URL、正文和可读 Markdown。 可核对的公开符号包括 pageContextLimits、PageSnapshotBudget、PageTranslationContextInput、normalizePageText、normalizePageMarkdown、shouldUseBoundedPageCapture、buildPageTranslationContext。
- * 模块边界：本文件位于翻译 application service 层，负责用例编排和端口契约；不挂载页面 UI，且不应把某家供应商的网络细节扩散到 feature，具体 HTTP 协议由 providers/platform 实现。
- */
-
 /** 页面上下文的固定预算；所有入口共用同一组上限，避免请求体随页面无限增长。 */
 export const pageContextLimits = Object.freeze({
     content: 2_000,

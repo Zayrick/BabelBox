@@ -12,7 +12,7 @@ import {
     resolveOpenAICompatibleEndpoint,
     type AiSdkEndpointConfig,
 } from '@/src/providers/translation/ai-sdk/endpoints';
-import {services} from '@/entrypoints/utils/option';
+import {services} from '@/src/core/config/catalog';
 import {urls} from '@/src/core/config/constants';
 
 function endpointConfig(overrides: Partial<AiSdkEndpointConfig> = {}): AiSdkEndpointConfig {

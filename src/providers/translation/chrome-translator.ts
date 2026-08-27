@@ -1,11 +1,3 @@
-/**
- * @file src/providers/translation/chrome-translator.ts
- *
- * 文件职责：适配 Chrome 内置 Translation API，通过受能力约束的 Offscreen document 执行浏览器本地翻译。
- * 主要内容：createChromeTranslator 注入 BrowserCapabilities 与 OffscreenClient，校验平台可用性和响应结果，默认实例使用 chromeOffscreenClient 与请求级语言 payload。 可核对的公开符号包括 ChromeTranslatorDependencies、createChromeTranslator、default:chromeTranslator。
- * 模块边界：本文件位于 provider 适配层，只把统一翻译请求转换为外部或浏览器服务协议；不管理页面 DOM、UI 生命周期或配置持久化，缓存、去重和超时总预算由 translation broker 统一协调。
- */
-
 import {config} from '@/src/services/config/store';
 import {getTranslationProviderConfig} from '@/src/services/translation/requestSnapshot';
 import {

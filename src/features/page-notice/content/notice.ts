@@ -1,9 +1,3 @@
-/**
- * @file src/features/page-notice/content/notice.ts
- * 文件职责：在任意宿主页面的隔离 Shadow Root 中显示 FluentRead 成功或错误通知，并把缺少 API 凭据的错误转换为可直接前往设置的提醒。
- * 主要内容：包含凭据文案识别、通知标题与详情生成、宿主抗样式污染、堆栈复用、进入/离场计时和关闭按钮，导出 showPageNotice 与一秒节流的 sendErrorMessage。
- * 模块边界：本文件只拥有通知 DOM 和打开设置消息，不记录凭据、不处理翻译重试；外观来自 notice.css，后台 openOptions handler 处理导航，调用方传入的文本一律通过 textContent 展示。
- */
 import {throttle} from '@/src/shared/function/throttle';
 import noticeStyles from './notice.css?inline';
 

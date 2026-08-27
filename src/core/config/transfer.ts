@@ -1,11 +1,3 @@
-/**
- * @file src/core/config/transfer.ts
- *
- * 文件职责：负责配置导入与导出的纯数据转换，确保外部文件只携带允许公开和恢复的配置字段。
- * 主要内容：验证导入对象所需字段，使用 sanitizeConfigForExport 剔除凭据和内部修订信息，并通过 prepareConfigForImport 将合法公开值合并到当前 Config。 可核对的公开符号包括 isConfigImportValid、sanitizeConfigForExport、prepareConfigForImport。
- * 模块边界：本文件属于 core 领域层，只定义规则、类型与纯转换；不直接读写浏览器存储、不发起网络请求、不挂载 Vue/WXT 入口，持久化、协议调用和界面编排分别由 services、providers 与 features 承担。
- */
-
 import { isCustomBodyMapping } from './customBody'
 import {
   extractConfigCredentials,

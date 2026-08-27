@@ -1,11 +1,3 @@
-/**
- * @file src/core/translation/internal.ts
- *
- * 文件职责：保存候选引擎内部可独立测试的缓存继承、适配裁剪祖先查找与内联分段算法。
- * 主要内容：定义 AncestorAdapterDecision 等内部结构，提供 inheritCachedFlag、readCachedFlagOr、findAdapterPrunedAncestor 和 partitionInlineRunAtBarriers，降低 engine 与 layout 的复杂度。 可核对的公开符号包括 AncestorAdapterDecision、AdapterPrunedAncestorResult、inheritCachedFlag、readCachedFlagOr、findAdapterPrunedAncestor、partitionInlineRunAtBarriers。
- * 模块边界：本文件属于可独立测试的 core 候选领域；可以读取传入 DOM 以计算结果，但不访问配置存储、不调用 provider、不注册页面监听器，也不负责译文渲染或 feature 生命周期。
- */
-
 /** 站点适配器对祖先节点给出的最小决策形状。 */
 export interface AncestorAdapterDecision {
     decision: {

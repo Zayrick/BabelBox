@@ -8,7 +8,7 @@ import {
     CLEAR_TRANSLATION_CACHE_MESSAGE,
     createTranslationCacheHandler,
 } from '@/src/app/background/handlers/translationCache';
-import {createBackgroundMessageRouter} from '@/src/app/background/messageRouter';
+import {createBackgroundMessageRouter} from '@/src/platform/browser/messageRouter';
 
 describe('background core message handlers', () => {
     it('清理 broker 缓存成功后返回明确响应', async () => {

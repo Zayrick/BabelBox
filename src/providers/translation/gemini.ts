@@ -1,11 +1,3 @@
-/**
- * @file src/providers/translation/gemini.ts
- *
- * 文件职责：适配 Google Gemini generateContent 协议，支持官方 endpoint、代理、自定义模型与 API Key 头部差异。
- * 主要内容：从配置快照选取模型和 URL，使用 geminiMsgTemplate 构造 contents，通过 runtimeFetch 请求并校验 candidates 文本响应。 可核对的公开符号包括 default:gemini。
- * 模块边界：本文件位于 provider 适配层，只把统一翻译请求转换为外部或浏览器服务协议；不管理页面 DOM、UI 生命周期或配置持久化，缓存、去重和超时总预算由 translation broker 统一协调。
- */
-
 import {method} from "@/src/core/config/constants";
 import {geminiMsgTemplate} from '@/src/services/translation/templates';
 import {customModelString} from "@/src/core/config/catalog";

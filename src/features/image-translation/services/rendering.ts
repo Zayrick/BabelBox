@@ -1,9 +1,3 @@
-/**
- * @file src/features/image-translation/services/rendering.ts
- * 文件职责：根据 OCR 文本框周围的 ImageData 像素估算局部背景色，并为译文选择具有足够对比度的黑色或白色前景。
- * 主要内容：导出 getImageTextBackgroundColor 与 getImageTextColor，采样文本框周边像素、过滤透明值、计算平均 RGB 和亮度，返回 CSS 颜色字符串。
- * 模块边界：这是无 DOM 副作用的颜色辅助模块，不负责 OCR、蒙版修补或 Canvas 绘制；offscreenRuntime 提供图像数据和 OcrLine，并消费计算结果完成最终渲染。
- */
 import type { OcrLine } from '@/src/shared/image/types';
 
 /** 从 OCR 框四周采样最常见的量化颜色，供修复后的译文重绘使用。 */

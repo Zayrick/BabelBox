@@ -1,9 +1,3 @@
-<!--
- * @file src/features/settings/ui/services/ServiceConfiguration.vue
- * 文件职责：渲染当前翻译服务的详细连接配置，按服务能力显示模型、端点、区域、计费方式、密钥、代理、提示词和自定义请求体等字段。
- * 主要内容：组件派生字段可见性与 MiniMax/MiMo endpoint，校验 Azure 地址和 custom body，管理连接测试状态、模板重置、风险确认与凭据保存提示，并通过配置 store 提交修改。
- * 模块边界：本组件不实际执行翻译或保存公开配置中的明文凭据；连接测试经后台消息，字段规则来自 core/config，服务切换由 ServiceCatalog 和 SettingsSections 负责。
- -->
 <template>
   <section
     class="settings-section service-connection-section"

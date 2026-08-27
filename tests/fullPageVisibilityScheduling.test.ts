@@ -24,7 +24,7 @@ const runtime = vi.hoisted(() => ({
     ensureTranslationTruncationLayout: vi.fn(() => true),
 }));
 
-vi.mock("@/src/app/translation/check", () => ({checkConfig: () => true}));
+vi.mock('@/src/features/full-page-translation/content/configCheck', () => ({checkConfig: () => true}));
 vi.mock("@/src/core/config/catalog", () => ({
     services: {microsoft: "microsoft", freeTranslation: "freeTranslation"},
 }));
@@ -35,7 +35,7 @@ vi.mock("@/src/services/config/store", () => ({
     config: runtime.config,
 }));
 vi.mock("@/src/core/language/detect", () => ({detectlang: () => ""}));
-vi.mock("@/src/app/translation/client", () => ({
+vi.mock('@/src/services/translation/client', () => ({
     translateText: async (origin: string) => (await runtime.requests([origin]))[0],
     translateTextBatch: (origins: readonly string[]) => runtime.requests(origins),
 }));

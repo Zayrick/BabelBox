@@ -1,10 +1,4 @@
 /**
- * @file src/features/selection-translation/services/edgeTts.ts
- * 文件职责：实现 Microsoft Edge 在线语音合成协议客户端，获取短期 endpoint token、签名并按分段 SSML 请求音频，最后拼接为单一播放结果。
- * 主要内容：包含端点签名常量、随机请求编号、Base64/字节转换、token 缓存与过期判断，调用 runtimeFetch 和错误读取工具，并导出 synthesizeEdgeTts 及策略层相关类型。
- * 模块边界：该服务只负责远程合成，不播放 Audio、不处理 tab 路由也不写配置；分段和 voice 选择来自 edgeTtsPolicy，播放编排由后台 handler 与 Offscreen 适配器承担。
- */
-/**
  * FluentRead 的轻量 Edge TTS 适配器。
  *
  * 只在扩展后台调用 Microsoft 的公开 consumer TTS endpoint。音色按用户

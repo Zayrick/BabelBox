@@ -87,17 +87,14 @@ An experimental userscript target for Via, Tampermonkey, and Violentmonkey can b
 ```bash
 pnpm install
 pnpm dev
-pnpm test:audit
-pnpm test:unit
-pnpm test:functional
-pnpm test:regression
-pnpm test:coverage
+pnpm test
+pnpm test:architecture
 pnpm compile
 pnpm build
 pnpm build:userscript
 ```
 
-Run `pnpm test:regression:all` for the deterministic one-command regression pipeline (test audit, all grouped tests, strict coverage, cross-browser/userscript builds, and docs). Isolated browser and live-network layers are explicit gates; see the [architecture](./docs/architecture.md) and [testing guide](./docs/testing.md) before contributing a feature.
+Run `pnpm test:regression:all` for the deterministic one-command regression pipeline (types, tests, cross-browser/userscript builds, and docs). Coverage is available separately with `pnpm test:coverage`. Isolated browser and live-network layers are explicit gates; see the [architecture](./docs/architecture.md) and [testing guide](./docs/testing.md) before contributing a feature.
 
 FluentRead uses Vue 3, TypeScript, Element Plus, and WXT, targeting Chromium Manifest V3 and Firefox Manifest V2. The project is licensed under [GPL-3.0](./LICENSE).
 

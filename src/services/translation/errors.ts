@@ -1,11 +1,3 @@
-/**
- * @file src/services/translation/errors.ts
- *
- * 文件职责：建立翻译请求跨 runtime 消息边界的结构化错误协议，保留类型、重试性、状态码和安全详情。
- * 主要内容：定义 SerializedTranslationError 与 TranslationRequestError，负责 serialize、类型守卫、响应 unwrap 和 retryable 判定，避免原生 Error 在浏览器消息传递中丢失语义。 可核对的公开符号包括 TranslationErrorKind、TRANSLATION_ERROR_MARKER、SerializedTranslationError、serializeTranslationError、isSerializedTranslationError、TranslationRequestError、unwrapTranslationResponse、isRetryableTranslationError。
- * 模块边界：本文件位于翻译 application service 层，负责用例编排和端口契约；不挂载页面 UI，且不应把某家供应商的网络细节扩散到 feature，具体 HTTP 协议由 providers/platform 实现。
- */
-
 export type TranslationErrorKind =
   | 'authentication'
   | 'rate-limit'

@@ -1,11 +1,3 @@
-/**
- * @file src/providers/translation/free-translation.ts
- *
- * 文件职责：编排无需用户密钥的微软、DeepLX 与谷歌翻译作为有序回退链，提高免费翻译路径的可用性。
- * 主要内容：声明 FREE_TRANSLATION_ORDER，按请求级语言依次调用 translateMicrosoftTexts、translateDeepLXText、translateGoogleText，记录失败并在全部不可用时汇总错误。 可核对的公开符号包括 FREE_TRANSLATION_ORDER、translateFreeText、default:freeTranslation。
- * 模块边界：本文件位于 provider 适配层，只把统一翻译请求转换为外部或浏览器服务协议；不管理页面 DOM、UI 生命周期或配置持久化，缓存、去重和超时总预算由 translation broker 统一协调。
- */
-
 import {translateMicrosoftTexts} from "./microsoft";
 import {translateDeepLXText} from "./deeplx";
 import {translateGoogleText} from "./google";

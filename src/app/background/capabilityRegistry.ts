@@ -1,10 +1,4 @@
-/**
- * @file src/app/background/capabilityRegistry.ts
- * 文件职责：把浏览器能力探测结果转化为后台消息处理器和划词朗读传输的可用集合，使组合根只注册当前宿主真正支持的能力。
- * 主要内容：接收区域翻译、图片翻译等 handler 工厂并按 BrowserCapabilities 选择性实例化，同时为 Selection TTS 返回 Offscreen 传输或确定性的“不支持”拒绝实现。
- * 模块边界：本文件只做能力门控与依赖选择，不探测浏览器品牌、不实现 OCR、区域翻译或音频播放；具体业务由 feature 工厂和 platform capability 模块承担。
- */
-import type {BackgroundMessageHandler} from './messageRouter';
+import type {BackgroundMessageHandler} from '@/src/platform/browser/messageRouter';
 import type {BrowserCapabilities} from '@/src/platform/browser/capabilities';
 
 export interface CapabilityGatedBackgroundFactories<TContext> {

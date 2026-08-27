@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { reactive } from 'vue';
-import { normalizeConfig } from '@/entrypoints/utils/model';
-import { sanitizeConfigCredentials } from '@/entrypoints/utils/credentials';
+import {normalizeConfig} from '@/src/core/config/model';
+import {sanitizeConfigCredentials} from '@/src/core/config/credentials';
 
 const storageMock = vi.hoisted(() => ({
     getItem: vi.fn(),
@@ -58,7 +58,7 @@ async function loadConfigModule(value: unknown = null, options: LoadConfigOption
         storageState.delete(key);
     });
     storageMock.watch.mockReset().mockReturnValue(() => undefined);
-    return import('@/entrypoints/utils/config');
+    return import('@/src/services/config/store');
 }
 
 describe('统一配置存储', () => {

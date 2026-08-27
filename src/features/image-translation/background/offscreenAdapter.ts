@@ -1,9 +1,3 @@
-/**
- * @file src/features/image-translation/background/offscreenAdapter.ts
- * 文件职责：把图片识别、整图翻译和 OCR 语言包下载请求适配为平台 Offscreen 消息，并校验隔离文档返回的结构后交还后台 handlers。
- * 主要内容：包含 OffscreenResponse 解析、识别 lines 数组验证、译图 image/lines 结果收窄，以及 createImageTranslationOffscreenAdapter 和默认 chromeOffscreenClient 实例。
- * 模块边界：适配器不创建 Offscreen document、不执行 OCR/绘制，也不读取配置；文档生命周期属于 platform/offscreen，实际运算在 services/offscreenRuntime 与 ocrRuntime 中完成。
- */
 import type {OcrLine} from '@/src/features/image-translation/core';
 import type {ImageOcrLanguageCode} from '@/src/features/image-translation/ocrLanguages';
 import type {OffscreenImageTranslationResult} from '@/src/features/image-translation/services/offscreenRuntime';

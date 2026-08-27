@@ -1,10 +1,4 @@
-/**
- * @file src/app/background/handlers/connectionTest.ts
- * 文件职责：为设置页的翻译服务连通性检查提供后台消息适配器，在调用 provider 前形成明确、可序列化的输入输出契约。
- * 主要内容：定义 testTranslationService 消息与成功/失败响应，验证 service 为非空字符串，调用注入的 runTest，并通过 formatError 把异常转换成面向 UI 的错误文本。
- * 模块边界：本文件不发起网络请求、不读取凭据，也不识别具体供应商协议；连接测试实现和错误格式化由 providers 层注入，message runtime 负责注册。
- */
-import type {BackgroundMessageHandler} from '../messageRouter';
+import type {BackgroundMessageHandler} from '@/src/platform/browser/messageRouter';
 
 export const CONNECTION_TEST_MESSAGE_TYPE = 'testTranslationService' as const;
 
@@ -37,11 +31,11 @@ export function createConnectionTestHandler(
         async handle(message) {
             let service = '';
             try {
-                // Step 1: 后台边界先收窄服务 ID，避免非法 payload 进入 provider registry。
+                // 后台边界先收窄服务 ID，避免非法 payload 进入 provider registry。
                 service = parseService(message.service);
                 await dependencies.ready;
 
-                // Step 2: provider 测试失败时使用现有格式化器返回用户可读错误。
+                // provider 测试失败时使用现有格式化器返回用户可读错误。
                 const result = await dependencies.runConnectionTest(service);
                 return {success: true, ...result};
             } catch (error) {

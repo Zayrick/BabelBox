@@ -1,9 +1,3 @@
-/**
- * @file src/features/document-translation/ui/pdfPreview.ts
- * 文件职责：在浏览器 Canvas 环境中为 PDF 文档生成页面预览，并把译文按原页面文本块位置绘制成可嵌入导出 PDF 的 PNG 光栅页。
- * 主要内容：文件配置 pdfjs worker，加载页面与 viewport，采样背景和前景颜色、换行与缩放译文、生成 PdfPagePreview，并实现 rasterizePdfTranslationPage 适配 services/binary 所需接口。
- * 模块边界：这里负责视觉光栅化而不决定片段翻译或文件结构；PDF 文本块来自 binary 服务，领域类型来自 core，Canvas/PDF.js 仅应在文档 UI 环境调用，不能进入通用纯算法层。
- */
 import {
     GlobalWorkerOptions,
     getDocument as getPdfDocument,
@@ -208,7 +202,7 @@ function paintPdfTranslation(
         const y = Math.max(0, block.y * scaleY);
         const width = Math.max(8, Math.min(canvas.width - x, block.width * scaleX));
         const height = Math.max(8, Math.min(canvas.height - y, block.height * scaleY));
-        // Step 1: 只遮盖文字块，保留周围图表和分隔线，再用采样到的前景色绘制译文。
+        // 只遮盖文字块，保留周围图表和分隔线，再用采样到的前景色绘制译文。
         const padding = Math.max(2, Math.min(scaleX, scaleY) * 1.2);
         const background = sampledBackgroundRgb(context, x, y, width, height);
         const foreground = sampledForegroundColor(context, x, y, width, height, background);
@@ -246,7 +240,7 @@ function paintPdfTranslation(
         return {...painted, fontSize, lines, lineHeight};
     });
 
-    // Step 2: 先统一擦除全部原文字块，避免重叠块把已绘制的译文再次遮住。
+    // 先统一擦除全部原文字块，避免重叠块把已绘制的译文再次遮住。
     paintedBlocks.forEach(({x, y, width, height, padding, background}) => {
         context.fillStyle = `rgb(${background[0]}, ${background[1]}, ${background[2]})`;
         const left = Math.max(0, x - padding);
@@ -256,7 +250,7 @@ function paintPdfTranslation(
         context.fillRect(left, top, Math.max(1, right - left), Math.max(1, bottom - top));
     });
 
-    // Step 3: 在裁剪后的原坐标区域中绘制译文，保证多栏与图文混排不串位。
+    // 在裁剪后的原坐标区域中绘制译文，保证多栏与图文混排不串位。
     layout.forEach(({block, x, y, width, height, padding, foreground, fontSize, lines, lineHeight}) => {
         const family = familyForBlock(block);
         const maxWidth = Math.max(6, width - padding * 1.5);

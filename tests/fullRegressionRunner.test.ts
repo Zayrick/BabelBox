@@ -52,14 +52,9 @@ describe('full regression runner', () => {
             headed: 'disabled',
         });
         expect(plan.steps.map((step: {id: string}) => step.id)).toEqual([
-            'test-suite-audit',
             'wxt-prepare',
             'compile',
-            'strict-coverage',
-            'vitest-architecture',
-            'vitest-unit',
-            'vitest-functional',
-            'vitest-regression',
+            'vitest',
             'chrome-build',
             'firefox-build',
             'extension-manifest-verifier',

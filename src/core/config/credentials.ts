@@ -1,11 +1,3 @@
-/**
- * @file src/core/config/credentials.ts
- *
- * 文件职责：定义配置中的敏感凭据边界，并提供从完整配置提取、解析、比较和清除凭据的纯函数。
- * 主要内容：列出 token、ak/sk、应用密钥等敏感字段，声明 session/local 专用存储键与 schema 版本，构造 PublicConfig、ConfigCredentials，并校验未知存储值是否为可接受的凭据记录。 可核对的公开符号包括 SESSION_CREDENTIALS_STORAGE_KEY、LOCAL_CREDENTIALS_STORAGE_KEY、CREDENTIALS_SCHEMA_VERSION、CONFIG_CREDENTIAL_FIELDS、ConfigCredentialField、PublicConfig、ConfigCredentials、extractConfigCredentials。
- * 模块边界：本文件属于 core 领域层，只定义规则、类型与纯转换；不直接读写浏览器存储、不发起网络请求、不挂载 Vue/WXT 入口，持久化、协议调用和界面编排分别由 services、providers 与 features 承担。
- */
-
 import type { Config } from './model';
 
 export const SESSION_CREDENTIALS_STORAGE_KEY = 'session:credentials' as const;

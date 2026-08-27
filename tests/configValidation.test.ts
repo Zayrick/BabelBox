@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { getApiKeyRequirementKey, getMissingCredentialMessage } from '@/entrypoints/utils/configValidation';
-import { services } from '@/entrypoints/utils/option';
+import {getApiKeyRequirementKey, getMissingCredentialMessage} from '@/src/core/config/validation';
+import {services} from '@/src/core/config/catalog';
 
 describe('翻译服务凭据校验', () => {
     it('提示需要 API Key 的服务填写访问令牌', () => {

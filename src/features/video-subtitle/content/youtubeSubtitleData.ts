@@ -1,9 +1,3 @@
-/**
- * @file src/features/video-subtitle/content/youtubeSubtitleData.ts
- * 文件职责：提供 YouTube 字幕轨道发现、timedtext 响应解析、增量词流合并、时间轴规范化和 SRT 导出的纯数据处理能力。
- * 主要内容：定义 caption track 与 cue 模型，从页面脚本提取平衡 JSON，选择目标轨道、构造 json3 URL，解析 XML/json3 事件，折叠前缀字幕与词流片段，并生成时间戳和安全文件名。
- * 模块边界：模块不监听网络、不修改播放器 DOM也不调用翻译；runtime 消费生成的 cues，youtubeTimedTextBridge 只负责捕获响应，函数可在离线 fixture 中独立验证。
- */
 export interface YoutubeCaptionTrack {
   baseUrl: string;
   languageCode: string;

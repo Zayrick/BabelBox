@@ -1,12 +1,4 @@
 /**
- * @file src/core/hotkey/index.ts
- *
- * 文件职责：解析、匹配并校验 FluentRead 的组合快捷键，是划词、悬浮和其他触发器共享的键盘规则引擎。
- * 主要内容：维护修饰键与普通键目录，输出 ParsedHotkey，处理仅修饰键、macOS Meta 映射、自定义快捷键解析、事件匹配、手势占用和冲突诊断。 可核对的公开符号包括 MODIFIER_KEYS、REGULAR_KEYS、ParsedHotkey、parseHotkey、matchesHotkey、resolveConfiguredHotkey、matchesModifierOnlyHotkey、matchesConfiguredHotkey。
- * 模块边界：本文件属于 core 领域层，只定义规则、类型与纯转换；不直接读写浏览器存储、不发起网络请求、不挂载 Vue/WXT 入口，持久化、协议调用和界面编排分别由 services、providers 与 features 承担。
- */
-
-/**
  * 快捷键处理工具函数
  */
 

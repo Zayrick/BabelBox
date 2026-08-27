@@ -1,9 +1,3 @@
-/**
- * @file src/features/floating-ball/content/runtime.ts
- * 文件职责：协调悬浮球组件在网页中的创建、恢复位置、显隐、翻译状态同步和卸载，并向组件注入全文翻译切换与打开设置页的动作。
- * 主要内容：维护单例 Shadow UI、迟到挂载 requestId、配置订阅与 position-change 消息，提供 mountFloatingBall、toggleFloatingBallTranslation、unmountFloatingBall 三个生命周期入口。
- * 模块边界：运行时只拥有挂载和桥接职责，不实现拖拽视觉或全文翻译算法；FloatingBall.vue 负责交互，full-page feature 提供翻译动作，配置持久化通过 services/config 完成。
- */
 import FloatingBall from '@/src/features/floating-ball/ui/FloatingBall.vue';
 import {config, requestConfigSave} from '@/src/services/config/store';
 import browser from 'webextension-polyfill';

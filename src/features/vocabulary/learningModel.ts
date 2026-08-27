@@ -1,9 +1,3 @@
-/**
- * @file src/features/vocabulary/learningModel.ts
- * 文件职责：定义单词本学习领域的完整数据模型与纯状态算法，覆盖收藏条目、上下文、掌握度、复习队列、会话推进、导入导出和错误协议。
- * 主要内容：包含容量与版本常量、Anki TSV 和 cloze 构建、复习队列协调、会话进度、生命周期 token guard，以及 VocabularyEntry、ReviewLog、BookRequest/Response 等权威类型。
- * 模块边界：此文件不访问 IndexedDB、浏览器消息或 UI；repository 负责持久化和清洗，protocol 提供轻量运行时镜像，VocabularyBook.vue 只调用这些纯函数驱动学习流程。
- */
 export const VOCABULARY_BOOK_MESSAGE = 'fluentReadVocabularyBook' as const;
 export const VOCABULARY_BOOK_CHANGED_MESSAGE = 'fluentReadVocabularyBookChanged' as const;
 

@@ -1,11 +1,3 @@
-/**
- * @file src/services/translation/types.ts
- *
- * 文件职责：定义翻译 broker、缓存和 provider 之间的端口与消息契约，约束单条、批量、语言和配置快照的数据形状。
- * 主要内容：包含 TranslationRequestMessage、ProviderRegistry、CachePort、ConfigSnapshot、ProviderConfigFields 及 BrokerDependencies/Broker 等接口，为依赖注入和测试替身提供稳定边界。 可核对的公开符号包括 TranslationRequestMessageBase、TranslationSingleRequestMessage、TranslationBatchRequestMessage、TranslationRequestMessage、TranslationProvider、TranslationProviderRegistry、TranslationLanguageOverride、TranslationLanguages。
- * 模块边界：本文件位于翻译 application service 层，负责用例编排和端口契约；不挂载页面 UI，且不应把某家供应商的网络细节扩散到 feature，具体 HTTP 协议由 providers/platform 实现。
- */
-
 export interface TranslationRequestMessageBase {
     context?: string;
     pageContext?: string;

@@ -1,9 +1,3 @@
-/**
- * @file src/features/page-notice/content/notice.css
- * 文件职责：定义页面级 FluentRead 通知在 Shadow Root 内的布局和视觉状态，包括普通、成功、凭据提醒、离场动画、关闭及设置操作按钮。
- * 主要内容：样式覆盖固定顶部堆栈、品牌图标与标题、可滚动长文案、warning 配色、hover/focus 状态，并在 prefers-reduced-motion 下关闭过渡。
- * 模块边界：该 CSS 仅注入 notice.ts 创建的隔离 Shadow Root，不控制通知时长或消息解析，也不得影响宿主页面；宿主 host 的抗覆盖关键属性由 TypeScript 以内联 important 设置。
- */
 :host {
     color-scheme: light;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;

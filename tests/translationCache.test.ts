@@ -12,9 +12,6 @@ import {
   translationCacheDb,
   type TranslationCacheRecord,
 } from '@/src/services/translation/cache';
-import {
-  buildTranslationCacheKey as buildDeprecatedTranslationCacheKey,
-} from '@/entrypoints/utils/translationCache';
 
 function record(
   key: string,
@@ -62,7 +59,7 @@ describe('translation cache identity', () => {
     expect(canonicalize(fn)).toBe(JSON.stringify(String(fn)));
   });
 
-  it('uses an opaque versioned digest and keeps the deprecated import path equivalent', () => {
+  it('uses an opaque versioned digest for every result-affecting input', () => {
     const base = { sourceText: 'a_b', targetLanguage: 'zh-Hans', service: 'microsoft' };
     const key = buildTranslationCacheKey(base);
 
@@ -70,7 +67,6 @@ describe('translation cache identity', () => {
     expect(buildTranslationCacheKey({ ...base, sourceText: 'a' })).not.toBe(key);
     expect(buildTranslationCacheKey({ ...base, targetLanguage: 'en' })).not.toBe(key);
     expect(buildTranslationCacheKey({ ...base, service: 'google' })).not.toBe(key);
-    expect(buildDeprecatedTranslationCacheKey(base)).toBe(key);
   });
 
   it('falls back to UTF-16 byte estimation when TextEncoder is unavailable', async () => {

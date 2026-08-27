@@ -1,9 +1,3 @@
-/**
- * @file src/features/document-translation/core/document.ts
- * 文件职责：定义文档翻译的纯领域模型，并负责把多种文本格式解析为可翻译片段，再按双语或纯译文模式无损还原原格式结构。
- * 主要内容：覆盖 TXT、Markdown、HTML、SRT、VTT、ASS、SSA、LRC 与 JSON 的格式识别、片段切分、保护标记、字幕标签保留、JSON 路径替换、MIME 信息和下载文件命名。
- * 模块边界：该文件不读取 File、不解析 PDF/EPUB/DOCX 二进制，也不发起翻译请求；文件 I/O 与压缩包处理归 services/binary，批处理归 services/translation，展示归 preview/presentation。
- */
 export const DOCUMENT_MAX_BYTES = 10 * 1024 * 1024;
 
 export const SUPPORTED_DOCUMENT_EXTENSIONS = [

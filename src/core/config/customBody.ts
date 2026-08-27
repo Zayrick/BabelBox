@@ -1,11 +1,3 @@
-/**
- * @file src/core/config/customBody.ts
- *
- * 文件职责：解析和规范化用户为翻译服务配置的自定义请求体，保证合并时只接受普通对象而不会改变原始 payload。
- * 主要内容：提供 parseCustomBody、isValidCustomBody、mergeCustomBody 以及字符串映射归一函数，覆盖 JSON 字符串、对象输入、非法数组和字段映射等边界。 可核对的公开符号包括 CustomBody、parseCustomBody、isValidCustomBody、mergeCustomBody、isCustomBodyMapping、normalizeCustomBodyMapping。
- * 模块边界：本文件属于 core 领域层，只定义规则、类型与纯转换；不直接读写浏览器存储、不发起网络请求、不挂载 Vue/WXT 入口，持久化、协议调用和界面编排分别由 services、providers 与 features 承担。
- */
-
 export type CustomBody = Record<string, unknown>;
 
 // 留空表示不启用自定义请求体；非空值必须是 JSON 对象。

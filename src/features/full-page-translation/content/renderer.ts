@@ -1,9 +1,3 @@
-/**
- * @file src/features/full-page-translation/content/renderer.ts
- * 文件职责：把翻译返回的受限 HTML 或纯文本安全插入原页面，构造 FluentRead 双语译文节点，同时保护链接属性并触发布局截断修复。
- * 主要内容：包含 URL 协议白名单、可复制属性集合、递归节点净化、DocumentFragment 创建，以及 appendBilingualTranslation 对译文样式、显示模式和原文节点的组装。
- * 模块边界：本文件只负责安全渲染，不发起翻译或管理请求状态；服务调用归 runtime，节点所有权归 state，配置仅用于展示选项，任意脚本、事件属性和危险链接都不得穿过净化边界。
- */
 import { options } from "@/src/core/config/catalog";
 import { config } from "@/src/services/config/store";
 import {ensureTranslationTruncationLayout} from "@/src/features/full-page-translation/content/layout";

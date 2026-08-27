@@ -1,11 +1,3 @@
-/**
- * @file src/providers/translation/ai-sdk/endpoints.ts
- *
- * 文件职责：解析使用 Vercel AI SDK 的 OpenAI 兼容服务端点，统一 common、custom、New API、Azure、MiniMax 与 MiMo 的路由差异。
- * 主要内容：声明 transport profile、服务 ID 和 endpoint 配置类型，规范化 chat completions 地址，并由 resolveOpenAICompatibleEndpoint 返回 baseURL、route 与兼容参数。 可核对的公开符号包括 AiSdkEndpointRoute、AI_SDK_TRANSPORT_PROFILE、AiSdkEndpointConfig、OpenAICompatibleEndpointResolution、ResolvedOpenAICompatibleEndpoint、AI_SDK_COMMON_SERVICE_IDS、AI_SDK_SERVICE_IDS、parseChatCompletionsEndpoint。
- * 模块边界：本文件位于 provider 适配层，只把统一翻译请求转换为外部或浏览器服务协议；不管理页面 DOM、UI 生命周期或配置持久化，缓存、去重和超时总预算由 translation broker 统一协调。
- */
-
 import {getMimoEndpoint, MINIMAX_ENDPOINTS, urls} from '@/src/core/config/constants';
 import {config as runtimeConfig} from '@/src/services/config/store';
 import {services} from '@/src/core/config/catalog';

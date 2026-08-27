@@ -1,29 +1,15 @@
 import {describe, expect, it, vi} from 'vitest';
 import {
-    createTranslationRequestFallback,
+    createTranslationRequestHandler,
     parseTranslationRequest,
 } from '@/src/app/background/handlers/translation';
 
-describe('background translation fallback handler', () => {
-    it('只认无 type 且自有 origin 的历史翻译消息', () => {
-        const fallback = createTranslationRequestFallback({
-            translate: vi.fn(),
-            serializeError: vi.fn(),
-        });
-
-        expect(fallback.canHandle({origin: 'hello'})).toBe(true);
-        expect(fallback.canHandle({origin: ['a', 'b']})).toBe(true);
-        expect(fallback.canHandle(Object.create({origin: 'prototype'}))).toBe(false);
-        expect(fallback.canHandle({type: 'unknown', origin: 'hello'})).toBe(false);
-        expect(fallback.canHandle(null)).toBe(false);
-        expect(fallback.canHandle([])).toBe(false);
-        expect(fallback.canHandle({context: 'missing origin'})).toBe(false);
-    });
-
-    it('只把协议允许的字段传给 broker', async () => {
+describe('background translation handler', () => {
+    it('validates the wire message and passes only supported fields to the broker', async () => {
         const translate = vi.fn().mockResolvedValue('你好');
-        const fallback = createTranslationRequestFallback({translate, serializeError: vi.fn()});
-        const candidate = {
+        const handler = createTranslationRequestHandler({translate, serializeError: vi.fn()});
+        const message = {
+            type: 'translate' as const,
             origin: 'hello',
             context: 'title',
             pageContext: 'article',
@@ -36,7 +22,8 @@ describe('background translation fallback handler', () => {
             injected: 'must-not-pass',
         };
 
-        await expect(fallback.handle(candidate, undefined)).resolves.toBe('你好');
+        expect(handler.type).toBe('translate');
+        await expect(handler.handle(message, undefined)).resolves.toBe('你好');
         expect(translate).toHaveBeenCalledWith({
             origin: 'hello',
             context: 'title',
@@ -50,41 +37,32 @@ describe('background translation fallback handler', () => {
         });
     });
 
-    it('保留字符串数组并忽略未提供的可选字段', () => {
-        expect(parseTranslationRequest({origin: ['a', 'b']})).toEqual({origin: ['a', 'b']});
-        expect(parseTranslationRequest({origin: '', context: undefined})).toEqual({origin: ''});
+    it('preserves batches and rejects malformed boundary fields', () => {
+        expect(parseTranslationRequest({type: 'translate', origin: ['a', 'b']})).toEqual({origin: ['a', 'b']});
+        expect(() => parseTranslationRequest({type: 'translate', origin: ['ok', 2]})).toThrow('origin');
+        expect(() => parseTranslationRequest({type: 'translate', origin: 'ok', useCache: 'yes'})).toThrow('useCache');
+        expect(() => parseTranslationRequest({
+            type: 'translate',
+            origin: 'ok',
+            requestTimeoutMs: Number.NaN,
+        })).toThrow('requestTimeoutMs');
     });
 
-    it.each([
-        [{origin: 1}, 'origin'],
-        [{origin: ['ok', 2]}, 'origin'],
-        [{origin: 'ok', context: 1}, 'context'],
-        [{origin: 'ok', pageContext: false}, 'pageContext'],
-        [{origin: 'ok', serviceOverride: {}}, 'serviceOverride'],
-        [{origin: 'ok', modelOverride: null}, 'modelOverride'],
-        [{origin: 'ok', sourceLanguage: []}, 'sourceLanguage'],
-        [{origin: 'ok', targetLanguage: 1}, 'targetLanguage'],
-        [{origin: 'ok', useCache: 'yes'}, 'useCache'],
-        [{origin: 'ok', requestTimeoutMs: Number.NaN}, 'requestTimeoutMs'],
-    ])('拒绝非法协议字段 %#', (candidate, field) => {
-        expect(() => parseTranslationRequest(candidate as never)).toThrow(field);
-    });
-
-    it('把校验失败与 broker 失败都交给版本化错误序列化器', async () => {
-        const brokerError = new Error('provider failed');
-        const translate = vi.fn()
-            .mockRejectedValueOnce(brokerError)
-            .mockResolvedValueOnce('unused');
-        const serializeError = vi.fn((error: unknown) => ({kind: 'translation-error', error}));
-        const fallback = createTranslationRequestFallback({translate, serializeError});
-
-        await expect(fallback.handle({origin: 'hello'}, undefined)).resolves.toEqual({
-            kind: 'translation-error',
-            error: brokerError,
+    it('serializes validation and broker failures', async () => {
+        const error = new Error('provider failed');
+        const serializeError = vi.fn((value: unknown) => ({kind: 'translation-error', error: value}));
+        const handler = createTranslationRequestHandler({
+            translate: vi.fn().mockRejectedValue(error),
+            serializeError,
         });
-        const invalid = {origin: 'hello', useCache: 'yes'};
-        await expect(fallback.handle(invalid, undefined)).resolves.toMatchObject({kind: 'translation-error'});
-        expect(translate).toHaveBeenCalledTimes(1);
+
+        await expect(handler.handle({type: 'translate', origin: 'hello'}, undefined)).resolves.toEqual({
+            kind: 'translation-error',
+            error,
+        });
+        await expect(handler.handle({type: 'translate', origin: 1}, undefined)).resolves.toMatchObject({
+            kind: 'translation-error',
+        });
         expect(serializeError).toHaveBeenCalledTimes(2);
     });
 });

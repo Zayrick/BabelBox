@@ -1,9 +1,3 @@
-/**
- * @file src/app/options/index.ts
- * 文件职责：创建 Options Vue 应用并集中注册页面所需的 Element Plus 组件、图标与样式，向 WXT 入口暴露稳定挂载函数。
- * 主要内容：维护显式组件和图标清单，载入 Element Plus、settings-page 及共享 token 样式，createApp(OptionsApp) 后逐项注册并挂载到给定 selector。
- * 模块边界：此文件只做 UI 依赖装配，不实现导航、设置保存或业务组件；OptionsApp 管理页面状态，各 feature 负责配置和词汇逻辑，WXT 入口决定启动时机。
- */
 import { createApp, type Component } from 'vue'
 import {
   ElButton,

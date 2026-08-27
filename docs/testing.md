@@ -1,53 +1,49 @@
 # 测试与回归
 
-FluentRead 把测试按意图分组，而不是把所有文件塞进一个难以诊断的命令。每个 `tests/**/*.test.ts` 必须且只能出现在 `tests/test-matrix.json` 的一个分组中；测试审计会拒绝漏归类、重复归类、重复用例名、`.only`、无原因 `.skip` 和覆盖率忽略指令。
+FluentRead 按风险选择验证范围。测试保护用户行为、公开契约、真实缺陷和安全边界，不以测试数量或覆盖率数字作为完成标准。
 
-## 按需运行
+## 常用命令
 
 ```bash
-pnpm test:audit          # 测试矩阵、重复和禁用项审计
-pnpm test:architecture   # 分层、依赖方向与验证归属
-pnpm test:unit           # 纯函数、状态机、parser、cache、handler
-pnpm test:functional     # 多模块协作，替换网络/浏览器等外部边界
-pnpm test:regression     # 历史缺陷的最小复现
-pnpm test:coverage       # 已迁移可执行业务模块的四维 100% 门禁
-pnpm test:document       # 文档格式、导出、取消、边界与历史回归
-pnpm verify:extension-manifests  # fresh Chrome/Firefox 产物的权限、Offscreen 与 runtime marker
-node scripts/verify-userscript-build.mjs  # userscript 元数据与产物边界
+pnpm test                    # 全部 Vitest 测试
+pnpm test:architecture       # 模块依赖边界
+pnpm test:coverage           # 覆盖率报告，用于发现盲区
+pnpm test:document           # 文档解析、翻译与导出
+pnpm test:translation-core   # 全文翻译核心与队列
+pnpm compile                 # TypeScript/Vue 类型检查
+pnpm build                   # Chrome/Edge 扩展构建
+pnpm build:firefox           # Firefox 扩展构建
+pnpm test:userscript         # Userscript 构建与产物校验
+pnpm docs:build              # 文档构建
 ```
 
-新增测试时应选择唯一分组：
+改动局部纯函数时先运行对应测试文件；涉及公共消息、配置、翻译服务或内容脚本生命周期时运行 `pnpm test`。入口、manifest 或共享浏览器代码还要运行双浏览器构建；共享翻译代码同时验证 userscript。
 
-- `unit` 只验证一个可隔离模块；不要再次复制同一功能的集成路径。
-- `functional` 验证真实模块协作，mock 只放在网络、浏览器、时间或存储边界。
-- `regression` 的用例名要写出历史失败条件，并保留能使旧实现失败的最小输入。
-- `architecture` 验证目录、依赖、协议、安全运行方式和流水线归属，不替代行为断言。
+## 测试取舍
 
-`tests/architecture/sourceFileHeaders.test.ts` 会枚举 `src/` 下所有 TypeScript、Vue、CSS 与 Markdown 文件，检查首字符处的长注释、精确 `@file` 路径以及职责、内容、边界三个非空语义段。新增或移动源码时必须同步书写文件级说明，不能只让旧文件一次性通过。
+- 一条测试覆盖一个可说明的行为，不按实现中的每个条件分支拆测试。
+- 回归测试保留能让旧缺陷重现的最小场景；同一场景已由更高层测试覆盖时不再复制。
+- 网络、浏览器、存储、时间等外部边界可以替换；模块内部协作优先使用真实实现。
+- 配置导入、网页消息、文档文件和 provider 响应属于不可信输入，需要验证；内部类型已经保证的状态不重复防御。
+- 不用源码字符串、注释格式、文件行数或旧实现是否消失来代替行为断言。架构测试只检查会影响依赖方向的规则。
 
-## 覆盖率定义
-
-项目使用两道互补门禁，不能把“构建成功”和“代码行为已经覆盖”混为一谈：
-
-1. `vitest.coverage.config.ts` 中列出的已迁移 TypeScript 业务模块，V8 statements、branches、functions、lines 必须同时达到 100%。
-2. `tests/architecture/verificationOwnership.test.ts` 审计其余 WXT entrypoint、Vue、CSS、HTML、browser runner、userscript 和文档文件，保证每个文件都由编译、双浏览器构建、静态契约、文档构建或隔离浏览器回归负责。
-
-新增 `src` 可执行模块默认必须进入第一道门禁。只有纯类型文件、纯 re-export barrel 和列明理由的静态 composition root 可以由第二道门禁负责。禁止使用 `v8 ignore`、扩大 exclude 或无断言执行来制造 100%。
-
-文档翻译的 parser、预览生成、二进制格式服务、翻译编排和展示模型全部进入第一道门禁；PDF.js worker 与真实 Canvas 像素采样适配由双浏览器构建及屏幕外文档浏览器回归负责。
+覆盖率报告不设全仓百分比门槛。低覆盖可以提示风险，但是否补测试取决于代码的重要性、变化频率和失败影响；不能为了命中行或分支而增加无产品意义的输入、回退或测试。
 
 ## 一键回归
 
-本地确定性回归负责测试审计、WXT prepare、类型检查、严格覆盖率、四组 Vitest、Chrome/Firefox/userscript 构建及文档构建：
-
 ```bash
 pnpm test:regression:all
+```
+
+默认流水线依次执行 WXT prepare、类型检查、一次完整 Vitest、Chrome/Firefox/userscript 构建与校验，以及文档构建。它不会重复执行同一套测试，也不会默认启动浏览器或访问真实网络。
+
+真实浏览器层必须显式开启，并使用临时 profile、屏幕外正常尺寸窗口和 focus-safe helper：
+
+```bash
 pnpm test:regression:all -- --browser \
   --playwright-root <path> \
   --browser-path <path> \
   --focus-safe-helper <path>
 ```
 
-真实浏览器层必须使用临时 profile、屏幕外正常尺寸窗口和 focus-safe helper；不会连接用户日常 profile，也不会静默退化成抢焦点的普通 Playwright 启动。真实网络站点矩阵还需要单独的网络许可。具体参数以 `node scripts/testing/run-full-regression.mjs --help` 为准。
-
-CI 或本地报告必须分别说明：确定性回归、隔离浏览器回归、真实网络矩阵是否执行。任何未执行层都不能写成“全量回归已通过”。
+真实站点矩阵还需要 `--network --allow-network`。报告应分别说明确定性回归、隔离浏览器回归和真实网络矩阵是否执行，不能把未运行的层写成已通过。

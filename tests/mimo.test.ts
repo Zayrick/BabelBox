@@ -20,7 +20,7 @@ const { fetchMock, mockConfig } = vi.hoisted(() => ({
 vi.mock('@/src/services/config/store', () => ({ config: mockConfig }));
 
 import {translateWithOpenAICompatibleAiSdk} from '@/src/providers/translation/ai-sdk/openai-compatible';
-import { services } from '@/entrypoints/utils/option';
+import {services} from '@/src/core/config/catalog';
 
 function successResponse() {
     return new Response(JSON.stringify({

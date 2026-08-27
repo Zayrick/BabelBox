@@ -1,9 +1,3 @@
-/**
- * @file src/features/settings/ui/settings-page.css
- * 文件职责：定义 Options 设置应用的全局页面骨架与 Element Plus 外观覆盖，包括侧边栏、顶部搜索、滚动工作区、设置卡片和特殊全宽业务视图。
- * 主要内容：样式引入共享 token，配置桌面与窄屏响应式布局、焦点态、导航分组、表单控件、服务/翻译中心视图、深色主题及固定标签列和控件列。
- * 模块边界：该文件只作用于扩展设置页面的整体布局，不承载配置逻辑或 feature 内部组件细节；分区专属样式在 settings-sections.css，通用设计变量位于 src/ui/styles/tokens.css。
- */
 @import "../../../ui/styles/tokens.css";
 
 :root {

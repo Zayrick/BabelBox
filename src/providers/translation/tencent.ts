@@ -1,11 +1,3 @@
-/**
- * @file src/providers/translation/tencent.ts
- *
- * 文件职责：适配腾讯云机器翻译 API，负责语言代码、TC3-HMAC-SHA256 签名、请求头和结果解析。
- * 主要内容：从请求快照读取 SecretId/SecretKey 与语言，构造规范请求和授权签名，通过 runtimeFetch 调用 TMT endpoint，并校验 Response.Error 与 TargetText。 可核对的公开符号包括 default:tencent。
- * 模块边界：本文件位于 provider 适配层，只把统一翻译请求转换为外部或浏览器服务协议；不管理页面 DOM、UI 生命周期或配置持久化，缓存、去重和超时总预算由 translation broker 统一协调。
- */
-
 import { method } from "@/src/core/config/constants";
 import { config } from "@/src/services/config/store";
 import {getTranslationLanguages} from '@/src/services/translation/languages';

@@ -214,7 +214,6 @@ export const userscriptAliases = [
     {find: '@/src/features/area-translation/public', replacement: resolve(root, 'userscript/unsupportedCapabilities.ts')},
     {find: '@/src/features/image-translation/public', replacement: resolve(root, 'userscript/unsupportedCapabilities.ts')},
     {find: '@/src/features/video-subtitle/public', replacement: resolve(root, 'userscript/unsupportedCapabilities.ts')},
-    {find: '@/entrypoints/utils/newApi', replacement: resolve(root, 'userscript/unsupportedCapabilities.ts')},
     {find: /^\.\/chrome-translator$/u, replacement: resolve(root, 'userscript/chromeTranslator.ts')},
     {find: '@wxt-dev/storage', replacement: resolve(root, 'userscript/storage.ts')},
     {find: 'webextension-polyfill', replacement: resolve(root, 'userscript/browser.ts')},

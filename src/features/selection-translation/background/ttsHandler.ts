@@ -1,9 +1,3 @@
-/**
- * @file src/features/selection-translation/background/ttsHandler.ts
- * 文件职责：编排划词朗读的后台消息路由，按标签页和客户端请求编号管理当前播放所有权，并在 Edge、Google 与页面回退之间传递音频或状态。
- * 主要内容：定义四类 TTS 消息、音频/请求/响应契约，解析 tabId、文本和语言，生成 Google TTS URL、Base64 编码音频，并由工厂创建播放、停止及 Offscreen 状态转发 handlers。
- * 模块边界：本文件不操作页面 Audio 或 speechSynthesis，也不实现 Edge SSML；具体合成由 services 注入，Offscreen 播放由 adapter 注入，内容页控制器负责忽略迟到状态。
- */
 import {
     parseSelectionTtsClientRequestId,
     parseSelectionTtsPlaybackState,
@@ -231,7 +225,7 @@ export function createSelectionTtsBackgroundHandlers(
                 const clientRequestId = parseSelectionTtsClientRequestId(message.clientRequestId);
                 const tabId = parseTabId(context);
 
-                // Step 1: 新请求先取消旧请求；没有 tab 时保留旧行为，合成后回退到 page audio。
+                // 新请求先取消旧请求；没有 tab 时保留旧行为，合成后回退到 page audio。
                 await stopActiveSelectionTts();
                 const active = tabId === null ? null : beginSelectionTts(tabId, clientRequestId);
                 let result: SelectionTtsAudio;
@@ -263,7 +257,7 @@ export function createSelectionTtsBackgroundHandlers(
                             clientRequestId: active.clientRequestId,
                         });
                         if (activeSelectionTts !== active) {
-                            // Step 2: STOP 可能早于 PLAY 生效；PLAY 成功返回后必须二次 STOP 清理 late playback。
+                            // STOP 可能早于 PLAY 生效；PLAY 成功返回后必须二次 STOP 清理 late playback。
                             return stopLatePlayback(active);
                         }
                         return {success: true, transport: 'offscreen', voice: result.voice};
@@ -297,7 +291,7 @@ export function createSelectionTtsBackgroundHandlers(
                 const clientRequestId = parseSelectionTtsClientRequestId(message.clientRequestId);
                 const tabId = parseTabId(context);
 
-                // Step 1: Google fallback 与 Edge 共用单例播放状态，新请求同样先取消旧播放。
+                // Google fallback 与 Edge 共用单例播放状态，新请求同样先取消旧播放。
                 await stopActiveSelectionTts();
                 if (tabId === null) return {success: false, error: '无法确定当前标签页'};
                 if (dependencies.offscreenPlaybackEnabled === false) {

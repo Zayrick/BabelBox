@@ -1,9 +1,3 @@
-<!--
- @file src/ui/components/ServiceIcon.vue
- 文件职责：为翻译服务和模型选项提供统一品牌图标组件，在没有专用图形时仍输出稳定、可辨识的回退字形。
- 主要内容：根据 service、label、size 与 model props 选择尺寸和色调，为 Microsoft、Google、DeepL、OpenAI 兼容及多种国内外模型服务渲染内联 SVG，并计算 fallbackGlyph。
- 模块边界：组件只负责装饰性视觉且 aria-hidden，不加载远程商标、不判断服务可用性，也不选择模型；服务目录和能力过滤由 core/catalog 与 services/capabilities 管理。
--->
 <template>
   <span
     class="service-brand-icon"

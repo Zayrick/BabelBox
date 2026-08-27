@@ -1,11 +1,3 @@
-/**
- * @file src/core/translation/languages.ts
- *
- * 文件职责：解析请求级语言覆盖与配置默认值，生成一次翻译请求实际使用的源语言和目标语言。
- * 主要内容：定义 TranslationLanguageOverride、TranslationLanguageDefaults、TranslationLanguages，并由 resolveTranslationLanguages 清洗空值、应用回退和保留明确的 auto 选择。 可核对的公开符号包括 TranslationLanguageOverride、TranslationLanguageDefaults、TranslationLanguages、resolveTranslationLanguages。
- * 模块边界：本文件属于可独立测试的 core 候选领域；可以读取传入 DOM 以计算结果，但不访问配置存储、不调用 provider、不注册页面监听器，也不负责译文渲染或 feature 生命周期。
- */
-
 export interface TranslationLanguageOverride {
     sourceLanguage?: string;
     targetLanguage?: string;

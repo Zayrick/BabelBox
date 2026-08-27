@@ -1,11 +1,3 @@
-/**
- * @file src/services/translation/cache.ts
- *
- * 文件职责：实现扩展自有的翻译结果缓存，统一键规范化、TTL、容量限制、内存热层和 Dexie 持久层。
- * 主要内容：定义缓存 identity/record、canonicalize 与 buildTranslationCacheKey，维护 FluentReadCacheDatabase，并通过 translationCache 提供读取、写入、LRU 逐出、过期清理和 IndexedDB 失败时降级为未命中的 API。 可核对的公开符号包括 TRANSLATION_CACHE_VERSION、TRANSLATION_CACHE_TTL_MS、TRANSLATION_CACHE_MAX_ENTRIES、TRANSLATION_CACHE_MAX_BYTES、TRANSLATION_CACHE_MAX_ENTRY_BYTES、TRANSLATION_CACHE_MEMORY_ENTRIES、TranslationCacheIdentity、TranslationCacheRecord。
- * 模块边界：本文件位于翻译 application service 层，负责用例编排和端口契约；不挂载页面 UI，且不应把某家供应商的网络细节扩散到 feature，具体 HTTP 协议由 providers/platform 实现。
- */
-
 import CryptoJS from 'crypto-js';
 import Dexie, { type Table } from 'dexie';
 
@@ -105,11 +97,11 @@ class TranslationCache {
   private readonly memory = new Map<string, TranslationCacheRecord>();
 
   private remember(record: TranslationCacheRecord): void {
-    // Step 1: 重新插入记录，把它移动到内存 LRU 的最新位置。
+    // 重新插入记录，把它移动到内存 LRU 的最新位置。
     this.memory.delete(record.key);
     this.memory.set(record.key, record);
 
-    // Step 2: 超过热数据上限时，从最旧记录开始逐个淘汰。
+    // 超过热数据上限时，从最旧记录开始逐个淘汰。
     while (this.memory.size > TRANSLATION_CACHE_MEMORY_ENTRIES) {
       // Map.size 已确认大于上限，因此迭代器必然返回一个 key。
       const oldestKey = this.memory.keys().next().value as string;
@@ -122,7 +114,7 @@ class TranslationCache {
   }
 
   async get(key: string, now = Date.now()): Promise<string | null> {
-    // Step 1: 优先读取热数据；过期记录同时从内存和持久层移除。
+    // 优先读取热数据；过期记录同时从内存和持久层移除。
     const memoryRecord = this.memory.get(key);
     if (memoryRecord) {
       if (isExpired(memoryRecord, now)) {
@@ -137,7 +129,7 @@ class TranslationCache {
     }
 
     try {
-      // Step 2: 冷数据从 IndexedDB 读取，并同步刷新持久层 LRU 时间。
+      // 冷数据从 IndexedDB 读取，并同步刷新持久层 LRU 时间。
       const record = await translationCacheDb.entries.get(key);
       if (!record) return null;
 
@@ -151,14 +143,14 @@ class TranslationCache {
       this.remember(record);
       return record.translation;
     } catch (error) {
-      // Step 3: 缓存不可用时只按未命中处理，不能阻断真实翻译。
+      // 缓存不可用时只按未命中处理，不能阻断真实翻译。
       console.warn('[FluentRead] translation cache read failed:', error);
       return null;
     }
   }
 
   async set(key: string, translation: string, now = Date.now()): Promise<boolean> {
-    // Step 1: 空译文和过大单项不进入缓存，避免无效数据或配额攻击。
+    // 空译文和过大单项不进入缓存，避免无效数据或配额攻击。
     const byteSize = getByteSize(key) + getByteSize(translation);
     if (!translation || byteSize > TRANSLATION_CACHE_MAX_ENTRY_BYTES) {
       return false;
@@ -174,7 +166,7 @@ class TranslationCache {
     };
 
     try {
-      // Step 2: 在同一事务中写入新记录，并按条目数与总字节数执行持久层 LRU。
+      // 在同一事务中写入新记录，并按条目数与总字节数执行持久层 LRU。
       await translationCacheDb.transaction('rw', translationCacheDb.entries, async () => {
         await translationCacheDb.entries.put(record);
 
@@ -198,7 +190,7 @@ class TranslationCache {
         }
       });
 
-      // Step 3: 持久化成功后再进入热数据层，防止内存和 IndexedDB 状态分叉。
+      // 持久化成功后再进入热数据层，防止内存和 IndexedDB 状态分叉。
       this.remember(record);
       return true;
     } catch (error) {
@@ -209,13 +201,13 @@ class TranslationCache {
 
   async cleanup(now = Date.now()): Promise<void> {
     try {
-      // Step 1: 同时按 expiresAt 和当前 TTL 清理持久层，兼容历史 TTL 策略。
+      // 同时按 expiresAt 和当前 TTL 清理持久层，兼容历史 TTL 策略。
       await translationCacheDb.entries.where('expiresAt').belowOrEqual(now).delete();
       await translationCacheDb.entries
         .where('createdAt')
         .belowOrEqual(now - TRANSLATION_CACHE_TTL_MS)
         .delete();
-      // Step 2: 再清理热数据，保证同一时间点下两层过期判断一致。
+      // 再清理热数据，保证同一时间点下两层过期判断一致。
       for (const [key, record] of this.memory) {
         if (isExpired(record, now)) this.memory.delete(key);
       }
@@ -225,10 +217,10 @@ class TranslationCache {
   }
 
   async clear(): Promise<void> {
-    // Step 1: 先清空当前 service worker 的热数据。
+    // 先清空当前 service worker 的热数据。
     this.memory.clear();
     try {
-      // Step 2: 再清空 IndexedDB；失败时向调用方报告，避免 UI 误报已清除。
+      // 再清空 IndexedDB；失败时向调用方报告，避免 UI 误报已清除。
       await translationCacheDb.entries.clear();
     } catch (error) {
       console.warn('[FluentRead] translation cache clear failed:', error);

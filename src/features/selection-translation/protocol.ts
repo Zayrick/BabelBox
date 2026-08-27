@@ -1,10 +1,4 @@
 /**
- * @file src/features/selection-translation/protocol.ts
- * 文件职责：定义划词 TTS 跨 content、background 与 Offscreen 的稳定路由协议，以 tabId 和 clientRequestId 精确标识一次播放所有权。
- * 主要内容：包含播放请求与 ended/stopped/error 状态类型、各字段严格解析、路由相等与消息匹配函数，以及基于 crypto 的客户端请求编号生成。
- * 模块边界：协议模块不发送消息、不维护当前播放状态也不合成音频；内容控制器和后台 handler 分别消费这些纯契约，随机源可注入以保持可测试性。
- */
-/**
  * 划词 TTS 跨 content、MV3 background 和 offscreen 的稳定路由身份。
  * `clientRequestId` 由 content 在每次远程播放前生成，不依赖可随时重启的 Service Worker 内存。
  */

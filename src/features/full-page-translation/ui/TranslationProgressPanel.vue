@@ -1,9 +1,3 @@
-<!--
- * @file src/features/full-page-translation/ui/TranslationProgressPanel.vue
- * 文件职责：展示全文翻译当前进度、完成比例和失败数量，并允许用户临时收起面板，同时跟随扩展主题与系统深浅色偏好。
- * 主要内容：组件订阅 progress 内存状态和配置更新，计算可见性、百分比与状态文案，管理 matchMedia 监听和卸载清理，并以 aria-live 向辅助技术播报进展。
- * 模块边界：组件不启动、取消或重试翻译，也不保存业务进度；数据只来自 progress.ts，是否创建 Shadow UI 由 content/progressPanel.ts 决定，样式局限于组件作用域。
- -->
 <template>
   <Transition name="fr-progress-panel">
     <aside

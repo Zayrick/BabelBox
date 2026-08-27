@@ -1,9 +1,3 @@
-/**
- * @file src/ui/view-model/serviceCatalog.ts
- * 文件职责：为服务与模型选择界面提供无框架的视图模型转换，把扁平配置选项整理成可搜索、可分组和可稳定展示的数据。
- * 主要内容：定义 ServiceOption/ServiceGroup，清理标签星标，按 disabled 分隔项构建服务组，按关键词过滤服务和模型，解析当前模型标签，并把常用、选中和自定义模型稳定拆分。
- * 模块边界：这些函数不读取 Vue 状态、不修改 Config，也不判断平台能力或发起连接测试；原始目录由 core/config 提供，Popup/Options 等调用方负责交互与渲染。
- */
 import { customModelString, resolveConfiguredModel, servicesType } from '@/src/core/config/catalog'
 
 export interface ServiceOption {

@@ -1,12 +1,4 @@
 /**
- * @file src/services/translation/queue.ts
- *
- * 文件职责：提供带会话取消、并发上限和公平调度的翻译任务队列，供全文等批量场景控制 provider 压力。
- * 主要内容：定义 queue session/lease、TranslationQueueCancelledError，支持创建和取消会话、enqueue、释放租约、队列压缩及全局清理，确保已取消任务不会继续占用槽位。 可核对的公开符号包括 TranslationQueueSession、TranslationQueueLease、TranslationQueueCancelledError、createTranslationQueueSession、cancelTranslationQueueSession、enqueueTranslation、clearTranslationQueue。
- * 模块边界：本文件位于翻译 application service 层，负责用例编排和端口契约；不挂载页面 UI，且不应把某家供应商的网络细节扩散到 feature，具体 HTTP 协议由 providers/platform 实现。
- */
-
-/**
  * 翻译队列管理模块
  * 控制并发翻译任务的数量，避免同时进行过多翻译请求
  */
@@ -112,7 +104,7 @@ function processQueue(): void {
     const entry = dequeuePendingTranslation();
     if (!entry) return;
 
-    // Step 1: enqueue 会同步校验会话；取消操作也会在同一事件循环内把等待项移出数组。
+    // enqueue 会同步校验会话；取消操作也会在同一事件循环内把等待项移出数组。
     // 因此能被 dequeue 取出的条目必然仍是有效的 pending 工作。
     activeTranslations += 1;
     void entry.execute().finally(() => {

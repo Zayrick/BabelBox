@@ -17,7 +17,7 @@ vi.mock('@/src/core/config/catalog', () => ({
     services: {microsoft: 'microsoft', freeTranslation: 'freeTranslation'},
 }));
 
-vi.mock('@/src/app/translation/client', () => ({
+vi.mock('@/src/services/translation/client', () => ({
     translateText: mocks.translateText,
     translateTextBatch: mocks.translateTextBatch,
 }));

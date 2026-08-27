@@ -1,11 +1,3 @@
-/**
- * @file src/core/translation/dom.ts
- *
- * 文件职责：封装翻译候选发现使用的 composed tree 遍历与不可覆盖安全守卫，识别扩展 DOM、脚本、表单及禁止翻译区域。
- * 主要内容：提供 Shadow DOM 父级与祖先遍历、硬裁剪标签、受保护文本元素、隐藏/可编辑/no-translate 判断，并限制祖先深度以避免异常页面结构拖垮扫描。 可核对的公开符号包括 maxComposedAncestorDepth、getComposedParent、isDocumentSurface、isExtensionElement、isExtensionElementSelf、isHardPruneTag、isProtectedTextElement、hasNoTranslateMarker。
- * 模块边界：本文件属于可独立测试的 core 候选领域；可以读取传入 DOM 以计算结果，但不访问配置存储、不调用 provider、不注册页面监听器，也不负责译文渲染或 feature 生命周期。
- */
-
 const extensionSelector = [
     '#fluent-read-floating-ball-container',
     '#fluent-read-selection-translator-container',

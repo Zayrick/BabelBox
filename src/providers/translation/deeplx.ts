@@ -1,11 +1,3 @@
-/**
- * @file src/providers/translation/deeplx.ts
- *
- * 文件职责：适配一个或多个 DeepLX 端点，并在总预算和单次预算内执行有序故障转移翻译。
- * 主要内容：规范化 AUTO、ZH 等语言代码，从 core 配置解析候选地址，逐端点请求并校验 code/data，导出 translateDeepLXText 与默认 provider。 可核对的公开符号包括 normalizeDeepLXLanguage、getDeepLXRequestLanguages、translateDeepLXText、default:deeplx。
- * 模块边界：本文件位于 provider 适配层，只把统一翻译请求转换为外部或浏览器服务协议；不管理页面 DOM、UI 生命周期或配置持久化，缓存、去重和超时总预算由 translation broker 统一协调。
- */
-
 import {services} from "@/src/core/config/catalog";
 import {config} from "@/src/services/config/store";
 import {getDeepLXEndpoints} from "@/src/core/config/deeplx";

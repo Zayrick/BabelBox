@@ -1,11 +1,3 @@
-/**
- * @file src/core/translation/types.ts
- *
- * 文件职责：定义翻译候选核心的基础类型契约，使引擎、布局、序列化和站点适配器能够以一致结构协作。
- * 主要内容：包含候选 kind、AdapterDecision、AdapterContext、TranslationSiteAdapter、TranslationCandidate 与 TranslationCoreOptions，明确适配器输入、候选来源和可注入依赖。 可核对的公开符号包括 TranslationCandidateKind、AdapterDecision、AdapterContext、TranslationSiteAdapter、TranslationCandidate、TranslationCoreOptions。
- * 模块边界：本文件属于可独立测试的 core 候选领域；可以读取传入 DOM 以计算结果，但不访问配置存储、不调用 provider、不注册页面监听器，也不负责译文渲染或 feature 生命周期。
- */
-
 export type TranslationCandidateKind = 'content' | 'control';
 
 export type AdapterDecision =

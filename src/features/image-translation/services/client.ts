@@ -1,9 +1,3 @@
-/**
- * @file src/features/image-translation/services/client.ts
- * 文件职责：封装网页与扩展页面调用图片翻译后台的 runtime 消息，统一支持 OCR 识别、整图翻译和跨域图片抓取三种客户端操作。
- * 主要内容：提供 recognizeImageInExtension、translateImageInExtension、fetchImageInExtension，构造对应消息并验证 success、lines、image 与 dataUrl 后返回强类型结果。
- * 模块边界：客户端不读取图片像素、不管理 UI 状态也不访问 tabs/offscreen；权限操作和输入校验由 background handlers 完成，调用超时与用户反馈由 content/runtime 决定。
- */
 import type { OcrLine } from '@/src/features/image-translation/core';
 
 interface ImageTranslationLine extends OcrLine {

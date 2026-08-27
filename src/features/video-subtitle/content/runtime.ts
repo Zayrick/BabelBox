@@ -1,9 +1,3 @@
-/**
- * @file src/features/video-subtitle/content/runtime.ts
- * 文件职责：实现 YouTube 页面视频字幕翻译运行时，协调原生字幕读取、timedtext 预取、逐条翻译、播放时间追赶、显示模式、设置菜单和字幕下载。
- * 主要内容：维护播放器 DOM 覆盖层和面板、字幕稳定窗口、机器/AI 预翻译窗口、请求缓存与 Abort 生命周期，导出 cue 批译工具、显示规则、文本规范化及 mountVideoSubtitleTranslation 清理函数。
- * 模块边界：本文件只在 content 页面编排，不拦截 fetch/XHR 也不实现翻译 provider；MAIN-world bridge 在独立模块捕获 timedtext，解析算法在 youtubeSubtitleData，翻译经 app client。
- */
 import browser from 'webextension-polyfill';
 import { config, requestConfigSave, subscribeConfig } from '@/src/services/config/store';
 import { options, servicesType } from '@/src/core/config/catalog';
@@ -12,7 +6,7 @@ import {
   type Config,
   type VideoSubtitleDisplayMode,
 } from '@/src/core/config/model';
-import { translateVideoText } from '@/src/app/translation/client';
+import {translateVideoText} from '@/src/services/translation/client';
 import {
   buildYoutubeTimedTextUrl,
   chooseYoutubeCaptionTrack,

@@ -16,7 +16,7 @@
   - `src/services/`：翻译、缓存、配置等跨 feature 编排。
   - `src/providers/` 与 `src/platform/`：供应商适配和浏览器/存储/HTTP/offscreen 边界。
   - `src/shared/` 与 `src/ui/`：无业务语义的小型工具和复用 UI/token。
-- `entrypoints/utils/` 只允许保留带 `@deprecated` 的精确兼容导出；生产代码和新增测试必须直接使用 `src` 公共路径，不得为兼容壳增加新调用者。
+- `entrypoints/` 只保留 WXT 入口；内部模块统一从 `src` 的实际归属路径导入，不保留项目内部旧路径兼容壳。
 - 新功能应复用现有配置、消息、翻译服务和挂载机制，避免另建一套并行状态或通信体系。
 - 内容脚本运行在任意网页中。新增 DOM、样式和事件时使用 FluentRead 专属命名，避免污染宿主页面；卸载、关闭或页面离开时清理监听器、计时器、观察器、挂载节点和未完成请求。
 - 浏览器 API 优先使用项目现有的 `browser`/webextension-polyfill 方式，并同时考虑 Chrome、Edge 和 Firefox 的行为差异。
@@ -37,19 +37,20 @@
 
 ## 实现原则
 
-- `src/` 下每个 TypeScript、Vue、CSS 与 Markdown 文件必须从第一个字符开始书写中文长注释，明确 `@file` 路径、文件职责、主要内容和模块边界；职责变化时同步更新，不得复制空泛模板。
-- 修复问题时处理根因，并覆盖翻译、恢复原文、重复触发、动态 DOM、页面卸载和失败重试等相关状态。
+- 只实现需求直接需要的行为。相邻问题没有明确证据或不影响本次目标时，不顺手扩功能、增加抽象或建立平行机制。
+- 修复问题时处理根因，并验证与根因直接相关的用户路径；不为假想输入、不可达状态或没有恢复价值的失败层层增加回退。
 - 引入新的翻译服务时放入 `src/providers/translation/`，通过 provider registry 与 `src/services/translation` 接入；补齐配置可见性、错误处理和调用路径，不在 UI 组件中直接散落网络请求。
 - 从参考项目借鉴功能时，将概念适配为 Vue/TypeScript 实现；不要引入 React 专用依赖或跨仓库运行时耦合。
 - 控制改动范围，不顺手重写无关代码；除非任务需要，不升级依赖或改变构建工具。
 - 用户可见行为变化同步更新相关文档；版本号和发布产物仅在用户明确要求发布时修改。
+- 注释解释代码本身无法表达的约束、原因或所有权，不复述文件名、类型和语句。文档只描述当前产品与当前约束；被否决的方案、迁移过程和“没有做什么”不留在正式文档中，除非它仍是公开兼容或安全边界的一部分。
 
 ## 验证
 
 - 测试分组、覆盖率定义和一键回归以 [测试与回归](docs/testing.md) 为准。
-- 使用 `pnpm test:audit` 检查测试唯一归类、重复用例、`.only`、无说明 `.skip` 和覆盖率忽略。
-- 按改动选择 `pnpm test:architecture`、`pnpm test:unit`、`pnpm test:functional`、`pnpm test:regression`。
-- 迁入 `src` 的可执行业务模块使用 `pnpm test:coverage`，statements/branches/functions/lines 四维均须 100%。
+- 按改动选择最小相关 Vitest 文件或 `pnpm test`；架构边界使用 `pnpm test:architecture`。
+- 测试优先覆盖用户可见行为、公开契约、真实回归和安全边界。不要按每个分支、守卫或回退各写一条测试，也不要用源码字符串、注释格式、行数或已删除实现的缺席代替行为断言。
+- `pnpm test:coverage` 用于发现风险盲区，不以追求 100% 或满足指标为由增加无行为价值的测试和分支。
 - 使用 `pnpm compile` 做 TypeScript/Vue 类型检查。
 - 涉及扩展构建或入口行为时同时运行 `pnpm build` 与 `pnpm build:firefox`；共享翻译或平台代码还要运行 `pnpm build:userscript` 和 userscript verifier。
 - 涉及文档时运行 `pnpm docs:build`。

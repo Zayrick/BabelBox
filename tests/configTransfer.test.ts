@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { defaultOption } from '@/entrypoints/utils/option'
+import {defaultOption} from '@/src/core/config/catalog'
 import {
   isConfigImportValid,
   prepareConfigForImport,
   sanitizeConfigForExport,
-} from '@/entrypoints/utils/config-transfer'
-import { normalizeConfig } from '@/entrypoints/utils/model'
+} from '@/src/core/config/transfer'
+import {normalizeConfig} from '@/src/core/config/model'
 
 const validConfig = {
   on: true,

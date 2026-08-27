@@ -1,9 +1,3 @@
-<!--
- @file src/ui/components/CustomHotkeyInput.vue
- 文件职责：提供可复用的自定义快捷键对话框，支持键盘录制、预设选择、冲突校验、清除与无障碍确认流程。
- 主要内容：通过 Teleport 渲染模态层，接收 modelValue/currentValue/context props，捕获 keydown/keyup 组合并调用 parseHotkey 与 validateHotkeyConflicts，展示录制、错误、警告和成功状态，发出 update、confirm、cancel。
- 模块边界：组件只产生规范化快捷键值，不持久化配置、不绑定具体悬浮或划词动作，也不注册页面级永久监听；调用方决定上下文和保存策略，解析规则归 core/hotkey。
--->
 <template>
   <Teleport to="body">
     <div

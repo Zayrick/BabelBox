@@ -85,16 +85,13 @@
 ```bash
 pnpm install
 pnpm dev
-pnpm test:audit
-pnpm test:unit
-pnpm test:functional
-pnpm test:regression
-pnpm test:coverage
+pnpm test
+pnpm test:architecture
 pnpm compile
 pnpm build
 ```
 
-`pnpm test:regression:all` 会执行确定性的一键回归：测试审计、全部分组测试、严格覆盖率、Chrome/Firefox/userscript 构建和文档构建。隔离真实浏览器与真实网络矩阵使用显式安全门禁；贡献功能前请阅读[架构设计](../docs/architecture.md)和[测试说明](../docs/testing.md)。
+`pnpm test:regression:all` 会执行类型检查、一次完整测试、Chrome/Firefox/userscript 构建和文档构建。覆盖率可单独使用 `pnpm test:coverage` 查看；隔离真实浏览器与真实网络矩阵使用显式安全门禁。贡献功能前请阅读[架构设计](../docs/architecture.md)和[测试说明](../docs/testing.md)。
 
 流畅阅读使用 Vue 3、TypeScript、Element Plus 和 WXT，面向 Chromium Manifest V3 与 Firefox Manifest V2 构建，项目遵循 [GPL-3.0](../LICENSE) 开源许可证。
 

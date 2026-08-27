@@ -1,11 +1,3 @@
-/**
- * @file src/core/translation/adapters/declarative.ts
- *
- * 文件职责：把站点选择器规则编译为类型化 TranslationSiteAdapter，供多个站点以声明方式调整候选发现而不复制遍历算法。
- * 主要内容：定义 host、target、skip 与 prune 规则结构，缓存组合选择器，安全处理无效 selector，并由 createDeclarativeAdapter 生成匹配 URL 和节点决策的适配器。 可核对的公开符号包括 SelectorList、DeclarativeSelectorRule、DeclarativeTargetRule、DeclarativeHostRule、DeclarativeSiteAdapterDefinition、createDeclarativeAdapter。
- * 模块边界：本文件位于 core 的站点规则层，只表达 URL 与 DOM 候选决策；不发送翻译请求、不渲染译文、不监听业务生命周期，通用安全守卫仍由 TranslationCandidateCore 执行。
- */
-
 import {safeClosest, safeMatches} from '../dom';
 import type {
     AdapterContext,

@@ -1,11 +1,3 @@
-/**
- * @file src/platform/shadow-ui/vue.ts
- *
- * 文件职责：把 Vue 应用挂载到扩展创建的隔离 Shadow DOM，并注入跨 feature 共享的基础样式与事件隔离设置。
- * 主要内容：定义 VueShadowMount 与 VueShadowUiOptions，createVueShadowUi 依据 options 选择 open/closed 模式，创建宿主、shadow root、样式和 app，并返回由 WXT 管理的 mount/unmount 资源句柄。 可核对的公开符号包括 VueShadowMount、VueShadowUiOptions、createVueShadowUi。
- * 模块边界：本文件属于 platform 基础设施边界，只封装浏览器、网络、存储上下文或 Shadow DOM 机制；不决定翻译业务策略，不直接实现 feature，业务层通过类型化端口消费这里的能力。
- */
-
 import { createApp, type App as VueApp, type Component } from 'vue';
 import type { ContentScriptContext } from 'wxt/utils/content-script-context';
 import {

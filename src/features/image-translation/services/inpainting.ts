@@ -1,9 +1,3 @@
-/**
- * @file src/features/image-translation/services/inpainting.ts
- * 文件职责：在像素缓冲区上构造 OCR 文本区域蒙版并用邻域颜色迭代填补文字背景，为后续绘制译文提供尽量连续的底图。
- * 主要内容：包含矩形掩码扩张、像素偏移计算、四邻域遍历和 inpaintTextRegions 主算法，依据 OcrLine 边界限制处理范围并原地更新 ImageData。
- * 模块边界：这是纯像素运算层，不执行 OCR、不选择翻译文本也不创建 Canvas；输入图像与文本框由 offscreenRuntime 提供，颜色采样和译文绘制由 rendering 相关逻辑负责。
- */
 import type { OcrLine } from '@/src/features/image-translation/core';
 
 interface PixelPoint {

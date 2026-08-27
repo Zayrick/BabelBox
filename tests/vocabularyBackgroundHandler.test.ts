@@ -8,7 +8,7 @@ import {
     VOCABULARY_BOOK_CHANGED_ACK_RESPONSE,
     type VocabularyBookBackgroundDependencies,
 } from '@/src/features/vocabulary/background';
-import {createBackgroundMessageRouter} from '@/src/app/background/messageRouter';
+import {createBackgroundMessageRouter} from '@/src/platform/browser/messageRouter';
 import {
     VOCABULARY_BOOK_CHANGED_MESSAGE,
     VOCABULARY_BOOK_MESSAGE,

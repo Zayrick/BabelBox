@@ -1,11 +1,3 @@
-/**
- * @file src/providers/translation/claude.ts
- *
- * 文件职责：适配 Anthropic Claude Messages API，将 FluentRead 翻译消息转换为 Claude 请求并解析文本响应。
- * 主要内容：从配置快照选择模型、代理和 x-api-key，使用 claudeMsgTemplate 构建 body，通过 runtimeFetch 发起请求，并统一处理 HTTP 状态及 JSON 数据。 可核对的公开符号包括 default:claude。
- * 模块边界：本文件位于 provider 适配层，只把统一翻译请求转换为外部或浏览器服务协议；不管理页面 DOM、UI 生命周期或配置持久化，缓存、去重和超时总预算由 translation broker 统一协调。
- */
-
 import {services} from "@/src/core/config/catalog";
 import {method, urls} from "@/src/core/config/constants";
 import {claudeMsgTemplate} from '@/src/services/translation/templates';

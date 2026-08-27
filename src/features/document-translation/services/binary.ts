@@ -1,9 +1,3 @@
-/**
- * @file src/features/document-translation/services/binary.ts
- * 文件职责：处理 PDF、EPUB 与 DOCX 二进制文档的受限解析和导出，把压缩包或页面文本转换为统一 ParsedDocument，并生成可下载的双语产物。
- * 主要内容：包含归档条目/字节安全上限、XML 与 ZIP 路径工具、PDF 文本原子到行块的重建、EPUB 章节和 DOCX 段落提取、译文回填，以及 PDF rasterizer 注入式导出。
- * 模块边界：此服务可以依赖 JSZip、pdf-lib 和二进制 I/O，但不负责调用翻译服务或渲染设置页；文本格式规则归 core/document，浏览器 Canvas 光栅实现由 ui/pdfPreview 通过接口注入。
- */
 import JSZip from 'jszip';
 import {PDFDocument} from 'pdf-lib';
 import {

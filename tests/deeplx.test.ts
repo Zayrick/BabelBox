@@ -17,7 +17,7 @@ import deeplx, {
     getDeepLXRequestLanguages,
     normalizeDeepLXLanguage,
 } from "@/src/providers/translation/deeplx";
-import {DEFAULT_DEEPLX_ENDPOINT, DEEPLX_ENDPOINT_PRESETS, getDeepLXEndpoints} from "@/entrypoints/utils/deeplx";
+import {DEFAULT_DEEPLX_ENDPOINT, DEEPLX_ENDPOINT_PRESETS, getDeepLXEndpoints} from '@/src/core/config/deeplx';
 
 const fetchMock = vi.fn<typeof fetch>();
 

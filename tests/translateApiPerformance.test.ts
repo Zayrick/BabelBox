@@ -38,7 +38,7 @@ vi.mock('@/src/core/config/catalog', () => ({
 vi.mock('@/src/services/translation/context', () => ({getPageTranslationContext: mocks.getPageTranslationContext}));
 vi.mock('@/src/core/config/validation', () => ({getMissingCredentialMessage: mocks.getMissingCredentialMessage}));
 
-import {cancelAllTranslations, translateText, translateTextBatch, translateVideoText} from '@/src/app/translation/client';
+import {cancelAllTranslations, translateText, translateTextBatch, translateVideoText} from '@/src/services/translation/client';
 import {clearTranslationQueue} from '@/src/services/translation/queue';
 
 const originalDocument = globalThis.document;
@@ -393,6 +393,7 @@ describe('translation API request lifecycle performance', () => {
 
     expect(mocks.getPageTranslationContext).toHaveBeenCalledTimes(1);
     expect(mocks.sendMessage).toHaveBeenCalledWith({
+      type: 'translate',
       context: 'YouTube 视频字幕：Fixture video title',
       pageContext,
       origin: 'A subtitle source',

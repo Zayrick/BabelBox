@@ -1,9 +1,3 @@
-/**
- * @file src/features/full-page-translation/content/state.ts
- * 文件职责：维护每个被翻译 DOM 节点的可恢复状态、请求代次、译文工件和共享布局覆盖所有权，确保重复翻译、宿主变更和移除节点都能安全收敛。
- * 主要内容：包含 WeakMap 状态索引、begin/complete/error/discard 状态机、spinner/译文/retry 节点登记、截断祖先样式快照与观察器引用计数、文本槽回写以及全量恢复。
- * 模块边界：该模块不发现候选、不请求翻译也不生成译文 HTML；runtime 负责会话编排，renderer 负责内容创建，本文件仅拥有 DOM 状态与可逆样式资源，避免跨 session 误删新结果。
- */
 import {
     getComposedParent,
     hasActiveTranslationLineClamp,

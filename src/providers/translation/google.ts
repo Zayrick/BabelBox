@@ -1,11 +1,3 @@
-/**
- * @file src/providers/translation/google.ts
- *
- * 文件职责：适配无需密钥的 Google Translate Web RPC 与 legacy 接口，并在统一截止时间内执行候选端点回退。
- * 主要内容：编码 batchexecute 请求、解析嵌套 RPC 和 legacy 数组响应，映射请求语言，识别 CAPTCHA 提示，并导出 parse 与 translateGoogleText 供免费链复用。 可核对的公开符号包括 parseGoogleBatchResponse、parseGoogleLegacyResponse、translateGoogleText、default:google。
- * 模块边界：本文件位于 provider 适配层，只把统一翻译请求转换为外部或浏览器服务协议；不管理页面 DOM、UI 生命周期或配置持久化，缓存、去重和超时总预算由 translation broker 统一协调。
- */
-
 import {getTranslationLanguages} from '@/src/services/translation/languages';
 import type {TranslationLanguageOverride} from '@/src/services/translation/languages';
 import {createHttpStatusError} from '@/src/platform/http/errors';

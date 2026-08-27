@@ -1,16 +1,11 @@
-/**
- * @file src/app/background/handlers/translation.ts
- * 文件职责：解析没有显式 type 的翻译请求，并把它作为后台消息路由的受控 fallback 接入共享翻译 broker。
- * 主要内容：校验 text、texts 互斥关系及 endpoint、model、prompt 等可选字符串字段，构造 TranslationRequestMessage；fallback 仅识别合法候选并把结果或序列化错误返回调用方。
- * 模块边界：本文件只承担协议验证与 fallback 适配，不选择 provider、不缓存结果、不读取配置或凭据；真正的翻译执行由注入的 translateWithCache 完成。
- */
-import type {BackgroundFallbackHandler} from '../messageRouter';
+import type {BackgroundMessageHandler} from '@/src/platform/browser/messageRouter';
 import type {
     TranslationRequestMessage,
     TranslationRequestMessageBase,
 } from '@/src/services/translation/types';
 
 interface TranslationRequestCandidate extends Record<string, unknown> {
+    type: 'translate';
     origin: unknown;
 }
 
@@ -28,16 +23,6 @@ const STRING_FIELDS = [
     'targetLanguage',
 ] as const satisfies readonly (keyof TranslationRequestMessageBase)[];
 
-function hasOwn(value: object, key: PropertyKey): boolean {
-    return Object.prototype.hasOwnProperty.call(value, key);
-}
-
-function isTranslationRequestCandidate(message: unknown): message is TranslationRequestCandidate {
-    if (!message || typeof message !== 'object' || Array.isArray(message)) return false;
-    if (!hasOwn(message, 'origin') || hasOwn(message, 'type')) return false;
-    return true;
-}
-
 function assertOptionalString(candidate: TranslationRequestCandidate, field: typeof STRING_FIELDS[number]): void {
     const value = candidate[field];
     if (value !== undefined && typeof value !== 'string') {
@@ -46,7 +31,6 @@ function assertOptionalString(candidate: TranslationRequestCandidate, field: typ
 }
 
 export function parseTranslationRequest(candidate: TranslationRequestCandidate): TranslationRequestMessage {
-    // Step 1: origin 是无 type 翻译协议的判别字段；批量请求只能包含字符串。
     let origin: string | string[];
     if (typeof candidate.origin === 'string') {
         origin = candidate.origin;
@@ -57,7 +41,6 @@ export function parseTranslationRequest(candidate: TranslationRequestCandidate):
         throw new TypeError('翻译请求 origin 必须是字符串或字符串数组');
     }
 
-    // Step 2: 逐个收窄可选协议字段，避免未知 payload 直接流入 provider。
     for (const field of STRING_FIELDS) assertOptionalString(candidate, field);
     if (candidate.useCache !== undefined && typeof candidate.useCache !== 'boolean') {
         throw new TypeError('翻译请求字段 useCache 必须是布尔值');
@@ -67,7 +50,6 @@ export function parseTranslationRequest(candidate: TranslationRequestCandidate):
         throw new TypeError('翻译请求字段 requestTimeoutMs 必须是有限数字');
     }
 
-    // Step 3: 只复制版本化协议允许的字段，不把页面注入的任意属性传给 provider。
     const base: TranslationRequestMessageBase = {};
     for (const field of STRING_FIELDS) {
         const value = candidate[field];
@@ -78,15 +60,11 @@ export function parseTranslationRequest(candidate: TranslationRequestCandidate):
     return typeof origin === 'string' ? {...base, origin} : {...base, origin};
 }
 
-/**
- * 普通翻译消息是历史上的无 `type` 协议，因此只能作为 typed router 的最后一个 fallback。
- * 所有带 `type` 的未知消息必须保持未处理，不能误送到翻译 provider。
- */
-export function createTranslationRequestFallback<TContext = undefined>(
+export function createTranslationRequestHandler<TContext = undefined>(
     dependencies: TranslationRequestHandlerDependencies,
-): BackgroundFallbackHandler<TContext, TranslationRequestCandidate> {
+): BackgroundMessageHandler<TContext, TranslationRequestCandidate> {
     return {
-        canHandle: isTranslationRequestCandidate,
+        type: 'translate',
         async handle(candidate) {
             try {
                 const message = parseTranslationRequest(candidate);

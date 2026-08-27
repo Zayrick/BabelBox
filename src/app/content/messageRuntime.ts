@@ -1,9 +1,3 @@
-/**
- * @file src/app/content/messageRuntime.ts
- * 文件职责：创建 content 侧 runtime 消息处理函数，把 popup/background 的设置变化和功能命令映射为当前页面上的精确 mount、unmount 或状态响应。
- * 主要内容：处理悬浮球、划词模式与延迟、区域/图片能力、进度面板、站点禁用及旧缓存清理消息；结合 BrowserCapabilities 对不支持功能确定性拒绝，并更新共享运行时状态。
- * 模块边界：本文件只做消息到 feature 生命周期的适配，不注册全局监听器、不执行供应商翻译，也不实现组件 UI；监听安装及配置订阅由 content/runtime 负责。
- */
 import type {ContentScriptContext} from 'wxt/utils/content-script-context';
 import {normalizeSelectionTranslatorDelay} from '@/src/core/config/model';
 import {config} from '@/src/services/config/store';
@@ -22,7 +16,6 @@ import {
     unmountSelectionTranslator,
     unmountTranslationProgressPanel,
 } from './features';
-import {forwardLegacyCacheClear} from './cacheMessage';
 import {browserCapabilities, type BrowserCapabilities} from '@/src/platform/browser/capabilities';
 import {rejectUnsupportedContentFeature} from './featureRegistry';
 export interface ContentRuntimeMessageState {
@@ -41,13 +34,6 @@ export function createContentRuntimeMessageHandler(ctx: ContentScriptContext, st
         if (!message || typeof message !== 'object') return false;
         const payload = message as Record<string, unknown>;
 
-        if (payload.message === 'clearCache') {
-            forwardLegacyCacheClear(
-                (request) => browser.runtime.sendMessage(request),
-                sendResponse,
-            );
-            return true;
-        }
         if (payload.type === 'updateSiteExtensionDisabled') {
             if (typeof payload.isDisabled !== 'boolean') return false;
             void state.updateSiteDisabled(payload.isDisabled)
@@ -83,15 +69,12 @@ export function createContentRuntimeMessageHandler(ctx: ContentScriptContext, st
         }
 
         if (payload.type === 'updateSelectionTranslatorSettings') {
-            const {trigger, hotkey, customHotkey, delay} = payload;
+            const {trigger, customHotkey, delay} = payload;
             if (trigger !== 'direct' && trigger !== 'icon' && trigger !== 'dot'
                 && trigger !== 'Control' && trigger !== 'Alt' && trigger !== 'Shift' && trigger !== 'custom') return false;
-            if (hotkey !== undefined && hotkey !== 'none' && hotkey !== 'Control'
-                && hotkey !== 'Alt' && hotkey !== 'Shift' && hotkey !== 'custom') return false;
             if (customHotkey !== undefined && typeof customHotkey !== 'string') return false;
             if (delay !== undefined && typeof delay !== 'number' && typeof delay !== 'string') return false;
 
-            // trigger 是唯一运行时真源；hotkey 仅兼容旧消息结构。
             config.selectionTranslatorTrigger = trigger;
             config.selectionTranslatorHotkey = trigger === 'Control' || trigger === 'Alt'
                 || trigger === 'Shift' || trigger === 'custom'

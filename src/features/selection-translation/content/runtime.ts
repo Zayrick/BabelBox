@@ -1,9 +1,3 @@
-/**
- * @file src/features/selection-translation/content/runtime.ts
- * 文件职责：管理 SelectionTranslator Vue 覆盖层在内容脚本中的单例挂载、异步所有权校验与卸载，避免配置快速切换时旧 Promise 污染新实例。
- * 主要内容：缓存 ContentScriptContext，维护 mountRequestId、实例与 Shadow UI 句柄，创建最高层级 closed Shadow Root，并在 selectionTranslatorEnabled 关闭或请求过期时立即移除。
- * 模块边界：运行时只负责编排组件生命周期，不读取 Selection API、不调用翻译或 TTS；这些行为归 Vue 组件与控制器，Shadow DOM 创建由 platform/shadow-ui 提供。
- */
 import SelectionTranslator from '@/src/features/selection-translation/ui/SelectionTranslator.vue';
 import { config } from '@/src/services/config/store';
 import type { ContentScriptContext } from 'wxt/utils/content-script-context';

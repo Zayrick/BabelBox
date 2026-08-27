@@ -1,9 +1,3 @@
-/**
- * @file src/features/area-translation/content/runtime.ts
- * 文件职责：管理圈选翻译 Vue 覆盖层在网页内容脚本中的单例生命周期，并防止异步 Shadow UI 挂载完成后把已经禁用或过期的实例重新留在页面。
- * 主要内容：包含挂载状态探测、ContentScriptContext 缓存、mountRequestId 所有权校验、closed Shadow Root 创建，以及配置关闭或卸载时移除 UI 和清空实例引用。
- * 模块边界：本文件只协调组件挂载与资源释放，不实现拖拽选区、截图或 OCR；交互状态归 AreaTranslator.vue，平台隔离归 shadow-ui，是否启用仍由共享配置和 feature registry 决定。
- */
 import AreaTranslator from '@/src/features/area-translation/ui/AreaTranslator.vue';
 import { config } from '@/src/services/config/store';
 import type { ContentScriptContext } from 'wxt/utils/content-script-context';

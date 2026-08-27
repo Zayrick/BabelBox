@@ -1,11 +1,3 @@
-/**
- * @file src/services/config/history.ts
- *
- * 文件职责：实现公开配置快照的撤销、重做和恢复状态机，限制历史长度并拒绝损坏或含凭据的旧记录。
- * 主要内容：定义 history schema、entry/state/action 类型，提供基线创建、序列化解析、克隆、追加快照、目标索引计算和结果应用，保持 cursor 与 revision 一致。 可核对的公开符号包括 CONFIG_HISTORY_LIMIT、CONFIG_HISTORY_SCHEMA_VERSION、ConfigHistoryAction、ConfigHistoryEntry、ConfigHistoryState、toPublicConfig、serializeConfigHistory、cloneConfigHistory。
- * 模块边界：本文件位于配置 application service 层，可协调 core 规则与浏览器存储端口；不包含设置页面组件，也不实现具体翻译供应商协议，调用方应通过公开服务 API 订阅或提交配置。
- */
-
 import {normalizeConfig} from '@/src/core/config/model';
 import {sanitizeConfigCredentials, type PublicConfig} from '@/src/core/config/credentials';
 import {isConfigRecord, parseStoredConfig, serializeConfig} from './schema';

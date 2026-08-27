@@ -1,9 +1,3 @@
-<!--
- * @file src/features/floating-ball/ui/FloatingBall.vue
- * 文件职责：呈现可拖拽、可展开的页面悬浮球，并把点击切换翻译、拖动停靠、状态动画、打开设置和键盘关闭整合为可复用 Vue 组件。
- * 主要内容：组件根据配置计算主题和位置，使用 Pointer Capture 区分点击与拖拽，限制球体在视口内，发出位置变更与动作事件，并响应 translation-started/ended 更新图标和文案。
- * 模块边界：它只负责视觉与局部交互，不直接调用浏览器消息、保存配置或执行全文翻译；这些副作用由 content/runtime 通过 props、事件和 defineExpose 桥接。
- -->
 <template>
   <div
     ref="floatingBall"

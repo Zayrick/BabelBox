@@ -1,11 +1,3 @@
-/**
- * @file src/providers/translation/hunyuan-translation.ts
- *
- * 文件职责：适配腾讯混元翻译大模型的专用协议，处理支持语言映射、源语言检测和自定义请求体。
- * 主要内容：buildHunyuanTranslationRequestBody 生成模型 payload，provider 从快照读取 token/model，调用 endpoint 并校验 provider 错误码与翻译输出。 可核对的公开符号包括 buildHunyuanTranslationRequestBody、default:hunyuanTranslation。
- * 模块边界：本文件位于 provider 适配层，只把统一翻译请求转换为外部或浏览器服务协议；不管理页面 DOM、UI 生命周期或配置持久化，缓存、去重和超时总预算由 translation broker 统一协调。
- */
-
 import { method } from "@/src/core/config/constants";
 import { config } from "@/src/services/config/store";
 import { detectlang } from "@/src/core/language/detect";

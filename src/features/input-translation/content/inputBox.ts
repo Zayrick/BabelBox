@@ -1,9 +1,3 @@
-/**
- * @file src/features/input-translation/content/inputBox.ts
- * 文件职责：提供输入框快捷翻译使用的纯 DOM 判定与提交守卫，统一处理普通 input、textarea、contenteditable 和 Shadow DOM 深层焦点。
- * 主要内容：定义三连空格/等号/减号触发类型，包含活动元素查找、可编辑控件识别、文本与值快照读取、请求提交有效性判断、键盘匹配和尾部符号清理。
- * 模块边界：该模块不注册事件、不发送翻译请求也不改变控件值；content/index.ts 负责生命周期与写回，后台 handler 负责翻译，函数保持可单测且不持有全局状态。
- */
 const TEXT_INPUT_TYPES = new Set(['text', 'search', 'url', 'email', 'password', 'tel']);
 
 export type InputBoxTrigger = 'triple_space' | 'triple_equal' | 'triple_dash';

@@ -1,11 +1,3 @@
-/**
- * @file src/services/translation/legacyPageCache.ts
- *
- * 文件职责：安全清理宿主页面存储中旧版 FluentRead 翻译缓存键，而不影响网站自己的 localStorage 数据。
- * 主要内容：定义 LegacyPageStorage 端口与旧 flcache_ 前缀、时间戳键，clearLegacyPageTranslationCache 先精确枚举所属键再逐项删除。 可核对的公开符号包括 LegacyPageStorage、clearLegacyPageTranslationCache。
- * 模块边界：本文件位于翻译 application service 层，负责用例编排和端口契约；不挂载页面 UI，且不应把某家供应商的网络细节扩散到 feature，具体 HTTP 协议由 providers/platform 实现。
- */
-
 const LEGACY_TRANSLATION_CACHE_PREFIX = 'flcache_';
 const LEGACY_CACHE_TIMESTAMP_KEY = 'flLastSessionTimestamp';
 

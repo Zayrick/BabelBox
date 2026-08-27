@@ -1,11 +1,3 @@
-/**
- * @file src/core/config/constants.ts
- *
- * 文件职责：集中声明配置领域中跨模块复用的端点、请求方式、菜单标识、样式名和连接测试消息等稳定常量。
- * 主要内容：包含 MiniMax/MiMo 地域端点映射、服务 URL、POST/GET 常量、上下文菜单 ID 以及 getMimoEndpoint 的回退解析，避免调用方各自复制协议字面量。 可核对的公开符号包括 MINIMAX_ENDPOINTS、MIMO_ENDPOINTS、getMimoEndpoint、urls、method、CONNECTION_TEST_MESSAGE、tongyiTokenPlanUrl、constants。
- * 模块边界：本文件属于 core 领域层，只定义规则、类型与纯转换；不直接读写浏览器存储、不发起网络请求、不挂载 Vue/WXT 入口，持久化、协议调用和界面编排分别由 services、providers 与 features 承担。
- */
-
 import { services } from "./catalog";
 import type { MiniMaxBillingPlan, MiniMaxRegion, MiMoBillingPlan, MiMoRegion } from "./catalog";
 import {DEFAULT_DEEPLX_ENDPOINT} from "./deeplx";

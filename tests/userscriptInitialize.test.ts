@@ -1,7 +1,7 @@
 import {afterEach, describe, expect, it} from 'vitest';
-import {Config} from '@/entrypoints/utils/model';
-import {getApiKeyRequirementKey} from '@/entrypoints/utils/configValidation';
-import {customModelString, defaultModels, services} from '@/entrypoints/utils/option';
+import {Config} from '@/src/core/config/model';
+import {getApiKeyRequirementKey} from '@/src/core/config/validation';
+import {customModelString, defaultModels, services} from '@/src/core/config/catalog';
 import {ensureUserscriptConfig, normalizeUserscriptConfig} from '@/userscript/initialize';
 
 function installLegacyStorage(entries: Array<[string, unknown]>) {

@@ -1,9 +1,3 @@
-/**
- * @file src/features/area-translation/core.ts
- * 文件职责：提供圈选翻译不依赖浏览器 API 的键盘与几何算法，把用户拖拽的 CSS 视口区域安全规范化并映射到截图实际像素坐标。
- * 主要内容：定义 AreaPoint、AreaRect、AreaTranslationSelection 与 ImageCropRect，包含 Shift+Z 热键识别、非有限值处理、视口裁剪、最小可用尺寸判断和缩放取整逻辑。
- * 模块边界：该模块保持纯函数与纯类型，不读取 DOM、配置或图片内容；事件监听属于 UI，captureVisibleTab 属于后台，裁剪后的 OCR 和绘制由 image-translation 的 Offscreen 服务承担。
- */
 export interface AreaPoint {
     x: number;
     y: number;

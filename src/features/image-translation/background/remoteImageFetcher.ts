@@ -1,9 +1,3 @@
-/**
- * @file src/features/image-translation/background/remoteImageFetcher.ts
- * 文件职责：在后台网络权限边界中安全读取网页图片，为受 CORS 限制的内容脚本把允许的远程图片转换成可供 OCR 使用的 data URL。
- * 主要内容：定义 RemoteImageResponse 与可注入请求函数，先规范化 URL，再执行带响应体大小限制的请求，校验 image/* Content-Type 并调用 imageBufferToDataUrl。
- * 模块边界：该文件不接受任意协议、不解析图片像素也不显示结果；URL 与字节转换规则归 services/remoteImage，HTTP 实现由调用方注入，内容页仅经消息客户端访问。
- */
 import {
     imageBufferToDataUrl,
     MAX_REMOTE_IMAGE_BYTES,

@@ -1,11 +1,3 @@
-/**
- * @file src/core/site-rules/domain.ts
- *
- * 文件职责：实现站点规则所需的域名规范化、eTLD+1 匹配和自动翻译决策，统一处理 URL、主机名与配置列表。
- * 主要内容：基于 tldts 解析基础域，清洗始终翻译和禁用站点列表，计算当前页自动翻译状态与上下文菜单展示，同时拒绝非 HTTP 或无效域名输入。 可核对的公开符号包括 AutoTranslatePageConfig、FullPageContextMenuPresentation、getSiteBaseDomain、normalizeSiteDomains、normalizeAlwaysTranslateDomains、normalizeDisabledExtensionDomains、isAlwaysTranslateSite、isExtensionDisabledOnSite。
- * 模块边界：本文件属于 core 领域层，只定义规则、类型与纯转换；不直接读写浏览器存储、不发起网络请求、不挂载 Vue/WXT 入口，持久化、协议调用和界面编排分别由 services、providers 与 features 承担。
- */
-
 import { getDomain, parse } from 'tldts';
 
 const DOMAIN_PARSE_OPTIONS = {

@@ -23,7 +23,7 @@ import {
     translateVideoSubtitleCues,
     VIDEO_CAPTION_SEGMENT_SELECTOR,
 } from '@/src/features/video-subtitle/content/runtime';
-import { normalizeVideoSubtitleFontSize } from '@/entrypoints/utils/model';
+import {normalizeVideoSubtitleFontSize} from '@/src/core/config/model';
 
 describe('YouTube 视频字幕识别', () => {
     it('只把 YouTube 视频页识别为视频字幕目标', () => {

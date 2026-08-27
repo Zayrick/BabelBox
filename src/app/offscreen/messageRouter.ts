@@ -1,9 +1,3 @@
-/**
- * @file src/app/offscreen/messageRouter.ts
- * 文件职责：解析并分派发送到 Offscreen Document 的可信运行时消息，为 Chrome 翻译、TTS、OCR、整图和区域翻译提供统一响应纪律。
- * 主要内容：严格校验文本、语言码、图像数据、圈选坐标与 OCR 语言包，按 operation 调用注入依赖；对 Promise 成功结果验证对象形状，对异常统一返回 success/error 并保持异步 listener 语义。
- * 模块边界：路由器不创建 Audio/Worker、不调用 browser.offscreen，也不实现翻译算法；资源实例由 offscreen runtime 构造，具体能力来自 translation、ttsPlayback 和 feature services。
- */
 import type {AreaTranslationSelection} from '@/src/features/area-translation/public';
 import {
     IMAGE_OCR_LANGUAGE_PACKS,

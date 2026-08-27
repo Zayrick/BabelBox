@@ -1,9 +1,3 @@
-/**
- * @file src/features/image-translation/background/handlers.ts
- * 文件职责：定义图片 OCR、整图翻译、文本批译、语言包下载和远程图片获取五类后台消息，并对来自页面或扩展 UI 的未知输入执行严格校验。
- * 主要内容：包含消息常量与联合类型、data:image 和字符串数组解析、OCR 语言白名单、对象结果断言，以及通过依赖注入创建各操作 handler 的 createImageTranslationBackgroundHandlers。
- * 模块边界：本文件只负责协议入口与用例编排，不直接运行 Tesseract、Canvas、网络 fetch 或 Offscreen；这些能力分别由 repository、remote fetcher、adapter 与 services 实现并由 app 注入。
- */
 import {
     IMAGE_OCR_LANGUAGE_PACKS,
     normalizeImageOcrLanguageCodes,

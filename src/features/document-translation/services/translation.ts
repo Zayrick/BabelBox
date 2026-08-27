@@ -1,9 +1,3 @@
-/**
- * @file src/features/document-translation/services/translation.ts
- * 文件职责：编排文档片段的批量翻译流程，在固定语言和服务快照下按数量及字符预算拆批，并向调用方持续报告确定性进度。
- * 主要内容：定义进度、请求选项与 DocumentTranslationGateway 契约，构建文件级上下文，处理 AbortSignal、批次错误和结果数量校验，并由 createDocumentSegmentTranslator 生成可复用翻译函数。
- * 模块边界：该层不解析文件、不持久化配置，也不直接绑定具体 provider；上层负责冻结用户设置并注入 gateway，文档结构由 core 提供，网络和缓存语义由应用翻译客户端承担。
- */
 import type {DocumentSegment} from '@/src/features/document-translation/core/document';
 
 export interface DocumentTranslationProgress {
@@ -114,7 +108,7 @@ export function createDocumentSegmentTranslator(
         const translations = new Array<string>(segments.length);
         const context = options.fileName || 'FluentRead 文档';
         const pageContext = buildDocumentContext(segments, context, options.pageContext);
-        // Step 1: 一次文档任务固定语言对，不能被设置页同步更新或用户中途改选污染后续批次。
+        // 一次文档任务固定语言对，不能被设置页同步更新或用户中途改选污染后续批次。
         const sourceLanguage = options.sourceLanguage;
         const targetLanguage = options.targetLanguage;
         let completed = 0;
@@ -172,7 +166,7 @@ export function createDocumentSegmentTranslator(
                         maxRetries: options.maxRetries,
                     });
                     // Promise.all 会在首个 worker 失败时立即 reject；其余在途请求仍会稍后结束。
-                    // Step 1: 失败后不再上报过期进度，也不继续认领新的文档片段。
+                    // 失败后不再上报过期进度，也不继续认领新的文档片段。
                     if (stopped) return;
                     translations[segments[index].id] = translation;
                     completed += 1;

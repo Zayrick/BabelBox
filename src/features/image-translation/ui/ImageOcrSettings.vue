@@ -1,9 +1,3 @@
-<!--
- * @file src/features/image-translation/ui/ImageOcrSettings.vue
- * 文件职责：实现设置页中的图片 OCR 语言包管理界面，展示浏览器能力、推荐语言组合、单包下载状态、缓存说明和失败重试反馈。
- * 主要内容：组件读取本地语言状态，按 chi_sim、eng、jpn 渲染卡片，发送 fluentReadImageOcrDownload 消息，维护并发下载列表，并在不支持 imageOcr 的浏览器保留配置但显示不可用提示。
- * 模块边界：UI 不直接创建 Tesseract Worker 或写存储；下载和持久化由后台 handlers/repository 完成，能力判断来自 platform/browser，语言元数据只依赖 ocrLanguages 公共契约。
- -->
 <template>
   <section id="settings-image-translation" class="settings-section image-ocr-section">
     <div v-if="!browserCapabilities.imageOcr" class="image-ocr-unavailable" role="status">

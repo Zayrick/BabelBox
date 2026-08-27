@@ -1,9 +1,3 @@
-<!--
- * @file src/features/settings/ui/services/ServiceCatalog.vue
- * 文件职责：实现翻译服务目录与筛选选择界面，把内置、AI 和自定义服务按分组、搜索条件与浏览器能力呈现为可切换的卡片列表。
- * 主要内容：组件接收当前服务和配置，使用 ServiceIcon、catalog 元数据及能力过滤计算可见选项，支持关键词搜索、分组计数、选择事件和自定义模型入口。
- * 模块边界：目录只决定“选择哪个服务”，不编辑凭据、不测试连接也不保存配置；详细表单归 ServiceConfiguration.vue，服务定义来自 core/config，外层 SettingsSections 处理持久化。
- -->
 <template>
   <section
     class="service-catalog"

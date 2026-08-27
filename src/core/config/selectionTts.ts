@@ -1,12 +1,4 @@
 /**
- * @file src/core/config/selectionTts.ts
- *
- * 文件职责：维护划词朗读可选语音的领域目录，并把持久化的未知顺序归一为稳定、完整的语音列表。
- * 主要内容：定义 SelectionTtsVoiceOption 与 SELECTION_TTS_VOICE_OPTIONS，提供语音顺序去重、locale 查询和选项查找，兼容旧配置及未来新增 voice。 可核对的公开符号包括 SelectionTtsVoiceOption、SELECTION_TTS_VOICE_OPTIONS、normalizeSelectionTtsVoiceOrder、selectionTtsVoiceLocale、selectionTtsVoiceOption。
- * 模块边界：本文件属于 core 领域层，只定义规则、类型与纯转换；不直接读写浏览器存储、不发起网络请求、不挂载 Vue/WXT 入口，持久化、协议调用和界面编排分别由 services、providers 与 features 承担。
- */
-
-/**
  * 用户可选的划词朗读音色。顺序由多选控件保留；Edge TTS 当前音色失效
  * 时，后台会按该顺序继续尝试，同一语言没有可用自定义音色时再使用内置候选。
  */

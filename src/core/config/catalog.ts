@@ -1,11 +1,3 @@
-/**
- * @file src/core/config/catalog.ts
- *
- * 文件职责：维护 FluentRead 翻译服务与模型的领域目录，让设置、校验和运行时能够引用同一组稳定的服务标识与模型元数据。
- * 主要内容：定义 services、servicesType、模型候选、MiniMax 与 MiMo 的计费和地域选项，并提供 resolveConfiguredModel 等解析函数，把“自定义模型”选择归一为可请求的模型编号。 可核对的公开符号包括 services、servicesType、customModelString、minimaxBillingPlans、MiniMaxBillingPlan、minimaxRegions、MiniMaxRegion、mimoBillingPlans。
- * 模块边界：本文件属于 core 领域层，只定义规则、类型与纯转换；不直接读写浏览器存储、不发起网络请求、不挂载 Vue/WXT 入口，持久化、协议调用和界面编排分别由 services、providers 与 features 承担。
- */
-
 import {DEFAULT_DEEPLX_ENDPOINT} from "./deeplx";
 
 export const services = {

@@ -1,9 +1,3 @@
-/**
- * @file src/features/document-translation/ui/presentation.ts
- * 文件职责：提供文档翻译界面使用的纯展示派生规则，把 ParsedDocument 转换成预览统计、空状态提示、色调和格式特定的文本/样式标签。
- * 主要内容：包含字幕与富文本格式判断、页数章节数片段数等元数据、DOCX 部件名称映射、不同格式的阅读器文本清理，以及 source 节点 class 的选择。
- * 模块边界：本文件不创建 DOM、不解析文件也不调用翻译；它只消费 core 模型并返回 UI 可直接使用的值，实际预览 HTML 归 core/preview，PDF 位图和导出分别归 pdfPreview 与 binary。
- */
 import type {DocumentFormat, ParsedDocument} from '@/src/features/document-translation/core/document';
 
 export interface DocumentPreviewMeta {

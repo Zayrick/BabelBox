@@ -36,6 +36,7 @@ describe('hotkey parsing', () => {
     });
 
     it('合并重复修饰键并按平台生成展示名', () => {
+        vi.stubGlobal('navigator', {platform: 'Linux x86_64'});
         expect(parseHotkey('Ctrl+Control+Alt+Space')).toEqual({
             modifiers: ['ctrl', 'alt'],
             key: 'space',

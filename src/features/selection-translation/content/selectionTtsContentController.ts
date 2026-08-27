@@ -1,9 +1,3 @@
-/**
- * @file src/features/selection-translation/content/selectionTtsContentController.ts
- * 文件职责：在内容页维护一次划词朗读请求的状态机，协调后台 Offscreen 播放与页面 speechSynthesis 回退，并隔离 stop 后迟到的旧响应。
- * 主要内容：定义远程请求/响应、结果和依赖契约，SelectionTtsContentController 生成 UUID 路由、跟踪 pending/active 请求、处理 ended/stopped/error 状态并提供 play、stop、destroy。
- * 模块边界：控制器不直接访问 browser.runtime 或 Web Speech API，通信和页面回退均由依赖注入；协议校验来自 protocol.ts，后台合成与 Offscreen 音频资源归 background 层。
- */
 import {
     matchesSelectionTtsClientRequest,
     type SelectionTtsPlaybackState,

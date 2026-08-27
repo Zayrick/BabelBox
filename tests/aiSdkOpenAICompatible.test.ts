@@ -35,7 +35,7 @@ const {mockConfig} = vi.hoisted(() => ({
 
 vi.mock('@/src/services/config/store', () => ({config: mockConfig}));
 
-import {services} from '@/entrypoints/utils/option';
+import {services} from '@/src/core/config/catalog';
 import {translateWithOpenAICompatibleAiSdk} from '@/src/providers/translation/ai-sdk/openai-compatible';
 import {normalizeAiSdkError} from '@/src/providers/translation/ai-sdk/errors';
 import {

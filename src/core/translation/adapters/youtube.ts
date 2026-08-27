@@ -1,11 +1,3 @@
-/**
- * @file src/core/translation/adapters/youtube.ts
- *
- * 文件职责：声明 YouTube 页面正文区域的翻译适配规则，识别标题、说明与评论，同时避开播放器控制和导航框架。
- * 主要内容：导出 youtubeAdapter，通过声明式 host 与 selector 规则补充通用布局判断，使页面翻译不侵入字幕或媒体播放逻辑。 可核对的公开符号包括 youtubeAdapter。
- * 模块边界：本文件位于 core 的站点规则层，只表达 URL 与 DOM 候选决策；不发送翻译请求、不渲染译文、不监听业务生命周期，通用安全守卫仍由 TranslationCandidateCore 执行。
- */
-
 import {createDeclarativeAdapter} from './declarative';
 
 export const youtubeAdapter = createDeclarativeAdapter({

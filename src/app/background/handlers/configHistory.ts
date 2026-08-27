@@ -1,10 +1,4 @@
-/**
- * @file src/app/background/handlers/configHistory.ts
- * 文件职责：定义配置历史在后台消息总线中的类型化协议，并把撤销、重做和指定版本恢复动作适配成标准 BackgroundMessageHandler。
- * 主要内容：声明 configHistoryAction 消息、动作与成功/失败响应类型，校验 action 和 version，再委托注入的 applyConfigHistoryAction 执行并返回新配置。
- * 模块边界：本文件只负责消息解析和调用适配，不读写历史仓库、不决定版本冲突策略，也不持久化配置；历史事务由 services/config 中的协调器实现。
- */
-import type {BackgroundMessageHandler} from '../messageRouter';
+import type {BackgroundMessageHandler} from '@/src/platform/browser/messageRouter';
 
 export const CONFIG_HISTORY_MESSAGE_TYPE = 'configHistoryAction' as const;
 
@@ -31,7 +25,7 @@ export function createConfigHistoryHandler<T>(
     return {
         type: CONFIG_HISTORY_MESSAGE_TYPE,
         async handle(message) {
-            // Step 1: 在后台信任边界把未知 action 收窄为明确的历史操作。
+            // 在后台信任边界把未知 action 收窄为明确的历史操作。
             const action = message.action === 'undo'
                 || message.action === 'redo'
                 || message.action === 'restore'
@@ -39,7 +33,7 @@ export function createConfigHistoryHandler<T>(
                 : null;
             if (!action) return {success: false, error: '无效的配置历史操作'};
 
-            // Step 2: 只有有限数字版本才向 service 传递，其余值按“当前版本”处理。
+            // 只有有限数字版本才向 service 传递，其余值按“当前版本”处理。
             const version = typeof message.version === 'number' && Number.isFinite(message.version)
                 ? message.version
                 : undefined;

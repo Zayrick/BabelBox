@@ -1,11 +1,3 @@
-/**
- * @file src/providers/translation/deepseek.ts
- *
- * 文件职责：适配 DeepSeek 官方或代理端点，并根据配置选择 Chat Completions 或 Responses 协议进行翻译。
- * 主要内容：从快照解析 thinking/API 模式和 endpoint，分别构造 deepseek 模板，执行 Bearer 请求、HTTP/JSON 校验并清理模型推理标记；另导出 buildDeepSeekEndpoint。 可核对的公开符号包括 buildDeepSeekEndpoint、default:deepseek。
- * 模块边界：本文件位于 provider 适配层，只把统一翻译请求转换为外部或浏览器服务协议；不管理页面 DOM、UI 生命周期或配置持久化，缓存、去重和超时总预算由 translation broker 统一协调。
- */
-
 import { method, urls } from "@/src/core/config/constants";
 import {deepseekMsgTemplate, deepseekResponsesMsgTemplate} from '@/src/services/translation/templates';
 import { config } from "@/src/services/config/store";

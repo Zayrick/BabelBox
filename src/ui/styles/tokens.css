@@ -1,10 +1,4 @@
-/**
- * @file src/ui/styles/tokens.css
- * 文件职责：声明扩展页面共享的基础视觉语义变量，为 Popup、Options、文档页和可复用组件提供一致的品牌、文字、边框与表面颜色。
- * 主要内容：在 :root 定义 fr-color-brand、brand-strong、brand-soft、ink、muted、line、surface 等 token，并保留旧短变量名到新命名空间的兼容别名。
- * 模块边界：这里只提供原子颜色值和迁移别名，不包含具体组件选择器、暗色主题策略或页面布局；各 app 页面在自己的 CSS 中消费并按场景覆盖。
- */
-/* 跨扩展页面共享的视觉语义。旧变量名保留为别名，迁移不改变现有主题表现。 */
+/* 跨扩展页面共享的视觉语义；短变量名供现有页面样式使用。 */
 :root {
   --fr-color-brand: #ef4776;
   --fr-color-brand-strong: #dc315f;

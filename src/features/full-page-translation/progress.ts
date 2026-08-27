@@ -1,9 +1,3 @@
-/**
- * @file src/features/full-page-translation/progress.ts
- * 文件职责：提供全文翻译进度的独立内存状态源，以 sessionId 隔离新旧翻译任务，并向多个 UI 订阅者安全发布发现、完成和失败计数。
- * 主要内容：定义 FullPageTranslationProgress，包含开始、增量更新、结束、快照读取和订阅 API；数值会归一化，通知时复制状态，并隔离单个 listener 的异常。
- * 模块边界：该模块不访问 DOM、配置或浏览器存储，也不决定任务调度；content/runtime 负责更新进度，TranslationProgressPanel.vue 只订阅快照，状态仅存活于当前运行上下文。
- */
 export interface FullPageTranslationProgress {
   sessionId: number;
   active: boolean;

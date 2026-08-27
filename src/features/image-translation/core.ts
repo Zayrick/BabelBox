@@ -1,9 +1,3 @@
-/**
- * @file src/features/image-translation/core.ts
- * 文件职责：提供图片翻译可复用的纯数据算法，用于选择真正发生变化的译文、确定 OCR 语言组合、缩放文本框并清理 OCR 行数据。
- * 主要内容：从 shared/image 复用 OcrLine 类型，导出 selectChangedTranslations、getOcrLanguages、scaleOcrBox 和 normalizeOcrLines，统一处理空白、坐标和置信度边界。
- * 模块边界：该模块不接触 Canvas、Tesseract、网络或浏览器消息；OCR 执行归 ocrRuntime，像素修补与文本绘制归 services，页面展示归 content/runtime。
- */
 import { getRequiredImageOcrLanguages, type ImageOcrLanguageCode } from './ocrLanguages';
 import type { OcrLine } from '@/src/shared/image/types';
 

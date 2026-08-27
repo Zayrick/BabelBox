@@ -1,9 +1,3 @@
-/**
- * @file src/features/settings/model/navigation.ts
- * 文件职责：定义设置中心侧边栏的导航信息模型，并提供默认分区、哈希解析与搜索过滤等不依赖 Vue 或浏览器 API 的纯规则。
- * 主要内容：包含按功能分组的标题、副标题、图标、关键词和 section ID，派生扁平 navigationItems，导出 resolveNavigationItem、resolveRequestedSection 与 filterNavigationItems。
- * 模块边界：该模块只描述导航元数据，不切换 DOM、不写 location.hash 也不保存配置；Options 页面负责路由同步，SettingsSections.vue 负责各分区实际内容。
- */
 export type NavigationItem = {
   id: string
   icon: string

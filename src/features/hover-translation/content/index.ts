@@ -1,9 +1,3 @@
-/**
- * @file src/features/hover-translation/content/index.ts
- * 文件职责：实现按住配置快捷键并移动鼠标触发的悬浮翻译手势控制器，统一管理按键集合、平台差异、节流采样和启停清理。
- * 主要内容：定义可注入的配置、常量与依赖接口，提供快捷键字符串规范化和匹配函数，并在 mountHoverTranslationContentFeature 中监听 keydown、keyup、pointermove、blur 与 abort。
- * 模块边界：该模块只识别手势和调用注入的 handleTranslation/cancelPending，不读取具体翻译服务或创建译文；配置源、站点禁用判断和全文运行时由 app composition root 提供。
- */
 export interface HoverTranslationContentConfig {
     on?: boolean;
     hotkey?: string;
@@ -189,7 +183,7 @@ export function mountHoverTranslationContentFeature(
             return;
         }
 
-        // Step 1: 记录当前可信按键集合，只有与配置完全一致时才进入悬浮候选态。
+        // 记录当前可信按键集合，只有与配置完全一致时才进入悬浮候选态。
         addPressedKey(event, mouseHotkeysPressed, isMac);
         if (matchesPressed(getConfiguredMouseHotkeyParts())) {
             screen.hotkeyPressed = true;
@@ -199,7 +193,7 @@ export function mountHoverTranslationContentFeature(
                 if (!matchesSelectionShortcut) event.stopPropagation();
             }
         } else if (screen.hotkeyPressed) {
-            // Step 2: Ctrl+C 等额外组合键会作废已排队的悬浮翻译。
+            // Ctrl+C 等额外组合键会作废已排队的悬浮翻译。
             screen.otherKeyPressed = true;
             deps.cancelPendingHoverTranslation();
         }
@@ -209,7 +203,7 @@ export function mountHoverTranslationContentFeature(
         if (!event.isTrusted) return;
         if (deps.isSiteDisabled()) return;
         if (!screen.hotkeyPressed || !matchesPressed(getConfiguredSelectionHotkeyParts())) return;
-        // Step 1: pointerdown 发生在新选区形成之前；共享划词快捷键已按下时先把拖选手势交给划词功能。
+        // pointerdown 发生在新选区形成之前；共享划词快捷键已按下时先把拖选手势交给划词功能。
         screen.hotkeyPressed = false;
         screen.otherKeyPressed = true;
         screen.hasSlideTranslation = false;

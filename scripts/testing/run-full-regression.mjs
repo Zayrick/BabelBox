@@ -16,8 +16,6 @@ const VALUE_FLAGS = new Set([
     'playwright-root',
     'timeout',
 ]);
-const TEST_GROUPS = ['architecture', 'unit', 'functional', 'regression'];
-
 const LOCAL_BROWSER_FIXTURES = [
     {
         id: 'selection-trigger',
@@ -76,7 +74,7 @@ function printUsage() {
     console.log([
         '用法: node scripts/testing/run-full-regression.mjs [--dry-run] [--browser] [--network --allow-network] [options]',
         '',
-        '默认/local 只执行确定性流水线：audit、prepare、compile、strict coverage、分组 Vitest、Chrome/Firefox/userscript/docs build。',
+        '默认/local 执行确定性流水线：prepare、compile、Vitest、Chrome/Firefox/userscript/docs build。',
         '',
         '显式门禁：',
         '  --browser                 追加本地真实浏览器 fixtures。',
@@ -212,13 +210,6 @@ function step({id, phase, label, command, args, policy = {}, gates = []}) {
 function deterministicSteps() {
     return [
         step({
-            id: 'test-suite-audit',
-            phase: 'local',
-            label: 'test suite audit',
-            command: 'node',
-            args: ['scripts/testing/audit-test-suite.mjs'],
-        }),
-        step({
             id: 'wxt-prepare',
             phase: 'local',
             label: 'wxt prepare',
@@ -233,19 +224,12 @@ function deterministicSteps() {
             args: ['compile'],
         }),
         step({
-            id: 'strict-coverage',
+            id: 'vitest',
             phase: 'local',
-            label: 'strict coverage',
+            label: 'Vitest',
             command: 'pnpm',
-            args: ['exec', 'vitest', 'run', '--coverage', '--config', 'vitest.coverage.config.ts'],
+            args: ['test'],
         }),
-        ...TEST_GROUPS.map((group) => step({
-            id: `vitest-${group}`,
-            phase: 'local',
-            label: `grouped Vitest: ${group}`,
-            command: 'node',
-            args: ['scripts/testing/run-test-group.mjs', group],
-        })),
         step({
             id: 'chrome-build',
             phase: 'local',

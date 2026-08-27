@@ -1,14 +1,3 @@
-/**
- * @file src/app/translation/client.ts
- * 文件职责：作为页面与后台翻译 broker 之间的客户端代理，统一管理单条、批量和视频字幕翻译的队列、取消、重试、超时、上下文与统计。
- * 主要内容：冻结服务/模型与语言参数，验证可用凭据上下文，获取页面摘要上下文，使用 runtime.sendMessage 分派请求；维护 AbortSignal、queue lease、指数退避、计数延迟保存及 cancelAllTranslations。
- * 模块边界：客户端不实现供应商协议、不直接读写翻译缓存，也不修改全文 DOM；后台 runtime/broker 负责 provider 与缓存，调用它的各 feature 负责展示和会话状态。
- */
-/**
- * 翻译API代理模块
- * 整合翻译队列管理，作为翻译函数和后台翻译服务之间的中间层
- */
-
 import browser from 'webextension-polyfill';
 import {detectlang} from '@/src/core/language/detect';
 import {resolveConfiguredModel, servicesType} from '@/src/core/config/catalog';
@@ -29,7 +18,6 @@ import {
   unwrapTranslationResponse,
 } from '@/src/services/translation/errors';
 
-// 调试相关
 const isDev = process.env.NODE_ENV === 'development';
 const VIDEO_COUNT_SAVE_INTERVAL = 10_000;
 const TRANSLATION_COUNT_SAVE_INTERVAL = 500;
@@ -190,14 +178,12 @@ export async function translateText(origin: string, context: string = document.t
   // two fallback attempts for browser-level fetch rejection.
   const maxRetries = options.maxRetries ?? (aiSdkService ? 2 : 3);
   throwIfAborted(signal);
-  // 检查 origin 是否为空或只有空白字符
   const cleanedOrigin = origin?.replace(/[\s\u3000]/g, '') || '';
   if (!cleanedOrigin || cleanedOrigin.length === 0) {
     return origin || '';
   }
 
   assertTranslationCredentials(selectedService, selectedModel);
-  // 如果目标语言与当前文本语言相同，直接返回原文
   if (!skipLanguageDetection && detectlang(origin.replace(/[\s\u3000]/g, '')) === selectedLanguages.targetLanguage) {
     return origin;
   }
@@ -209,15 +195,13 @@ export async function translateText(origin: string, context: string = document.t
   // 都触发 storage watcher 和页面配置刷新。
   scheduleTranslationCountSave();
 
-  // 使用队列处理翻译请求
   return enqueueTranslation(async (lease) => {
-    // 创建翻译任务
     const translationTask = async (retryCount: number = 0): Promise<string> => {
       throwIfAborted(signal);
       try {
-        // 发送翻译请求给background脚本处理
         const response = await waitForRequest(
           browser.runtime.sendMessage({
+            type: 'translate',
             context,
             pageContext,
             origin,
@@ -234,7 +218,6 @@ export async function translateText(origin: string, context: string = document.t
         );
         const result = unwrapTranslationResponse<string>(response);
 
-        // 如果翻译结果为空或与原文完全相同，直接返回原文
         if (!result || result === origin) {
           return origin;
         }
@@ -242,23 +225,19 @@ export async function translateText(origin: string, context: string = document.t
         return result;
       } catch (error) {
         if (isAbortError(error)) throw error;
-        // 处理错误，根据重试策略决定是否重试
         if (retryCount < maxRetries && shouldRetryTranslationRequest(error, aiSdkService, explicitRetryPolicy)) {
           if (isDev) {
             console.log(`[翻译API] 翻译失败，${retryCount + 1}/${maxRetries} 次重试`);
           }
 
-          // 等待一段时间后重试
           await waitForDelay(retryDelay, signal);
           return translationTask(retryCount + 1);
         }
 
-        // 超过最大重试次数，抛出异常
         throw error;
       }
     };
 
-    // 开始执行翻译任务
     return translationTask();
   }, queueSession);
 }
@@ -302,6 +281,7 @@ export async function translateTextBatch(
       try {
         const response = await waitForRequest(
           browser.runtime.sendMessage({
+            type: 'translate',
             context,
             pageContext,
             origin: origins,
@@ -356,6 +336,7 @@ export async function translateVideoText(origin: string): Promise<string> {
   scheduleVideoCountSave();
   return enqueueTranslation(async (lease) => {
     const response = await waitForRequest(browser.runtime.sendMessage({
+        type: 'translate',
         context: `YouTube 视频字幕：${typeof document === 'undefined' ? '' : document.title}`,
         pageContext,
         origin,
@@ -370,9 +351,6 @@ export async function translateVideoText(origin: string): Promise<string> {
   });
 }
 
-/**
- * 当用户离开页面或主动取消翻译时，清空翻译队列
- */
 export function cancelAllTranslations() {
   if (isDev) {
     console.log('[翻译API] 取消所有等待中的翻译任务');
@@ -381,9 +359,6 @@ export function cancelAllTranslations() {
   flushTranslationCountSave();
 }
 
-/**
- * 翻译参数接口
- */
 export interface TranslateOptions {
   /** 最大重试次数 */
   maxRetries?: number;

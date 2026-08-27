@@ -28,7 +28,6 @@ const mocks = vi.hoisted(() => ({
     unmountImageTranslator: vi.fn(),
     unmountSelectionTranslator: vi.fn(),
     unmountTranslationProgressPanel: vi.fn(),
-    sendMessage: vi.fn(),
 }));
 
 vi.mock('@/src/core/config/model', () => ({
@@ -71,61 +70,11 @@ beforeEach(() => {
         if (typeof value === 'function' && 'mockReset' in value) value.mockReset();
     }
     mocks.normalizeDelay.mockImplementation((value) => Number(value));
-    mocks.sendMessage.mockResolvedValue(undefined);
     mocks.isFullPageTranslationActive.mockReturnValue(false);
-    vi.stubGlobal('browser', {runtime: {sendMessage: mocks.sendMessage}});
     vi.stubGlobal('document', {getElementById: vi.fn(() => null)});
 });
 
 describe('内容脚本 runtime 消息协议', () => {
-    it('拒绝非对象并为旧 clearCache 明确返回后台成功或失败', async () => {
-        const {createContentRuntimeMessageHandler} = await import('@/src/app/content/messageRuntime');
-        const updateSiteDisabled = vi.fn(async () => undefined);
-        const handler = createContentRuntimeMessageHandler({} as never, {
-            isSiteDisabled: () => false,
-            updateSiteDisabled,
-        });
-        const respond = vi.fn();
-
-        expect(handler(null, {}, respond)).toBe(false);
-        mocks.sendMessage.mockResolvedValueOnce({success: true});
-        expect(handler({message: 'clearCache'}, {}, respond)).toBe(true);
-        await Promise.resolve();
-        expect(mocks.sendMessage).toHaveBeenCalledWith({type: 'clearTranslationCache'});
-        expect(respond).toHaveBeenCalledWith({success: true});
-
-        mocks.sendMessage.mockRejectedValueOnce(new Error('worker stopped'));
-        expect(handler({message: 'clearCache'}, {}, respond)).toBe(true);
-        await Promise.resolve();
-        await Promise.resolve();
-        expect(respond).toHaveBeenLastCalledWith({success: false, error: 'worker stopped'});
-
-        mocks.sendMessage.mockResolvedValueOnce({success: false, error: 'IndexedDB blocked'});
-        expect(handler({message: 'clearCache'}, {}, respond)).toBe(true);
-        await Promise.resolve();
-        await Promise.resolve();
-        expect(respond).toHaveBeenLastCalledWith({success: false, error: 'IndexedDB blocked'});
-
-        mocks.sendMessage.mockResolvedValueOnce(undefined);
-        expect(handler({message: 'clearCache'}, {}, respond)).toBe(true);
-        await Promise.resolve();
-        await Promise.resolve();
-        expect(respond).toHaveBeenLastCalledWith({
-            success: false,
-            error: '后台未确认缓存清理成功',
-        });
-
-        mocks.sendMessage.mockRejectedValueOnce('worker stopped as text');
-        expect(handler({message: 'clearCache'}, {}, respond)).toBe(true);
-        await Promise.resolve();
-        await Promise.resolve();
-        expect(respond).toHaveBeenLastCalledWith({
-            success: false,
-            error: 'worker stopped as text',
-        });
-        expect(updateSiteDisabled).not.toHaveBeenCalled();
-    });
-
     it('严格校验站点开关并把异步成功与失败显式回传', async () => {
         const {createContentRuntimeMessageHandler} = await import('@/src/app/content/messageRuntime');
         const updateSiteDisabled = vi.fn(async () => undefined);
@@ -135,6 +84,7 @@ describe('内容脚本 runtime 消息协议', () => {
             updateSiteDisabled,
         });
 
+        expect(handler(null, {}, respond)).toBe(false);
         expect(handler({type: 'updateSiteExtensionDisabled', isDisabled: 'yes'}, {}, respond)).toBe(false);
         expect(handler({type: 'updateSiteExtensionDisabled', isDisabled: true}, {}, respond)).toBe(true);
         await Promise.resolve();
@@ -186,7 +136,6 @@ describe('内容脚本 runtime 消息协议', () => {
         expect(handler({
             type: 'updateSelectionTranslatorSettings',
             trigger: 'custom',
-            hotkey: 'custom',
             customHotkey: 'Alt+K',
             delay: '25',
         }, {}, respond)).toBe(true);

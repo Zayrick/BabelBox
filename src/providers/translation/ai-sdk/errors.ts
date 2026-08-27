@@ -1,11 +1,3 @@
-/**
- * @file src/providers/translation/ai-sdk/errors.ts
- *
- * 文件职责：将 AI SDK 的 APICallError、RetryError 和未知异常归一为 FluentRead 可序列化的 LLM transport 错误。
- * 主要内容：定义 LlmTransportError 及状态码、错误码、retry-after、request-id 字段，限制 provider detail 长度，并由 normalizeAiSdkError 校准 kind 与 retryable。 可核对的公开符号包括 LlmTransportErrorOptions、LlmTransportError、normalizeAiSdkError。
- * 模块边界：本文件位于 provider 适配层，只把统一翻译请求转换为外部或浏览器服务协议；不管理页面 DOM、UI 生命周期或配置持久化，缓存、去重和超时总预算由 translation broker 统一协调。
- */
-
 import {APICallError, RetryError} from 'ai';
 import {formatServiceError} from '@/src/services/translation/serviceErrors';
 import type {TranslationErrorKind} from '@/src/services/translation/errors';

@@ -1,10 +1,4 @@
-/**
- * @file src/features/full-page-translation/content/runtime.ts
- * 文件职责：实现全文翻译的页面级会话引擎，负责候选发现、可见性调度、批量请求、动态 DOM 重扫、失败重试、缓存复用和恢复原文。
- * 主要内容：维护 FullPageSession、AbortController、Intersection/Mutation 观察器、候选所有权和生命周期重试，冻结翻译模式与语言配置，并导出自动翻译、悬浮翻译、状态查询及恢复入口。
- * 模块边界：这是 content 侧编排层，不实现 provider 协议、纯候选算法或底层状态存储；翻译调用经 app client，发现规则来自 core/translation，渲染与状态分别交给 renderer 和 state。
- */
-import { checkConfig } from "@/src/app/translation/check";
+import {checkConfig} from './configCheck';
 import { services } from "@/src/core/config/catalog";
 import {insertFailedTip, insertLoadingSpinner} from '@/src/features/full-page-translation/ui/translationIndicators';
 import { styles } from "@/src/core/config/constants";
@@ -31,7 +25,7 @@ import type {TranslationCandidate, TranslationDiscoveryStep} from "@/src/core/tr
 import { detectlang } from "@/src/core/language/detect";
 import { config } from "@/src/services/config/store";
 import type { FullPageTranslationMode } from "@/src/core/config/model";
-import { translateText, translateTextBatch } from "@/src/app/translation/client";
+import {translateText, translateTextBatch} from '@/src/services/translation/client';
 import {
     cancelTranslationQueueSession,
     createTranslationQueueSession,

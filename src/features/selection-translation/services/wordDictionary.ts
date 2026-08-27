@@ -1,10 +1,4 @@
 /**
- * @file src/features/selection-translation/services/wordDictionary.ts
- * 文件职责：实现划词英文词典的多来源聚合、清洗、优先级合并、发音选择、缓存和超时降级，为词卡提供尽可能完整且安全的数据。
- * 主要内容：支持内置 ECDICT、有道、Free Dictionary、WiktAPI、Wiktionary REST 与 Datamuse，包含各响应解析器、HTML/URL 清洗、释义和音标去重、provider 工厂及 LRU 式 lookup。
- * 模块边界：本服务只获取和规范化词典数据，不渲染词卡、不翻译释义或加入词书；后台 wordLookupHandler 编排翻译，SelectionTranslator.vue 展示，HTTP 统一经过 platform/runtimeFetch。
- */
-/**
  * 单词学习卡片的数据适配层。
  *
  * 这里不把大型词典打进扩展包，而是调用公开的结构化词典服务，并把
@@ -708,7 +702,7 @@ function createEcdictProvider(): WordDictionaryProvider {
         const url = localDictionaryUrl();
         if (!url) return new Map();
 
-        // Step 1: 同一后台生命周期只解析一次本地词库；若读取失败则清掉失败 Promise，
+        // 同一后台生命周期只解析一次本地词库；若读取失败则清掉失败 Promise，
         // 让浏览器资源短暂不可用后的下一次查询能够自动恢复。
         indexPromise = (async () => {
             const response = await runtimeFetch(url, {credentials: 'omit'});

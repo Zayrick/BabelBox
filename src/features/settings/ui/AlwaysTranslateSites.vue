@@ -1,9 +1,3 @@
-<!--
- * @file src/features/settings/ui/AlwaysTranslateSites.vue
- * 文件职责：实现“始终翻译”与“从不翻译”网站列表编辑器，接收可配置文案和域名数组，并通过 v-model 更新规范化后的规则集合。
- * 主要内容：组件解析用户输入或当前站点为 eTLD+1 基础域名，处理重复、无效域名、添加反馈、删除与输入聚焦，并展示网站数量和空状态。
- * 模块边界：它不直接读取当前标签页、不持久化配置也不决定规则优先级；调用方提供 currentDomain 和 labels，域名算法来自 core/site-rules，保存由 SettingsSections 统一触发。
- -->
 <template>
   <section
     class="site-rules-editor"

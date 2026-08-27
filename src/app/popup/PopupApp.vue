@@ -1,9 +1,3 @@
-<!--
- @file src/app/popup/PopupApp.vue
- 文件职责：实现浏览器 Popup 的主交互界面，连接当前标签页状态、翻译配置、功能抽屉和高频操作，提供轻量但完整的控制中心。
- 主要内容：在配置 hydration 后展示服务/模型选择、页面翻译、站点规则、悬浮/划词/区域/图片/视频开关、缓存清理、文档与设置入口；监听配置并持久化，广播即时变化和处理通知/捐赠弹层。
- 模块边界：组件编排用户交互与运行时消息，不实现翻译 provider、缓存存储或 content 挂载细节；公共配置由 services/store 管理，页面行为由 content feature 接收消息完成。
--->
 <!-- Popup 页面归 app 层所有；WXT 入口只负责调用挂载函数。 -->
 <template>
   <main
@@ -995,7 +989,6 @@ function broadcastSelectionTranslatorSettings() {
   void broadcast({
     type: 'updateSelectionTranslatorSettings',
     trigger: config.value.selectionTranslatorTrigger,
-    hotkey: config.value.selectionTranslatorHotkey,
     customHotkey: config.value.customSelectionTranslatorHotkey,
     delay: config.value.selectionTranslatorDelay,
   });

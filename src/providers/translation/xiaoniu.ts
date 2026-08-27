@@ -1,11 +1,3 @@
-/**
- * @file src/providers/translation/xiaoniu.ts
- *
- * 文件职责：适配小牛翻译 REST API，处理目标语言映射、代理选择和 token 参数。
- * 主要内容：从请求级配置获得 service 与语言，将简体中文代码转换为接口格式，构造表单请求，通过 runtimeFetch 校验状态并提取目标文本。 可核对的公开符号包括 default:xiaoniu。
- * 模块边界：本文件位于 provider 适配层，只把统一翻译请求转换为外部或浏览器服务协议；不管理页面 DOM、UI 生命周期或配置持久化，缓存、去重和超时总预算由 translation broker 统一协调。
- */
-
 import {method, urls} from "@/src/core/config/constants";
 import {services} from "@/src/core/config/catalog";
 import {config} from "@/src/services/config/store";

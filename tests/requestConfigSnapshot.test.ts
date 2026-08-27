@@ -88,16 +88,14 @@ describe('translation provider request config snapshot', () => {
 
     it('uses safe credential defaults and resolves attached context without trusting message JSON', () => {
         const snapshot = createTranslationProviderConfigSnapshot(configSource());
-        const fallback = createTranslationProviderConfigSnapshot(configSource({service: 'fallback'}));
+        const currentConfig = createTranslationProviderConfigSnapshot(configSource({service: 'current'}));
         const message = {origin: 'hello'};
         const attached = attachTranslationProviderConfig(message, snapshot);
 
         expect(attached).toBe(message);
         expect(attached[TRANSLATION_PROVIDER_CONFIG]).toBe(snapshot);
-        expect(getTranslationProviderConfig(attached, fallback)).toBe(snapshot);
-        expect(getTranslationProviderConfig({}, fallback)).toBe(fallback);
-        expect(getTranslationProviderConfig(null, fallback)).toBe(fallback);
-        expect(getTranslationProviderConfig('not-an-object', fallback)).toBe(fallback);
+        expect(getTranslationProviderConfig(attached, currentConfig)).toBe(snapshot);
+        expect(getTranslationProviderConfig({}, currentConfig)).toBe(currentConfig);
         expect(snapshot).toMatchObject({
             token: {},
             requireApiKey: {},

@@ -1,11 +1,3 @@
-/**
- * @file src/services/config/store.ts
- *
- * 文件职责：协调 FluentRead 配置、凭据与历史记录在浏览器存储中的读取、订阅、保存和并发持久化。
- * 主要内容：维护 config 响应式状态和监听器，区分公开配置与 session/local 凭据，序列化 persist/history 消息，处理 debounce、revision 冲突、迁移及 undo/redo 请求。 可核对的公开符号包括 CONFIG_STORAGE_KEY、CONFIG_HISTORY_STORAGE_KEY、CONFIG_PERSIST_MESSAGE、CONFIG_HISTORY_MESSAGE、config、flushConfigHistory、configReady、configHistoryReady。
- * 模块边界：本文件位于配置 application service 层，可协调 core 规则与浏览器存储端口；不包含设置页面组件，也不实现具体翻译供应商协议，调用方应通过公开服务 API 订阅或提交配置。
- */
-
 import { storage } from '@wxt-dev/storage';
 import { Config, normalizeConfig } from '@/src/core/config/model';
 import {
@@ -97,10 +89,10 @@ function handleStoredHistoryChange(value: unknown): void {
     if (!parsed) return;
     const serialized = serializeConfigHistory(parsed);
     if (serialized === historyLastSerialized) return;
-    // Step 1: 写队列处理中只接收最新请求的回声，避免较慢的旧写入覆盖新快照。
+    // 写队列处理中只接收最新请求的回声，避免较慢的旧写入覆盖新快照。
     if (historyPendingSerialized && serialized !== historyPendingSerialized) return;
 
-    // Step 2: 外部上下文没有与本地写入竞争时，立即同步历史游标和订阅者。
+    // 外部上下文没有与本地写入竞争时，立即同步历史游标和订阅者。
     setHistoryState(parsed);
 }
 
@@ -115,11 +107,11 @@ async function queueHistoryWrite(nextHistory: ConfigHistoryState): Promise<void>
     historyWriteQueue = historyWriteQueue
         .catch(() => undefined)
         .then(async () => {
-            // Step 1: 队列轮到当前写入时再次执行 latest-write-wins 检查。
+            // 队列轮到当前写入时再次执行 latest-write-wins 检查。
             if (revision !== historyWriteRevision || historyPendingSerialized !== serialized) return;
             await storage.setItem<ConfigHistoryState>(CONFIG_HISTORY_STORAGE_KEY, sanitizedHistory);
 
-            // Step 2: storage.setItem 期间可能产生更新请求；旧写入完成后不能回滚内存状态。
+            // storage.setItem 期间可能产生更新请求；旧写入完成后不能回滚内存状态。
             if (revision !== historyWriteRevision || historyPendingSerialized !== serialized) return;
             setHistoryState(sanitizedHistory);
             historyPendingSerialized = '';
@@ -168,13 +160,13 @@ function takePendingHistorySnapshot(): PublicConfig | null {
 }
 
 function flushHistorySnapshot(snapshot: PublicConfig): Promise<void> {
-    // Step 1: 每次追加都等待前一个追加完成，确保它读取到已提交的游标与 nextVersion。
+    // 每次追加都等待前一个追加完成，确保它读取到已提交的游标与 nextVersion。
     const previous = historyFlushPromise;
     const current = (previous ? previous.catch(() => undefined) : Promise.resolve())
         .then(() => appendHistorySnapshotNow(snapshot));
     historyFlushPromise = current;
 
-    // Step 2: 只有队尾任务可以清空引用；较早任务结束不能让调用方漏等后续快照。
+    // 只有队尾任务可以清空引用；较早任务结束不能让调用方漏等后续快照。
     const clearIfCurrent = () => {
         if (historyFlushPromise === current) historyFlushPromise = null;
     };

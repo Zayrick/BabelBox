@@ -1,11 +1,3 @@
-/**
- * @file src/platform/shadow-ui/pageBridgeCore.ts
- *
- * 文件职责：实现不依赖具体 window 的 Shadow/路由 bridge 状态机，便于在测试中验证安装、启用、禁用和销毁。
- * 主要内容：定义事件名、全局状态键及宿主端口类型，create/install 逻辑管理 attachShadow、pushState、replaceState 补丁所有权并避免嵌套包装。 可核对的公开符号包括 SHADOW_ROOT_EVENT、ROUTE_CHANGE_EVENT、SHADOW_BRIDGE_DISPOSE_EVENT、SHADOW_BRIDGE_ENABLE_EVENT、SHADOW_BRIDGE_STATE_KEY、SHADOW_BRIDGE_LIFECYCLE_STATE_KEY、BridgeEventTarget、BridgeMethodSlot。
- * 模块边界：本文件属于 platform 基础设施边界，只封装浏览器、网络、存储上下文或 Shadow DOM 机制；不决定翻译业务策略，不直接实现 feature，业务层通过类型化端口消费这里的能力。
- */
-
 export const SHADOW_ROOT_EVENT = 'fluentread-open-shadow-root';
 export const ROUTE_CHANGE_EVENT = 'fluentread-route-change';
 export const SHADOW_BRIDGE_DISPOSE_EVENT = 'fluentread-shadow-bridge-dispose';
@@ -126,7 +118,7 @@ export function installShadowRouteBridgeCore(environment: ShadowRouteBridgeEnvir
         delete environment.stateHost[SHADOW_BRIDGE_STATE_KEY];
     };
 
-    // Step 1: 三个宿主方法独立安装；单个只读 API 不妨碍其余路由/ShadowRoot 观测。
+    // 三个宿主方法独立安装；单个只读 API 不妨碍其余路由/ShadowRoot 观测。
     installMethod(environment.attachShadow, attachShadowWrapper);
     installMethod(environment.pushState, pushStateWrapper);
     installMethod(environment.replaceState, replaceStateWrapper);

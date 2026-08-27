@@ -1,10 +1,4 @@
-/**
- * @file src/app/document-translation/runtime.ts
- * 文件职责：把通用翻译客户端、配置 store 与文档 feature 的纯服务连接起来，为页面提供可直接调用的分段翻译和文件下载适配器。
- * 主要内容：标记支持批量请求的服务集合，利用 createDocumentSegmentTranslator 组装单条/批量翻译；生成下载时注入 PDF 译文页栅格化器及当前运行时配置。
- * 模块边界：本文件是 app adapter，不解析源文件、不维护页面进度，也不实现 PDF/EPUB/DOCX 编码；业务算法归 document-translation feature，网络请求归 translation client。
- */
-import {translateText, translateTextBatch} from '@/src/app/translation/client';
+import {translateText, translateTextBatch} from '@/src/services/translation/client';
 import {services} from '@/src/core/config/catalog';
 import {
     createDocumentDownload as createDocumentDownloadWithAdapters,

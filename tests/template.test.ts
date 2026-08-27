@@ -35,9 +35,9 @@ import {
     isValidCustomBody,
     mergeCustomBody,
     normalizeCustomBodyMapping,
-} from '@/entrypoints/utils/custom-body';
+} from '@/src/core/config/customBody';
 import { buildHunyuanTranslationRequestBody } from '@/src/providers/translation/hunyuan-translation';
-import { customModelString, services, servicesType } from '@/entrypoints/utils/option';
+import {customModelString, services, servicesType} from '@/src/core/config/catalog';
 
 beforeEach(() => {
     // 每个用例前重置 mock 配置，避免相互污染

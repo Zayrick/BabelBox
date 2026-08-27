@@ -1,11 +1,3 @@
-/**
- * @file src/platform/http/errors.ts
- *
- * 文件职责：封装 provider HTTP 与 JSON 响应的安全错误构造，统一状态文案和外部错误码长度限制。
- * 主要内容：提供 createHttpStatusError、getSafeProviderErrorCode、createProviderCodeError 与 readJsonResponse，在协议适配器中复用并避免直接信任任意响应字段。 可核对的公开符号包括 createHttpStatusError、getSafeProviderErrorCode、createProviderCodeError、readJsonResponse。
- * 模块边界：本文件属于 platform 基础设施边界，只封装浏览器、网络、存储上下文或 Shadow DOM 机制；不决定翻译业务策略，不直接实现 feature，业务层通过类型化端口消费这里的能力。
- */
-
 type HttpStatus = Pick<Response, 'status' | 'statusText'>;
 type JsonResponse = Pick<Response, 'json'>;
 

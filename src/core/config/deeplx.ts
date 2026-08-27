@@ -1,12 +1,4 @@
 /**
- * @file src/core/config/deeplx.ts
- *
- * 文件职责：维护 DeepLX 端点预设及多端点解析规则，为请求适配器提供确定、有序且可替换令牌的候选地址。
- * 主要内容：声明 DEFAULT_DEEPLX_ENDPOINT 与预设列表，解析换行或逗号分隔的自定义地址，并在 getDeepLXEndpoints 中合并配置 URL、代理和 token 占位符。 可核对的公开符号包括 DEFAULT_DEEPLX_ENDPOINT、DEEPLX_ENDPOINT_PRESETS、parseDeepLXEndpoints、getDeepLXEndpoints。
- * 模块边界：本文件属于 core 领域层，只定义规则、类型与纯转换；不直接读写浏览器存储、不发起网络请求、不挂载 Vue/WXT 入口，持久化、协议调用和界面编排分别由 services、providers 与 features 承担。
- */
-
-/**
  * The public endpoint is an unofficial DeepLX deployment. Keep it explicit so
  * users can replace it with a local or self-hosted endpoint at any time.
  */

@@ -1,11 +1,3 @@
-/**
- * @file src/providers/translation/deepl.ts
- *
- * 文件职责：适配 DeepL 文本翻译 API，处理 FluentRead 语言代码转换、代理选择、鉴权及响应解析。
- * 主要内容：将 zh-Hans 等目标语言映射为 DeepL 接受的代码，从配置快照构造 URL 与请求体，通过 runtimeFetch 调用并验证 translations 结果。 可核对的公开符号包括 default:deepl。
- * 模块边界：本文件位于 provider 适配层，只把统一翻译请求转换为外部或浏览器服务协议；不管理页面 DOM、UI 生命周期或配置持久化，缓存、去重和超时总预算由 translation broker 统一协调。
- */
-
 import {method, urls} from "@/src/core/config/constants";
 import {services} from "@/src/core/config/catalog";
 import {config} from "@/src/services/config/store";

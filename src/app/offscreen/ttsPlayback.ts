@@ -1,9 +1,3 @@
-/**
- * @file src/app/offscreen/ttsPlayback.ts
- * 文件职责：管理 Offscreen 中划词 TTS 的单播放所有权，确保新旧请求、停止、结束、错误和 Blob URL 释放按精确 route 隔离。
- * 主要内容：解析 tabId/clientRequestId 路由及 sourceUrl/base64 音频输入，创建 Audio 端口，给每次播放绑定独立回调与可选 object URL；SelectionTtsPlayer 支持 play、stop、dispose 并回传状态。
- * 模块边界：播放器不合成语音、不发送后台请求，也不决定 voice/rate；音频构造和状态传输由依赖注入，网络 TTS 与跨上下文路由属于 selection-translation feature。
- */
 import {
     parseSelectionTtsRoute,
     sameSelectionTtsRoute,
@@ -129,12 +123,12 @@ export class SelectionTtsPlayer {
             throw error;
         }
 
-        // Step 1: 新资源完整准备成功后才停止旧播放，非法 payload 不打断用户当前语音。
+        // 新资源完整准备成功后才停止旧播放，非法 payload 不打断用户当前语音。
         this.stopActive(true);
         const playback: PreparedPlayback = {request, audio, objectUrl};
         this.active = playback;
 
-        // Step 2: 回调只允许结束创建它的那一轮，过期事件不能污染当前状态。
+        // 回调只允许结束创建它的那一轮，过期事件不能污染当前状态。
         audio.onended = () => {
             if (this.active !== playback) return;
             this.active = null;
@@ -151,7 +145,7 @@ export class SelectionTtsPlayer {
         try {
             await audio.play();
         } catch (error) {
-            // Step 3: 只有仍然活跃的请求才上报错误；被后续请求替换的迟到失败已收到 stopped。
+            // 只有仍然活跃的请求才上报错误；被后续请求替换的迟到失败已收到 stopped。
             if (this.active === playback) {
                 this.active = null;
                 this.release(playback);

@@ -1,11 +1,3 @@
-/**
- * @file src/providers/translation/zhipu.ts
- *
- * 文件职责：适配智谱 BigModel 聊天接口，支持 apiKey.secret 生成 JWT、凭据校验和模型翻译请求。
- * 主要内容：维护短期 JWT 缓存，使用 commonMsgTemplate 生成消息，从配置快照选择模型和端点，通过 runtimeFetch 校验 choices 后返回译文。 可核对的公开符号包括 default:zhipu。
- * 模块边界：本文件位于 provider 适配层，只把统一翻译请求转换为外部或浏览器服务协议；不管理页面 DOM、UI 生命周期或配置持久化，缓存、去重和超时总预算由 translation broker 统一协调。
- */
-
 import {method, urls} from "@/src/core/config/constants";
 import {services} from "@/src/core/config/catalog";
 import {commonMsgTemplate} from '@/src/services/translation/templates';

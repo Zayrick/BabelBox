@@ -1,9 +1,3 @@
-/**
- * @file src/features/vocabulary/protocol.ts
- * 文件职责：定义内容页、设置页和后台之间使用的精简词书消息协议，避免前端调用者依赖完整 Dexie 领域实现及其浏览器副作用。
- * 主要内容：包含消息常量、收藏输入、列表与导出选项、动作联合、RuntimeMessage、统一成功/失败响应和 VocabularyBookChangedMessage。
- * 模块边界：协议文件只承载可序列化类型，不校验数据库记录、不计算复习计划也不发送消息；后台 handler 负责验证，learningModel/repository 保持权威领域状态。
- */
 export const VOCABULARY_BOOK_MESSAGE = 'fluentReadVocabularyBook' as const;
 export const VOCABULARY_BOOK_CHANGED_MESSAGE = 'fluentReadVocabularyBookChanged' as const;
 

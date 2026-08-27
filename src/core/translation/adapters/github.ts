@@ -1,11 +1,3 @@
-/**
- * @file src/core/translation/adapters/github.ts
- *
- * 文件职责：声明 GitHub 页面翻译适配规则，使 Markdown 正文、议题和评论成为候选，同时避开代码、导航及交互控件。
- * 主要内容：通过 createDeclarativeAdapter 配置 githubAdapter，集中列出 Markdown prose 等 GitHub 特有选择器，并将站点差异转换为通用 pass、skip 或 target 决策。 可核对的公开符号包括 githubAdapter。
- * 模块边界：本文件位于 core 的站点规则层，只表达 URL 与 DOM 候选决策；不发送翻译请求、不渲染译文、不监听业务生命周期，通用安全守卫仍由 TranslationCandidateCore 执行。
- */
-
 import {createDeclarativeAdapter} from './declarative';
 
 const markdownProseSelectors = [

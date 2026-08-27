@@ -1,11 +1,3 @@
-/**
- * @file src/providers/translation/youdao.ts
- *
- * 文件职责：适配有道智云翻译 API，生成 v3 签名并解析普通翻译及词典解释响应。
- * 主要内容：从配置快照读取应用凭据，按语言和时间戳构造 SHA-256 签名请求，通过 runtimeFetch 调用并根据 errorCode 返回 translation 或 basic.explains。 可核对的公开符号包括 default:youdao。
- * 模块边界：本文件位于 provider 适配层，只把统一翻译请求转换为外部或浏览器服务协议；不管理页面 DOM、UI 生命周期或配置持久化，缓存、去重和超时总预算由 translation broker 统一协调。
- */
-
 import { method } from "@/src/core/config/constants";
 import { config } from "@/src/services/config/store";
 import CryptoJS from 'crypto-js';

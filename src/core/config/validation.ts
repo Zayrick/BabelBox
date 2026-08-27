@@ -1,11 +1,3 @@
-/**
- * @file src/core/config/validation.ts
- *
- * 文件职责：表达各翻译服务对 API Key 的领域校验规则，为保存、连接测试和请求前检查提供一致判定。
- * 主要内容：定义 CredentialConfig，结合服务类型及代理等配置计算凭据要求键，判断是否必须提供密钥，并生成面向用户的缺失凭据消息。 可核对的公开符号包括 CredentialConfig、getApiKeyRequirementKey、isApiKeyRequired、getMissingCredentialMessage。
- * 模块边界：本文件属于 core 领域层，只定义规则、类型与纯转换；不直接读写浏览器存储、不发起网络请求、不挂载 Vue/WXT 入口，持久化、协议调用和界面编排分别由 services、providers 与 features 承担。
- */
-
 import { customModelString, options, services, servicesType } from './catalog';
 
 export interface CredentialConfig {

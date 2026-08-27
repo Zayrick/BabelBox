@@ -16,7 +16,7 @@ import {
     runTranslationServiceConnectionTest,
 } from '@/src/providers/translation/connectionTest';
 import {formatServiceError, getServiceErrorMessage} from '@/src/services/translation/serviceErrors';
-import {services} from '@/entrypoints/utils/option';
+import {services} from '@/src/core/config/catalog';
 
 describe('翻译服务连接测试', () => {
     afterEach(() => {

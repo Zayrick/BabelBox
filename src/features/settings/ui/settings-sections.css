@@ -1,10 +1,3 @@
-/**
- * @file src/features/settings/ui/settings-sections.css
- * 文件职责：定义 SettingsSections 及其业务分区的专属样式，覆盖凭据持久化、配置历史、网站规则、视频、译文预览、连接配置和能力禁用提示。
- * 主要内容：包含状态卡、按钮与列表层级、服务 endpoint 提示、深色主题、响应式调整，以及多种 fluent-display 译文效果的实时预览类。
- * 模块边界：该样式表只描述设置分区的视觉，不应改变配置行为或宿主网页；Options 页面骨架由 settings-page.css 管理，图片 OCR 等独立组件保留自己的 scoped CSS。
- */
-
 .settings-section {
   min-width: 0;
 }

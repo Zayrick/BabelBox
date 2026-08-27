@@ -1,9 +1,3 @@
-/**
- * @file src/features/image-translation/background/ocrLanguageRepository.ts
- * 文件职责：封装已下载 OCR 语言包列表的读取、规范化和持久化，使后台下载 handler 不直接依赖某一种浏览器存储实现。
- * 主要内容：定义 ImageOcrLanguageStorage 与 ImageOcrLanguageRepository 契约，并由 createImageOcrLanguageRepository 提供 read、write 和合并已下载语言代码的操作。
- * 模块边界：仓库只保存语言代码状态，不下载 Tesseract 资源也不判断浏览器能力；实际 storage adapter 由 composition root 注入，语言白名单与推荐集合来自 ocrLanguages.ts。
- */
 import {
     getRequiredImageOcrLanguages,
     IMAGE_OCR_LANGUAGE_PACKS,

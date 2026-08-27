@@ -1,15 +1,9 @@
-/**
- * @file src/app/content/runtime.ts
- * 文件职责：作为内容脚本应用的顶层 composition root，协调配置就绪、站点规则、公共样式、主世界桥、功能注册表、快捷键和消息监听生命周期。
- * 主要内容：安装内联 page.css，构建输入框与页面 feature registry，按 capability 和配置挂载全文周边、悬浮、划词、区域、图片、视频等能力；订阅配置变化并处理停用、恢复与销毁。
- * 模块边界：本文件只负责依赖装配和页面激活所有权，不实现具体翻译算法、组件内部状态、provider 请求或配置存储；这些职责分别属于 features、services 与 platform。
- */
 import type {ContentScriptContext} from 'wxt/utils/content-script-context';
 import {createShadowRootUi} from 'wxt/utils/content-script-ui/shadow-root';
 import {constants} from '@/src/core/config/constants';
 import {isExtensionDisabledOnSite, shouldAutoTranslatePage} from '@/src/features/site-rules/domain';
 import {config, configReady, subscribeConfig} from '@/src/services/config/store';
-import {cancelAllTranslations} from '@/src/app/translation/client';
+import {cancelAllTranslations} from '@/src/services/translation/client';
 import {resetPageTranslationContextCache} from '@/src/services/translation/context';
 import {clearLegacyPageTranslationCache} from '@/src/services/translation/legacyPageCache';
 import {getCenterPoint} from '@/src/shared/geometry/touch';

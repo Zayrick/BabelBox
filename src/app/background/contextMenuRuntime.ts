@@ -1,9 +1,3 @@
-/**
- * @file src/app/background/contextMenuRuntime.ts
- * 文件职责：管理后台右键菜单的安装、展示状态同步和点击路由，让页面翻译菜单随配置及标签页翻译状态保持一致。
- * 主要内容：等待配置就绪后创建或更新菜单，订阅配置变化，读取 TabTranslationStateStore 决定“翻译/恢复”文案，并把合法标签页上的菜单点击转成对应运行时消息。
- * 模块边界：这里只编排 browser.contextMenus、tabs 与 app 层状态，不执行正文翻译、不解析站点规则细节；菜单展示决策和翻译动作分别交给 feature domain 与 content runtime。
- */
 import {CONTEXT_MENU_IDS} from '@/src/core/config/constants';
 import {getFullPageContextMenuPresentation} from '@/src/features/site-rules/domain';
 import {config, configReady, subscribeConfig} from '@/src/services/config/store';

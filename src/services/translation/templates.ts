@@ -1,11 +1,3 @@
-/**
- * @file src/services/translation/templates.ts
- *
- * 文件职责：构造不同大模型协议所需的请求消息和 payload，是翻译语义与 provider transport 之间的模板层。
- * 主要内容：生成 common、DeepSeek chat/responses、Gemini、Claude、通义和 Coze 请求体，解析当前模型与自定义 body，并转出页面摘要 prompt 构建器。 可核对的公开符号包括 commonMsgTemplate、getCurrentModel、deepseekResponsesMsgTemplate、deepseekMsgTemplate、geminiMsgTemplate、claudeMsgTemplate、tongyiMsgTemplate、cozeTemplate。
- * 模块边界：本文件位于翻译 application service 层，负责用例编排和端口契约；不挂载页面 UI，且不应把某家供应商的网络细节扩散到 feature，具体 HTTP 协议由 providers/platform 实现。
- */
-
 // 消息模板工具
 import {currentModelIds, customModelString, defaultOption, services} from '@/src/core/config/catalog';
 import {mergeCustomBody} from '@/src/core/config/customBody';

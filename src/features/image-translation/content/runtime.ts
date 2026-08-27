@@ -1,9 +1,3 @@
-/**
- * @file src/features/image-translation/content/runtime.ts
- * 文件职责：实现网页图片翻译的悬浮按钮与译图覆盖层生命周期，针对可见且尺寸足够的图片读取源数据、请求翻译、定位结果并支持恢复。
- * 主要内容：维护每张 HTMLImageElement 的请求阶段和 Abort/timeout 所有权，处理 pointerover/out、滚动缩放和 DOM 移除，解析 object-fit 后的实际图像区域并绘制返回位图。
- * 模块边界：本运行时不执行 OCR 或跨域抓取，而是调用 services/client；它只拥有页面 DOM 和事件资源，后台权限、Offscreen 运算及语言包管理位于对应 background/services 模块。
- */
 import { config } from '@/src/services/config/store';
 import { fetchImageInExtension, translateImageInExtension } from '@/src/features/image-translation/services/client';
 import type { OcrLine } from '@/src/features/image-translation/core';

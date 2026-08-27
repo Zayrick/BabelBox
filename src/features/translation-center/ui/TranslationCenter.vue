@@ -1,9 +1,3 @@
-<!--
- * @file src/features/translation-center/ui/TranslationCenter.vue
- * 文件职责：实现多翻译服务并排对比工作台，允许输入文本、选择和交换语言、增删服务、拖动排序、并发翻译、单项重试及复制结果。
- * 主要内容：组件持久化语言和服务顺序，按浏览器能力隐藏不可用项，维护每张卡片的 idle/loading/success/error 状态，支持搜索服务、指针与键盘排序、复制全部和最大长度约束。
- * 模块边界：该 UI 不实现 provider 协议或凭据存储；翻译统一调用 app/translation client，服务目录来自 core/config，Options 外层负责组件挂载且原配置在能力不足时保持不变。
- -->
 <template>
   <section class="translation-center" aria-label="翻译中心">
     <p v-if="hiddenUnavailableServices.length" class="translation-capability-warning" role="status">当前浏览器暂不支持 Chrome 内置翻译；该对比项已暂时隐藏，原配置会保留。</p>
@@ -227,7 +221,7 @@ import {
 } from '@/src/services/translation/capabilities'
 import { options, servicesType } from '@/src/core/config/catalog'
 import { config, configReady, requestConfigSave, subscribeConfig } from '@/src/services/config/store'
-import { translateText } from '@/src/app/translation/client'
+import { translateText } from '@/src/services/translation/client'
 
 type TranslationCardStatus = 'idle' | 'loading' | 'success' | 'error'
 

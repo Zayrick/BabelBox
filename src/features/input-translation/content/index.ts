@@ -1,9 +1,3 @@
-/**
- * @file src/features/input-translation/content/index.ts
- * 文件职责：实现网页输入框翻译 feature 的可注入生命周期，根据配置识别三连触发符、冻结请求所有权、调用后台并把译文安全提交回原控件。
- * 主要内容：定义配置、依赖和 feature 契约，提供启用判断、配置键和 input/change 事件写回，创建 closed Shadow tooltip 展示翻译中/成功/失败，并防止元素或配置变化后的迟到提交。
- * 模块边界：本文件拥有内容页事件与临时 UI，不直接调用 provider 或全局 browser API；sendMessage、Shadow UI、站点禁用和 generation 均由 composition root 注入，输入纯算法来自 inputBox.ts。
- */
 import type { ContentScriptContext } from 'wxt/utils/content-script-context';
 import type { ShadowRootContentScriptUi } from 'wxt/utils/content-script-ui/shadow-root';
 import {
@@ -296,12 +290,12 @@ export function createInputTranslationContentFeature(
         signal.addEventListener('abort', handleAbort, { once: true });
 
         try {
-            // Step 1: 固定输入快照和配置 generation；任何用户编辑、关闭或站点禁用都会阻止写回。
+            // 固定输入快照和配置 generation；任何用户编辑、关闭或站点禁用都会阻止写回。
             if (!isCurrentAndUnchanged() || !originalText) return;
             const cleanedText = removeTriggerSymbols(originalText, trigger);
             if (!cleanedText) return;
 
-            // Step 2: 只让当前请求拥有输入框动画和 tooltip，旧请求不能清理新提示。
+            // 只让当前请求拥有输入框动画和 tooltip，旧请求不能清理新提示。
             removeExistingTooltip();
             addInputBoxAnimation(element, 'translating', requestId);
             const loadingTooltip = await createTranslationTooltip(
@@ -317,7 +311,7 @@ export function createInputTranslationContentFeature(
             }
 
             try {
-                // Step 3: background 消息不能中断，结果落地前再次校验快照和 feature signal。
+                // background 消息不能中断，结果落地前再次校验快照和 feature signal。
                 const translatedText = await translateWithMicrosoft(deps.sendMessage, cleanedText, targetLanguage);
                 if (!isCurrentAndUnchanged()) {
                     clearOwnedVisuals();
@@ -393,7 +387,7 @@ export function createInputTranslationContentFeature(
             }
 
             const triggerType = deps.config.inputBoxTranslationTrigger;
-            // Step 1: Ctrl+Enter 立即触发；三连击只记录同一个输入目标上的连续目标按键。
+            // Ctrl+Enter 立即触发；三连击只记录同一个输入目标上的连续目标按键。
             if (triggerType === 'ctrl_enter') {
                 if (event.ctrlKey && event.key === 'Enter') {
                     event.preventDefault();
@@ -415,7 +409,7 @@ export function createInputTranslationContentFeature(
                     keyPressCount += 1;
                 }
 
-                // Step 2: 第三次按键先阻止触发符号继续进入页面，再启动异步翻译。
+                // 第三次按键先阻止触发符号继续进入页面，再启动异步翻译。
                 if (keyPressCount === 3) {
                     event.preventDefault();
                     resetKeyPresses();

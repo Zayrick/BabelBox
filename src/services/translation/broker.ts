@@ -1,11 +1,3 @@
-/**
- * @file src/services/translation/broker.ts
- *
- * 文件职责：编排翻译请求的配置快照、语言解析、缓存、请求去重、超时与 provider 调用，是后台翻译用例的中心服务。
- * 主要内容：createTranslationBroker 同时支持单条、批量和页面摘要，验证 provider 返回数量和类型，以完整身份构建缓存键，并在清理代次与剩余 deadline 下管理 pending 请求。 可核对的公开符号包括 createTranslationBroker、聚合导出。
- * 模块边界：本文件位于翻译 application service 层，负责用例编排和端口契约；不挂载页面 UI，且不应把某家供应商的网络细节扩散到 feature，具体 HTTP 协议由 providers/platform 实现。
- */
-
 import type {
     TranslationBatchRequestMessage,
     TranslationBroker,
@@ -62,7 +54,7 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
         try {
             logger.warn(message, error);
         } catch {
-            // Step 1: 诊断器是旁路依赖；自定义 logger 失败不能中断用户翻译。
+            // 诊断器是旁路依赖；自定义 logger 失败不能中断用户翻译。
         }
     }
 
@@ -95,7 +87,7 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
             try {
                 return deps.endpointResolver.resolveOpenAICompatibleEndpoint(service, current).endpoint;
             } catch {
-                // Step 1: 配置校验负责用户可见错误；缓存 key 生成必须在设置缺失时仍可完成。
+                // 配置校验负责用户可见错误；缓存 key 生成必须在设置缺失时仍可完成。
                 return '';
             }
         }
@@ -144,7 +136,7 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
             transportProfile: deps.serviceTypes.isAiSdk(service)
                 ? deps.endpointResolver.aiSdkTransportProfile
                 : undefined,
-            // Step 1: DeepL 把标题上下文直接发送给 provider；AI adapter 通过 prompt 注入页面上下文。
+            // DeepL 把标题上下文直接发送给 provider；AI adapter 通过 prompt 注入页面上下文。
             context: service === 'deepL' ? context : undefined,
             pageContext: isAIContextEnabled(current, service, modelOverride) ? pageContext : undefined,
         });
@@ -253,7 +245,7 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
 
         const request = (async () => {
             try {
-                // Step 1: 先读持久缓存，覆盖 MV3 service worker 重启后的重复摘要。
+                // 先读持久缓存，覆盖 MV3 service worker 重启后的重复摘要。
                 if (useCache) {
                     const persisted = await deps.cache.get(key);
                     if (persisted !== null) {
@@ -262,7 +254,7 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
                     }
                 }
 
-                // Step 2: 缓存未命中时生成短摘要，失败时回退到原始上下文。
+                // 缓存未命中时生成短摘要，失败时回退到原始上下文。
                 const result = await getTranslationService(execution.service)(attachTranslationProviderConfig({
                     origin: '',
                     context: '',
@@ -318,7 +310,7 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
         );
         if (requestTimeoutMs === undefined) return request;
 
-        // Step 1: 摘要是可选增强，不允许占满整次 provider 请求预算。
+        // 摘要是可选增强，不允许占满整次 provider 请求预算。
         return new Promise((resolve) => {
             let settled = false;
             const finish = (value: string) => {
@@ -351,7 +343,7 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
         if (existing) return existing;
 
         const request = (async () => {
-            // Step 1: 先读持久缓存；未命中后只发起一次 provider 请求。
+            // 先读持久缓存；未命中后只发起一次 provider 请求。
             const cached = await deps.cache.get(key);
             if (cached !== null) return cached;
 
@@ -395,7 +387,7 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
         if (existing) return existing;
 
         const request = (async () => {
-            // Step 1: 分项读取缓存，只把缺失且去重后的原文交给 provider。
+            // 分项读取缓存，只把缺失且去重后的原文交给 provider。
             const cached = await Promise.all(
                 message.origin.map((origin) => deps.cache.get(
                     buildCacheKey(execution, origin, context, pageContext, 'batch', message.modelOverride),
@@ -426,7 +418,7 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
                 uniqueMissingOrigins.length,
             );
 
-            // Step 2: 按原请求顺序回填结果，并只缓存有效译文。
+            // 按原请求顺序回填结果，并只缓存有效译文。
             const result = [...cached] as Array<string | null>;
             const translatedByKey = new Map(
                 uniqueMissingOrigins.map((origin, index) => [
@@ -463,12 +455,12 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
 
     async function translateWithCache(message: TranslationRequestMessage): Promise<string | string[]> {
         await deps.ready;
-        // Step 1: 空请求没有 provider 语义，直接返回可避免无效计费和适配器格式错误。
+        // 空请求没有 provider 语义，直接返回可避免无效计费和适配器格式错误。
         if (Array.isArray(message.origin) && message.origin.length === 0) return [];
         if (typeof message.origin === 'string' && !message.origin.trim()) return message.origin;
         const requestGeneration = cacheGeneration;
 
-        // Step 1: 在任何 cache/provider await 前复制一次配置；后续 UI 原地修改不能改变本请求身份。
+        // 在任何 cache/provider await 前复制一次配置；后续 UI 原地修改不能改变本请求身份。
         const current = createTranslationProviderConfigSnapshot(config());
         const serviceOverride = message.serviceOverride;
         const selectedService = serviceOverride || current.service;
@@ -500,7 +492,7 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
         const useCache = isCacheEnabled(current, message);
         const providerStartedAt = now();
         const providerBudget = normalizeRequestTimeoutMs(message.requestTimeoutMs);
-        // Step 2: 摘要是 AI 上下文增强，只拿 provider deadline 的一小段预算。
+        // 摘要是 AI 上下文增强，只拿 provider deadline 的一小段预算。
         const summaryBudget = providerBudget === undefined
             ? undefined
             : Math.min(10_000, Math.max(1_000, Math.floor(providerBudget / 4)));
@@ -515,7 +507,7 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
         const elapsed = now() - providerStartedAt;
         if (providerBudget !== undefined && elapsed >= providerBudget) throw new Error('翻译请求超时');
 
-        // Step 3: 把摘要耗时从剩余 provider 请求中扣除，避免后台无限等待。
+        // 把摘要耗时从剩余 provider 请求中扣除，避免后台无限等待。
         const normalizedMessage = {
             ...message,
             sourceLanguage,
@@ -532,7 +524,7 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
             } as TranslationRequestMessage,
             current,
         );
-        // Step 4: 根据 origin 类型进入单条或批量管线，两者共享缓存身份与 pending 去重。
+        // 根据 origin 类型进入单条或批量管线，两者共享缓存身份与 pending 去重。
         if (Array.isArray(requestMessage.origin)) {
             return translateBatchWithCache(
                 execution,
@@ -554,14 +546,14 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
     }
 
     async function clearTranslationCache(): Promise<void> {
-        // Step 1: 先切换代次并断开旧请求去重；旧 provider 仍可返回给原调用者，但不能重新填充缓存。
+        // 先切换代次并断开旧请求去重；旧 provider 仍可返回给原调用者，但不能重新填充缓存。
         cacheGeneration += 1;
         pendingTranslations.clear();
         pendingBatches.clear();
         pendingPageSummaries.clear();
         pageSummaryCache.clear();
 
-        // Step 2: 等待清理开始前已经进入存储适配器的写入，随后再清库，保证成功返回后没有旧写入复活。
+        // 等待清理开始前已经进入存储适配器的写入，随后再清库，保证成功返回后没有旧写入复活。
         const staleWrites = [...pendingCacheWrites]
             .filter(([, generation]) => generation < cacheGeneration)
             .map(([write]) => write);

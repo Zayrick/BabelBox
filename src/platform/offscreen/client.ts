@@ -1,11 +1,3 @@
-/**
- * @file src/platform/offscreen/client.ts
- *
- * 文件职责：管理 Chrome Offscreen document 的创建、复用与消息发送，为 OCR、内置翻译和音频等后台能力提供基础设施客户端。
- * 主要内容：定义 runtime/document 依赖端口和 OffscreenClient，createOffscreenClient 串行确保文档存在、处理并发创建与错误，默认 chromeOffscreenClient 连接浏览器 API。 可核对的公开符号包括 OffscreenMessage、OffscreenMessageEnvelope、OffscreenRuntimeApi、OffscreenDocumentApi、OffscreenClientDependencies、OffscreenClient、createOffscreenClient、chromeOffscreenClient。
- * 模块边界：本文件属于 platform 基础设施边界，只封装浏览器、网络、存储上下文或 Shadow DOM 机制；不决定翻译业务策略，不直接实现 feature，业务层通过类型化端口消费这里的能力。
- */
-
 export interface OffscreenMessage {
     readonly type: string;
 }

@@ -1,9 +1,3 @@
-/**
- * @file src/features/vocabulary/repository.ts
- * 文件职责：实现 FluentRead 本地单词本的 Dexie 持久化仓库，负责记录清洗、唯一身份、上下文合并、复习调度、删除撤销以及安全导入导出。
- * 主要内容：定义数据库 schema、VocabularyBookError、语言和 URL 规范化、掌握状态/间隔算法，提供 VocabularyBookRepository 的增删查改、review、JSON merge、review log 和 clear 操作。
- * 模块边界：仓库只拥有本地 IndexedDB 数据与领域不变量，不处理 runtime 消息或渲染界面；后台 handler 负责权限和广播，learningModel 提供纯会话模型，敏感上下文默认不导出。
- */
 import Dexie, { type Table } from 'dexie';
 import {
   VOCABULARY_BOOK_EXPORT_FORMAT,

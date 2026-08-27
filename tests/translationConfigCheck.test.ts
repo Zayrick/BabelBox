@@ -19,7 +19,7 @@ vi.mock('@/src/core/config/catalog', () => ({
 vi.mock('@/src/services/config/store', () => ({config: mocks.config}));
 vi.mock('@/src/features/page-notice/public', () => ({sendErrorMessage: mocks.sendErrorMessage}));
 
-import {checkConfig, contentPostHandler} from '@/src/app/translation/check';
+import {checkConfig} from '@/src/features/full-page-translation/content/configCheck';
 
 describe('translation configuration guard', () => {
     beforeEach(() => {
@@ -73,6 +73,5 @@ describe('translation configuration guard', () => {
         mocks.config.model['ai-demo'] = 'model-1';
 
         expect(checkConfig()).toBe(true);
-        expect(contentPostHandler('<think>secret</think> translated')).toBe('translated');
     });
 });

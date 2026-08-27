@@ -1,9 +1,3 @@
-/**
- * @file src/features/video-subtitle/content/youtubeTimedTextBridge.ts
- * 文件职责：把通用 YouTube timedtext 拦截核心安装到当前页面 MAIN world，并返回可重复调用的清理函数供 feature 生命周期管理。
- * 主要内容：文件从 window 提取 fetch、XMLHttpRequest、CustomEvent、location 等环境端口，调用 installYoutubeTimedTextBridgeLifecycleCore 完成幂等启用、禁用和宿主方法恢复。
- * 模块边界：此适配层不解析字幕、不翻译文本也不持有 UI；猴补算法位于 youtubeTimedTextBridgeCore，消费 postMessage 的逻辑位于 video runtime，宿主 prototype 必须在卸载时恢复。
- */
 import {
     installYoutubeTimedTextBridgeLifecycleCore,
     type YoutubeBridgeEventTarget,

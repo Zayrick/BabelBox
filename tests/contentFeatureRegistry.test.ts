@@ -132,9 +132,9 @@ describe('content feature registry', () => {
         let mountCalls = 0;
         const mount = vi.fn(() => {
             mountCalls += 1;
-            // Step 1: 恢复 activation 首次调用会复用禁用前尚未 settle 的 singleton Promise。
+            // 恢复 activation 首次调用会复用禁用前尚未 settle 的 singleton Promise。
             if (mountCalls <= 2) return staleMount;
-            // Step 2: 旧 Promise settle 后，恢复 activation 的一次重试真正建立新宿主。
+            // 旧 Promise settle 后，恢复 activation 的一次重试真正建立新宿主。
             mounted = true;
             return undefined;
         });

@@ -1,9 +1,3 @@
-<!--
- @file src/app/document-translation/DocumentApp.vue
- 文件职责：实现独立文档翻译页面的完整 Vue 应用，承载文件导入、格式化预览、分段翻译、人工校订和双语文件导出的用户流程。
- 主要内容：支持 PDF、EPUB、DOCX、HTML、TXT、Markdown、字幕与 JSON 等格式，管理拖放/选择、服务与模型配置、翻译进度、PDF 位图预览、章节或部件导航、译文编辑和下载状态。
- 模块边界：组件负责页面交互与响应式状态，不自行解析二进制格式、不实现翻译队列或导出编码；解析渲染来自 document-translation feature，运行时适配由本目录 runtime 注入。
--->
 <!-- 文档页面归 app 层所有；WXT 入口只负责启动。 -->
 <template>
   <div class="document-app" :class="{ dark: isDark }">

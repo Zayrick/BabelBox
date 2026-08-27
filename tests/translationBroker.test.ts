@@ -351,7 +351,7 @@ describe('translation broker', () => {
             .mockImplementationOnce(() => firstWave[0].promise)
             .mockImplementationOnce(() => firstWave[1].promise);
 
-        // Step 1: 先短后长；过去按秒取整会错误共享同一个 pending Promise。
+        // 先短后长；过去按秒取整会错误共享同一个 pending Promise。
         const shortFirst = translateWithCache({origin: 'Timeout identity A', requestTimeoutMs: 1_001});
         const longSecond = translateWithCache({origin: 'Timeout identity A', requestTimeoutMs: 1_999});
         await flushMicrotasks();
@@ -368,7 +368,7 @@ describe('translation broker', () => {
             .mockImplementationOnce(() => secondWave[0].promise)
             .mockImplementationOnce(() => secondWave[1].promise);
 
-        // Step 2: 再验证相反顺序，避免较短 deadline 被较长请求放宽。
+        // 再验证相反顺序，避免较短 deadline 被较长请求放宽。
         const longFirst = translateWithCache({origin: 'Timeout identity B', requestTimeoutMs: 1_999});
         const shortSecond = translateWithCache({origin: 'Timeout identity B', requestTimeoutMs: 1_001});
         await flushMicrotasks();
@@ -383,7 +383,7 @@ describe('translation broker', () => {
         const sameBudget = deferred<string>();
         mocks.service.mockImplementationOnce(() => sameBudget.promise);
 
-        // Step 3: 完全相同的归一化预算仍应共享 provider 工作。
+        // 完全相同的归一化预算仍应共享 provider 工作。
         const sameFirst = translateWithCache({origin: 'Timeout identity C', requestTimeoutMs: 1_999.9});
         const sameSecond = translateWithCache({origin: 'Timeout identity C', requestTimeoutMs: 1_999.1});
         await flushMicrotasks();
@@ -700,7 +700,7 @@ describe('translation broker', () => {
             return request.promise;
         });
 
-        // Step 1: 首个请求用 1 秒生成摘要，正文只剩 3 秒。
+        // 首个请求用 1 秒生成摘要，正文只剩 3 秒。
         const summarizedFirst = translateWithCache({
             origin: 'Same deadline',
             pageContext: 'Same article',
@@ -712,7 +712,7 @@ describe('translation broker', () => {
             requestTimeoutMs: 3_000,
         }));
 
-        // Step 2: 后发请求直接命中摘要，正文仍有 4 秒，必须拥有独立 pending 身份。
+        // 后发请求直接命中摘要，正文仍有 4 秒，必须拥有独立 pending 身份。
         const cachedSummarySecond = translateWithCache({
             origin: 'Same deadline',
             pageContext: 'Same article',

@@ -4,7 +4,7 @@ import {
     CONNECTION_TEST_MESSAGE_TYPE,
     createConnectionTestHandler,
 } from '@/src/app/background/handlers/connectionTest';
-import {createBackgroundMessageRouter} from '@/src/app/background/messageRouter';
+import {createBackgroundMessageRouter} from '@/src/platform/browser/messageRouter';
 
 describe('background connection test handler', () => {
     it('等待配置 ready 后执行 provider 连接测试', async () => {

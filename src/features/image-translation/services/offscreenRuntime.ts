@@ -1,9 +1,3 @@
-/**
- * @file src/features/image-translation/services/offscreenRuntime.ts
- * 文件职责：在隔离 Offscreen 文档中编排图片与圈选翻译的像素流水线：加载位图、OCR、翻译文本、修补原文区域并绘制匹配背景的译文。
- * 主要内容：定义带 backgroundColor 的结果类型，包含图片解码、文本换行和字号适配，导出 translateImageInOffscreen 与 translateAreaInOffscreen，后者先按视口选区裁剪截图。
- * 模块边界：该运行时只在具备 Canvas/DOM 的 Offscreen 环境执行，不直接接收 browser.runtime 事件；消息入口由 app/offscreen 组装，翻译函数由依赖注入，几何算法来自 area feature。
- */
 import { selectChangedTranslations, type OcrLine } from '@/src/features/image-translation/core';
 import { areaRectToImageCrop, type AreaTranslationSelection } from '@/src/features/area-translation/public';
 import { inpaintTextRegions } from './inpainting';

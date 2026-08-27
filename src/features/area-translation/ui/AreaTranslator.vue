@@ -1,9 +1,3 @@
-<!--
- * @file src/features/area-translation/ui/AreaTranslator.vue
- * 文件职责：实现页面内圈选翻译的完整交互覆盖层：监听 Shift+Z 后拖拽区域，展示识别进度、译后位图或错误操作，并支持重试与关闭。
- * 主要内容：组件维护 idle、selecting、loading、translated、error 阶段，处理键盘、指针、窗口失焦和视口变化，调用截图/翻译客户端，并按共享主题计算封闭 Shadow UI 中的结果样式。
- * 模块边界：组件不拥有浏览器截图权限或 OCR 算法，只调用 services/client；是否挂载由 content/runtime 控制，选区规范化复用 core，跨域像素隔离由 closed Shadow Root 与后台链路保证。
- -->
 <template>
   <div v-show="isSelecting || phase !== 'idle'" class="fr-area-translator-root" @pointerdown.stop>
     <div v-if="isSelecting && selectionRect" class="fr-area-selection" :style="areaStyle(selectionRect)" aria-hidden="true">

@@ -1,11 +1,3 @@
-/**
- * @file src/core/translation/layout.ts
- *
- * 文件职责：判定页面元素的语义块、内联关系和可重组边界，为候选引擎选择合理翻译粒度并保护页面布局。
- * 主要内容：识别 heading、block、inline、结构标签、嵌入式 aside 和 reparent 边界，限制直接子节点探测数量，并提供候选目标及内联 run 相关的布局函数。 可核对的公开符号包括 isSemanticHeadingElement、getElementDisplay、isBlockBoundary、isStructuralContainer、hasStructuralAncestor、isTranslationControlElement、hasDirectReadableText、hasReadableBlockChild。
- * 模块边界：本文件属于可独立测试的 core 候选领域；可以读取传入 DOM 以计算结果，但不访问配置存储、不调用 provider、不注册页面监听器，也不负责译文渲染或 feature 生命周期。
- */
-
 import {
     getComposedParent,
     isDocumentSurface,

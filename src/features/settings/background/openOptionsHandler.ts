@@ -1,9 +1,3 @@
-/**
- * @file src/features/settings/background/openOptionsHandler.ts
- * 文件职责：处理来自页面通知和扩展 UI 的打开设置请求，在后台严格校验目标分区并将导航动作委托给可注入的 Options 页面适配器。
- * 主要内容：定义 openOptionsPage 消息、允许的 section ID 列表、请求响应与依赖契约，parseSection 拒绝未知值，createOpenOptionsPageHandler 返回类型化 handler。
- * 模块边界：本文件不直接绑定 browser.runtime、不渲染设置页也不持久化配置；浏览器页面创建由 app 注入，分区展示与搜索逻辑属于 settings/model 和 Options composition root。
- */
 export const OPEN_OPTIONS_PAGE_MESSAGE_TYPE = 'openOptionsPage' as const;
 
 export const OPTIONS_SECTION_IDS = [

@@ -1,9 +1,3 @@
-/**
- * @file src/features/full-page-translation/content/progressPanel.ts
- * 文件职责：管理全文翻译进度面板在内容页中的异步 Shadow UI 生命周期，并依据配置开关、翻译活动状态和请求代次决定保留或清理挂载结果。
- * 主要内容：包含单例实例和 UI 句柄、ContentScriptContext 缓存、mountRequestId 所有权校验、closed Shadow Root 创建，以及 mountTranslationProgressPanel 与 unmountTranslationProgressPanel。
- * 模块边界：该文件不计算进度也不渲染面板内容；状态发布归 progress.ts，视觉和关闭行为归 TranslationProgressPanel.vue，何时启用由 content composition root 和配置服务控制。
- */
 import TranslationProgressPanel from '@/src/features/full-page-translation/ui/TranslationProgressPanel.vue';
 import {config} from '@/src/services/config/store';
 import type { ContentScriptContext } from 'wxt/utils/content-script-context';

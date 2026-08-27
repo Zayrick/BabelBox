@@ -1,9 +1,3 @@
-/**
- * @file src/features/image-translation/ocrLanguages.ts
- * 文件职责：定义图片 OCR 支持的语言包目录、推荐组合和持久化键，并把用户源语言映射为 Tesseract 实际需要加载的语言代码。
- * 主要内容：包含 eng、chi_sim、jpn 类型与展示元数据、推荐中英集合、getRequiredImageOcrLanguages 选择规则和 normalizeImageOcrLanguageCodes 白名单去重。
- * 模块边界：此文件只描述受支持语言与规范化规则，不下载资源或访问 storage；下载由后台 Offscreen OCR runtime 执行，状态持久化由 ocrLanguageRepository 和设置组件协调。
- */
 export type ImageOcrLanguageCode = 'eng' | 'chi_sim' | 'jpn';
 
 export type ImageOcrLanguagePack = {
