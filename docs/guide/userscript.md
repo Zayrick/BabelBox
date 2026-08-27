@@ -23,7 +23,7 @@ FluentRead 产品版本与 userscript 更新版本是两个不同概念：设置
 
 ## 为什么不是 WXT 直接转换
 
-FluentRead 锁定的 WXT 0.20.18 没有 userscript 入口类型；官方源码只定义了 background、content script、popup、options、sidepanel 等扩展入口。因此 userscript 使用独立 Vite 配置生成 IIFE，但复用当前业务模块，而不是拼接 WXT 的扩展产物。参见 [WXT 0.20.18 类型定义](https://github.com/wxt-dev/wxt/blob/wxt-v0.20.18/packages/wxt/src/types.ts#L765-L818) 与 [WXT Entrypoints](https://wxt.dev/guide/essentials/entrypoints)。
+FluentRead 锁定的 WXT 0.21.4 没有 userscript 入口类型；官方源码只定义了 background、content script、popup、options、sidepanel 等扩展入口。因此 userscript 使用独立 Vite 配置生成 IIFE，但复用当前业务模块，而不是拼接 WXT 的扩展产物。参见 [WXT 0.21.4 类型定义](https://github.com/wxt-dev/wxt/blob/wxt-v0.21.4/packages/wxt/src/types.ts) 与 [WXT Entrypoints](https://wxt.dev/guide/essentials/entrypoints)。
 
 共享与适配边界如下：
 

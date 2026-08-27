@@ -106,7 +106,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
-import browser from 'webextension-polyfill';
+import {browser} from 'wxt/browser';
 import { config, subscribeConfig } from '@/src/services/config/store';
 import {translateText} from '@/src/services/translation/client';
 import { detectlang } from '@/src/core/language/detect';

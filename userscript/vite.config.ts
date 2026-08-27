@@ -3,9 +3,9 @@ import {resolve} from 'node:path';
 import vue from '@vitejs/plugin-vue';
 import ts from 'typescript';
 import {defineConfig, normalizePath, type Plugin} from 'vite';
-import {createUserscriptMetadata} from './metadata';
+import {createUserscriptMetadata} from './metadata.ts';
 
-const root = resolve(__dirname, '..');
+const root = resolve(import.meta.dirname, '..');
 const packageJson = JSON.parse(fs.readFileSync(resolve(root, 'package.json'), 'utf8')) as {
     version: string;
     userscriptVersion: string;
@@ -84,8 +84,60 @@ ${compatibilityPreludeEnd}`;
 
 type BrowserGlobal = 'browser' | 'chrome';
 
+function collectBindingNames(name: ts.BindingName, bindings: Set<BrowserGlobal>): void {
+    if (ts.isIdentifier(name)) {
+        if (name.text === 'browser' || name.text === 'chrome') bindings.add(name.text);
+        return;
+    }
+    for (const element of name.elements) {
+        if (!ts.isOmittedExpression(element)) collectBindingNames(element.name, bindings);
+    }
+}
+
+function findTopLevelBrowserBindings(sourceFile: ts.SourceFile): Set<BrowserGlobal> {
+    const bindings = new Set<BrowserGlobal>();
+    for (const statement of sourceFile.statements) {
+        if (ts.isImportDeclaration(statement)) {
+            const clause = statement.importClause;
+            if (!clause || clause.isTypeOnly) continue;
+            if (clause.name) collectBindingNames(clause.name, bindings);
+            const namedBindings = clause.namedBindings;
+            if (namedBindings && ts.isNamespaceImport(namedBindings)) {
+                collectBindingNames(namedBindings.name, bindings);
+            } else if (namedBindings) {
+                for (const element of namedBindings.elements) {
+                    if (!element.isTypeOnly) collectBindingNames(element.name, bindings);
+                }
+            }
+            continue;
+        }
+        if (ts.isImportEqualsDeclaration(statement)) {
+            if (!statement.isTypeOnly) collectBindingNames(statement.name, bindings);
+            continue;
+        }
+        if (ts.isVariableStatement(statement)) {
+            for (const declaration of statement.declarationList.declarations) {
+                collectBindingNames(declaration.name, bindings);
+            }
+            continue;
+        }
+        if ((ts.isFunctionDeclaration(statement)
+            || ts.isClassDeclaration(statement)
+            || ts.isEnumDeclaration(statement)) && statement.name) {
+            collectBindingNames(statement.name, bindings);
+            continue;
+        }
+        if (ts.isModuleDeclaration(statement) && ts.isIdentifier(statement.name)) {
+            collectBindingNames(statement.name, bindings);
+        }
+    }
+    return bindings;
+}
+
 function findFreeBrowserGlobals(code: string, id: string): BrowserGlobal[] {
-    const sourceFile = ts.createSourceFile(id, code, ts.ScriptTarget.Latest, true);
+    const scriptKind = id.endsWith('.vue') ? ts.ScriptKind.TS : undefined;
+    const sourceFile = ts.createSourceFile(id, code, ts.ScriptTarget.Latest, true, scriptKind);
+    const topLevelBindings = findTopLevelBrowserBindings(sourceFile);
     const options: ts.CompilerOptions = {
         module: ts.ModuleKind.ESNext,
         noLib: true,
@@ -117,7 +169,10 @@ function findFreeBrowserGlobals(code: string, id: string): BrowserGlobal[] {
             const isTypeOnlyReference = ts.isTypeReferenceNode(parent)
                 || ts.isTypeQueryNode(parent)
                 || ts.isQualifiedName(parent);
-            if (!isPropertyName && !isTypeOnlyReference && !checker.getSymbolAtLocation(node)) {
+            if (!isPropertyName
+                && !isTypeOnlyReference
+                && !topLevelBindings.has(node.text)
+                && !checker.getSymbolAtLocation(node)) {
                 found.add(node.text);
             }
         }
@@ -138,8 +193,7 @@ export function injectUserscriptBrowserImports(code: string, id: string): string
     const injected = findFreeBrowserGlobals(code, cleanId);
     if (injected.length === 0) return null;
 
-    const specifiers = injected.map((name) => name === 'browser' ? 'default as browser' : 'chrome');
-    return `import {${specifiers.join(', ')}} from ${JSON.stringify(browserShimPath)};\n${code}`;
+    return `import {${injected.join(', ')}} from ${JSON.stringify(browserShimPath)};\n${code}`;
 }
 
 function injectUserscriptBrowserShim(): Plugin {
@@ -216,7 +270,7 @@ export const userscriptAliases = [
     {find: '@/src/features/video-subtitle/public', replacement: resolve(root, 'userscript/unsupportedCapabilities.ts')},
     {find: /^\.\/chrome-translator$/u, replacement: resolve(root, 'userscript/chromeTranslator.ts')},
     {find: '@wxt-dev/storage', replacement: resolve(root, 'userscript/storage.ts')},
-    {find: 'webextension-polyfill', replacement: resolve(root, 'userscript/browser.ts')},
+    {find: 'wxt/browser', replacement: resolve(root, 'userscript/browser.ts')},
     {find: 'wxt/utils/content-script-ui/shadow-root', replacement: resolve(root, 'userscript/shadow-root.ts')},
     {find: '@', replacement: root},
 ];
@@ -237,7 +291,7 @@ export default defineConfig({
         outDir: resolve(root, '.output/userscript'),
         emptyOutDir: true,
         target: 'es2018',
-        minify: 'esbuild',
+        minify: 'oxc',
         sourcemap: false,
         cssCodeSplit: false,
         assetsInlineLimit: Number.MAX_SAFE_INTEGER,
@@ -247,9 +301,9 @@ export default defineConfig({
             formats: ['iife'],
             fileName: () => 'fluent-read.user.js',
         },
-        rollupOptions: {
+        rolldownOptions: {
             output: {
-                inlineDynamicImports: true,
+                codeSplitting: false,
                 entryFileNames: 'fluent-read.user.js',
             },
         },

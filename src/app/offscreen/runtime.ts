@@ -20,7 +20,9 @@ export function startOffscreenApp(): void {
     const ttsPlayer = createSelectionTtsPlayer({
         createAudio: () => new Audio(),
         decodeBase64: decodeAudioBase64,
-        createObjectUrl: (bytes, contentType) => URL.createObjectURL(new Blob([bytes], {type: contentType})),
+        createObjectUrl: (bytes, contentType) => URL.createObjectURL(new Blob([
+            Uint8Array.from(bytes),
+        ], {type: contentType})),
         revokeObjectUrl: (url) => URL.revokeObjectURL(url),
         notify: (request, state, error) => {
             void chrome.runtime.sendMessage({

@@ -1,6 +1,6 @@
 import FloatingBall from '@/src/features/floating-ball/ui/FloatingBall.vue';
 import {config, requestConfigSave} from '@/src/services/config/store';
-import browser from 'webextension-polyfill';
+import {browser} from 'wxt/browser';
 import {
   autoTranslateEnglishPage,
   isFullPageTranslationActive,

@@ -161,7 +161,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue';
-import browser from 'webextension-polyfill';
+import {browser} from 'wxt/browser';
 import {
   config as runtimeConfig,
   configReady,

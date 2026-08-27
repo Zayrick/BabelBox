@@ -1,4 +1,4 @@
-import browser from 'webextension-polyfill';
+import {browser} from 'wxt/browser';
 import { config, requestConfigSave, subscribeConfig } from '@/src/services/config/store';
 import { options, servicesType } from '@/src/core/config/catalog';
 import {
@@ -1579,7 +1579,7 @@ export function mountVideoSubtitleTranslation(): () => void {
     button.title = 'FluentRead 字幕翻译：已关闭';
     const icon = document.createElement('img');
     icon.className = 'fluent-read-video-subtitle-button-icon';
-    icon.src = browser.runtime.getURL('icon/128.png');
+    icon.src = browser.runtime.getURL('/icon/128.png');
     icon.alt = '';
     icon.setAttribute('aria-hidden', 'true');
     button.appendChild(icon);

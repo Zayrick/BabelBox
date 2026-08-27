@@ -1,0 +1,32 @@
+packages:
+  - .
+
+# This exact deprecated leaf is still required by the newest stable web-ext.
+# Keep the review narrow so a new deprecated version is surfaced instead.
+allowedDeprecatedVersions:
+  whatwg-encoding: 3.1.1
+
+allowBuilds:
+  esbuild: true
+  tesseract.js: false
+
+# Corepack owns the packageManager pin for this repository. Avoid a second
+# package-manager-only YAML document so dependency scanners read the project graph.
+pmOnFail: ignore
+
+minimumReleaseAgeExclude:
+  - '@ai-sdk/gateway@4.0.67'
+  - '@ai-sdk/openai-compatible@3.0.39'
+  - '@ai-sdk/provider-utils@5.0.32'
+  - '@vue/compiler-core@3.5.42'
+  - '@vue/compiler-dom@3.5.42'
+  - '@vue/compiler-sfc@3.5.42'
+  - '@vue/compiler-ssr@3.5.42'
+  - '@vue/reactivity@3.5.42'
+  - '@vue/runtime-core@3.5.42'
+  - '@vue/runtime-dom@3.5.42'
+  - '@vue/server-renderer@3.5.42'
+  - '@vue/shared@3.5.42'
+  - ai@7.0.83
+  - vue@3.5.42
+minimumReleaseAgeExcludePrune: true

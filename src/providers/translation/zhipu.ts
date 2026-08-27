@@ -1,18 +1,18 @@
 import {method, urls} from "@/src/core/config/constants";
 import {services} from "@/src/core/config/catalog";
 import {commonMsgTemplate} from '@/src/services/translation/templates';
-import CryptoJS from 'crypto-js';
 import {config} from "@/src/services/config/store";
 import {isApiKeyRequired} from "@/src/core/config/validation";
 import {createHttpStatusError, readJsonResponse} from '@/src/platform/http/errors';
 import {runtimeFetch} from '@/src/platform/http/runtime';
 import {getTranslationProviderConfig} from '@/src/services/translation/requestSnapshot';
+import {hmacSha256Base64} from '@/src/core/crypto/sha256';
 
 
-const JWT_CACHE_DURATION_MS = 3600000 * 24;
+const JWT_CACHE_DURATION_MS = 60 * 60 * 1000;
 const jwtCache = new Map<string, {apiKey: string; secret: string; expiration: number}>();
 
-// 文档参考：https://open.bigmodel.cn/dev/api#nosdk
+// 文档参考：https://docs.bigmodel.cn/cn/guide/develop/http/introduction
 async function zhipu(message: any) {
     const current = getTranslationProviderConfig(message, config);
     const service = message.serviceOverride || services.zhipu;
@@ -56,13 +56,13 @@ function generateToken(APIKey: string) {
     if (!APIKey || !APIKey.includes('.')) {
         return;
     }
-    const duration = JWT_CACHE_DURATION_MS; // 生成的 token 默认24小时后过期
+    const now = Date.now();
     const [key, secret] = APIKey.split('.');
 
     return generateJWT(secret, {alg: "HS256", sign_type: "SIGN", typ: "JWT"}, {
         api_key: key,
-        exp: Math.floor(Date.now() / 1000) + (duration / 1000),
-        timestamp: Math.floor(Date.now() / 1000)
+        exp: now + JWT_CACHE_DURATION_MS,
+        timestamp: now,
     });
 }
 
@@ -72,7 +72,7 @@ function generateJWT(secret: string, header: any, payload: any) {
     const encodedHeader = base64UrlSafe(btoa(JSON.stringify(header)));
     const encodedPayload = base64UrlSafe(btoa(JSON.stringify(payload)));
     // 生成 jwt 签名
-    let hmacsha256 = base64UrlSafe(CryptoJS.HmacSHA256(encodedHeader + "." + encodedPayload, secret).toString(CryptoJS.enc.Base64))
+    const hmacsha256 = base64UrlSafe(hmacSha256Base64(`${encodedHeader}.${encodedPayload}`, secret));
     return `${encodedHeader}.${encodedPayload}.${hmacsha256}`;
 }
 

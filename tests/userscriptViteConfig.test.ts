@@ -16,6 +16,7 @@ describe('userscript browser shim injection', () => {
             expect(stringAliases.get(`@/src/features/${feature}/public`)).toMatch(/userscript\/unsupportedCapabilities\.ts$/u);
         }
         expect(stringAliases.get('@/src/platform/storage/credentialContext')).toMatch(/userscript\/credentialContext\.ts$/u);
+        expect(stringAliases.get('wxt/browser')).toMatch(/userscript\/browser\.ts$/u);
         expect(userscriptAliases.at(-1)?.find).toBe('@');
     });
 
@@ -25,12 +26,12 @@ describe('userscript browser shim injection', () => {
             entrypointId,
         );
 
-        expect(transformed).toContain('import {default as browser, chrome}');
+        expect(transformed).toContain('import {browser, chrome}');
 
         expect(injectUserscriptBrowserImports(
             'browser.runtime.sendMessage({type: "from-app"});',
             sourceModuleId,
-        )).toContain('import {default as browser}');
+        )).toContain('import {browser}');
         expect(injectUserscriptBrowserImports(
             'chrome.runtime.getURL("from-vue.png");',
             vueScriptModuleId,
@@ -47,8 +48,20 @@ describe('userscript browser shim injection', () => {
             entrypointId,
         )).toBeNull();
         expect(injectUserscriptBrowserImports(
-            'import chrome from "webextension-polyfill"; void chrome.runtime;',
+            'import {browser} from "wxt/browser"; void browser.runtime;',
             entrypointId,
+        )).toBeNull();
+        expect(injectUserscriptBrowserImports(
+            'import {browser} from "wxt/browser"; void browser.runtime;',
+            vueScriptModuleId,
+        )).toBeNull();
+        expect(injectUserscriptBrowserImports(
+            'const browser = createBrowser(); void browser.runtime;',
+            vueScriptModuleId,
+        )).toBeNull();
+        expect(injectUserscriptBrowserImports(
+            'const {chrome} = createGlobals(); void chrome.runtime;',
+            vueScriptModuleId,
         )).toBeNull();
         expect(injectUserscriptBrowserImports(
             'browser.runtime.sendMessage({});',

@@ -478,7 +478,7 @@
 
 <script lang="ts" setup>
 import { computed, defineAsyncComponent, onMounted, onUnmounted, ref, watch } from 'vue';
-import browser from 'webextension-polyfill';
+import {browser} from 'wxt/browser';
 import {
   config as runtimeConfig,
   configReady,
@@ -851,7 +851,7 @@ function setPluginEnabled(enabled: boolean) {
 function openDrawer(name: DrawerName) { activeDrawer.value = name; drawerVisible.value = true; }
 async function openOptions(section?: SettingsSection) {
   if (section) {
-    await browser.tabs.create({ url: `${browser.runtime.getURL('options.html')}#${section}` });
+    await browser.tabs.create({ url: `${browser.runtime.getURL('/options.html')}#${section}` });
   } else {
     await browser.runtime.openOptionsPage();
   }
@@ -859,7 +859,7 @@ async function openOptions(section?: SettingsSection) {
 }
 
 async function openDocumentTranslation() {
-  await browser.tabs.create({ url: browser.runtime.getURL('document.html') });
+  await browser.tabs.create({ url: browser.runtime.getURL('/document.html') });
   window.close();
 }
 

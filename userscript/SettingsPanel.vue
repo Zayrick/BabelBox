@@ -92,7 +92,7 @@
 import {computed, onMounted, ref} from 'vue';
 import {ElOption, ElSelect} from 'element-plus';
 import 'element-plus/es/components/select/style/css';
-import browser from 'webextension-polyfill';
+import {browser} from 'wxt/browser';
 import {Config} from '@/src/core/config/model';
 import {config as runtimeConfig, configReady, saveConfig} from '@/src/services/config/store';
 import {customModelString, models, options, services, servicesType} from '@/src/core/config/catalog';

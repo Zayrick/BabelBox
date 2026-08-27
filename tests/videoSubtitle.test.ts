@@ -7,8 +7,8 @@ vi.mock('@wxt-dev/storage', () => ({
         watch: vi.fn().mockReturnValue(() => undefined),
     },
 }));
-vi.mock('webextension-polyfill', () => ({
-    default: { runtime: { sendMessage: vi.fn() } },
+vi.mock('wxt/browser', () => ({
+    browser: { runtime: { sendMessage: vi.fn() } },
 }));
 import {
     getVideoSubtitleDownloadErrorMessage,

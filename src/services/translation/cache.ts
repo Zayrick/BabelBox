@@ -1,5 +1,5 @@
-import CryptoJS from 'crypto-js';
 import Dexie, { type Table } from 'dexie';
+import {sha256Hex} from '@/src/core/crypto/sha256';
 
 export const TRANSLATION_CACHE_VERSION = 1;
 export const TRANSLATION_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -58,7 +58,7 @@ export function buildTranslationCacheKey(identity: TranslationCacheIdentity): st
     version: TRANSLATION_CACHE_VERSION,
     ...identity,
   });
-  const digest = CryptoJS.SHA256(payload).toString(CryptoJS.enc.Hex);
+  const digest = sha256Hex(payload);
   return `v${TRANSLATION_CACHE_VERSION}:${digest}`;
 }
 

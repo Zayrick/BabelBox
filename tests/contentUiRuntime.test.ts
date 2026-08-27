@@ -19,8 +19,8 @@ vi.mock('@/src/services/config/store', () => ({
   requestConfigSave: mocks.requestConfigSave,
 }));
 vi.mock('@/src/platform/shadow-ui', () => ({createVueShadowUi: mocks.createVueShadowUi}));
-vi.mock('webextension-polyfill', () => ({
-  default: {
+vi.mock('wxt/browser', () => ({
+  browser: {
     runtime: {
       getURL: (path: string) => `chrome-extension://fixture${path}`,
       sendMessage: mocks.sendMessage,

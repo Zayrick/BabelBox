@@ -1,4 +1,4 @@
-import browser from 'webextension-polyfill';
+import {browser} from 'wxt/browser';
 import {detectlang} from '@/src/core/language/detect';
 import {resolveConfiguredModel, servicesType} from '@/src/core/config/catalog';
 import {getMissingCredentialMessage} from '@/src/core/config/validation';

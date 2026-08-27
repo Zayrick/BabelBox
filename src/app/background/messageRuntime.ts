@@ -1,3 +1,4 @@
+import {browser} from 'wxt/browser';
 import {formatConnectionTestError, runTranslationServiceConnectionTest, translateMicrosoftTexts} from './providerRuntime';
 import {
     applyConfigHistoryAction,
@@ -150,14 +151,15 @@ export function installBackgroundMessageRuntime(options: BackgroundMessageRuntim
     ];
     const router = createBackgroundMessageRouter(handlers);
 
-    browser.runtime.onMessage.addListener(async (message: unknown, sender: any) => {
-        try {
-            const dispatch = await router.dispatch(message, {sender});
-            return dispatch.handled
+    browser.runtime.onMessage.addListener((message: unknown, sender, sendResponse) => {
+        void router.dispatch(message, {sender}).then((dispatch) => {
+            sendResponse(dispatch.handled
                 ? dispatch.response
-                : {success: false, error: '不支持的后台消息'};
-        } catch (error) {
-            return {success: false, error: error instanceof Error ? error.message : String(error)};
-        }
+                : {success: false, error: '不支持的后台消息'});
+        }, (error) => {
+            sendResponse({success: false, error: error instanceof Error ? error.message : String(error)});
+        });
+        // Chromium 只有在同步返回 true 时才会为异步 sendResponse 保持消息通道。
+        return true;
     });
 }

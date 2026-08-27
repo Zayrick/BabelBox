@@ -7,7 +7,7 @@
 
 ## 技术基线
 
-- 保持现有技术栈：WXT 0.20、Vue 3、TypeScript、Element Plus 和 pnpm 9。当前锁文件实际使用 WXT 0.20.18；未经明确升级任务，不按新版文档擅自使用仅在更高版本存在的 API。
+- 保持现有技术栈：WXT 0.21、Vue 3、TypeScript、Element Plus 和 pnpm 12。当前锁文件使用 WXT 0.21.4，本地与 CI 使用 Node.js `^22.13 || >=24`；未经明确升级任务，不按新版文档擅自使用仅在更高版本存在的 API。
 - 遵循 [架构设计](docs/architecture.md) 的单向模块边界：
   - `entrypoints/`：WXT 文件式入口，只绑定生命周期并组装 `src/app`。
   - `src/app/`：background/content/popup/options/document/offscreen 的静态 composition root；`userscript/` 是独立发布出口。
@@ -19,7 +19,7 @@
 - `entrypoints/` 只保留 WXT 入口；内部模块统一从 `src` 的实际归属路径导入，不保留项目内部旧路径兼容壳。
 - 新功能应复用现有配置、消息、翻译服务和挂载机制，避免另建一套并行状态或通信体系。
 - 内容脚本运行在任意网页中。新增 DOM、样式和事件时使用 FluentRead 专属命名，避免污染宿主页面；卸载、关闭或页面离开时清理监听器、计时器、观察器、挂载节点和未完成请求。
-- 浏览器 API 优先使用项目现有的 `browser`/webextension-polyfill 方式，并同时考虑 Chrome、Edge 和 Firefox 的行为差异。
+- 浏览器 API 统一从 WXT 的 `wxt/browser` 导入 `browser`，并同时考虑 Chrome、Edge 和 Firefox 的行为差异。
 - API 密钥、令牌和用户配置只能按现有本地存储方案处理，不写入日志、源码、测试夹具或提交内容。
 
 ## WXT 官方依据

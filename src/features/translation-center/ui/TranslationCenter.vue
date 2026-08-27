@@ -219,7 +219,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import browser from 'webextension-polyfill'
+import {browser} from 'wxt/browser'
 import ServiceIcon from '@/src/ui/components/ServiceIcon.vue'
 import {
   filterAvailableTranslationServices,

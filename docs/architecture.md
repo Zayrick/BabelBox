@@ -1,6 +1,6 @@
 # FluentRead 架构设计
 
-FluentRead 使用 WXT 0.20、Vue 3 和 TypeScript。目录按运行时入口、业务能力和外部边界划分。
+FluentRead 使用 WXT 0.21、Vue 3 和 TypeScript。目录按运行时入口、业务能力和外部边界划分。
 
 ## 目录职责
 
@@ -43,7 +43,7 @@ WXT 会把 `entrypoints/` 下零层或一层的入口作为构建输入，并在
 - content 生命周期使用 WXT `ContentScriptContext` 与 `AbortSignal`；卸载时释放 DOM、事件、计时器、观察器和未完成请求。
 - manifest 或入口变化同时核对 Chrome/Edge MV3 与 Firefox MV2 的权限和产物。
 
-参考：[WXT Entrypoints](https://wxt.dev/guide/essentials/entrypoints)、[Content Scripts](https://wxt.dev/guide/essentials/content-scripts)、[Project Structure](https://wxt.dev/guide/essentials/project-structure)。项目锁定 WXT 0.20.18，使用新 API 前先核对对应版本的类型或源码。
+参考：[WXT Entrypoints](https://wxt.dev/guide/essentials/entrypoints)、[Content Scripts](https://wxt.dev/guide/essentials/content-scripts)、[Project Structure](https://wxt.dev/guide/essentials/project-structure)。项目锁定 WXT 0.21.4，使用新 API 前先核对对应版本的类型或源码。
 
 ## Feature 生命周期
 

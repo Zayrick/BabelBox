@@ -1,14 +1,98 @@
-import {defineConfig, type ConfigEnv, type UserManifest} from 'wxt';
+import {
+    defineConfig,
+    type ConfigEnv,
+    type CopiedPublicFile,
+    type ResolvedPublicFile,
+    type UserManifest,
+} from 'wxt';
 import vue from '@vitejs/plugin-vue';
-import {resolve} from 'path';
+import {createRequire} from 'node:module';
+import {dirname, relative, resolve, sep} from 'path';
 import fs from 'fs';
 import {resolveBrowserCapabilities} from './src/platform/browser/capabilities';
 
 
-const packageJson = JSON.parse(fs.readFileSync(resolve(__dirname, 'package.json'), 'utf-8'));
+const packageJson = JSON.parse(fs.readFileSync(resolve(import.meta.dirname, 'package.json'), 'utf-8'));
 const firefoxRunnerBinary = process.env.FLUENTREAD_FIREFOX_RUNNER_BINARY;
 const firefoxRunnerProfile = process.env.FLUENTREAD_FIREFOX_RUNNER_PROFILE;
 const firefoxRunnerStartUrl = process.env.FLUENTREAD_FIREFOX_RUNNER_START_URL;
+const requireFromConfig = createRequire(import.meta.url);
+const dependencyPublicAssetPrefixes = [
+    'fluent-read-ocr/core/',
+    'fluent-read-ocr/worker/',
+    'pdfjs/',
+];
+
+function copiedDirectoryAssets(sourceRoot: string, outputRoot: string): CopiedPublicFile[] {
+    const assets: CopiedPublicFile[] = [];
+    const visit = (directory: string) => {
+        const entries = fs.readdirSync(directory, {withFileTypes: true})
+            .sort((left, right) => left.name < right.name ? -1 : left.name > right.name ? 1 : 0);
+        for (const entry of entries) {
+            const absolutePath = resolve(directory, entry.name);
+            if (entry.isDirectory()) {
+                visit(absolutePath);
+            } else if (entry.isFile()) {
+                const packagePath = relative(sourceRoot, absolutePath).split(sep).join('/');
+                assets.push({
+                    absoluteSrc: absolutePath,
+                    relativeDest: `${outputRoot}/${packagePath}`,
+                });
+            }
+        }
+    };
+
+    visit(sourceRoot);
+    return assets;
+}
+
+/** Resolve extension runtime files from the exact package versions selected by pnpm. */
+export function resolveDependencyPublicAssets(): CopiedPublicFile[] {
+    const tesseractRoot = dirname(requireFromConfig.resolve('tesseract.js/package.json'));
+    const requireFromTesseract = createRequire(resolve(tesseractRoot, 'package.json'));
+    const tesseractCoreRoot = dirname(requireFromTesseract.resolve('tesseract.js-core/package.json'));
+    const pdfjsRoot = dirname(requireFromConfig.resolve('pdfjs-dist/package.json'));
+
+    return [
+        {
+            absoluteSrc: resolve(tesseractRoot, 'dist/worker.min.js'),
+            relativeDest: 'fluent-read-ocr/worker/worker.min.js',
+        },
+        {
+            absoluteSrc: resolve(tesseractRoot, 'dist/worker.min.js.LICENSE.txt'),
+            relativeDest: 'fluent-read-ocr/worker/worker.min.js.LICENSE.txt',
+        },
+        {
+            absoluteSrc: resolve(tesseractRoot, 'LICENSE.md'),
+            relativeDest: 'fluent-read-ocr/worker/LICENSE.md',
+        },
+        {
+            absoluteSrc: resolve(tesseractCoreRoot, 'LICENSE'),
+            relativeDest: 'fluent-read-ocr/core/LICENSE',
+        },
+        ...[
+            'tesseract-core-lstm.wasm.js',
+            'tesseract-core-relaxedsimd-lstm.wasm.js',
+            'tesseract-core-simd-lstm.wasm.js',
+        ].map((fileName): CopiedPublicFile => ({
+            absoluteSrc: resolve(tesseractCoreRoot, fileName),
+            relativeDest: `fluent-read-ocr/core/${fileName}`,
+        })),
+        ...['cmaps', 'iccs', 'standard_fonts', 'wasm'].flatMap(directory =>
+            copiedDirectoryAssets(resolve(pdfjsRoot, directory), `pdfjs/${directory}`)),
+    ];
+}
+
+function isDependencyPublicAsset(relativeDest: string): boolean {
+    const normalizedPath = relativeDest.split(sep).join('/');
+    return dependencyPublicAssetPrefixes.some(prefix => normalizedPath.startsWith(prefix));
+}
+
+/** Replace ignored local mirrors with dependency-owned sources before WXT copies public assets. */
+export function injectDependencyPublicAssets(files: ResolvedPublicFile[]): void {
+    const retainedFiles = files.filter(file => !isDependencyPublicAsset(file.relativeDest));
+    files.splice(0, files.length, ...retainedFiles, ...resolveDependencyPublicAssets());
+}
 
 /**
  * Edge 的扩展内容脚本加载器会拒绝产物中的 Unicode 非字符 U+FFFE/U+FFFF，
@@ -65,6 +149,11 @@ export function createExtensionManifest(
             'http://*/*',
             'https://*/*',
         ],
+        browser_specific_settings: env.browser === 'firefox' ? {
+            gecko: {
+                id: '{3096bd53-3bda-4556-b076-ebf47442a5c1}',
+            },
+        } : undefined,
         web_accessible_resources: [
             {
                 resources: ['icon/32.png', 'icon/48.png', 'icon/128.png'],
@@ -78,7 +167,14 @@ export function createExtensionManifest(
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
-    modules: ['@wxt-dev/webextension-polyfill'],
+    hooks: {
+        'build:publicAssets': (_, files) => injectDependencyPublicAssets(files),
+        'prepare:tsconfig': (_, {tsconfig}) => {
+            // WXT 0.21 enables this globally; the existing indexed-access contracts
+            // require a dedicated hardening pass before this can be enabled safely.
+            delete tsconfig.compilerOptions.noUncheckedIndexedAccess;
+        },
+    },
     // Firefox 的开发 runner 使用一次性 profile；预置启动参数，避免每轮 UI
     // 回归都被 about:welcome 首次启动引导遮挡。仅影响 pnpm dev:firefox，
     // 不会写入用户 Firefox profile，也不会进入扩展发布产物。
@@ -116,7 +212,18 @@ export default defineConfig({
             },
             // Source-level redaction is the primary control. Production-only
             // stripping is defense in depth for future diagnostics added later.
-            esbuild: isProductionBuild ? {drop: ['console', 'debugger']} : undefined,
+            build: isProductionBuild ? {
+                rolldownOptions: {
+                    output: {
+                        minify: {
+                            compress: {
+                                dropConsole: true,
+                                dropDebugger: true,
+                            },
+                        },
+                    },
+                },
+            } : undefined,
         };
     },
     manifest: createExtensionManifest,

@@ -22,4 +22,14 @@ describe('extension manifest capabilities', () => {
             expect(permissions).toEqual(expect.arrayContaining(['storage', 'alarms', 'contextMenus']));
         }
     });
+
+    it('keeps the published Firefox add-on identity out of Chromium manifests', () => {
+        const firefox = createExtensionManifest({browser: 'firefox', manifestVersion: 2});
+        const chrome = createExtensionManifest({browser: 'chrome', manifestVersion: 3});
+
+        expect(firefox.browser_specific_settings).toEqual({
+            gecko: {id: '{3096bd53-3bda-4556-b076-ebf47442a5c1}'},
+        });
+        expect(chrome.browser_specific_settings).toBeUndefined();
+    });
 });

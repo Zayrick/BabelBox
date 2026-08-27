@@ -11,8 +11,8 @@ import {
 
 const {sendMessage} = vi.hoisted(() => ({sendMessage: vi.fn()}));
 
-vi.mock('webextension-polyfill', () => ({
-    default: {runtime: {sendMessage}},
+vi.mock('wxt/browser', () => ({
+    browser: {runtime: {sendMessage}},
 }));
 
 beforeEach(() => {

@@ -17,6 +17,27 @@ vi.mock('@/src/services/config/store', () => ({config: mockConfig}));
 
 import zhipu from '@/src/providers/translation/zhipu';
 
+const JWT_TTL_MS = 60 * 60 * 1000;
+
+function getBearerToken(callIndex: number): string {
+    const headers = vi.mocked(fetch).mock.calls[callIndex][1]?.headers as Headers;
+    const authorization = headers.get('Authorization');
+    expect(authorization).toMatch(/^Bearer /);
+    return authorization!.slice('Bearer '.length);
+}
+
+function decodeJwtPayload(token: string): Record<string, unknown> {
+    const encodedPayload = token.split('.')[1];
+    if (!encodedPayload) {
+        throw new Error('JWT payload is missing');
+    }
+    const base64 = encodedPayload
+        .replace(/-/g, '+')
+        .replace(/_/g, '/')
+        .padEnd(Math.ceil(encodedPayload.length / 4) * 4, '=');
+    return JSON.parse(atob(base64)) as Record<string, unknown>;
+}
+
 describe('智谱派生 JWT 凭据', () => {
     beforeEach(() => {
         vi.useFakeTimers();
@@ -32,17 +53,32 @@ describe('智谱派生 JWT 凭据', () => {
         vi.unstubAllGlobals();
     });
 
-    it('只在模块内存复用 JWT，不读取或改写 config.extra', async () => {
+    it('按毫秒生成一小时 JWT，过期前复用且在边界重新签发', async () => {
+        const issuedAt = Date.parse('2026-01-01T00:00:00Z');
         const legacyExtra = structuredClone(mockConfig.extra);
         await zhipu({origin: 'hello', targetLanguage: 'zh-Hans'});
-        vi.setSystemTime(new Date('2026-01-01T01:00:00Z'));
+
+        vi.setSystemTime(new Date(issuedAt + JWT_TTL_MS / 2));
         await zhipu({origin: 'world', targetLanguage: 'zh-Hans'});
 
-        const fetchMock = vi.mocked(fetch);
-        const firstHeaders = fetchMock.mock.calls[0][1]?.headers as Headers;
-        const secondHeaders = fetchMock.mock.calls[1][1]?.headers as Headers;
-        expect(firstHeaders.get('Authorization')).toMatch(/^Bearer /);
-        expect(secondHeaders.get('Authorization')).toBe(firstHeaders.get('Authorization'));
+        vi.setSystemTime(new Date('2026-01-01T01:00:00Z'));
+        await zhipu({origin: 'again', targetLanguage: 'zh-Hans'});
+
+        const firstToken = getBearerToken(0);
+        const reusedToken = getBearerToken(1);
+        const renewedToken = getBearerToken(2);
+        expect(reusedToken).toBe(firstToken);
+        expect(renewedToken).not.toBe(firstToken);
+        expect(decodeJwtPayload(firstToken)).toEqual({
+            api_key: 'api-id',
+            exp: issuedAt + JWT_TTL_MS,
+            timestamp: issuedAt,
+        });
+        expect(decodeJwtPayload(renewedToken)).toEqual({
+            api_key: 'api-id',
+            exp: issuedAt + JWT_TTL_MS * 2,
+            timestamp: issuedAt + JWT_TTL_MS,
+        });
         expect(mockConfig.extra).toEqual(legacyExtra);
     });
 });

@@ -781,7 +781,7 @@ import {
 } from '@/src/core/config/model';
 import { InfoFilled, Refresh, Edit, Upload, Download } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import browser from 'webextension-polyfill';
+import {browser} from 'wxt/browser';
 import {isBrowserTabId} from '@/src/platform/browser/ids';
 import { defineAsyncComponent } from 'vue';
 const CustomHotkeyInput = defineAsyncComponent(() => import('@/src/ui/components/CustomHotkeyInput.vue'));

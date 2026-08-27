@@ -13,6 +13,11 @@ dist
 .output
 .wxt
 
+# Dependency-derived extension runtime assets are injected by wxt.config.ts
+/public/fluent-read-ocr/core/
+/public/fluent-read-ocr/worker/
+/public/pdfjs/
+
 # Docs
 docs/.vitepress/dist
 docs/.vitepress/cache

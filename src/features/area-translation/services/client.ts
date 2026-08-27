@@ -1,4 +1,4 @@
-import browser from 'webextension-polyfill';
+import {browser} from 'wxt/browser';
 import type { OcrLine } from '@/src/shared/image/types';
 import type { AreaTranslationSelection } from '@/src/features/area-translation/core';
 

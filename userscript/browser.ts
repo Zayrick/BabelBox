@@ -68,7 +68,7 @@ const runtime = {
     },
 };
 
-const browser = {
+export const browser = {
     runtime,
     tabs: {
         async query(): Promise<Array<{id: number; windowId: number; active: boolean}>> {

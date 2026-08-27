@@ -1,8 +1,8 @@
 FluentRead bundles the following open-source OCR assets for local image text recognition:
 
-- Tesseract.js 6.0.1, Apache-2.0
-- tesseract.js-core 6.1.2, Apache-2.0
-- Tesseract language data packages for eng, chi_sim, and jpn, MIT
+- Tesseract.js 7.0.0, Apache-2.0
+- tesseract.js-core 7.0.0, Apache-2.0
 
-The worker, WebAssembly files, and language data are loaded from this extension's
-own resources. No OCR code is downloaded from a third-party CDN at runtime.
+The worker and WebAssembly files are loaded from this extension's own resources.
+Language data is downloaded on demand from Tesseract.js's default jsDelivr source
+and cached locally; no executable OCR code is downloaded at runtime.

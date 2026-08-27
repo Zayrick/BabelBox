@@ -84,7 +84,10 @@ An experimental userscript target for Via, Tampermonkey, and Violentmonkey can b
 
 ## Development
 
+Local development requires Node.js `^22.13 || >=24`. Enable Corepack (install it separately if your Node distribution does not include it); the repository's `packageManager` pin then selects pnpm 12.
+
 ```bash
+corepack enable
 pnpm install
 pnpm dev
 pnpm test

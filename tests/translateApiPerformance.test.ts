@@ -19,8 +19,8 @@ const mocks = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('webextension-polyfill', () => ({
-  default: {runtime: {sendMessage: mocks.sendMessage}},
+vi.mock('wxt/browser', () => ({
+  browser: {runtime: {sendMessage: mocks.sendMessage}},
 }));
 vi.mock('@/src/services/config/store', () => ({
   config: mocks.config,

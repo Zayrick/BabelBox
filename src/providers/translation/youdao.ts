@@ -1,10 +1,10 @@
 import { method } from "@/src/core/config/constants";
 import { config } from "@/src/services/config/store";
-import CryptoJS from 'crypto-js';
 import {getTranslationLanguages} from '@/src/services/translation/languages';
 import {createHttpStatusError, readJsonResponse} from '@/src/platform/http/errors';
 import {runtimeFetch} from '@/src/platform/http/runtime';
 import {getTranslationProviderConfig} from '@/src/services/translation/requestSnapshot';
+import {sha256Hex} from '@/src/core/crypto/sha256';
 
 interface YoudaoResponse {
   errorCode: string;
@@ -29,8 +29,8 @@ async function youdao(message: any): Promise<string> {
 
   // 生成签名
   function generateSign(appKey: string, query: string, salt: string, curtime: string, appSecret: string): string {
-    let str1 = appKey + truncate(query) + salt + curtime + appSecret;
-    return CryptoJS.SHA256(str1).toString(CryptoJS.enc.Hex);
+    const signatureInput = appKey + truncate(query) + salt + curtime + appSecret;
+    return sha256Hex(signatureInput);
   }
 
   // 截取函数（用于签名计算）

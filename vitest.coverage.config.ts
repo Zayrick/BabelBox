@@ -4,7 +4,7 @@ import {defineConfig} from 'vitest/config';
 export default defineConfig({
     resolve: {
         alias: {
-            '@': resolve(__dirname, '.'),
+            '@': resolve(import.meta.dirname, '.'),
         },
     },
     test: {
@@ -14,7 +14,6 @@ export default defineConfig({
         coverage: {
             provider: 'v8',
             enabled: true,
-            all: true,
             clean: true,
             include: ['src/**/*.ts'],
             exclude: ['src/**/*.d.ts'],

@@ -34,7 +34,6 @@ function componentMocks(): Plugin {
     name: 'vocabulary-lifecycle-test-mocks',
     enforce: 'pre',
     resolveId(id) {
-      if (id === 'webextension-polyfill') return '\0vocabulary-browser-mock';
       if (
         id === '@/src/services/config/store'
         || id.endsWith('/src/services/config/store')
@@ -45,9 +44,6 @@ function componentMocks(): Plugin {
       return null;
     },
     load(id) {
-      if (id === '\0vocabulary-browser-mock') {
-        return `export default globalThis.${TEST_STATE_KEY}.browser;`;
-      }
       if (id === '\0vocabulary-config-mock') {
         return [
           `const state = globalThis.${TEST_STATE_KEY};`,
@@ -76,19 +72,20 @@ describe('VocabularyBook mounted lifecycle', () => {
     };
     let resolveConfigReady!: () => void;
     const configReady = new Promise<void>((resolveReady) => { resolveConfigReady = resolveReady; });
-    setComponentTestState({
-      browser: {
-        runtime: {
-          sendMessage: async () => {
-            calls.runtimeSend += 1;
-            return { success: true, data: [] };
-          },
-          onMessage: {
-            addListener: () => { calls.runtimeAdd += 1; },
-            removeListener: () => undefined,
-          },
+    const browserMock = {
+      runtime: {
+        sendMessage: async () => {
+          calls.runtimeSend += 1;
+          return { success: true, data: [] };
+        },
+        onMessage: {
+          addListener: () => { calls.runtimeAdd += 1; },
+          removeListener: () => undefined,
         },
       },
+    };
+    setComponentTestState({
+      browser: browserMock,
       config: {
         theme: 'auto',
         vocabularyBookEnabled: false,
@@ -130,6 +127,7 @@ describe('VocabularyBook mounted lifecycle', () => {
     vi.stubGlobal('SVGElement', window.SVGElement);
     vi.stubGlobal('Event', window.Event);
     vi.stubGlobal('navigator', window.navigator);
+    vi.stubGlobal('chrome', browserMock);
 
     const require = createRequire(import.meta.url);
     const vueRuntime = require('vue') as typeof import('vue');
@@ -141,7 +139,7 @@ describe('VocabularyBook mounted lifecycle', () => {
       resolve: { alias: { '@': resolve(process.cwd(), '.') } },
       root: process.cwd(),
       server: { hmr: false, middlewareMode: true },
-      ssr: { noExternal: ['webextension-polyfill'] },
+      ssr: { noExternal: ['wxt', '@wxt-dev/browser'] },
     });
 
     try {

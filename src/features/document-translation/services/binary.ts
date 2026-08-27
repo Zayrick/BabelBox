@@ -351,12 +351,13 @@ async function parsePdf(fileName: string, bytes: Uint8Array): Promise<ParsedDocu
     const loadingTask = getPdfDocument({
         data: new Uint8Array(bytes),
         disableFontFace: true,
-        isEvalSupported: false,
         useWorkerFetch: false,
         ...(pdfAssetRoot ? {
             cMapPacked: true,
             cMapUrl: `${pdfAssetRoot}/cmaps/`,
+            iccUrl: `${pdfAssetRoot}/iccs/`,
             standardFontDataUrl: `${pdfAssetRoot}/standard_fonts/`,
+            wasmUrl: `${pdfAssetRoot}/wasm/`,
         } : {}),
     });
 

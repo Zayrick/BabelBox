@@ -52,7 +52,7 @@
 
 <script setup lang="ts">
 import {computed, onMounted, ref} from 'vue';
-import browser from 'webextension-polyfill';
+import {browser} from 'wxt/browser';
 import {browserCapabilities} from '@/src/platform/browser/capabilities';
 import {
   IMAGE_OCR_LANGUAGE_PACKS,

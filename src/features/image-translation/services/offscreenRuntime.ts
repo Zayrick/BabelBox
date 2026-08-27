@@ -76,7 +76,7 @@ async function translateTexts(texts: string[], title: string): Promise<string[]>
             type: 'fluentReadImageTranslateTexts',
             texts,
             title,
-        }, result => {
+        }, (result: unknown) => {
             if (chrome.runtime.lastError) {
                 reject(new Error(chrome.runtime.lastError.message));
             } else {

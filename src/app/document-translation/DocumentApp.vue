@@ -431,7 +431,7 @@
 
 <script lang="ts" setup>
 import {computed, onMounted, onUnmounted, reactive, ref, watch} from 'vue';
-import browser from 'webextension-polyfill';
+import {browser} from 'wxt/browser';
 import {
   Config,
   DOCUMENT_MAX_BYTES,
@@ -882,7 +882,10 @@ async function downloadDocument(): Promise<void> {
   errorMessage.value = '';
   try {
     const download = await createDocumentDownload(document, translatedSegments.value, outputMode.value);
-    const blob = new Blob([download.data], {type: download.mimeType});
+    const blobPart = typeof download.data === 'string'
+      ? download.data
+      : Uint8Array.from(download.data);
+    const blob = new Blob([blobPart], {type: download.mimeType});
     const url = URL.createObjectURL(blob);
     const anchor = window.document.createElement('a');
     anchor.href = url;
@@ -897,7 +900,7 @@ async function downloadDocument(): Promise<void> {
 }
 
 async function openSettings(): Promise<void> {
-  await browser.tabs.create({url: `${browser.runtime.getURL('options.html')}#settings-services`});
+  await browser.tabs.create({url: `${browser.runtime.getURL('/options.html')}#settings-services`});
 }
 
 onMounted(() => {

@@ -87,11 +87,12 @@ function browserPdfDocument(bytes: Uint8Array): Promise<any> {
     const promise = getPdfDocument({
         data: new Uint8Array(bytes),
         disableFontFace: false,
-        isEvalSupported: false,
         useWorkerFetch: false,
         cMapPacked: true,
         cMapUrl: `${pdfAssetRoot}/cmaps/`,
+        iccUrl: `${pdfAssetRoot}/iccs/`,
         standardFontDataUrl: `${pdfAssetRoot}/standard_fonts/`,
+        wasmUrl: `${pdfAssetRoot}/wasm/`,
     }).promise;
     browserPdfCache.set(bytes, promise);
     return promise;
@@ -112,7 +113,7 @@ async function renderPdfSourceCanvas(bytes: Uint8Array, pageNumber: number, widt
     if (!context) throw new Error('浏览器 Canvas 初始化失败');
     context.fillStyle = '#ffffff';
     context.fillRect(0, 0, canvas.width, canvas.height);
-    await page.render({canvas, canvasContext: context, viewport}).promise;
+    await page.render({canvas, viewport}).promise;
     page.cleanup();
     return canvas;
 }
