@@ -109,6 +109,23 @@ async function waitForServiceWorker(context, timeout) {
   return context.waitForEvent('serviceworker', {timeout});
 }
 
+async function openElementSelect(page, ariaLabel, timeout) {
+  const combobox = page.getByRole('combobox', {name: ariaLabel, exact: true});
+  await combobox.waitFor({state: 'visible', timeout});
+  await combobox.click();
+  const listbox = page.locator('[role="listbox"]:visible').last();
+  await listbox.waitFor({state: 'visible', timeout});
+  return {combobox, listbox};
+}
+
+async function selectElementOption(page, ariaLabel, optionLabel, timeout) {
+  const {combobox, listbox} = await openElementSelect(page, ariaLabel, timeout);
+  const option = listbox.getByRole('option', {name: optionLabel, exact: true});
+  await option.waitFor({state: 'visible', timeout});
+  await option.click();
+  return combobox;
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (!args.extensionDir) fail('必须传入 --extension-dir');
@@ -206,6 +223,7 @@ async function main() {
       }
       const isPdf = example.name === 'sample.pdf';
       let pdfScroll;
+      let pdfZoomState;
       let pdfPageRows = 0;
       if (isPdf) {
         await page.locator('.pdf-layout-viewer').waitFor({state: 'visible', timeout: args.timeout});
@@ -226,6 +244,15 @@ async function main() {
         if (pdfScroll.rows !== pdfPageRows || !pdfScroll.documentVerticalOverflow || pdfScroll.horizontalOverflow) {
           fail(`PDF 连续阅读滚动容器异常：${JSON.stringify(pdfScroll)}`);
         }
+        await selectElementOption(page, 'PDF 预览缩放', '125%', args.timeout);
+        pdfZoomState = await page.locator('.pdf-page-stage').first().evaluate((element) => ({
+          selectedLabel: document.querySelector('.document-zoom-select .el-select__selected-item:not(.el-select__input-wrapper)')?.textContent?.trim() || '',
+          minWidth: element.style.getPropertyValue('--pdf-page-min-width'),
+          maxWidth: element.style.getPropertyValue('--pdf-page-max-width'),
+        }));
+        if (pdfZoomState.selectedLabel !== '125%' || pdfZoomState.minWidth !== '500px' || pdfZoomState.maxWidth !== '900px') {
+          fail(`PDF 缩放选择没有保留数值类型：${JSON.stringify(pdfZoomState)}`);
+        }
       }
       const nativeReader = page.locator('[data-document-reader]').first();
       await nativeReader.waitFor({state: 'visible', timeout: args.timeout});
@@ -238,7 +265,12 @@ async function main() {
       if (await page.getByRole('button', {name: '开始翻译'}).count() !== 1) {
         fail(`${example.name} 缺少开始翻译按钮`);
       }
-      exampleLoads[example.name] = {badge: example.badge, previewCount, ...(pdfScroll ? {continuousScroll: pdfScroll} : {})};
+      exampleLoads[example.name] = {
+        badge: example.badge,
+        previewCount,
+        ...(pdfScroll ? {continuousScroll: pdfScroll} : {}),
+        ...(pdfZoomState ? {zoomSelection: pdfZoomState} : {}),
+      };
 
       const editableTranslations = page.locator('.document-translation');
       const editableCount = await editableTranslations.count();
@@ -333,13 +365,14 @@ async function main() {
     }
     result.assertions.exampleLoads = exampleLoads;
 
-    await page.locator('[aria-label="文档翻译服务"]').selectOption('openai');
-    const documentModel = page.locator('[aria-label="文档翻译模型"]');
-    await documentModel.waitFor({state: 'visible', timeout: args.timeout});
-    const modelOptions = await documentModel.locator('option').count();
+    await selectElementOption(page, '文档翻译服务', 'OpenAI', args.timeout);
+    const {listbox: documentModelListbox} = await openElementSelect(page, '文档翻译模型', args.timeout);
+    const modelOptions = await documentModelListbox.getByRole('option').count();
     if (modelOptions < 2) fail(`文档翻译模型选项过少：${modelOptions}`);
-    await documentModel.selectOption('gpt-5.4-mini');
-    if (await documentModel.inputValue() !== 'gpt-5.4-mini') fail('文档翻译模型没有保存当前选择');
+    await documentModelListbox.getByRole('option', {name: 'gpt-5.4-mini', exact: true}).click();
+    const selectedDocumentModel = page.locator('.model-control .el-select__selected-item:not(.el-select__input-wrapper)').filter({hasText: 'gpt-5.4-mini'});
+    await selectedDocumentModel.waitFor({state: 'visible', timeout: args.timeout});
+    if ((await selectedDocumentModel.textContent())?.trim() !== 'gpt-5.4-mini') fail('文档翻译模型没有保存当前选择');
     result.assertions.documentModelSelection = 'passed';
     await page.screenshot({path: path.join(artifactsDir, 'document-model-selection.png'), fullPage: true});
     result.screenshots.push(path.join(artifactsDir, 'document-model-selection.png'));

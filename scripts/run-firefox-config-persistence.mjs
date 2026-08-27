@@ -437,7 +437,7 @@ async function main() {
             title: document.title,
             url: location.href,
             shell: Boolean(document.querySelector('.popup-shell')),
-            target: document.querySelectorAll('.language-pair select')[1]?.value || null,
+            target: document.querySelector('[aria-label="网页翻译目标语言"]')?.closest('.el-select')?.querySelector('.el-select__selected-item:not(.el-select__input-wrapper)')?.textContent?.trim() || null,
             text: document.body?.innerText?.slice(0, 1200) || ''
         })`);
         result.evidence.push({step: 'popup-loaded', url: popup.current.frame.url, ...result.popup});
@@ -496,10 +496,10 @@ async function main() {
         console.error('[firefox-test] quick close via extension navigation');
         await navigate(client, popupUrl);
         result.persistenceCases.quickClose = true;
-        const reopened = await waitForDom(client, `document.querySelector('.popup-shell')`, 'popup reopen');
-        result.persistenceCases.after = await evaluateJson(client, reopened.current.frame, `document.querySelectorAll('.language-pair select')[1]?.value || null`);
+        const reopened = await waitForDom(client, `document.querySelector('[aria-label="网页翻译目标语言"]')?.closest('.el-select')?.querySelector('.el-select__selected-item:not(.el-select__input-wrapper)')?.textContent?.trim() === '日语'`, 'popup reopen target language');
+        result.persistenceCases.after = await evaluateJson(client, reopened.current.frame, `document.querySelector('[aria-label="网页翻译目标语言"]')?.closest('.el-select')?.querySelector('.el-select__selected-item:not(.el-select__input-wrapper)')?.textContent?.trim() || null`);
         result.persistenceCases.storageAfterClose = await evaluateAsyncJson(client, reopened.current.frame, `browser.storage.local.get(null).then(all => { const value = all.config || all['local:config']; return {keys: Object.keys(all), to: value?.to, revision: value?.__fluentConfigRevision}; })`);
-        result.persistenceCases.crossPageSync = result.persistenceCases.after === 'ja';
+        result.persistenceCases.crossPageSync = result.persistenceCases.after === '日语';
         result.persistenceCases.latestWriteWins = result.persistenceCases.crossPageSync;
         result.evidence.push({step: 'popup-reopen', url: reopened.current.frame.url, target: result.persistenceCases.after, storage: result.persistenceCases.storageAfterClose});
         if (!result.persistenceCases.crossPageSync) throw new Error(`Firefox config did not persist across close/reopen: ${JSON.stringify(result.persistenceCases)}`);

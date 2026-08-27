@@ -73,29 +73,62 @@
         <div class="control-panel">
           <label class="language-control">
             <span>源语言</span>
-            <select v-model="config.from" :disabled="translating" aria-label="文档源语言">
-              <option v-for="item in sourceLanguageOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
-            </select>
+            <el-select
+              v-model="config.from"
+              class="document-control-select"
+              :disabled="translating"
+              :teleported="false"
+              popper-class="document-select-popper"
+              aria-label="文档源语言"
+            >
+              <el-option v-for="item in sourceLanguageOptions" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
           </label>
           <span class="language-arrow" aria-hidden="true">→</span>
           <label class="language-control">
             <span>目标语言</span>
-            <select v-model="config.to" :disabled="translating" aria-label="文档目标语言">
-              <option v-for="item in options.to" :key="item.value" :value="item.value">{{ item.label }}</option>
-            </select>
+            <el-select
+              v-model="config.to"
+              class="document-control-select"
+              :disabled="translating"
+              :teleported="false"
+              popper-class="document-select-popper"
+              aria-label="文档目标语言"
+            >
+              <el-option v-for="item in options.to" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
           </label>
           <label class="service-control">
             <span>翻译服务</span>
-            <select v-model="config.documentService" :disabled="translating" aria-label="文档翻译服务">
-              <option v-if="documentServiceUnavailableMessage" :value="config.documentService" disabled>Chrome内置AI翻译（当前浏览器不可用）</option>
-              <option v-for="item in serviceOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
-            </select>
+            <el-select
+              v-model="config.documentService"
+              class="document-control-select"
+              :disabled="translating"
+              :teleported="false"
+              popper-class="document-select-popper"
+              aria-label="文档翻译服务"
+            >
+              <el-option
+                v-if="documentServiceUnavailableMessage"
+                label="Chrome内置AI翻译（当前浏览器不可用）"
+                :value="config.documentService"
+                disabled
+              />
+              <el-option v-for="item in serviceOptions" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
           </label>
           <label v-if="documentUsesModel" class="model-control">
             <span>模型</span>
-            <select v-model="selectedDocumentModel" :disabled="translating" aria-label="文档翻译模型">
-              <option v-for="model in documentModelOptions" :key="model" :value="model">{{ model }}</option>
-            </select>
+            <el-select
+              v-model="selectedDocumentModel"
+              class="document-control-select"
+              :disabled="translating"
+              :teleported="false"
+              popper-class="document-select-popper"
+              aria-label="文档翻译模型"
+            >
+              <el-option v-for="model in documentModelOptions" :key="model" :label="model" :value="model" />
+            </el-select>
             <input
               v-if="selectedDocumentModel === customModelString"
               v-model="selectedDocumentCustomModel"
@@ -158,12 +191,18 @@
             </div>
             <label class="pdf-zoom-control">
               <span>缩放</span>
-              <select v-model.number="pdfZoom" aria-label="PDF 预览缩放">
-                <option :value="0.75">75%</option>
-                <option :value="1">100%</option>
-                <option :value="1.25">125%</option>
-                <option :value="1.5">150%</option>
-              </select>
+              <el-select
+                v-model="pdfZoom"
+                class="document-zoom-select"
+                :teleported="false"
+                popper-class="document-select-popper"
+                aria-label="PDF 预览缩放"
+              >
+                <el-option label="75%" :value="0.75" />
+                <el-option label="100%" :value="1" />
+                <el-option label="125%" :value="1.25" />
+                <el-option label="150%" :value="1.5" />
+              </el-select>
             </label>
           </div>
 

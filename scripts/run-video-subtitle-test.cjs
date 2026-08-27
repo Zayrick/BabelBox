@@ -155,10 +155,16 @@ async function main() {
     }
     await popup.locator('[data-feature="video-subtitle"]').click();
     await popup.getByText('YouTube 字幕翻译').waitFor({ state: 'visible', timeout: 10000 });
-    const videoDrawerState = await popup.evaluate(() => ({
-      drawerVisible: Boolean([...document.querySelectorAll('.drawer-content')].find((node) => node.textContent?.includes('视频翻译服务'))),
-      providerCount: document.querySelectorAll('.drawer-content select option').length,
-    }));
+    const videoServiceCombobox = popup.getByRole('combobox', { name: '视频翻译服务' });
+    await videoServiceCombobox.click();
+    const videoServiceOptions = popup.getByRole('option');
+    await videoServiceOptions.first().waitFor({ state: 'visible', timeout: 10000 });
+    const providerCount = await videoServiceOptions.count();
+    await popup.keyboard.press('Escape');
+    const drawerVisible = await popup.evaluate(() => Boolean(
+      [...document.querySelectorAll('.drawer-content')].find((node) => node.textContent?.includes('视频翻译服务')),
+    ));
+    const videoDrawerState = { drawerVisible, providerCount };
     await popup.screenshot({ path: path.join(artifactsDir, 'popup-video-beta-drawer.png'), fullPage: true });
     await popup.screenshot({ path: path.join(artifactsDir, 'popup-video-beta.png'), fullPage: true });
     await popup.close();

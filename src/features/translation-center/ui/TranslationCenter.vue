@@ -4,9 +4,15 @@
     <div class="translation-center-toolbar">
       <div class="language-picker-group">
         <label for="translation-center-source">源语言</label>
-        <select id="translation-center-source" v-model="sourceLanguage" aria-label="翻译中心源语言" @change="persistTranslationCenterConfig">
-          <option v-for="item in sourceLanguageOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
-        </select>
+        <el-select
+          id="translation-center-source"
+          v-model="sourceLanguage"
+          class="language-picker"
+          aria-label="翻译中心源语言"
+          @change="persistTranslationCenterConfig"
+        >
+          <el-option v-for="item in sourceLanguageOptions" :key="item.value" :label="item.label" :value="item.value" />
+        </el-select>
       </div>
 
       <button
@@ -22,9 +28,15 @@
 
       <div class="language-picker-group">
         <label for="translation-center-target">目标语言</label>
-        <select id="translation-center-target" v-model="targetLanguage" aria-label="翻译中心目标语言" @change="persistTranslationCenterConfig">
-          <option v-for="item in targetLanguageOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
-        </select>
+        <el-select
+          id="translation-center-target"
+          v-model="targetLanguage"
+          class="language-picker"
+          aria-label="翻译中心目标语言"
+          @change="persistTranslationCenterConfig"
+        >
+          <el-option v-for="item in targetLanguageOptions" :key="item.value" :label="item.label" :value="item.value" />
+        </el-select>
       </div>
 
       <div class="translation-center-toolbar-actions">
@@ -627,18 +639,29 @@ onUnmounted(() => {
 
 .language-picker-group { display: grid; gap: 4px; min-width: 142px; }
 .language-picker-group label { color: var(--muted); font-size: 10px; font-weight: 750; }
-.language-picker-group select {
+.language-picker {
+  width: 100%;
   min-width: 142px;
-  height: 36px;
-  padding: 0 30px 0 12px;
+}
+.language-picker-group :deep(.el-select__wrapper) {
+  min-height: 36px;
+  padding: 0 11px;
   border: 1px solid #e1e5ee;
   border-radius: 8px;
-  color: var(--ink);
   background: var(--surface-soft);
-  font-size: 13px;
-  outline: none;
+  box-shadow: none;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
 }
-.language-picker-group select:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(239, 71, 118, .1); }
+.language-picker-group :deep(.el-select__wrapper:hover) { border-color: #ef9ab1; }
+.language-picker-group :deep(.el-select__wrapper.is-focused) {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(239, 71, 118, .1);
+}
+.language-picker-group :deep(.el-select__selected-item) {
+  color: var(--ink);
+  font-size: 13px;
+}
+.language-picker-group :deep(.el-select__caret) { color: var(--muted); }
 
 .language-swap-button {
   width: 38px;
@@ -796,7 +819,7 @@ onUnmounted(() => {
   .translation-results-panel { min-height: 320px; }
   .translation-center-toolbar { align-items: stretch; flex-wrap: wrap; }
   .language-picker-group { flex: 1 1 140px; }
-  .language-picker-group select { min-width: 0; width: 100%; }
+  .language-picker { min-width: 0; width: 100%; }
   .language-swap-button { align-self: flex-end; }
   .translation-center-toolbar-actions { width: 100%; margin-left: 0; }
   .translation-center-service-picker { width: auto; margin-left: 0; flex: 1 1 auto; }

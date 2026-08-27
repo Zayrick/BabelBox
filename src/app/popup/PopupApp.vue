@@ -57,16 +57,16 @@
       <div class="language-pair">
         <label>
           <span>源语言</span>
-          <select v-model="config.from" :disabled="!config.on">
-            <option v-for="item in options.form" :key="item.value" :value="item.value">{{ item.label }}</option>
-          </select>
+          <el-select v-model="config.from" aria-label="网页翻译源语言" :disabled="!config.on">
+            <el-option v-for="item in options.form" :key="item.value" :label="item.label" :value="item.value" />
+          </el-select>
         </label>
         <span class="arrow">→</span>
         <label>
           <span>目标语言</span>
-          <select v-model="config.to" :disabled="!config.on">
-            <option v-for="item in options.to" :key="item.value" :value="item.value">{{ item.label }}</option>
-          </select>
+          <el-select v-model="config.to" aria-label="网页翻译目标语言" :disabled="!config.on">
+            <el-option v-for="item in options.to" :key="item.value" :label="item.label" :value="item.value" />
+          </el-select>
         </label>
       </div>
 
@@ -433,17 +433,17 @@
         </div>
         <label class="select-row">
           <span><strong>视频翻译服务</strong><small>与网页翻译服务独立保存</small></span>
-          <select v-model="config.videoService" :disabled="!config.videoTranslationEnabled">
-            <option v-if="selectedVideoServiceUnavailableMessage" :value="config.videoService" disabled>Chrome内置AI翻译（当前浏览器不可用）</option>
-            <option v-for="item in videoServiceOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
-          </select>
+          <el-select v-model="config.videoService" aria-label="视频翻译服务" :disabled="!config.videoTranslationEnabled">
+            <el-option v-if="selectedVideoServiceUnavailableMessage" label="Chrome内置AI翻译（当前浏览器不可用）" :value="config.videoService" disabled />
+            <el-option v-for="item in videoServiceOptions" :key="item.value" :label="item.label" :value="item.value" />
+          </el-select>
         </label>
         <small v-if="selectedVideoServiceUnavailableMessage" class="drawer-hint capability-warning">{{ selectedVideoServiceUnavailableMessage }}</small>
         <label class="select-row">
           <span><strong>字幕字号</strong><small>只调整 FluentRead 显示的原文和译文</small></span>
-          <select v-model.number="config.videoSubtitleFontSize" aria-label="视频字幕字号" :disabled="!config.videoTranslationEnabled">
-            <option v-for="size in videoSubtitleFontSizeOptions" :key="size" :value="size">{{ size === 100 ? '默认' : `${size}%` }}</option>
-          </select>
+          <el-select v-model="config.videoSubtitleFontSize" aria-label="视频字幕字号" :disabled="!config.videoTranslationEnabled">
+            <el-option v-for="size in videoSubtitleFontSizeOptions" :key="size" :label="size === 100 ? '默认' : `${size}%`" :value="size" />
+          </el-select>
         </label>
       </div>
 
@@ -456,11 +456,15 @@
         </div>
         <label v-if="config.display === 1" class="select-row">
           <span><strong>译文样式</strong></span>
-          <select v-model.number="config.style"><option v-for="item in styleOptions" :key="item.value" :value="item.value">{{ item.label }}</option></select>
+          <el-select v-model="config.style" aria-label="译文样式">
+            <el-option v-for="item in styleOptions" :key="item.value" :label="item.label" :value="item.value" />
+          </el-select>
         </label>
         <label class="select-row">
           <span><strong>界面主题</strong><small>同时应用到完整设置页面</small></span>
-          <select v-model="config.theme"><option v-for="item in options.theme" :key="item.value" :value="item.value">{{ item.label }}</option></select>
+          <el-select v-model="config.theme" aria-label="界面主题">
+            <el-option v-for="item in options.theme" :key="item.value" :label="item.label" :value="item.value" />
+          </el-select>
         </label>
       </div>
 

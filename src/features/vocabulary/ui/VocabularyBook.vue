@@ -88,19 +88,19 @@
 
         <section class="toolbar" aria-label="筛选单词">
           <label class="search-field"><span aria-hidden="true">⌕</span><input v-model.trim="query" type="search" placeholder="搜索单词、译义或上下文" /></label>
-          <select v-model="statusFilter" aria-label="掌握状态">
-            <option value="all">全部状态</option>
-            <option value="due">待复习</option>
-            <option value="new">新词</option>
-            <option value="learning">学习中</option>
-            <option value="familiar">熟悉</option>
-            <option value="mastered">已掌握</option>
-          </select>
-          <select v-model="sortOrder" aria-label="排序方式">
-            <option value="due">按复习时间</option>
-            <option value="recent">按最近收藏</option>
-            <option value="term">按字母顺序</option>
-          </select>
+          <el-select v-model="statusFilter" class="toolbar-select" aria-label="掌握状态">
+            <el-option label="全部状态" value="all" />
+            <el-option label="待复习" value="due" />
+            <el-option label="新词" value="new" />
+            <el-option label="学习中" value="learning" />
+            <el-option label="熟悉" value="familiar" />
+            <el-option label="已掌握" value="mastered" />
+          </el-select>
+          <el-select v-model="sortOrder" class="toolbar-select" aria-label="排序方式">
+            <el-option label="按复习时间" value="due" />
+            <el-option label="按最近收藏" value="recent" />
+            <el-option label="按字母顺序" value="term" />
+          </el-select>
         </section>
 
         <section v-if="loading && entries.length === 0" class="empty-state"><span class="loading-ring" /><p>正在读取本地单词本…</p></section>
@@ -694,7 +694,23 @@ onBeforeUnmount(() => {
 .search-field { display: flex; height: 40px; align-items: center; gap: 8px; padding: 0 11px; border: 1px solid #e1e4ec; border-radius: 8px; background: #fff; }
 .search-field span { color: #8b93a2; font-size: 17px; }
 .search-field input { width: 100%; border: 0; outline: 0; color: #172033; background: transparent; font-size: 11px; }
-.toolbar select { min-width: 0; padding: 0 10px; border: 1px solid #e1e4ec; border-radius: 8px; color: #172033; background: #fff; font-size: 10px; }
+.toolbar-select { width: 100%; min-width: 0; }
+.toolbar-select :deep(.el-select__wrapper) {
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid #e1e4ec;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: none;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+.toolbar-select :deep(.el-select__wrapper:hover) { border-color: #ef9ab1; }
+.toolbar-select :deep(.el-select__wrapper.is-focused) {
+  border-color: #ef4776;
+  box-shadow: 0 0 0 3px rgba(239, 71, 118, .1);
+}
+.toolbar-select :deep(.el-select__selected-item) { color: #172033; font-size: 10px; }
+.toolbar-select :deep(.el-select__caret) { color: #8b93a2; }
 .word-list { display: grid; gap: 0; border-top: 1px solid #e8eaf0; }
 .word-row { display: grid; grid-template-columns: minmax(0, 1fr) 190px; gap: 16px; padding: 14px 4px; border-bottom: 1px solid #e8eaf0; background: transparent; }
 .word-main { min-width: 0; }
@@ -780,8 +796,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 :global(:root.dark .summary-grid article), :global(:root.dark .empty-state) { border-color: #343844; background: #252830; }
 :global(:root.dark .summary-grid strong), :global(:root.dark .word-heading h3),
 :global(:root.dark .review-prompt h3), :global(:root.dark .answer-heading h3),
-:global(:root.dark .empty-state h3), :global(:root.dark .search-field input),
-:global(:root.dark .toolbar select) { color: #f4f5f8; }
+:global(:root.dark .empty-state h3), :global(:root.dark .search-field input) { color: #f4f5f8; }
 :global(:root.dark .beta-copy p), :global(:root.dark .data-heading p),
 :global(:root.dark .summary-grid span),
 :global(:root.dark .context-preview), :global(:root.dark .word-meta),
@@ -791,9 +806,11 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 :global(:root.dark .review-complete p) { color: #b8bec9; }
 :global(:root.dark .word-heading > span), :global(:root.dark .answer-heading span) { color: #e1aec1; }
 :global(:root.dark .review-answer > a) { color: #ff9abb; }
-:global(:root.dark .search-field), :global(:root.dark .toolbar select),
+:global(:root.dark .search-field),
 :global(:root.dark .refresh-button), :global(:root.dark .row-actions button),
 :global(:root.dark .data-actions button), :global(:root.dark .pagination button) { border-color: #3b3f4a; color: #d9dce3; background: #292c34; }
+:global(:root.dark .toolbar-select .el-select__wrapper) { border-color: #3b3f4a; background: #292c34; }
+:global(:root.dark .toolbar-select .el-select__selected-item) { color: #f4f5f8; }
 :global(:root.dark .review-actions button) { border-color: #3b3f4a; color: #e8eaf0; background: #292c34; }
 :global(:root.dark .word-main > p), :global(:root.dark .cloze-context) { color: #e5e7eb; }
 :global(:root.dark .answer-context) { color: #c1c6d0; background: #292c34; }

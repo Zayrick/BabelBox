@@ -252,15 +252,24 @@ async function main() {
     if (!popupDrawerBeta?.startsWith('Beta 测试')) {
       throw new Error(`Popup 视频字幕抽屉 Beta 徽标校验失败：${popupDrawerBeta}`);
     }
-    const popupVideoServiceOptions = await control.locator('.drawer-content .select-row select option').allTextContents();
+    const popupVideoServiceCombobox = control.getByRole('combobox', { name: '视频翻译服务' });
+    await popupVideoServiceCombobox.click();
+    const popupVideoServiceOptionItems = control.getByRole('option');
+    await popupVideoServiceOptionItems.first().waitFor({ state: 'visible', timeout: 10000 });
+    const popupVideoServiceOptions = await popupVideoServiceOptionItems.allTextContents();
     if (!popupVideoServiceOptions.includes('OpenAI') || !popupVideoServiceOptions.includes('微软翻译')) {
       throw new Error(`Popup 视频翻译服务没有同时提供机器翻译和 AI 服务：${JSON.stringify(popupVideoServiceOptions)}`);
     }
-    const popupVideoFontSizeOptions = await control.locator('.drawer-content select[aria-label="视频字幕字号"] option').allTextContents();
+    await control.keyboard.press('Escape');
+    const popupVideoFontSizeCombobox = control.getByRole('combobox', { name: '视频字幕字号' });
+    await popupVideoFontSizeCombobox.click();
+    const popupVideoFontSizeOptionItems = control.getByRole('option');
+    await popupVideoFontSizeOptionItems.first().waitFor({ state: 'visible', timeout: 10000 });
+    const popupVideoFontSizeOptions = await popupVideoFontSizeOptionItems.allTextContents();
     if (!popupVideoFontSizeOptions.includes('默认') || !popupVideoFontSizeOptions.includes('80%') || !popupVideoFontSizeOptions.includes('160%')) {
       throw new Error(`Popup 视频字幕字号选项不完整：${JSON.stringify(popupVideoFontSizeOptions)}`);
     }
-    await control.locator('.drawer-content select[aria-label="视频字幕字号"]').selectOption('140');
+    await control.getByRole('option', { name: '140%', exact: true }).click();
     await control.waitForTimeout(350);
     const popupVideoFontSizePersisted = await control.evaluate(async () => {
       const stored = await chrome.storage.local.get('config');
