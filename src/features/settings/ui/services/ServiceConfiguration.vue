@@ -11,7 +11,7 @@
     <div class="subsection-heading">
       <div>
         <strong>连接参数</strong>
-        <small class="connection-test-hint">修改会自动保存；API 凭据默认仅保留在当前浏览器会话。检查连接会发送一条很短的测试请求，可能产生少量用量。</small>
+        <small class="connection-test-hint">API 凭据默认仅保留在当前浏览器会话；检查连接会发送一条短测试请求，可能产生少量用量。</small>
       </div>
     </div>
 
@@ -207,7 +207,7 @@
       <div class="custom-template-heading">
         <div>
           <strong>请求模板</strong>
-          <small>按 OpenAI Chat Completions 格式发送；修改会保存到当前自定义接口配置。</small>
+          <small>按 OpenAI Chat Completions 格式发送。</small>
         </div>
         <el-button type="primary" link size="small" @click="resetCustomTemplate">恢复默认模板</el-button>
       </div>
@@ -395,29 +395,28 @@ watch(service, resetConnectionTest)
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  margin: 0 0 16px;
-  padding: 11px 13px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
   border: 1px solid #f3d19e;
   border-radius: 10px;
   color: #8a5a00;
   background: #fdf6ec;
   font-size: 12px;
   line-height: 1.5;
-  animation: credential-warning-breathe 2.8s ease-in-out infinite;
 }
 
 .subsection-heading {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 16px;
+  gap: 12px;
 }
 
 .subsection-heading > div:first-child {
   display: flex;
   min-width: 0;
   align-items: baseline;
-  gap: 9px;
+  gap: 7px;
 }
 
 .connection-test-hint {
@@ -431,8 +430,8 @@ watch(service, resetConnectionTest)
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  margin: 6px 0 10px;
-  padding-top: 14px;
+  margin: 4px 0 8px;
+  padding-top: 12px;
   border-top: 1px solid #eceef3;
 }
 
@@ -458,7 +457,7 @@ watch(service, resetConnectionTest)
   flex: 0 0 auto;
   align-self: flex-start;
   margin-left: auto;
-  padding: 8px 14px;
+  padding: 7px 12px;
   border: 1px solid #ef4776;
   border-radius: 9px;
   color: #c52f58;
@@ -472,7 +471,6 @@ watch(service, resetConnectionTest)
 .connection-test-button:hover:not(:disabled) {
   color: #fff;
   background: #ef4776;
-  box-shadow: 0 6px 14px rgba(214, 50, 96, .18);
 }
 
 .connection-test-button:disabled {
@@ -484,8 +482,8 @@ watch(service, resetConnectionTest)
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  margin: 0 0 14px;
-  padding: 10px 12px;
+  margin: 0 0 12px;
+  padding: 9px 11px;
   border: 1px solid #dfe3eb;
   border-radius: 10px;
   color: #667187;
@@ -513,14 +511,14 @@ watch(service, resetConnectionTest)
 }
 
 .minimax-key-note {
-  margin: -8px 0 14px 2em;
+  margin: -6px 0 10px;
   color: #6d7890;
   font-size: 11px;
   line-height: 1.5;
 }
 
 .mimo-key-note {
-  margin: -8px 0 14px 2em;
+  margin: -6px 0 10px;
   color: #6d7890;
   font-size: 11px;
   line-height: 1.5;
@@ -538,7 +536,7 @@ watch(service, resetConnectionTest)
   display: flex;
   align-items: baseline;
   gap: 8px;
-  margin: -4px 0 14px 2em;
+  margin: -4px 0 10px;
   color: #8993a5;
   font-size: 11px;
   line-height: 1.5;
@@ -554,7 +552,7 @@ watch(service, resetConnectionTest)
   display: flex;
   align-items: baseline;
   gap: 8px;
-  margin: -4px 0 14px 2em;
+  margin: -4px 0 10px;
   color: #8993a5;
   font-size: 11px;
   line-height: 1.5;
@@ -594,32 +592,22 @@ watch(service, resetConnectionTest)
   font-weight: 750;
 }
 
-@keyframes credential-warning-breathe {
-  0%, 100% { border-color: #f3d19e; box-shadow: 0 0 0 0 rgba(243, 209, 158, 0); }
-  50% { border-color: #e8b468; box-shadow: 0 0 0 4px rgba(243, 209, 158, .2); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .credential-warning { animation: none; }
-}
-
 .api-key-policy {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin: 0 0 10px;
-  padding: 12px 16px;
+  gap: 12px;
+  margin: 0 0 8px;
+  padding: 10px 12px;
   border: 1px solid #edf0f5;
-  border-radius: 16px;
+  border-radius: 10px;
   background: #fbfcfe;
-  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+  transition: border-color 160ms ease, background 160ms ease;
 }
 
 .api-key-policy:hover {
   border-color: #e5b4c2;
   background: #fff;
-  box-shadow: 0 8px 22px rgba(31, 40, 61, .04);
 }
 
 .api-key-policy-copy {
@@ -650,7 +638,7 @@ watch(service, resetConnectionTest)
   margin-left: 3px;
   padding: 2px 7px;
   border: 1px solid #f4c5d2;
-  border-radius: 999px;
+  border-radius: 6px;
   color: #c52f58;
   background: #fff2f5;
   font-size: 10px;

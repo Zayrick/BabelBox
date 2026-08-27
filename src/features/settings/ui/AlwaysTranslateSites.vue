@@ -6,7 +6,6 @@
   >
     <header class="site-rules-heading">
       <div>
-        <span class="site-rules-kicker">网站规则</span>
         <h3 :id="labels.titleId">{{ labels.title }}</h3>
         <p>{{ labels.description }}</p>
       </div>
@@ -51,7 +50,6 @@
         <span class="site-rule-icon" aria-hidden="true">{{ labels.icon }}</span>
         <span class="site-rule-copy">
           <strong :title="domain">{{ domain }}</strong>
-          <small>{{ labels.itemDescription }}</small>
         </span>
         <button class="site-rule-remove" type="button" :aria-label="`删除 ${domain}`" @click="removeDomain(domain)">
           删除
@@ -102,7 +100,6 @@ const labels = computed(() => props.variant === 'disable-extension'
     addButton: '添加网站',
     listLabel: '禁用扩展网站名单',
     icon: '禁',
-    itemDescription: '该主域名及其所有子域不会运行扩展功能',
     emptyTitle: '还没有禁用扩展的网站',
     emptyDescription: '可从上方手动添加，也可在扩展弹窗中为当前网站快速禁用。',
     duplicateMessage: (domain: string) => `${domain} 已在禁用扩展名单中。`,
@@ -121,7 +118,6 @@ const labels = computed(() => props.variant === 'disable-extension'
     addButton: '添加网站',
     listLabel: '始终翻译网站名单',
     icon: '译',
-    itemDescription: '该主域名及其所有子域会自动翻译',
     emptyTitle: '还没有始终翻译的网站',
     emptyDescription: '可从上方手动添加，也可在扩展弹窗中为当前网站快速开启。',
     duplicateMessage: (domain: string) => `${domain} 已在始终翻译名单中。`,
@@ -167,37 +163,27 @@ function removeDomain(domain: string) {
 
 <style scoped>
 .site-rules-editor {
-  margin-top: 16px;
-  padding: 20px;
-  border: 1px solid var(--line, #e5e8ef);
-  border-radius: 20px;
-  background: var(--surface-soft, #f7f8fb);
+  margin-top: 12px;
+  padding: 16px 0 0;
+  border-top: 1px solid var(--line, #e5e8ef);
+  background: transparent;
 }
 
 .site-rules-heading {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 18px;
+  gap: 12px;
 }
 
 .site-rules-heading > div {
   min-width: 0;
 }
 
-.site-rules-kicker {
-  display: block;
-  margin-bottom: 5px;
-  color: var(--brand-strong, #dc315f);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .1em;
-}
-
 .site-rules-heading h3 {
-  margin: 0 0 6px;
+  margin: 0 0 4px;
   color: var(--ink, #172033);
-  font-size: 18px;
+  font-size: 15px;
 }
 
 .site-rules-heading p {
@@ -211,12 +197,10 @@ function removeDomain(domain: string) {
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
-  min-height: 28px;
-  padding: 0 10px;
-  border: 1px solid rgba(239, 71, 118, .2);
-  border-radius: 999px;
-  color: var(--brand-strong, #dc315f);
-  background: var(--brand-soft, #fff0f4);
+  min-height: 24px;
+  padding: 0;
+  color: var(--muted, #737c8f);
+  background: transparent;
   font-size: 10px;
   font-weight: 750;
 }
@@ -225,7 +209,7 @@ function removeDomain(domain: string) {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
-  margin-top: 18px;
+  margin-top: 12px;
 }
 
 .site-rules-input-wrap {
@@ -234,10 +218,10 @@ function removeDomain(domain: string) {
 
 .site-rules-input-wrap input {
   width: 100%;
-  min-height: 44px;
-  padding: 0 14px;
+  min-height: 40px;
+  padding: 0 12px;
   border: 1px solid #dfe4ed;
-  border-radius: 13px;
+  border-radius: 8px;
   outline: 0;
   color: var(--ink, #172033);
   background: var(--surface, #fff);
@@ -251,7 +235,7 @@ function removeDomain(domain: string) {
 
 .site-rules-input-wrap input:focus {
   border-color: var(--brand, #ef4776);
-  box-shadow: 0 0 0 4px rgba(239, 71, 118, .1);
+  box-shadow: 0 0 0 3px rgba(239, 71, 118, .1);
 }
 
 .site-rules-input-wrap input[aria-invalid="true"] {
@@ -264,24 +248,22 @@ function removeDomain(domain: string) {
 
 .site-rules-add,
 .site-rule-remove {
-  border-radius: 12px;
+  border-radius: 8px;
   font-weight: 750;
   cursor: pointer;
 }
 
 .site-rules-add {
   min-width: 92px;
-  min-height: 44px;
-  padding: 0 15px;
+  min-height: 40px;
+  padding: 0 14px;
   border: 0;
   color: #fff;
-  background: linear-gradient(135deg, #f35482, #e93267);
-  box-shadow: 0 8px 18px rgba(233, 50, 103, .18);
+  background: var(--brand, #ef4776);
 }
 
 .site-rules-add:hover {
-  box-shadow: 0 10px 22px rgba(233, 50, 103, .26);
-  transform: translateY(-1px);
+  background: var(--brand-strong, #dc315f);
 }
 
 .site-rules-feedback {
@@ -302,7 +284,7 @@ function removeDomain(domain: string) {
 
 .site-rules-list {
   display: grid;
-  gap: 8px;
+  gap: 0;
   max-height: 360px;
   margin-top: 14px;
   padding-right: 3px;
@@ -312,34 +294,28 @@ function removeDomain(domain: string) {
 
 .site-rule-item {
   display: grid;
-  grid-template-columns: 36px minmax(0, 1fr) auto;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 11px;
-  min-height: 62px;
-  padding: 10px 11px;
-  border: 1px solid var(--line, #e5e8ef);
-  border-radius: 15px;
-  background: var(--surface, #fff);
+  gap: 10px;
+  min-height: 52px;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--line, #e5e8ef);
+  background: transparent;
 }
 
 .site-rule-icon {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 11px;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
   color: var(--brand-strong, #dc315f);
   background: var(--brand-soft, #fff0f4);
   font-size: 13px;
   font-weight: 800;
 }
 
-.site-rule-copy {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 3px;
-}
+.site-rule-copy { min-width: 0; }
 
 .site-rule-copy strong {
   overflow: hidden;
@@ -349,13 +325,8 @@ function removeDomain(domain: string) {
   white-space: nowrap;
 }
 
-.site-rule-copy small {
-  color: var(--muted, #737c8f);
-  font-size: 10px;
-}
-
 .site-rule-remove {
-  min-height: 32px;
+  min-height: 30px;
   padding: 0 11px;
   border: 1px solid var(--line, #e5e8ef);
   color: var(--brand-strong, #dc315f);
@@ -372,19 +343,19 @@ function removeDomain(domain: string) {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 150px;
+  min-height: 96px;
   margin-top: 14px;
-  padding: 20px;
+  padding: 16px;
   border: 1px dashed #d9dde6;
-  border-radius: 16px;
+  border-radius: 8px;
   color: var(--muted, #737c8f);
-  background: var(--surface, #fff);
+  background: transparent;
   text-align: center;
   flex-direction: column;
 }
 
 .site-rules-empty > span {
-  margin-bottom: 8px;
+  margin-bottom: 5px;
   color: var(--brand-strong, #dc315f);
   font-size: 24px;
 }
@@ -417,6 +388,9 @@ function removeDomain(domain: string) {
 :root.dark .site-rules-empty,
 :root.dark .site-rules-input-wrap input {
   border-color: #30333c;
+}
+
+:root.dark .site-rules-input-wrap input {
   background: #252830;
 }
 
@@ -437,16 +411,13 @@ function removeDomain(domain: string) {
 
 @media (max-width: 600px) {
   .site-rules-editor {
-    padding: 16px;
+    padding-top: 14px;
   }
 
   .site-rules-heading {
     gap: 12px;
   }
 
-  .site-rule-copy small {
-    white-space: normal;
-  }
 }
 
 @media (max-width: 480px) {

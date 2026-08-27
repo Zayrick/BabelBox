@@ -35,15 +35,15 @@
 
     <template v-else>
       <section class="summary-grid" aria-label="单词本概览">
-        <article><span>今日待复习</span><strong>{{ dueEntries.length }}</strong><small>{{ dueEntries.length ? '从最早到期开始' : '今天已经清空' }}</small></article>
-        <article><span>新词</span><strong>{{ statusCounts.new }}</strong><small>还没有完成第一次复习</small></article>
-        <article><span>学习中 / 熟悉</span><strong>{{ statusCounts.learning + statusCounts.familiar }}</strong><small>正在逐步拉长间隔</small></article>
-        <article><span>已掌握</span><strong>{{ statusCounts.mastered }}</strong><small>仍会低频巩固</small></article>
+        <article><span>今日待复习</span><strong>{{ dueEntries.length }}</strong></article>
+        <article><span>新词</span><strong>{{ statusCounts.new }}</strong></article>
+        <article><span>学习中 / 熟悉</span><strong>{{ statusCounts.learning + statusCounts.familiar }}</strong></article>
+        <article><span>已掌握</span><strong>{{ statusCounts.mastered }}</strong></article>
       </section>
 
       <section v-if="reviewActive" class="review-shell" aria-live="polite">
         <header class="review-header">
-          <div><span class="eyebrow">主动回忆</span><strong>{{ reviewPosition }} / {{ reviewTotal }}</strong></div>
+          <strong>复习 {{ reviewPosition }} / {{ reviewTotal }}</strong>
           <button type="button" :disabled="actionBusy" @click="finishReview">退出本轮</button>
         </header>
 
@@ -81,7 +81,7 @@
         <section class="primary-actions">
           <button class="start-review" type="button" :disabled="loading || actionBusy || reviewPlan.length === 0" @click="startReview">
             <span aria-hidden="true">▶</span>
-            <span><strong>{{ reviewPlan.length ? `开始复习 ${reviewPlan.length} 个` : '今天没有到期单词' }}</strong><small>先回忆，再用“忘了 / 记得”更新掌握程度</small></span>
+            <strong>{{ reviewPlan.length ? `开始复习 ${reviewPlan.length} 个` : '今天没有到期单词' }}</strong>
           </button>
           <button type="button" class="refresh-button" :disabled="loading" @click="loadEntries">{{ loading ? '读取中…' : '刷新' }}</button>
         </section>
@@ -140,7 +140,7 @@
         </section>
 
         <section class="data-panel">
-          <div class="data-heading"><div><span class="eyebrow">学习数据</span><h3>独立备份与迁移</h3><p>不会混入普通配置 JSON，也不会被清除翻译缓存。</p></div></div>
+          <div class="data-heading"><div><h3>独立备份与迁移</h3><p>不会混入普通配置 JSON，也不会被清除翻译缓存。</p></div></div>
           <label class="privacy-export"><input v-model="includePrivateContext" type="checkbox" /><span><strong>导出上下文和来源</strong><small>可能包含浏览过的页面标题、文本片段与去参数后的网址，默认不导出。</small></span></label>
           <div class="data-actions">
             <button type="button" :disabled="actionBusy || entries.length === 0" @click="exportJson">导出 FluentRead JSON</button>
@@ -661,11 +661,11 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.vocabulary-book { position: relative; display: grid; gap: 18px; color: #172033; }
-.beta-panel, .privacy-note, .selection-reminder, .primary-actions, .toolbar, .data-panel, .review-shell { border: 1px solid #e6e8ef; border-radius: 18px; background: #fff; }
-.beta-panel { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 17px 18px; background: linear-gradient(135deg, #fff, #fff7f9); }
+.vocabulary-book { position: relative; display: grid; gap: 12px; color: #172033; }
+.beta-panel, .privacy-note, .selection-reminder, .review-shell { border: 1px solid #e6e8ef; border-radius: 10px; background: #fff; }
+.beta-panel { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 13px 14px; }
 .beta-panel.enabled { border-color: rgba(239, 71, 118, .25); }
-.beta-copy { display: flex; min-width: 0; align-items: flex-start; gap: 12px; }
+.beta-copy { display: flex; min-width: 0; align-items: flex-start; gap: 10px; }
 .beta-copy h3, .data-heading h3 { margin: 0; font-size: 15px; }
 .beta-copy p, .data-heading p { margin: 5px 0 0; color: #737c8f; font-size: 11px; line-height: 1.55; }
 .beta-mark { flex: none; padding: 4px 7px; border-radius: 7px; color: #d72f61; background: #ffe8ef; font-size: 9px; font-weight: 800; letter-spacing: .06em; }
@@ -673,33 +673,30 @@ onBeforeUnmount(() => {
 .beta-switch i { display: block; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,.16); transition: transform 180ms ease; }
 .beta-switch[aria-checked="true"] { background: #ef4776; }
 .beta-switch[aria-checked="true"] i { transform: translateX(20px); }
-.selection-reminder { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 11px 14px; border-color: #f2d59f; color: #7e5912; background: #fff9ec; font-size: 11px; }
+.selection-reminder { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-color: #f2d59f; color: #7e5912; background: #fff9ec; font-size: 11px; }
 .selection-reminder button { border: 0; color: #a56600; background: transparent; cursor: pointer; font: inherit; font-weight: 800; }
-.privacy-note { display: flex; align-items: center; gap: 12px; padding: 13px 15px; color: #365f54; background: #f1fbf7; }
-.privacy-note > span { display: grid; width: 31px; height: 31px; place-items: center; border-radius: 10px; background: #dff5ec; font-size: 17px; }
+.privacy-note { display: flex; align-items: center; gap: 10px; padding: 11px 12px; color: #365f54; background: #f1fbf7; }
+.privacy-note > span { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 7px; background: #dff5ec; font-size: 15px; }
 .privacy-note div { display: flex; flex-direction: column; }
 .privacy-note strong { font-size: 11px; }
 .privacy-note small { margin-top: 3px; color: #628078; font-size: 9.5px; line-height: 1.45; }
-.summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-.summary-grid article { display: flex; min-height: 105px; padding: 14px; border: 1px solid #e8eaf0; border-radius: 16px; background: #fbfcfe; flex-direction: column; }
+.summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.summary-grid article { display: flex; min-height: 76px; padding: 12px; border: 1px solid #e8eaf0; border-radius: 8px; background: #fbfcfe; flex-direction: column; }
 .summary-grid span { color: #737c8f; font-size: 10px; font-weight: 700; }
-.summary-grid strong { margin: 7px 0 5px; color: #172033; font-size: 26px; line-height: 1; }
-.summary-grid small { color: #9aa1af; font-size: 9px; line-height: 1.35; }
-.primary-actions { display: flex; align-items: stretch; gap: 10px; padding: 10px; background: #f8f9fc; }
-.start-review { display: flex; min-height: 58px; padding: 10px 15px; border: 0; border-radius: 13px; color: #fff; background: linear-gradient(135deg, #f35482, #e93267); flex: 1; align-items: center; gap: 12px; text-align: left; cursor: pointer; }
+.summary-grid strong { margin: 8px 0 0; color: #172033; font-size: 24px; line-height: 1; }
+.primary-actions { display: flex; align-items: stretch; gap: 8px; padding: 0; background: transparent; }
+.start-review { display: flex; min-height: 48px; padding: 8px 13px; border: 0; border-radius: 8px; color: #fff; background: #ef4776; flex: 1; align-items: center; gap: 10px; text-align: left; cursor: pointer; }
 .start-review:disabled { color: #8c94a3; background: #e8eaf0; cursor: not-allowed; }
-.start-review > span:first-child { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 50%; background: rgba(255,255,255,.18); }
-.start-review > span:last-child { display: flex; flex-direction: column; }
+.start-review > span:first-child { display: grid; width: 26px; height: 26px; place-items: center; border-radius: 50%; background: rgba(255,255,255,.18); }
 .start-review strong { font-size: 12px; }
-.start-review small { margin-top: 3px; font-size: 9px; opacity: .85; }
-.refresh-button { min-width: 74px; border: 1px solid #e1e4ec; border-radius: 13px; color: #dc315f; background: #fff; cursor: pointer; font-size: 10px; font-weight: 750; }
-.toolbar { display: grid; grid-template-columns: minmax(220px, 1fr) 150px 150px; gap: 10px; padding: 10px; background: #f8f9fc; }
-.search-field { display: flex; height: 42px; align-items: center; gap: 8px; padding: 0 12px; border: 1px solid #e1e4ec; border-radius: 12px; background: #fff; }
+.refresh-button { min-width: 70px; border: 1px solid #e1e4ec; border-radius: 8px; color: #dc315f; background: #fff; cursor: pointer; font-size: 10px; font-weight: 750; }
+.toolbar { display: grid; grid-template-columns: minmax(220px, 1fr) 150px 150px; gap: 8px; padding: 0; background: transparent; }
+.search-field { display: flex; height: 40px; align-items: center; gap: 8px; padding: 0 11px; border: 1px solid #e1e4ec; border-radius: 8px; background: #fff; }
 .search-field span { color: #8b93a2; font-size: 17px; }
 .search-field input { width: 100%; border: 0; outline: 0; color: #172033; background: transparent; font-size: 11px; }
-.toolbar select { min-width: 0; padding: 0 10px; border: 1px solid #e1e4ec; border-radius: 12px; color: #172033; background: #fff; font-size: 10px; }
-.word-list { display: grid; gap: 9px; }
-.word-row { display: grid; grid-template-columns: minmax(0, 1fr) 190px; gap: 20px; padding: 16px 17px; border: 1px solid #e8eaf0; border-radius: 16px; background: #fff; }
+.toolbar select { min-width: 0; padding: 0 10px; border: 1px solid #e1e4ec; border-radius: 8px; color: #172033; background: #fff; font-size: 10px; }
+.word-list { display: grid; gap: 0; border-top: 1px solid #e8eaf0; }
+.word-row { display: grid; grid-template-columns: minmax(0, 1fr) 190px; gap: 16px; padding: 14px 4px; border-bottom: 1px solid #e8eaf0; background: transparent; }
 .word-main { min-width: 0; }
 .word-heading { display: flex; min-width: 0; align-items: baseline; gap: 9px; }
 .word-heading h3 { min-width: 0; margin: 0; overflow-wrap: anywhere; color: #172033; font-size: 19px; }
@@ -710,87 +707,83 @@ onBeforeUnmount(() => {
 .word-meta a { color: #b03c62; text-decoration: none; }
 .word-progress { display: flex; align-items: flex-end; flex-direction: column; }
 .word-progress > small { margin-top: 7px; color: #737c8f; font-size: 9px; }
-.status-pill { display: inline-flex; padding: 4px 8px; border-radius: 999px; font-size: 9px; font-weight: 800; }
+.status-pill { display: inline-flex; padding: 4px 8px; border-radius: 6px; font-size: 9px; font-weight: 800; }
 .status-new { color: #7c5c13; background: #fff2cc; }
 .status-learning { color: #b23b61; background: #ffe8f0; }
 .status-familiar { color: #2a68a1; background: #e8f3ff; }
 .status-mastered { color: #17765a; background: #e3f7ef; }
 .row-actions { display: flex; gap: 6px; margin-top: auto; padding-top: 14px; }
-.row-actions button, .data-actions button, .pagination button { min-height: 30px; padding: 0 9px; border: 1px solid #e1e4ec; border-radius: 9px; color: #4a5261; background: #fff; cursor: pointer; font-size: 9px; font-weight: 700; }
+.row-actions button, .data-actions button, .pagination button { min-height: 30px; padding: 0 9px; border: 1px solid #e1e4ec; border-radius: 7px; color: #4a5261; background: #fff; cursor: pointer; font-size: 9px; font-weight: 700; }
 .row-actions button:hover, .data-actions button:hover, .pagination button:hover { border-color: #ef9ab1; color: #dc315f; }
 button.danger { color: #c53d4f; }
 button:disabled { cursor: not-allowed; opacity: .55; }
 .pagination { display: flex; align-items: center; justify-content: center; gap: 12px; padding-top: 7px; }
 .pagination span { color: #737c8f; font-size: 9px; }
-.data-panel { padding: 16px; background: #f9fafc; }
+.data-panel { padding: 14px 0 0; border-top: 1px solid #e6e8ef; background: transparent; }
 .data-heading { display: flex; align-items: flex-start; justify-content: space-between; }
-.eyebrow { display: block; margin-bottom: 5px; color: #dc315f; font-size: 9px; font-weight: 800; letter-spacing: .1em; }
-.privacy-export { display: flex; gap: 9px; margin-top: 14px; padding: 11px; border: 1px solid #e5e8ef; border-radius: 12px; background: #fff; }
+.privacy-export { display: flex; gap: 9px; margin-top: 12px; padding: 10px; border: 1px solid #e5e8ef; border-radius: 8px; background: #fff; }
 .privacy-export input { margin-top: 2px; accent-color: #ef4776; }
 .privacy-export span { display: flex; flex-direction: column; }
 .privacy-export strong { font-size: 10px; }
 .privacy-export small { margin-top: 3px; color: #737c8f; font-size: 9px; line-height: 1.4; }
 .data-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .data-actions button { min-height: 34px; padding: 0 11px; background: #fff; }
-.empty-state { display: grid; min-height: 210px; place-items: center; align-content: center; gap: 7px; padding: 30px; border: 1px dashed #dfe3eb; border-radius: 18px; color: #9aa1af; background: #fbfcfe; text-align: center; }
+.empty-state { display: grid; min-height: 170px; place-items: center; align-content: center; gap: 7px; padding: 24px; border: 1px dashed #dfe3eb; border-radius: 10px; color: #9aa1af; background: #fbfcfe; text-align: center; }
 .empty-state > span { font-size: 28px; }
 .empty-state h3, .empty-state p { margin: 0; }
 .empty-state h3 { color: #4d5563; font-size: 14px; }
 .empty-state p { max-width: 420px; font-size: 10px; line-height: 1.55; }
 .loading-ring { width: 24px; height: 24px; border: 2px solid #f6cada; border-top-color: #ef4776; border-radius: 50%; animation: spin .7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.error-state { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 14px; border: 1px solid #f2c7ce; border-radius: 14px; color: #a73045; background: #fff3f5; font-size: 11px; }
+.error-state { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border: 1px solid #f2c7ce; border-radius: 8px; color: #a73045; background: #fff3f5; font-size: 11px; }
 .error-state button { border: 0; color: inherit; background: transparent; cursor: pointer; font-weight: 800; }
-.review-shell { padding: 18px; background: linear-gradient(150deg, #fff, #fff8fa); }
+.review-shell { padding: 14px; }
 .review-header { display: flex; align-items: center; justify-content: space-between; }
-.review-header > div { display: flex; align-items: baseline; gap: 9px; }
-.review-header .eyebrow { margin: 0; }
 .review-header strong { font-size: 11px; }
 .review-header button { border: 0; color: #737c8f; background: transparent; cursor: pointer; font-size: 10px; }
-.review-card { position: relative; display: grid; min-height: 360px; margin-top: 14px; padding: 24px; border: 1px solid #eadde2; border-radius: 20px; background: #fff; place-items: center; align-content: center; text-align: center; box-shadow: 0 16px 36px rgba(66, 42, 53, .07); }
+.review-card { position: relative; display: grid; min-height: 300px; margin-top: 10px; padding: 16px; place-items: center; align-content: center; text-align: center; }
 .review-card > .status-pill { position: absolute; align-self: start; justify-self: start; }
 .review-prompt { min-width: 0; max-width: 620px; }
 .review-prompt h3 { margin: 0; overflow-wrap: anywhere; color: #172033; font-size: 34px; }
 .review-prompt small { display: block; margin-top: 10px; color: #8b93a2; font-size: 10px; }
-.cloze-context { margin: 25px 0 0; overflow-wrap: anywhere; color: #27303f; font-family: Georgia, serif; font-size: 20px; line-height: 1.65; }
-.reveal-button { min-height: 43px; margin-top: 26px; padding: 0 18px; border: 0; border-radius: 12px; color: #fff; background: #ef4776; cursor: pointer; font-size: 11px; font-weight: 750; }
+.cloze-context { margin: 20px 0 0; overflow-wrap: anywhere; color: #27303f; font-family: Georgia, serif; font-size: 20px; line-height: 1.65; }
+.reveal-button { min-height: 42px; margin-top: 22px; padding: 0 17px; border: 0; border-radius: 8px; color: #fff; background: #ef4776; cursor: pointer; font-size: 11px; font-weight: 750; }
 .reveal-button kbd { margin-left: 8px; padding: 2px 6px; border: 1px solid rgba(255,255,255,.35); border-radius: 5px; background: rgba(255,255,255,.12); font: inherit; font-size: 8px; }
 .review-answer { width: min(100%, 620px); min-width: 0; margin-top: 20px; }
 .answer-heading { display: flex; min-width: 0; align-items: baseline; justify-content: center; gap: 10px; }
 .answer-heading h3 { min-width: 0; margin: 0; overflow-wrap: anywhere; color: #172033; font-size: 30px; }
 .answer-heading span { color: #8b6474; font-family: Georgia, serif; font-size: 14px; }
 .answer-translation { margin: 10px 0 0; overflow-wrap: anywhere; color: #ba315f; font-size: 18px; font-weight: 750; white-space: pre-wrap; }
-.answer-context { margin: 14px 0 0; padding: 10px 12px; overflow-wrap: anywhere; border-radius: 10px; color: #606978; background: #f7f8fb; font-size: 10px; line-height: 1.55; text-align: left; }
+.answer-context { margin: 12px 0 0; padding: 10px 12px; overflow-wrap: anywhere; border-radius: 8px; color: #606978; background: #f7f8fb; font-size: 10px; line-height: 1.55; text-align: left; }
 .review-answer > a { display: inline-block; margin-top: 8px; color: #a13b60; font-size: 9px; text-decoration: none; }
-.review-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 22px; }
-.review-actions button { display: grid; min-height: 60px; grid-template-columns: 22px 1fr; grid-template-rows: 1fr 1fr; padding: 9px 12px; border: 1px solid #e3e6ed; border-radius: 13px; background: #fff; text-align: left; cursor: pointer; }
+.review-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 18px; }
+.review-actions button { display: grid; min-height: 54px; grid-template-columns: 22px 1fr; grid-template-rows: 1fr 1fr; padding: 8px 11px; border: 1px solid #e3e6ed; border-radius: 8px; background: #fff; text-align: left; cursor: pointer; }
 .review-actions button > span { grid-row: 1 / 3; align-self: center; color: #8b93a2; font-size: 10px; }
 .review-actions strong { font-size: 11px; }
 .review-actions small { color: #8b93a2; font-size: 8.5px; }
 .review-actions .again:hover { border-color: #ef9aa9; background: #fff5f6; }
 .review-actions .good:hover { border-color: #70c8ab; background: #f1fbf7; }
-.review-complete { display: grid; min-height: 340px; place-items: center; align-content: center; gap: 8px; }
+.review-complete { display: grid; min-height: 280px; place-items: center; align-content: center; gap: 8px; }
 .review-complete > span { display: grid; width: 54px; height: 54px; place-items: center; border-radius: 50%; color: #fff; background: #27ae80; font-size: 25px; }
 .review-complete h3, .review-complete p { margin: 0; }
 .review-complete p { color: #737c8f; font-size: 10px; }
-.review-complete button { min-height: 38px; margin-top: 10px; padding: 0 15px; border: 0; border-radius: 11px; color: #fff; background: #ef4776; cursor: pointer; font-size: 10px; font-weight: 750; }
-.book-toast { position: fixed; z-index: 30; right: 28px; bottom: 24px; display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 11px; color: #fff; background: #252a33; box-shadow: 0 12px 30px rgba(0,0,0,.2); font-size: 10px; }
+.review-complete button { min-height: 38px; margin-top: 10px; padding: 0 15px; border: 0; border-radius: 8px; color: #fff; background: #ef4776; cursor: pointer; font-size: 10px; font-weight: 750; }
+.book-toast { position: fixed; z-index: 30; right: 28px; bottom: 24px; display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 8px; color: #fff; background: #252a33; box-shadow: 0 8px 22px rgba(0,0,0,.2); font-size: 10px; }
 .book-toast button { padding: 0; border: 0; color: #ffb8ce; background: transparent; cursor: pointer; font: inherit; font-weight: 800; }
 .visually-hidden { position: fixed; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 :global(:root.dark .vocabulary-book) { color: #f4f5f8; }
 :global(:root.dark .beta-panel), :global(:root.dark .privacy-note), :global(:root.dark .selection-reminder),
-:global(:root.dark .primary-actions), :global(:root.dark .toolbar), :global(:root.dark .data-panel),
-:global(:root.dark .review-shell), :global(:root.dark .word-row), :global(:root.dark .review-card),
+:global(:root.dark .review-shell),
 :global(:root.dark .privacy-export) { border-color: #343844; background: #20232a; }
-:global(:root.dark .beta-panel), :global(:root.dark .review-shell) { background: linear-gradient(135deg, #20232a, #2a2227); }
+:global(:root.dark .word-list), :global(:root.dark .word-row), :global(:root.dark .data-panel) { border-color: #343844; background: transparent; }
 :global(:root.dark .summary-grid article), :global(:root.dark .empty-state) { border-color: #343844; background: #252830; }
 :global(:root.dark .summary-grid strong), :global(:root.dark .word-heading h3),
 :global(:root.dark .review-prompt h3), :global(:root.dark .answer-heading h3),
 :global(:root.dark .empty-state h3), :global(:root.dark .search-field input),
 :global(:root.dark .toolbar select) { color: #f4f5f8; }
 :global(:root.dark .beta-copy p), :global(:root.dark .data-heading p),
-:global(:root.dark .summary-grid span), :global(:root.dark .summary-grid small),
+:global(:root.dark .summary-grid span),
 :global(:root.dark .context-preview), :global(:root.dark .word-meta),
 :global(:root.dark .word-progress > small), :global(:root.dark .privacy-export small),
 :global(:root.dark .review-header button), :global(:root.dark .review-prompt small),

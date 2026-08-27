@@ -1,16 +1,11 @@
 <template>
-  <section v-show="props.activeSection === 'settings-general'" id="settings-general" class="settings-section">
+  <section v-show="props.activeSection === 'settings-general'" id="settings-general" class="settings-section settings-list-section">
   <!-- 开关 -->
   <el-row class="margin-bottom margin-left-2em settings-status-row">
-    <el-col :span="18" class="lightblue rounded-corner">
-      <div class="settings-status-copy">
-        <span class="settings-status-kicker">{{ config.on ? '正在工作' : '已暂停' }}</span>
-        <strong>插件状态</strong>
-        <small>{{ config.on ? '网页翻译与快捷功能均已启用' : '重新启用后即可继续翻译网页' }}</small>
-      </div>
+    <el-col :span="20" class="settings-control-label lightblue rounded-corner">
+      <span class="popup-text popup-vertical-left">启用 FluentRead</span>
     </el-col>
-    <el-col :span="6" class="flex-end settings-status-control">
-      <span class="settings-status-badge" :class="{ active: config.on }"><i />{{ config.on ? '已启用' : '已暂停' }}</span>
+    <el-col :span="4" class="settings-control-field flex-end">
       <el-switch class="settings-switch" v-model="config.on" aria-label="插件状态" size="large" @change="handlePluginStateChange" />
     </el-col>
   </el-row>
@@ -92,22 +87,17 @@
       </el-col>
     </el-row>
     <section v-show="config.display === 1" class="style-preview-card" aria-live="polite">
-      <div class="style-preview-heading">
-        <div><span>实时预览</span><strong>译文样式</strong></div>
-      </div>
       <div class="style-preview-example">
         <p class="style-preview-source">Reading should feel calm and effortless.</p>
         <p :key="config.style" class="style-preview-text" :class="currentStyleClass">阅读应该轻松、自然，不打断你的节奏。</p>
       </div>
-      <small class="style-preview-note">切换上方选项即可预览译文在网页中的显示效果。</small>
     </section>
   </div>
   </section>
   <section v-show="props.activeSection === 'settings-sites'" id="settings-sites" class="settings-section site-settings-section">
     <el-row class="settings-control-row" data-setting="global-auto-translate">
-      <el-col :span="20" class="settings-control-label site-auto-translate-label lightblue rounded-corner">
+      <el-col :span="20" class="settings-control-label lightblue rounded-corner">
         <span class="popup-text popup-vertical-left">所有网站自动翻译</span>
-        <small>打开后，每个支持的网页都会在加载完成时自动开始翻译；关闭后仍会保留下面的网站名单。</small>
       </el-col>
       <el-col :span="4" class="settings-control-field flex-end">
         <el-switch v-model="config.autoTranslate" class="settings-toggle" aria-label="所有网站自动翻译" />
@@ -154,11 +144,15 @@
     </section>
     <ImageOcrSettings v-show="props.activeSection === 'settings-image-translation'" />
     <!-- 视频字幕 Beta -->
-    <section v-show="props.activeSection === 'settings-video'" id="settings-video" class="settings-section">
-      <div class="video-settings-hero">
-        <div><span class="eyebrow">Beta 功能</span><h2>YouTube 视频字幕</h2><p>边看边译 YouTube 原生字幕；不上传音频，不改变播放器时间轴。</p></div>
-        <el-switch v-model="config.videoTranslationEnabled" class="settings-switch" aria-label="视频字幕翻译" />
-      </div>
+    <section v-show="props.activeSection === 'settings-video'" id="settings-video" class="settings-section settings-list-section">
+      <el-row class="settings-control-row video-settings-toggle-row">
+        <el-col :span="20" class="settings-control-label lightblue rounded-corner">
+          <span class="popup-text popup-vertical-left">启用视频字幕翻译</span>
+        </el-col>
+        <el-col :span="4" class="settings-control-field flex-end">
+          <el-switch v-model="config.videoTranslationEnabled" class="settings-switch" aria-label="视频字幕翻译" />
+        </el-col>
+      </el-row>
 
       <el-row class="settings-control-row">
         <el-col :span="12" class="settings-control-label lightblue rounded-corner">
@@ -188,16 +182,13 @@
         </el-col>
       </el-row>
 
-      <div class="video-settings-note">
-        <strong>使用方式</strong>
-        <p>打开 YouTube 视频的原生字幕后，FluentRead 会在字幕下方显示译文。机器翻译约提前 10 秒、AI 服务约提前 30 秒准备字幕；播放器菜单可分别下载原文或译文 SRT，切换视频或关闭此功能会清理译文。</p>
-      </div>
+      <p class="video-settings-note">仅处理播放器已经提供的字幕文本，不上传音频或视频内容。</p>
     </section>
 
 
 
     <!-- 鼠标悬浮快捷键 -->
-    <section v-show="props.activeSection === 'settings-shortcuts'" id="settings-shortcuts" class="settings-section">
+    <section v-show="props.activeSection === 'settings-shortcuts'" id="settings-shortcuts" class="settings-section settings-list-section">
     <el-row class="settings-control-row" :class="{ 'custom-hotkey-row': config.hotkey === 'custom' }">
       <el-col :span="14" class="settings-control-label lightblue rounded-corner">
         <el-tooltip class="box-item" effect="dark" content="按住指定快捷键并悬停在文本上进行翻译" placement="top-start" :show-after="500">
@@ -421,7 +412,7 @@
 
     <!-- token -->
     <!-- 高级选项-->
-    <section v-show="props.activeSection === 'settings-advanced'" id="settings-advanced" class="settings-section">
+    <section v-show="props.activeSection === 'settings-advanced'" id="settings-advanced" class="settings-section settings-list-section">
         <!-- 主题设置 -->
         <el-row class="settings-control-row">
           <el-col :span="12" class="settings-control-label lightblue rounded-corner">
@@ -642,7 +633,7 @@
 
     </section>
 
-    <section v-show="props.activeSection === 'settings-data'" id="settings-data" class="settings-section data-section">
+    <section v-show="props.activeSection === 'settings-data'" id="settings-data" class="settings-section data-section settings-data-section">
         <section class="credential-persistence-panel" aria-label="API 凭据存储">
           <div class="credential-persistence-copy">
             <strong>跨浏览器重启保存 API 凭据</strong>
@@ -660,7 +651,6 @@
         <section class="config-history-panel" aria-label="最近配置">
           <div class="config-history-heading">
             <div>
-              <span class="config-history-kicker">配置版本</span>
               <h3>最近 5 次配置</h3>
               <p>修改会自动保存，保留最近的稳定快照，可随时恢复。</p>
             </div>
@@ -705,7 +695,7 @@
           <div v-else class="config-history-empty">还没有可恢复的配置版本。</div>
         </section>
 
-        <el-row class="margin-bottom margin-left-2em">
+        <el-row class="config-transfer-actions">
           <el-col :span="12">
             <el-button type="primary" @click="handleExport">
               <el-icon>

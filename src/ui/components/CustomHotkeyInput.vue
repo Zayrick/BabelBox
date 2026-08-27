@@ -18,9 +18,8 @@
       >
         <header class="dialog-header">
           <div class="dialog-heading">
-            <span class="dialog-eyebrow">交互设置</span>
             <h2 id="custom-hotkey-title">自定义快捷键</h2>
-            <p id="custom-hotkey-description">为当前功能设置一个顺手、易记且不容易冲突的按键组合。</p>
+            <p id="custom-hotkey-description">支持 Ctrl、Alt、Shift 与字母或功能键组合；不支持 CMD/Meta。</p>
           </div>
           <button class="dialog-close" type="button" aria-label="关闭自定义快捷键" @click="handleCancel">
             <span aria-hidden="true">×</span>
@@ -31,7 +30,6 @@
           <section class="recording-card" :class="{ 'is-recording': isRecording }">
             <div class="section-heading">
               <div>
-                <span class="section-eyebrow">录制组合</span>
                 <h3>按下你想使用的快捷键</h3>
               </div>
               <span class="state-badge" :class="{ active: isRecording, ready: !!currentHotkey && !isRecording }">
@@ -65,8 +63,6 @@
                 <kbd>{{ displayHotkey }}</kbd>
               </span>
             </button>
-
-            <p class="field-hint">支持 Ctrl、Alt、Shift 与字母或功能键组合；不支持使用 CMD/Meta 键。</p>
           </section>
 
           <div
@@ -85,7 +81,6 @@
           <section class="preset-section">
             <div class="section-heading preset-heading">
               <div>
-                <span class="section-eyebrow">快速选择</span>
                 <h3>推荐快捷键</h3>
               </div>
               <span class="section-note">也可以直接录制</span>
@@ -107,10 +102,6 @@
             </div>
           </section>
 
-          <aside class="help-section">
-            <span class="help-icon" aria-hidden="true">i</span>
-            <p>建议使用修饰键组合，避免与浏览器、系统或网页已有快捷键冲突。设置完成后，快捷键会立即应用。</p>
-          </aside>
         </div>
 
         <footer class="dialog-footer">
@@ -386,9 +377,8 @@ function handleCancel() {
   align-items: center;
   justify-content: center;
   overflow-y: auto;
-  padding: 24px;
-  background: rgba(23, 32, 51, .3);
-  backdrop-filter: blur(8px);
+  padding: 20px;
+  background: rgba(23, 32, 51, .36);
   font-family: inherit;
 }
 
@@ -398,21 +388,21 @@ function handleCancel() {
   max-height: min(760px, calc(100vh - 32px));
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, .8);
-  border-radius: 26px;
+  border: 1px solid var(--hotkey-line);
+  border-radius: 14px;
   outline: none;
   background: var(--hotkey-surface);
-  box-shadow: 0 28px 80px rgba(23, 32, 51, .2), 0 8px 24px rgba(23, 32, 51, .08);
+  box-shadow: 0 16px 40px rgba(23, 32, 51, .2);
 }
 
 .dialog-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 20px;
-  padding: 28px 30px 22px;
+  gap: 16px;
+  padding: 20px 22px 16px;
   border-bottom: 1px solid var(--hotkey-line);
-  background: linear-gradient(135deg, #fff7f9 0%, var(--hotkey-surface) 68%);
+  background: var(--hotkey-surface);
 }
 
 .dialog-heading,
@@ -420,35 +410,24 @@ function handleCancel() {
   min-width: 0;
 }
 
-.dialog-eyebrow,
-.section-eyebrow {
-  display: block;
-  color: var(--hotkey-brand-strong);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .12em;
-  line-height: 1.4;
-  text-transform: uppercase;
-}
-
 .dialog-heading h2,
 .section-heading h3 {
-  margin: 5px 0 0;
+  margin: 0;
   color: var(--hotkey-ink);
   letter-spacing: -.03em;
 }
 
 .dialog-heading h2 {
-  font-size: 25px;
+  font-size: 20px;
   line-height: 1.25;
 }
 
 .dialog-heading p {
   max-width: 410px;
-  margin: 8px 0 0;
+  margin: 5px 0 0;
   color: var(--hotkey-muted);
   font-size: 12px;
-  line-height: 1.65;
+  line-height: 1.5;
 }
 
 .dialog-close {
@@ -459,7 +438,7 @@ function handleCancel() {
   place-items: center;
   margin: -4px -6px 0 0;
   border: 1px solid transparent;
-  border-radius: 11px;
+  border-radius: 8px;
   color: #8c94a3;
   background: transparent;
   cursor: pointer;
@@ -478,31 +457,30 @@ function handleCancel() {
 
 .dialog-body {
   display: grid;
-  gap: 18px;
+  gap: 14px;
   min-height: 0;
-  padding: 24px 30px 26px;
+  padding: 18px 22px;
   overflow-y: auto;
 }
 
 .recording-card {
   display: grid;
-  gap: 16px;
-  padding: 20px;
-  border: 1px solid #f1d6de;
-  border-radius: 20px;
-  background: linear-gradient(135deg, #fff8fa 0%, var(--hotkey-surface-soft) 100%);
+  gap: 12px;
+  padding: 0 0 16px;
+  border: 0;
+  border-bottom: 1px solid var(--hotkey-line);
+  background: transparent;
 }
 
 .recording-card.is-recording {
   border-color: #f0b4c5;
-  box-shadow: 0 0 0 4px rgba(239, 71, 118, .08);
 }
 
 .section-heading {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
 }
 
 .section-heading h3 {
@@ -513,7 +491,7 @@ function handleCancel() {
 .state-badge {
   flex: 0 0 auto;
   padding: 5px 9px;
-  border-radius: 999px;
+  border-radius: 6px;
   color: #8b93a4;
   background: #eef1f6;
   font-size: 10px;
@@ -529,18 +507,18 @@ function handleCancel() {
 
 .hotkey-input-field {
   display: flex;
-  min-height: 78px;
+  min-height: 68px;
   align-items: center;
   justify-content: center;
   width: 100%;
   padding: 14px 18px;
   border: 1px dashed #d4dae5;
-  border-radius: 16px;
+  border-radius: 10px;
   color: var(--hotkey-muted);
-  background: rgba(255, 255, 255, .86);
+  background: var(--hotkey-surface-soft);
   cursor: pointer;
   font: inherit;
-  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease, color 160ms ease;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
 }
 
 .hotkey-input-field:hover {
@@ -560,7 +538,6 @@ function handleCancel() {
   border-color: var(--hotkey-brand);
   color: var(--hotkey-brand-strong);
   background: var(--hotkey-brand-soft);
-  box-shadow: 0 0 0 4px rgba(239, 71, 118, .1);
 }
 
 .hotkey-input-field.error {
@@ -613,10 +590,9 @@ function handleCancel() {
   padding: 5px 10px;
   border: 1px solid #dfe4ed;
   border-bottom-width: 2px;
-  border-radius: 9px;
+  border-radius: 6px;
   color: var(--hotkey-ink);
   background: var(--hotkey-surface);
-  box-shadow: 0 2px 3px rgba(23, 32, 51, .06);
   font-family: 'SFMono-Regular', 'SF Mono', 'Cascadia Code', 'Roboto Mono', monospace;
   font-size: 14px;
   font-weight: 700;
@@ -631,18 +607,10 @@ function handleCancel() {
   font-size: 17px;
 }
 
-.field-hint,
 .section-note {
   color: var(--hotkey-muted);
   font-size: 11px;
   line-height: 1.55;
-}
-
-.field-hint {
-  margin: -4px 0 0;
-}
-
-.section-note {
   padding-top: 2px;
   white-space: nowrap;
 }
@@ -653,7 +621,7 @@ function handleCancel() {
   gap: 8px;
   padding: 10px 12px;
   border: 1px solid;
-  border-radius: 13px;
+  border-radius: 8px;
   font-size: 12px;
   line-height: 1.5;
 }
@@ -678,30 +646,30 @@ function handleCancel() {
 
 .preset-section {
   display: grid;
-  gap: 13px;
+  gap: 10px;
 }
 
 .preset-buttons {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .preset-button {
   display: flex;
-  min-height: 58px;
+  min-height: 50px;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   padding: 9px 10px 9px 12px;
   border: 1px solid var(--hotkey-line);
-  border-radius: 14px;
+  border-radius: 8px;
   color: var(--hotkey-muted);
   background: var(--hotkey-surface);
   cursor: pointer;
   font: inherit;
   text-align: left;
-  transition: border-color 160ms ease, color 160ms ease, background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+  transition: border-color 160ms ease, color 160ms ease, background 160ms ease;
 }
 
 .preset-button:hover,
@@ -709,15 +677,12 @@ function handleCancel() {
   border-color: #ef9ab1;
   color: var(--hotkey-brand-strong);
   background: #fffafb;
-  box-shadow: 0 7px 18px rgba(239, 71, 118, .08);
-  transform: translateY(-1px);
 }
 
 .preset-button.selected {
   border-color: #f0b4c5;
   color: var(--hotkey-brand-strong);
   background: var(--hotkey-brand-soft);
-  box-shadow: 0 6px 16px rgba(239, 71, 118, .08);
 }
 
 .preset-button kbd {
@@ -739,43 +704,12 @@ function handleCancel() {
   white-space: nowrap;
 }
 
-.help-section {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 13px 14px;
-  border: 1px solid var(--hotkey-line);
-  border-radius: 14px;
-  background: var(--hotkey-surface-soft);
-}
-
-.help-icon {
-  display: grid;
-  width: 18px;
-  height: 18px;
-  flex: 0 0 18px;
-  place-items: center;
-  margin-top: 1px;
-  border-radius: 50%;
-  color: var(--hotkey-brand-strong);
-  background: var(--hotkey-brand-soft);
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.help-section p {
-  margin: 0;
-  color: var(--hotkey-muted);
-  font-size: 11px;
-  line-height: 1.65;
-}
-
 .dialog-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 18px 30px 24px;
+  gap: 14px;
+  padding: 14px 22px 18px;
   border-top: 1px solid var(--hotkey-line);
   background: var(--hotkey-surface);
 }
@@ -793,12 +727,12 @@ function handleCancel() {
 .primary-button {
   min-height: 40px;
   padding: 0 16px;
-  border-radius: 12px;
+  border-radius: 8px;
   cursor: pointer;
   font: inherit;
   font-size: 12px;
   font-weight: 700;
-  transition: border-color 160ms ease, color 160ms ease, background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  transition: border-color 160ms ease, color 160ms ease, background 160ms ease;
 }
 
 .clear-button {
@@ -830,15 +764,12 @@ function handleCancel() {
   border: 1px solid var(--hotkey-brand);
   color: #fff;
   background: var(--hotkey-brand);
-  box-shadow: 0 7px 16px rgba(239, 71, 118, .2);
 }
 
 .primary-button:hover:not(:disabled),
 .primary-button:focus-visible:not(:disabled) {
   border-color: var(--hotkey-brand-strong);
   background: var(--hotkey-brand-strong);
-  box-shadow: 0 9px 20px rgba(239, 71, 118, .25);
-  transform: translateY(-1px);
 }
 
 .primary-button:disabled {
@@ -857,23 +788,19 @@ function handleCancel() {
 
   .custom-hotkey-dialog {
     max-height: calc(100vh - 28px);
-    border-radius: 21px;
+    border-radius: 14px;
   }
 
   .dialog-header {
-    padding: 22px 20px 18px;
+    padding: 18px 20px 14px;
   }
 
   .dialog-heading h2 {
-    font-size: 22px;
+    font-size: 19px;
   }
 
   .dialog-body {
-    padding: 18px 20px 20px;
-  }
-
-  .recording-card {
-    padding: 16px;
+    padding: 16px 20px;
   }
 
   .preset-buttons {
@@ -881,7 +808,7 @@ function handleCancel() {
   }
 
   .dialog-footer {
-    padding: 15px 20px 19px;
+    padding: 13px 20px 16px;
   }
 }
 
@@ -899,10 +826,6 @@ function handleCancel() {
   .dialog-footer {
     padding-right: 15px;
     padding-left: 15px;
-  }
-
-  .recording-card {
-    padding: 13px;
   }
 
   .section-note {

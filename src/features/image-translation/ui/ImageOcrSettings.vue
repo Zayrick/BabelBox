@@ -7,7 +7,6 @@
     <template v-else>
       <div class="image-ocr-heading">
         <div>
-          <span class="image-ocr-kicker">Beta 测试</span>
           <h2>图片翻译需要 OCR 语言包</h2>
           <p>语言包会在运行时按需下载并缓存在浏览器本地，不会随扩展安装包一起下载。</p>
         </div>
@@ -47,7 +46,6 @@
         </article>
       </div>
       <p v-if="downloadError" class="image-ocr-error">{{ downloadError }}</p>
-      <p class="image-ocr-footnote">只有下载对应语言后，图片翻译才会执行文字识别。语言包由 Tesseract.js 下载并缓存到扩展本地存储。</p>
     </template>
   </section>
 </template>

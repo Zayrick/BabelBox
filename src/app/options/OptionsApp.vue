@@ -19,7 +19,7 @@
             @click="selectSection(item.id)"
           >
             <span class="nav-icon">{{ item.icon }}</span>
-            <span><strong>{{ item.label }}</strong><small>{{ item.description }}</small></span>
+            <strong>{{ item.label }}</strong>
           </button>
         </section>
       </nav>
@@ -27,11 +27,7 @@
 
     <main class="workspace">
       <header class="topbar">
-        <div>
-          <span class="eyebrow">{{ activeItem.kicker }}</span>
-          <h1>{{ activeItem.title }}</h1>
-          <p>{{ activeItem.detail }}</p>
-        </div>
+        <h1>{{ activeItem.title }}</h1>
         <label class="search-box">
           <span aria-hidden="true">⌕</span>
           <input v-model.trim="query" type="search" placeholder="搜索设置，例如：快捷键、缓存、OpenAI" />
@@ -45,48 +41,21 @@
       </div>
       <div v-else-if="query" class="search-empty">没有找到“{{ query }}”相关设置</div>
 
-      <section class="settings-card" :class="{ 'services-view': activeSection === 'settings-services', 'translation-center-view': activeSection === 'settings-translation-center', 'vocabulary-view': activeSection === 'settings-vocabulary' }" :aria-label="activeItem.heading">
-        <div v-if="!['settings-services', 'settings-about', 'settings-translation-center'].includes(activeSection)" class="card-intro">
-          <span class="eyebrow">{{ activeItem.kicker }}</span>
-          <h2>{{ activeItem.title }}</h2>
-          <p>{{ activeItem.detail }}</p>
-        </div>
+      <section class="settings-card" :class="{ 'services-view': activeSection === 'settings-services', 'translation-center-view': activeSection === 'settings-translation-center', 'vocabulary-view': activeSection === 'settings-vocabulary' }" :aria-label="activeItem.title">
         <section v-if="activeSection === 'settings-about'" id="settings-about" class="about-page" aria-labelledby="about-title">
-          <div class="about-hero">
+          <div class="about-summary">
             <img class="about-logo" src="/icon/128.png" alt="流畅阅读图标" />
             <div>
-              <span class="eyebrow">关于流畅阅读</span>
-              <h3 id="about-title">让双语阅读自然发生</h3>
-              <p>流畅阅读是一款开源浏览器翻译插件，帮助你在阅读网页时更自然地理解不同语言的内容。</p>
+              <h2 id="about-title">流畅阅读</h2>
               <span class="about-version">FluentRead · V{{ version }}</span>
             </div>
           </div>
-
-          <div class="about-grid">
-            <article class="about-panel">
-              <span class="about-panel-kicker">核心体验</span>
-              <h3>为阅读而生</h3>
-              <p>从网页翻译到划词、悬浮与快捷键，把常用能力放在真正需要的位置。</p>
-              <div class="about-feature-list">
-                <span><b>译</b>网页双语阅读</span>
-                <span><b>⌘</b>顺手的阅读工具</span>
-                <span><b>AI</b>灵活的翻译服务</span>
-              </div>
-            </article>
-
-            <article class="about-panel about-links-panel">
-              <span class="about-panel-kicker">了解更多</span>
-              <h3>一起让它变得更好</h3>
-              <p>查看项目代码、使用文档，或反馈你在阅读中的想法。</p>
-              <div class="about-links">
-                <a href="https://github.com/Bistutu/FluentRead" target="_blank" rel="noreferrer">开源项目 <span>↗</span></a>
-                <a href="https://fluent.thinkstu.com/" target="_blank" rel="noreferrer">使用文档 <span>↗</span></a>
-                <a href="https://github.com/Bistutu/FluentRead/issues" target="_blank" rel="noreferrer">问题反馈 <span>↗</span></a>
-              </div>
-            </article>
+          <p class="about-description">一款提供网页双语翻译、划词翻译与多翻译服务支持的开源浏览器扩展。</p>
+          <div class="about-links">
+            <a href="https://github.com/Bistutu/FluentRead" target="_blank" rel="noreferrer">开源项目 <span>↗</span></a>
+            <a href="https://fluent.thinkstu.com/" target="_blank" rel="noreferrer">使用文档 <span>↗</span></a>
+            <a href="https://github.com/Bistutu/FluentRead/issues" target="_blank" rel="noreferrer">问题反馈 <span>↗</span></a>
           </div>
-
-          <p class="about-footer">感谢你使用流畅阅读。</p>
         </section>
         <VocabularyBook v-else-if="activeSection === 'settings-vocabulary'" @navigate="selectSection" />
         <SettingsSections v-else :active-section="activeSection" />

@@ -12,7 +12,6 @@
         <img src="/icon/128.png" alt="" />
         <div>
           <strong>流畅阅读</strong>
-          <small>FluentRead · V{{ version }}</small>
         </div>
       </div>
       <div class="header-actions">
@@ -38,10 +37,8 @@
       >
         <section class="donation-card">
           <button class="donation-close" type="button" aria-label="关闭赞赏页" @click="closeDonation">×</button>
-          <div class="donation-icon" aria-hidden="true"><Coffee /></div>
-          <span class="eyebrow">软件开源免费</span>
-          <h2 id="donation-title">如果你喜欢这款软件，</h2>
-          <p class="donation-description">可以扫描微信赞赏码支持作者，感谢鼓励。</p>
+          <h2 id="donation-title">赞赏流畅阅读</h2>
+          <p class="donation-description">微信扫码赞赏</p>
           <div class="donation-qr-frame">
             <img src="/misc/approve.jpg" alt="流畅阅读赞赏码" />
           </div>
@@ -51,10 +48,7 @@
 
     <section class="hero-card">
       <div class="hero-heading">
-        <div>
-          <span class="eyebrow">网页翻译</span>
-          <h1>{{ config.on ? '让阅读自然地流动' : '翻译功能已暂停' }}</h1>
-        </div>
+        <h1>{{ config.on ? '网页翻译' : '翻译功能已暂停' }}</h1>
         <div class="hero-switches">
           <button class="switch" type="button" role="switch" :aria-checked="config.on" :aria-label="config.on ? '暂停插件' : '启用插件'" @click="setPluginEnabled(!config.on)"><i /></button>
         </div>
@@ -87,7 +81,7 @@
           :data-selected-model="serviceModelLabel || undefined"
           @click="toggleServicePicker"
         >
-          <ServiceIcon :service="config.service" :label="serviceLabel" />
+          <ServiceIcon :service="config.service" :label="serviceLabel" size="small" />
           <span class="service-copy">
             <small>翻译服务</small>
             <span class="service-value">
@@ -100,8 +94,7 @@
 
         <div v-if="servicePickerOpen" class="service-picker-panel" role="listbox" aria-label="翻译服务列表">
           <div class="service-picker-heading">
-            <div><strong>选择翻译服务</strong><small>常用服务优先，更多服务{{ moreServicesOpen ? '已展开' : '已收起' }}</small></div>
-            <span>{{ serviceOptions.length }}</span>
+            <strong>选择翻译服务</strong>
           </div>
 
           <div class="service-group">
@@ -285,7 +278,6 @@
     </section>
 
     <footer>
-      <span>已完成 {{ config.count }} 次翻译</span>
       <a
         class="opensource-link"
         href="https://github.com/Bistutu/FluentRead"
@@ -313,12 +305,11 @@
     >
       <div class="drawer-handle" />
       <header class="drawer-header">
-        <div><span class="eyebrow">快捷设置</span><h2>{{ drawerTitle }}</h2><p>{{ drawerDescription }}</p></div>
+        <h2>{{ drawerTitle }}</h2>
         <button type="button" aria-label="关闭" @click="drawerVisible = false">×</button>
       </header>
 
       <div v-if="activeDrawer === 'hover'" class="drawer-content">
-        <div class="interaction-preview"><span class="cursor">↖</span><span>＋</span><kbd>{{ hoverKey }}</kbd><span>＝</span><strong>即时翻译</strong></div>
         <div class="setting-row">
           <span><strong>启用鼠标悬停翻译</strong><small>按住快捷键并悬停在文本上</small></span>
           <button class="switch compact" type="button" role="switch" :aria-checked="config.hotkey !== 'none'" aria-label="启用或关闭鼠标悬停翻译" @click="toggleHover"><i /></button>
@@ -341,16 +332,8 @@
         </div>
 
         <div v-if="selectionDrawerTab === 'text'" id="selection-text-panel" role="tabpanel">
-          <div class="interaction-preview">
-            <span class="selection-box">选择文字</span><span>＋</span>
-            <i v-if="config.selectionTranslatorTrigger === 'dot'" class="pink-dot" />
-            <span v-else-if="config.selectionTranslatorTrigger === 'icon'" class="selection-preview-icon">↗</span>
-            <strong v-else-if="config.selectionTranslatorTrigger === 'direct'">直接弹出</strong>
-            <kbd v-else>{{ selectionTriggerPreview }}</kbd>
-            <span>＝</span><strong>翻译所选内容</strong>
-          </div>
           <div class="setting-row">
-            <span><strong>启用划词翻译</strong><small>选中文字后显示可操作的翻译入口</small></span>
+            <span><strong>启用划词翻译</strong></span>
             <button class="switch compact" type="button" role="switch" :aria-checked="config.selectionTranslatorMode !== 'disabled'" aria-label="启用或关闭划词翻译" @click="setSelectionMode(config.selectionTranslatorMode === 'disabled' ? 'bilingual' : 'disabled')"><i /></button>
           </div>
           <div class="choice-block">
@@ -367,7 +350,6 @@
             <button v-if="config.selectionTranslatorTrigger === 'custom'" class="secondary-action" type="button" @click="showCustomSelectionHotkeyDialog = true">
               {{ config.customSelectionTranslatorHotkey ? `当前：${config.customSelectionTranslatorHotkey}` : '录制自定义快捷键' }}
             </button>
-            <small class="drawer-hint">快捷键与图标、小点是并列的触发方式；选择快捷键后，选区旁不会再显示图标或小点。选中单个英文单词时会自动显示音标、发音、词性、释义和例句。</small>
           </div>
           <div class="choice-block">
             <label>显示延迟</label>
@@ -383,7 +365,7 @@
               />
               <span>ms</span>
             </div>
-            <small class="drawer-hint">从选区稳定后开始计时；若按快捷键时等待已经结束，则会立即显示。设为 0 可关闭延迟。</small>
+            <small class="drawer-hint">0 表示不延迟。</small>
           </div>
           <div class="choice-block">
             <label>语音回退顺序</label>
@@ -405,7 +387,7 @@
                 :value="item.value"
               />
             </el-select>
-            <small class="drawer-hint">留空时按当前语言自动尝试多个免费 Edge 音色；选中多个后按此顺序回退，不需要 API Key。</small>
+            <small class="drawer-hint">留空时自动选择音色。</small>
           <button class="wordbook-shortcut" type="button" @click="openOptions('settings-vocabulary')">
             <span class="wordbook-shortcut-icon" aria-hidden="true">★</span>
             <span><strong>单词本 <em>Beta</em></strong><small>{{ config.vocabularyBookEnabled ? '查看收藏、今日复习与掌握程度' : '开启后可从单词学习卡收藏并复习' }}</small></span>
@@ -427,8 +409,7 @@
               </div>
               <button class="switch compact" type="button" role="switch" :aria-checked="config.selectionAreaEnabled" aria-label="启用或关闭圈选翻译" @click="setAreaEnabled(!config.selectionAreaEnabled)"><i /></button>
             </div>
-            <div class="area-translation-preview" aria-keyshortcuts="Shift+Z"><div class="area-hotkey"><kbd>Shift</kbd><kbd>Z</kbd></div><span>＋</span><i class="area-ring" /><span>＝</span><strong>翻译选中区域</strong></div>
-            <small class="drawer-hint">按住 Shift + Z 拖拽页面区域，释放鼠标后识别并翻译；结果会覆盖在当前区域上，按 Esc 可关闭。</small>
+            <small class="drawer-hint">按 Shift + Z 拖拽区域，按 Esc 关闭结果。</small>
           </div>
         </div>
       </div>
@@ -438,13 +419,6 @@
           <strong>当前浏览器暂不支持图片翻译与 OCR</strong>
           <small>原有开关偏好已保留；请在 Chrome 中使用此功能。</small>
         </div>
-        <div v-else class="image-translation-preview">
-          <div class="image-translation-preview-art"><span>文字</span><b>文</b></div>
-          <div>
-            <span class="feature-title"><strong>悬停图片显示翻译入口</strong><em class="beta-badge">Beta 测试</em></span>
-            <small>点击图片左下角的小图标即可识别并翻译图片文字</small>
-          </div>
-        </div>
         <div v-if="browserCapabilities.imageTranslation" class="setting-row">
           <span><strong>启用图片翻译</strong><small>在网页图片左下角显示“文”按钮</small></span>
           <button class="switch compact" type="button" role="switch" :aria-checked="!config.disableImageTranslator" aria-label="启用或关闭图片翻译" @click="setImageTranslatorEnabled(config.disableImageTranslator)"><i /></button>
@@ -452,9 +426,9 @@
       </div>
 
       <div v-else-if="activeDrawer === 'video'" class="drawer-content">
-        <div class="video-beta-banner"><span class="feature-icon teal">CC</span><span><strong>FluentRead · YouTube 字幕翻译</strong><small>Beta 测试 · 只处理播放器已经提供的字幕文本</small></span></div>
+        <div class="video-beta-banner"><span class="feature-icon teal">CC</span><span><strong>YouTube 字幕翻译</strong><small>Beta 测试</small></span></div>
         <div class="setting-row video-enable-row" :class="{ 'needs-enable': !config.videoTranslationEnabled }">
-          <span><strong>{{ config.videoTranslationEnabled ? '视频字幕翻译已开启' : '开启字幕翻译' }}</strong><small>{{ config.videoTranslationEnabled ? '正在 YouTube 原生字幕下方显示中文译文' : '点击右侧开关，在 YouTube 播放器中显示中文译文' }}</small></span>
+          <span><strong>{{ config.videoTranslationEnabled ? '字幕翻译已开启' : '开启字幕翻译' }}</strong><small>在 YouTube 原生字幕下方显示译文</small></span>
           <button class="switch compact" type="button" role="switch" :aria-checked="config.videoTranslationEnabled" aria-label="启用或关闭视频字幕翻译" @click="setVideoTranslationEnabled(!config.videoTranslationEnabled)"><i /></button>
         </div>
         <label class="select-row">
@@ -471,7 +445,6 @@
             <option v-for="size in videoSubtitleFontSizeOptions" :key="size" :value="size">{{ size === 100 ? '默认' : `${size}%` }}</option>
           </select>
         </label>
-        <small class="drawer-hint">目前支持 YouTube；播放器内会显示 FluentRead 图标，可切换字幕模式、显示状态，并分别下载原文或译文 SRT。视频默认使用微软翻译；AI 服务会提前预取字幕，如切换 DeepLX，可在完整设置中配置服务地址。</small>
       </div>
 
       <div v-else class="drawer-content">
@@ -482,7 +455,7 @@
           </div>
         </div>
         <label v-if="config.display === 1" class="select-row">
-          <span><strong>译文样式</strong><small>双语对照时译文的视觉效果</small></span>
+          <span><strong>译文样式</strong></span>
           <select v-model.number="config.style"><option v-for="item in styleOptions" :key="item.value" :value="item.value">{{ item.label }}</option></select>
         </label>
         <label class="select-row">
@@ -536,7 +509,6 @@ import {
 type DrawerName = 'hover' | 'selection' | 'appearance' | 'image' | 'video';
 type SettingsSection = 'settings-general' | 'settings-image-translation' | 'settings-shortcuts' | 'settings-services' | 'settings-sites' | 'settings-video' | 'settings-vocabulary';
 const CustomHotkeyInput = defineAsyncComponent(() => import('@/src/ui/components/CustomHotkeyInput.vue'));
-const version = process.env.VUE_APP_VERSION;
 const config = ref(new Config());
 const drawerVisible = ref(false);
 const activeDrawer = ref<DrawerName>('hover');
@@ -638,13 +610,6 @@ const imageTranslationSummary = computed(() => !browserCapabilities.imageTransla
   : config.value.disableImageTranslator ? '已关闭' : '悬停图片');
 const videoSummary = computed(() => config.value.videoTranslationEnabled ? `${videoServiceLabel.value} · YouTube` : '点击开启 · YouTube');
 const drawerTitle = computed(() => ({ hover: '鼠标悬停翻译设置', selection: '划词翻译设置', appearance: '译文显示设置', image: '图片翻译设置', video: '视频字幕设置' }[activeDrawer.value]));
-const drawerDescription = computed(() => ({
-  hover: '把鼠标停在文本上，用轻量快捷键获取即时译文。',
-  selection: '选中文字或圈选页面区域，按你的偏好获取译文。',
-  appearance: '调整双语布局、译文样式与界面主题。',
-  image: '把鼠标移到图片上，从图片左下角打开翻译入口。',
-  video: '在 YouTube 播放器中显示实时字幕译文。',
-}[activeDrawer.value]));
 const hoverChoices = [
   { value: 'Control', label: 'Ctrl' },
   { value: 'Alt', label: 'Alt / Option' },
@@ -656,8 +621,6 @@ const selectionModes = [
   { value: 'translation-only', label: '仅译文' },
 ];
 const selectionTriggers = options.selectionTranslatorTriggers;
-const selectionTriggerPreview = computed(() => selectionTriggers
-  .find(item => item.value === config.value.selectionTranslatorTrigger)?.label || '快捷键');
 const selectionTtsVoiceOptions = SELECTION_TTS_VOICE_OPTIONS;
 
 function applyTheme(theme: string) {
