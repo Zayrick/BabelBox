@@ -50,6 +50,9 @@ importers:
       tesseract.js:
         specifier: ^6.0.1
         version: 6.0.1
+      thesvg:
+        specifier: ^3.3.1
+        version: 3.3.1
       tldts:
         specifier: ^7.4.10
         version: 7.4.10
@@ -930,6 +933,10 @@ packages:
 
   '@sxzz/popperjs-es@2.11.7':
     resolution: {integrity: sha512-Ccy0NlLkzr0Ex2FKvh2X+OyERHXJ88XJ1MXtsI9y9fGexlaXaVTPzBCRBwIxFkORuOb+uBqeu+RqnpgYTEZRUQ==}
+
+  '@thesvg/icons@3.3.1':
+    resolution: {integrity: sha512-lEU5R2QEkUIeR52uklDtg+VETTKQSuho4h8lwnMiKsOH9fmpEAoKhNfP2AdWMsjEJgMyBc9iWvuY1v6WRoejlA==}
+    engines: {node: '>=18'}
 
   '@trysound/sax@0.2.0':
     resolution: {integrity: sha512-L7z9BgrNEcYyUYtF+HaEfiS5ebkh9jXqbszz7pC0hRBPaatV0XjSD3+eHrpqFemQfgwiFF0QPIarnIihIDn7OA==}
@@ -4003,6 +4010,10 @@ packages:
   thenify@3.3.1:
     resolution: {integrity: sha512-RVZSIV5IG10Hk3enotrhvz0T9em6cyHBLkH/YAZuKqd8hRkKhSfCGIcP2KUY0EPxndzANBmNllzWPwak+bheSw==}
 
+  thesvg@3.3.1:
+    resolution: {integrity: sha512-oMgEuNxcUQMdMOq3Di5kSLV7iIgOtFSE2a3yzKAewPoa92t6k2dB3Sh8Z9vfK144zT39XwK7sWg4RSm++7FHDw==}
+    engines: {node: '>=18'}
+
   thread-stream@3.1.0:
     resolution: {integrity: sha512-OqyPZ9u96VohAyMfJykzmivOrY2wfMSf3C5TtFJVgN+Hm6aj+voFhlK+kZEIv2FBh1X6Xp3DlnCOfEQ3B2J86A==}
 
@@ -5146,6 +5157,8 @@ snapshots:
   '@standard-schema/spec@1.1.0': {}
 
   '@sxzz/popperjs-es@2.11.7': {}
+
+  '@thesvg/icons@3.3.1': {}
 
   '@trysound/sax@0.2.0': {}
 
@@ -8461,6 +8474,10 @@ snapshots:
   thenify@3.3.1:
     dependencies:
       any-promise: 1.3.0
+
+  thesvg@3.3.1:
+    dependencies:
+      '@thesvg/icons': 3.3.1
 
   thread-stream@3.1.0:
     dependencies:
