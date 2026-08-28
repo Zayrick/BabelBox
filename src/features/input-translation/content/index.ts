@@ -184,6 +184,8 @@ export function createInputTranslationContentFeature(
             inheritStyles: false,
             css: `
                 :host {
+                    --fr-input-font-small: 11px;
+                    --fr-input-weight-medium: 600;
                     all: initial !important;
                     display: block !important;
                     position: relative !important;
@@ -209,7 +211,10 @@ export function createInputTranslationContentFeature(
                     padding: 8px 12px;
                     border: 0;
                     border-radius: 8px;
-                    font: 500 12px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                    font-size: var(--fr-input-font-small);
+                    font-weight: var(--fr-input-weight-medium);
+                    line-height: 1.4;
                     white-space: nowrap;
                     z-index: 2147483647;
                     pointer-events: none;

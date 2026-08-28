@@ -35,23 +35,23 @@ const emit = defineEmits<{
 .advanced-request-parameters {
   width: 100%;
   padding-top: 4px;
-  border-top: 1px solid #eceef3;
+  border-top: 1px solid var(--line);
 }
 
 summary {
   padding: 10px 0;
-  color: #b62b52;
-  font-size: 12px;
-  font-weight: 750;
+  color: var(--brand-strong);
+  font-size: var(--font-small);
+  font-weight: var(--weight-semibold);
   cursor: pointer;
 }
 
 .advanced-request-field {
   display: grid;
   gap: 6px;
-  color: #4d586d;
-  font-size: 12px;
-  font-weight: 650;
+  color: var(--ink);
+  font-size: var(--font-small);
+  font-weight: var(--weight-medium);
 }
 
 .input-error :deep(.el-textarea__inner) {
@@ -59,9 +59,9 @@ summary {
 }
 
 .error-text {
-  color: var(--el-color-danger);
-  font-size: 11px;
-  font-weight: 400;
-  line-height: 1.5;
+  color: var(--danger);
+  font-size: var(--font-small);
+  font-weight: var(--weight-medium);
+  line-height: var(--line-height-body);
 }
 </style>

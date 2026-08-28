@@ -369,14 +369,6 @@ function handleCancel() {
 
 <style scoped>
 .custom-hotkey-overlay {
-  --hotkey-brand: var(--brand, #ef4776);
-  --hotkey-brand-strong: var(--brand-strong, #dc315f);
-  --hotkey-brand-soft: var(--brand-soft, #fff0f4);
-  --hotkey-ink: var(--ink, #172033);
-  --hotkey-muted: var(--muted, #737c8f);
-  --hotkey-line: var(--line, #e5e8ef);
-  --hotkey-surface: var(--surface, #fff);
-  --hotkey-surface-soft: var(--surface-soft, #f7f8fb);
   position: fixed;
   z-index: 3000;
   inset: 0;
@@ -385,7 +377,7 @@ function handleCancel() {
   justify-content: center;
   overflow-y: auto;
   padding: 20px;
-  background: rgba(23, 32, 51, .36);
+  background: var(--mask);
   font-family: inherit;
 }
 
@@ -395,11 +387,11 @@ function handleCancel() {
   max-height: min(760px, calc(100vh - 32px));
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid var(--hotkey-line);
-  border-radius: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-overlay);
   outline: none;
-  background: var(--hotkey-surface);
-  box-shadow: 0 16px 40px rgba(23, 32, 51, .2);
+  background: var(--surface);
+  box-shadow: var(--el-box-shadow);
 }
 
 .dialog-header {
@@ -408,8 +400,8 @@ function handleCancel() {
   justify-content: space-between;
   gap: 16px;
   padding: 20px 22px 16px;
-  border-bottom: 1px solid var(--hotkey-line);
-  background: var(--hotkey-surface);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
 }
 
 .dialog-heading,
@@ -420,21 +412,21 @@ function handleCancel() {
 .dialog-heading h2,
 .section-heading h3 {
   margin: 0;
-  color: var(--hotkey-ink);
+  color: var(--ink);
   letter-spacing: -.03em;
 }
 
 .dialog-heading h2 {
-  font-size: 20px;
-  line-height: 1.25;
+  font-size: var(--font-title);
+  line-height: var(--line-height-tight);
 }
 
 .dialog-heading p {
   max-width: 410px;
   margin: 5px 0 0;
-  color: var(--hotkey-muted);
-  font-size: 12px;
-  line-height: 1.5;
+  color: var(--muted);
+  font-size: var(--font-small);
+  line-height: var(--line-height-body);
 }
 
 .dialog-close {
@@ -446,11 +438,9 @@ function handleCancel() {
   margin: -4px -6px 0 0;
   border: 1px solid transparent;
   border-radius: 8px;
-  color: #8c94a3;
+  color: var(--muted);
   background: transparent;
   cursor: pointer;
-  font-size: 26px;
-  font-weight: 300;
   line-height: 1;
   transition: color 160ms ease, background 160ms ease, border-color 160ms ease;
 }
@@ -462,9 +452,9 @@ function handleCancel() {
 
 .dialog-close:hover,
 .dialog-close:focus-visible {
-  border-color: #f4ced9;
-  color: var(--hotkey-brand-strong);
-  background: var(--hotkey-brand-soft);
+  border-color: var(--el-color-primary-light-7);
+  color: var(--brand-strong);
+  background: var(--brand-soft);
 }
 
 .dialog-body {
@@ -480,12 +470,12 @@ function handleCancel() {
   gap: 12px;
   padding: 0 0 16px;
   border: 0;
-  border-bottom: 1px solid var(--hotkey-line);
+  border-bottom: 1px solid var(--line);
   background: transparent;
 }
 
 .recording-card.is-recording {
-  border-color: #f0b4c5;
+  border-color: var(--el-color-primary-light-5);
 }
 
 .section-heading {
@@ -496,25 +486,25 @@ function handleCancel() {
 }
 
 .section-heading h3 {
-  font-size: 15px;
-  line-height: 1.4;
+  font-size: var(--font-subtitle);
+  line-height: var(--line-height-tight);
 }
 
 .state-badge {
   flex: 0 0 auto;
   padding: 5px 9px;
   border-radius: 6px;
-  color: #8b93a4;
-  background: #eef1f6;
-  font-size: 10px;
-  font-weight: 750;
+  color: var(--muted);
+  background: var(--surface-soft);
+  font-size: var(--font-caption);
+  font-weight: var(--weight-semibold);
   white-space: nowrap;
 }
 
 .state-badge.active,
 .state-badge.ready {
-  color: var(--hotkey-brand-strong);
-  background: var(--hotkey-brand-soft);
+  color: var(--brand-strong);
+  background: var(--brand-soft);
 }
 
 .hotkey-input-field {
@@ -524,65 +514,65 @@ function handleCancel() {
   justify-content: center;
   width: 100%;
   padding: 14px 18px;
-  border: 1px dashed #d4dae5;
-  border-radius: 10px;
-  color: var(--hotkey-muted);
-  background: var(--hotkey-surface-soft);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-control);
+  color: var(--muted);
+  background: var(--surface-soft);
   cursor: pointer;
   font: inherit;
   transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
 }
 
 .hotkey-input-field:hover {
-  border-color: #ef9ab1;
-  color: var(--hotkey-brand-strong);
-  background: var(--hotkey-surface);
+  border-color: var(--el-color-primary-light-3);
+  color: var(--brand-strong);
+  background: var(--surface);
 }
 
 .hotkey-input-field:focus-visible {
-  border-color: var(--hotkey-brand);
-  outline: 3px solid rgba(239, 71, 118, .16);
+  border-color: var(--brand);
+  outline: 3px solid var(--brand-soft);
   outline-offset: 2px;
 }
 
 .hotkey-input-field.recording {
   border-style: solid;
-  border-color: var(--hotkey-brand);
-  color: var(--hotkey-brand-strong);
-  background: var(--hotkey-brand-soft);
+  border-color: var(--brand);
+  color: var(--brand-strong);
+  background: var(--brand-soft);
 }
 
 .hotkey-input-field.error {
   border-style: solid;
-  border-color: #e46b6b;
-  color: #bd4545;
-  background: #fff6f6;
+  border-color: var(--danger-border);
+  color: var(--danger);
+  background: var(--danger-soft);
 }
 
 .hotkey-input-field.warning {
   border-style: solid;
-  border-color: #e7b24f;
-  color: #9c6b12;
-  background: #fffaf0;
+  border-color: var(--warning-border);
+  color: var(--warning);
+  background: var(--warning-soft);
 }
 
 .hotkey-input-field.success {
   border-style: solid;
-  border-color: #8bcaa4;
-  color: #2c8050;
-  background: #f4fbf6;
+  border-color: var(--success-border);
+  color: var(--success);
+  background: var(--success-soft);
 }
 
 .placeholder {
-  font-size: 13px;
+  font-size: var(--font-body);
 }
 
 .recording-text {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
-  font-weight: 650;
+  font-size: var(--font-body);
+  font-weight: var(--weight-medium);
 }
 
 .recording-icon {
@@ -598,31 +588,31 @@ function handleCancel() {
 .preset-button kbd {
   display: inline-flex;
   align-items: center;
-  min-height: 30px;
+  min-height: var(--control-height-small);
   padding: 5px 10px;
-  border: 1px solid #dfe4ed;
+  border: 1px solid var(--line);
   border-bottom-width: 2px;
   border-radius: 6px;
-  color: var(--hotkey-ink);
-  background: var(--hotkey-surface);
+  color: var(--ink);
+  background: var(--surface);
   font-family: 'SFMono-Regular', 'SF Mono', 'Cascadia Code', 'Roboto Mono', monospace;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--font-body);
+  font-weight: var(--weight-semibold);
   letter-spacing: .02em;
 }
 
 .hotkey-display kbd {
   padding: 8px 15px;
-  border-color: #f0b4c5;
-  color: var(--hotkey-brand-strong);
-  background: var(--hotkey-brand-soft);
-  font-size: 17px;
+  border-color: var(--el-color-primary-light-5);
+  color: var(--brand-strong);
+  background: var(--brand-soft);
+  font-size: var(--font-subtitle);
 }
 
 .section-note {
-  color: var(--hotkey-muted);
-  font-size: 11px;
-  line-height: 1.55;
+  color: var(--muted);
+  font-size: var(--font-small);
+  line-height: var(--line-height-body);
   padding-top: 2px;
   white-space: nowrap;
 }
@@ -633,27 +623,27 @@ function handleCancel() {
   gap: 8px;
   padding: 10px 12px;
   border: 1px solid;
-  border-radius: 8px;
-  font-size: 12px;
-  line-height: 1.5;
+  border-radius: var(--radius-control);
+  font-size: var(--font-small);
+  line-height: var(--line-height-body);
 }
 
 .hotkey-status.error {
-  border-color: #f1c2c2;
-  color: #b84d4d;
-  background: #fff6f6;
+  border-color: var(--danger-border);
+  color: var(--danger);
+  background: var(--danger-soft);
 }
 
 .hotkey-status.warning {
-  border-color: #f0d49a;
-  color: #956713;
-  background: #fffaf0;
+  border-color: var(--warning-border);
+  color: var(--warning);
+  background: var(--warning-soft);
 }
 
 .hotkey-status.success {
-  border-color: #b9e0c5;
-  color: #2d7d4d;
-  background: #f4fbf6;
+  border-color: var(--success-border);
+  color: var(--success);
+  background: var(--success-soft);
 }
 
 .preset-section {
@@ -674,10 +664,10 @@ function handleCancel() {
   justify-content: space-between;
   gap: 8px;
   padding: 9px 10px 9px 12px;
-  border: 1px solid var(--hotkey-line);
-  border-radius: 8px;
-  color: var(--hotkey-muted);
-  background: var(--hotkey-surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  color: var(--muted);
+  background: var(--surface);
   cursor: pointer;
   font: inherit;
   text-align: left;
@@ -686,32 +676,32 @@ function handleCancel() {
 
 .preset-button:hover,
 .preset-button:focus-visible {
-  border-color: #ef9ab1;
-  color: var(--hotkey-brand-strong);
-  background: #fffafb;
+  border-color: var(--el-color-primary-light-3);
+  color: var(--brand-strong);
+  background: var(--brand-soft);
 }
 
 .preset-button.selected {
-  border-color: #f0b4c5;
-  color: var(--hotkey-brand-strong);
-  background: var(--hotkey-brand-soft);
+  border-color: var(--el-color-primary-light-5);
+  color: var(--brand-strong);
+  background: var(--brand-soft);
 }
 
 .preset-button kbd {
   flex: 0 0 auto;
-  color: var(--hotkey-ink);
-  font-size: 12px;
+  color: var(--ink);
+  font-size: var(--font-small);
 }
 
 .preset-button.selected kbd {
-  border-color: #f0b4c5;
-  color: var(--hotkey-brand-strong);
+  border-color: var(--el-color-primary-light-5);
+  color: var(--brand-strong);
 }
 
 .preset-label {
   overflow: hidden;
-  font-size: 11px;
-  font-weight: 650;
+  font-size: var(--font-small);
+  font-weight: var(--weight-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -722,8 +712,8 @@ function handleCancel() {
   justify-content: space-between;
   gap: 14px;
   padding: 14px 22px 18px;
-  border-top: 1px solid var(--hotkey-line);
-  background: var(--hotkey-surface);
+  border-top: 1px solid var(--line);
+  background: var(--surface);
 }
 
 .dialog-actions {
@@ -737,13 +727,13 @@ function handleCancel() {
 .clear-button,
 .secondary-button,
 .primary-button {
-  min-height: 40px;
+  min-height: var(--control-height);
   padding: 0 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   cursor: pointer;
   font: inherit;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--font-small);
+  font-weight: var(--weight-semibold);
   transition: border-color 160ms ease, color 160ms ease, background 160ms ease;
 }
 
@@ -753,7 +743,7 @@ function handleCancel() {
   gap: 6px;
   padding: 0;
   border: 0;
-  color: #bd656d;
+  color: var(--danger);
   background: transparent;
 }
 
@@ -764,38 +754,38 @@ function handleCancel() {
 
 .clear-button:hover,
 .clear-button:focus-visible {
-  color: #a64852;
+  color: var(--danger);
   text-decoration: underline;
 }
 
 .secondary-button {
-  border: 1px solid var(--hotkey-line);
-  color: var(--hotkey-ink);
-  background: var(--hotkey-surface);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  background: var(--surface);
 }
 
 .secondary-button:hover,
 .secondary-button:focus-visible {
-  border-color: #ccd3df;
-  background: var(--hotkey-surface-soft);
+  border-color: var(--el-border-color-dark);
+  background: var(--surface-soft);
 }
 
 .primary-button {
-  border: 1px solid var(--hotkey-brand);
-  color: #fff;
-  background: var(--hotkey-brand);
+  border: 1px solid var(--brand);
+  color: var(--on-brand);
+  background: var(--brand);
 }
 
 .primary-button:hover:not(:disabled),
 .primary-button:focus-visible:not(:disabled) {
-  border-color: var(--hotkey-brand-strong);
-  background: var(--hotkey-brand-strong);
+  border-color: var(--brand-strong);
+  background: var(--brand-strong);
 }
 
 .primary-button:disabled {
-  border-color: #dfe4ed;
-  color: #aeb5c1;
-  background: #eef1f5;
+  border-color: var(--line);
+  color: var(--muted);
+  background: var(--surface-soft);
   box-shadow: none;
   cursor: not-allowed;
 }
@@ -813,10 +803,6 @@ function handleCancel() {
 
   .dialog-header {
     padding: 18px 20px 14px;
-  }
-
-  .dialog-heading h2 {
-    font-size: 19px;
   }
 
   .dialog-body {

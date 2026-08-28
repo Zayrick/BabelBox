@@ -50,6 +50,7 @@ import {
 } from '@/src/features/full-page-translation/progress';
 import {config, subscribeConfig} from '@/src/services/config/store';
 import {usesAnimatedEffects} from '@/src/core/config/animation';
+import {resolvesToDarkTheme} from '@/src/ui/theme/theme';
 
 const progress = ref(getFullPageTranslationProgress());
 const dismissedSessionId = ref<number | null>(null);
@@ -61,9 +62,7 @@ const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 let unsubscribeProgress: (() => void) | null = null;
 let unsubscribeConfig: (() => void) | null = null;
 
-const isDark = computed(() => configuredTheme.value === 'dark' || (
-  configuredTheme.value === 'auto' && prefersDark.value
-));
+const isDark = computed(() => resolvesToDarkTheme(configuredTheme.value, prefersDark.value));
 
 const isVisible = computed(() => progress.value.active &&
   progress.value.sessionId !== dismissedSessionId.value &&
@@ -107,6 +106,23 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .fr-translation-progress {
+  --fr-progress-font-caption: 10px;
+  --fr-progress-font-small: 11px;
+  --fr-progress-font-body: 13px;
+  --fr-progress-weight-semibold: 700;
+  --fr-progress-weight-bold: 800;
+  --fr-progress-border: rgba(229, 88, 139, 0.24);
+  --fr-progress-surface: rgba(255, 252, 253, 0.96);
+  --fr-progress-shadow: 0 12px 32px rgba(68, 38, 52, 0.18), 0 2px 8px rgba(68, 38, 52, 0.08);
+  --fr-progress-ink: #3f3540;
+  --fr-progress-heading: #342b35;
+  --fr-progress-muted: #746875;
+  --fr-progress-caption: #70636e;
+  --fr-progress-brand: #bd2f62;
+  --fr-progress-indicator: linear-gradient(145deg, #fff0f5, #ffe0eb);
+  --fr-progress-divider-color: #e7dce1;
+  --fr-progress-hover: #f8e9ef;
+  --fr-progress-hover-ink: #cf3e73;
   position: fixed;
   right: max(16px, env(safe-area-inset-right));
   bottom: max(16px, env(safe-area-inset-bottom));
@@ -117,13 +133,13 @@ onBeforeUnmount(() => {
   align-items: center;
   width: min(286px, calc(100vw - 32px));
   padding: 11px 10px 11px 12px;
-  border: 1px solid rgba(229, 88, 139, 0.24);
+  border: 1px solid var(--fr-progress-border);
   border-radius: 14px;
-  background: rgba(255, 252, 253, 0.96);
-  box-shadow: 0 12px 32px rgba(68, 38, 52, 0.18), 0 2px 8px rgba(68, 38, 52, 0.08);
-  color: #3f3540;
+  background: var(--fr-progress-surface);
+  box-shadow: var(--fr-progress-shadow);
+  color: var(--fr-progress-ink);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-  font-size: 12px;
+  font-size: var(--fr-progress-font-small);
   line-height: 1.35;
   pointer-events: auto;
   backdrop-filter: blur(16px);
@@ -139,8 +155,8 @@ onBeforeUnmount(() => {
   height: 34px;
   padding: 8px 7px;
   border-radius: 10px;
-  background: linear-gradient(145deg, #fff0f5, #ffe0eb);
-  color: #e84f87;
+  background: var(--fr-progress-indicator);
+  color: var(--fr-progress-brand);
 }
 
 .fr-progress-indicator i {
@@ -170,9 +186,9 @@ onBeforeUnmount(() => {
 }
 
 .fr-progress-copy strong {
-  color: #342b35;
-  font-size: 13px;
-  font-weight: 700;
+  color: var(--fr-progress-heading);
+  font-size: var(--fr-progress-font-body);
+  font-weight: var(--fr-progress-weight-semibold);
   letter-spacing: 0.01em;
 }
 
@@ -180,26 +196,26 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #746875;
+  color: var(--fr-progress-muted);
   white-space: nowrap;
 }
 
 .fr-progress-counts b {
-  color: #bd2f62;
+  color: var(--fr-progress-brand);
   font-variant-numeric: tabular-nums;
-  font-weight: 750;
+  font-weight: var(--fr-progress-weight-bold);
 }
 
 .fr-progress-divider {
   width: 1px;
   height: 10px;
-  background: #e7dce1;
+  background: var(--fr-progress-divider-color);
 }
 
 .fr-progress-copy small {
   overflow: hidden;
-  color: #70636e;
-  font-size: 10px;
+  color: var(--fr-progress-caption);
+  font-size: var(--fr-progress-font-caption);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -214,14 +230,14 @@ button {
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: #988b95;
+  color: var(--fr-progress-caption);
   cursor: pointer;
 }
 
 button:hover,
 button:focus-visible {
-  background: #f8e9ef;
-  color: #cf3e73;
+  background: var(--fr-progress-hover);
+  color: var(--fr-progress-hover-ink);
   outline: none;
 }
 
@@ -238,43 +254,19 @@ button svg {
   stroke-width: 1.6;
 }
 
-.fr-dark {
-  border-color: rgba(242, 116, 162, 0.3);
-  background: rgba(38, 31, 39, 0.96);
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.34), 0 2px 8px rgba(0, 0, 0, 0.2);
-  color: #f7edf1;
-}
-
-.fr-dark .fr-progress-indicator {
-  background: linear-gradient(145deg, #593043, #442635);
-  color: #ff80ae;
-}
-
-.fr-dark .fr-progress-copy strong {
-  color: #fff7fa;
-}
-
-.fr-dark .fr-progress-counts {
-  color: #d1c2c9;
-}
-
-.fr-dark .fr-progress-counts b {
-  color: #ff80ae;
-}
-
-.fr-dark .fr-progress-divider {
-  background: #5d4c55;
-}
-
-.fr-dark .fr-progress-copy small,
-.fr-dark button {
-  color: #bfaeb7;
-}
-
-.fr-dark button:hover,
-.fr-dark button:focus-visible {
-  background: #523242;
-  color: #ff91b8;
+.fr-translation-progress.fr-dark {
+  --fr-progress-border: rgba(242, 116, 162, 0.3);
+  --fr-progress-surface: rgba(38, 31, 39, 0.96);
+  --fr-progress-shadow: 0 14px 36px rgba(0, 0, 0, 0.34), 0 2px 8px rgba(0, 0, 0, 0.2);
+  --fr-progress-ink: #f7edf1;
+  --fr-progress-heading: #fff7fa;
+  --fr-progress-muted: #d1c2c9;
+  --fr-progress-caption: #bfaeb7;
+  --fr-progress-brand: #ff80ae;
+  --fr-progress-indicator: linear-gradient(145deg, #593043, #442635);
+  --fr-progress-divider-color: #5d4c55;
+  --fr-progress-hover: #523242;
+  --fr-progress-hover-ink: #ff91b8;
 }
 
 .fr-progress-panel-enter-active,

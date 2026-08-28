@@ -68,7 +68,7 @@ const fallbackIcon = computed(() => fallbackIcons[resolveServiceFallbackIconKey(
   border: 1px solid rgba(31, 41, 55, 0.1);
   border-radius: 11px;
   overflow: hidden;
-  background: #fff;
+  background: var(--on-brand);
   box-shadow: 0 1px 2px rgba(31, 41, 55, 0.06);
 }
 
@@ -111,8 +111,8 @@ const fallbackIcon = computed(() => fallbackIcons[resolveServiceFallbackIconKey(
 }
 
 .service-brand-icon--fallback {
-  color: #536174;
-  background: #f3f5f8;
+  color: var(--muted);
+  background: var(--surface-soft);
 }
 
 .service-brand-fallback {

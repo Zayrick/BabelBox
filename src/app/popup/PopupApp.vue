@@ -52,7 +52,12 @@
       <div class="hero-heading">
         <h1>{{ config.on ? '网页翻译' : '翻译功能已暂停' }}</h1>
         <div class="hero-switches">
-          <button class="switch" type="button" role="switch" :aria-checked="config.on" :aria-label="config.on ? '暂停插件' : '启用插件'" @click="setPluginEnabled(!config.on)"><i /></button>
+          <el-switch
+            class="popup-switch"
+            :model-value="config.on"
+            :aria-label="config.on ? '暂停插件' : '启用插件'"
+            @change="setPluginEnabled(Boolean($event))"
+          />
         </div>
       </div>
 
@@ -343,7 +348,7 @@
       <div v-if="activeDrawer === 'hover'" class="drawer-content">
         <div class="setting-row">
           <span><strong>启用鼠标悬停翻译</strong><small>按住快捷键并悬停在文本上</small></span>
-          <button class="switch compact" type="button" role="switch" :aria-checked="config.hotkey !== 'none'" aria-label="启用或关闭鼠标悬停翻译" @click="toggleHover"><i /></button>
+          <el-switch class="popup-switch" size="small" :model-value="config.hotkey !== 'none'" aria-label="启用或关闭鼠标悬停翻译" @change="toggleHover" />
         </div>
         <div class="choice-block">
           <label>触发快捷键</label>
@@ -365,7 +370,13 @@
         <div v-if="selectionDrawerTab === 'text'" id="selection-text-panel" role="tabpanel">
           <div class="setting-row">
             <span><strong>启用划词翻译</strong></span>
-            <button class="switch compact" type="button" role="switch" :aria-checked="config.selectionTranslatorMode !== 'disabled'" aria-label="启用或关闭划词翻译" @click="setSelectionMode(config.selectionTranslatorMode === 'disabled' ? 'bilingual' : 'disabled')"><i /></button>
+            <el-switch
+              class="popup-switch"
+              size="small"
+              :model-value="config.selectionTranslatorMode !== 'disabled'"
+              aria-label="启用或关闭划词翻译"
+              @change="setSelectionMode(Boolean($event) ? 'bilingual' : 'disabled')"
+            />
           </div>
           <div class="choice-block">
             <label>显示方式</label>
@@ -438,7 +449,7 @@
                 <strong>启用圈选翻译</strong>
                 <small>翻译图片或无法直接选中的页面文字</small>
               </div>
-              <button class="switch compact" type="button" role="switch" :aria-checked="config.selectionAreaEnabled" aria-label="启用或关闭圈选翻译" @click="setAreaEnabled(!config.selectionAreaEnabled)"><i /></button>
+              <el-switch class="popup-switch" size="small" :model-value="config.selectionAreaEnabled" aria-label="启用或关闭圈选翻译" @change="setAreaEnabled(Boolean($event))" />
             </div>
             <small class="drawer-hint">按 Shift + Z 拖拽区域，按 Esc 关闭结果。</small>
           </div>
@@ -452,7 +463,7 @@
         </div>
         <div v-if="browserCapabilities.imageTranslation" class="setting-row">
           <span><strong>启用图片翻译</strong><small>在网页图片左下角显示翻译按钮</small></span>
-          <button class="switch compact" type="button" role="switch" :aria-checked="!config.disableImageTranslator" aria-label="启用或关闭图片翻译" @click="setImageTranslatorEnabled(config.disableImageTranslator)"><i /></button>
+          <el-switch class="popup-switch" size="small" :model-value="!config.disableImageTranslator" aria-label="启用或关闭图片翻译" @change="setImageTranslatorEnabled(Boolean($event))" />
         </div>
       </div>
 
@@ -460,7 +471,7 @@
         <div class="video-beta-banner"><span class="feature-icon teal" aria-hidden="true"><Captions /></span><span><strong>YouTube 字幕翻译</strong><small>Beta 测试</small></span></div>
         <div class="setting-row video-enable-row" :class="{ 'needs-enable': !config.videoTranslationEnabled }">
           <span><strong>{{ config.videoTranslationEnabled ? '字幕翻译已开启' : '开启字幕翻译' }}</strong><small>在 YouTube 原生字幕下方显示译文</small></span>
-          <button class="switch compact" type="button" role="switch" :aria-checked="config.videoTranslationEnabled" aria-label="启用或关闭视频字幕翻译" @click="setVideoTranslationEnabled(!config.videoTranslationEnabled)"><i /></button>
+          <el-switch class="popup-switch" size="small" :model-value="config.videoTranslationEnabled" aria-label="启用或关闭视频字幕翻译" @change="setVideoTranslationEnabled(Boolean($event))" />
         </div>
         <label class="select-row">
           <span><strong>视频翻译服务</strong><small>与网页翻译服务独立保存</small></span>
@@ -513,6 +524,7 @@
 <script lang="ts" setup>
 import { computed, defineAsyncComponent, onMounted, onUnmounted, ref, watch } from 'vue';
 import {browser} from 'wxt/browser';
+import {useDocumentTheme} from '@/src/ui/composables/useDocumentTheme';
 import {
   config as runtimeConfig,
   configReady,
@@ -600,7 +612,7 @@ const {
   clear: clearActionFeedback,
   dispose: disposeActionFeedback,
 } = useActionFeedback<PopupActionTarget>();
-const darkMode = window.matchMedia('(prefers-color-scheme: dark)');
+useDocumentTheme(() => config.value.theme);
 const drawerSettingsSection: Record<DrawerName, SettingsSection> = {
   hover: 'settings-shortcuts',
   selection: 'settings-shortcuts',
@@ -719,16 +731,11 @@ const selectionModes = [
 const selectionTriggers = options.selectionTranslatorTriggers;
 const selectionTtsVoiceOptions = SELECTION_TTS_VOICE_OPTIONS;
 
-function applyTheme(theme: string) {
-  document.documentElement.classList.toggle('dark', theme === 'dark' || (theme === 'auto' && darkMode.matches));
-}
-
 async function hydrate() {
   await configReady;
   Object.assign(config.value, runtimeConfig);
   lastSerialized = JSON.stringify(config.value);
   hydrated.value = true;
-  applyTheme(config.value.theme || 'auto');
   await hydrateCurrentSite();
 }
 void hydrate();
@@ -758,9 +765,6 @@ watch(() => JSON.stringify(config.value), async serialized => {
     console.warn('[FluentRead] 保存 popup 设置失败', error);
   }
 }, { flush: 'sync' });
-watch(() => config.value.theme, theme => applyTheme(theme || 'auto'));
-darkMode.onchange = () => { if (config.value.theme === 'auto') applyTheme('auto'); };
-
 function closeServicePicker(event?: Event) {
   if (event && servicePicker.value?.contains(event.target as Node)) return;
   servicePickerOpen.value = false;
@@ -797,7 +801,6 @@ onUnmounted(() => {
   document.removeEventListener('pointerdown', closeServicePicker);
   document.removeEventListener('keydown', handleServicePickerKeydown);
   document.removeEventListener('keydown', handleDonationKeydown);
-  darkMode.onchange = null;
   if (noticeTimer) clearTimeout(noticeTimer);
   if (pagePendingTimer) clearTimeout(pagePendingTimer);
   disposeActionFeedback();

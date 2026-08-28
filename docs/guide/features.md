@@ -78,7 +78,7 @@ FluentRead 将翻译服务作为可替换的适配器。你可以按场景选择
 
 ## 阅读样式与主题
 
-设置页提供主题、译文样式、字号和相关显示选项。建议先从默认样式开始，再根据网页背景选择浅色、深色或更低对比度的方案。
+设置页提供主题、译文样式、字号和相关显示选项。浅色、深色或跟随系统会统一应用到弹窗、设置页、文档翻译页、userscript 设置面板和网页内的 FluentRead 浮层；网页译文本身仍按所选阅读样式显示。
 
 <img class="doc-screenshot" src="/screenshots/settings-general.png" alt="FluentRead general settings" />
 

@@ -9,10 +9,10 @@ export type DocumentPreviewMode = DocumentRenderMode | 'source';
 const PREVIEW_SOFT_BREAK = '\u2028';
 
 const PREVIEW_STYLE = `
-:root { color-scheme: light; font-family: Inter, "SF Pro Text", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; color: #20242d; background: #fff; }
+:root { --fr-preview-font-small: 11px; --fr-preview-font-body: 13px; --fr-preview-font-subtitle: 15px; --fr-preview-font-reading: 17px; --fr-preview-weight-regular: 400; --fr-preview-weight-medium: 600; --fr-preview-weight-semibold: 700; --fr-preview-weight-bold: 800; color-scheme: light; font-family: Inter, "SF Pro Text", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; color: #20242d; background: #fff; }
 * { box-sizing: border-box; }
 html, body { min-height: 100%; margin: 0; }
-body { max-width: 900px; margin: 0 auto; padding: 54px 64px 80px; font-size: 17px; line-height: 1.78; overflow-wrap: anywhere; }
+body { max-width: 900px; margin: 0 auto; padding: 54px 64px 80px; font-size: var(--fr-preview-font-reading); line-height: 1.78; overflow-wrap: anywhere; }
 main, article { display: block; }
 h1, h2, h3, h4, h5, h6 { margin: 1.5em 0 .55em; color: #1f232b; letter-spacing: -.025em; line-height: 1.3; }
 h1:first-child, h2:first-child { margin-top: 0; }
@@ -20,24 +20,24 @@ h1 { font-size: 2em; } h2 { font-size: 1.55em; } h3 { font-size: 1.28em; }
 p { margin: 0 0 1.15em; }
 ul, ol { margin: .2em 0 1.2em; padding-left: 1.5em; }
 blockquote { margin: .8em 0 1.2em; padding: .1em 0 .1em 1em; border-left: 3px solid #ef4776; color: #596174; }
-pre { margin: 1.1em 0; padding: 16px 18px; overflow: auto; border: 1px solid #e4e7ef; border-radius: 12px; background: #f7f8fb; font-size: 13px; line-height: 1.6; }
+pre { margin: 1.1em 0; padding: 16px 18px; overflow: auto; border: 1px solid #e4e7ef; border-radius: 12px; background: #f7f8fb; font-size: var(--fr-preview-font-body); line-height: 1.6; }
 code { padding: .12em .34em; border-radius: 5px; background: #f1f3f7; font: .88em ui-monospace, SFMono-Regular, Menlo, monospace; }
 pre code { padding: 0; background: transparent; }
 img { max-width: 100%; height: auto; }
 table { width: 100%; border-collapse: collapse; } th, td { padding: 8px 10px; border: 1px solid #dde2eb; text-align: left; }
 a, .reader-link { color: #d83160; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
-[data-fluent-read-document-translation="true"], .fluentread-translation { display: block; margin-top: .3em; color: #232831; font-weight: 650; }
+[data-fluent-read-document-translation="true"], .fluentread-translation { display: block; margin-top: .3em; color: #232831; font-weight: var(--fr-preview-weight-medium); }
 .reader-unit { margin: 0 0 1.35em; }
 .reader-unit > :first-child { margin-bottom: .22em; }
 .reader-unit > :last-child { margin-bottom: 0; }
-.reader-source { color: #303640; font-weight: 440; }
-.reader-translation { color: #20242d; font-weight: 700; }
-.reader-unit.heading .reader-source, .reader-unit.heading .reader-translation { font-weight: 780; }
+.reader-source { color: #303640; font-weight: var(--fr-preview-weight-regular); }
+.reader-translation { color: #20242d; font-weight: var(--fr-preview-weight-semibold); }
+.reader-unit.heading .reader-source, .reader-unit.heading .reader-translation { font-weight: var(--fr-preview-weight-bold); }
 .reader-unit.list-item { position: relative; padding-left: 1.4em; }
 .reader-unit.list-item::before { position: absolute; top: .22em; left: .15em; color: #ef4776; content: "•"; }
 .reader-unit.horizontal-rule { height: 1px; margin: 2em 0; background: #e3e7ef; }
-.document-security-note { margin: 0 0 24px; padding: 9px 12px; border-radius: 9px; color: #6c7485; background: #f7f8fb; font-size: 12px; }
-@media (max-width: 680px) { body { padding: 30px 24px 56px; font-size: 15px; } }
+.document-security-note { margin: 0 0 24px; padding: 9px 12px; border-radius: 9px; color: #6c7485; background: #f7f8fb; font-size: var(--fr-preview-font-small); }
+@media (max-width: 680px) { body { padding: 30px 24px 56px; font-size: var(--fr-preview-font-subtitle); } }
 `;
 
 function escapeHtml(value: string): string {

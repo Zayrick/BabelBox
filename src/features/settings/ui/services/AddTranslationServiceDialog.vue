@@ -90,20 +90,20 @@ function addProvider(provider: string): void {
 </script>
 
 <style scoped>
-.dialog-intro { margin: 0 0 14px; color: #687286; font-size: 12px; line-height: 1.6; }
-.provider-search { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 11px; border: 1px solid #dfe3eb; border-radius: 9px; background: #fafbfc; transition: border-color 140ms ease, box-shadow 140ms ease; }
-.provider-search:focus-within { border-color: #ef4776; box-shadow: 0 0 0 3px rgba(239, 71, 118, .1); }
-.provider-search svg { color: #8991a2; }
-.provider-search input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: #263044; }
+.dialog-intro { margin: 0 0 14px; color: var(--muted); font-size: var(--font-small); line-height: var(--line-height-body); }
+.provider-search { display: flex; align-items: center; gap: 8px; height: var(--control-height); padding: 0 11px; border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--surface-soft); transition: border-color 140ms ease, box-shadow 140ms ease; }
+.provider-search:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+.provider-search svg { color: var(--muted); }
+.provider-search input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; font-size: var(--font-body); }
 .provider-grid { display: grid; max-height: min(520px, 60vh); margin-top: 14px; overflow-y: auto; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
-.provider-card { display: grid; min-width: 0; grid-template-columns: 38px minmax(0, 1fr) 18px; align-items: center; gap: 11px; padding: 12px; border: 1px solid #e1e5ec; border-radius: 11px; color: #263044; background: #fff; text-align: left; cursor: pointer; }
-.provider-card:hover { border-color: #ef9db5; background: #fff6f8; }
-.provider-card > svg { color: #bd2c55; }
+.provider-card { display: grid; min-width: 0; grid-template-columns: 38px minmax(0, 1fr) 18px; align-items: center; gap: 11px; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-panel); color: var(--ink); background: var(--surface); text-align: left; cursor: pointer; }
+.provider-card:hover { border-color: var(--el-color-primary-light-3); background: var(--brand-soft); }
+.provider-card > svg { color: var(--brand-strong); }
 .provider-copy { display: flex; min-width: 0; flex-direction: column; }
 .provider-copy strong, .provider-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.provider-copy strong { font-size: 13px; }
-.provider-copy small { margin-top: 3px; color: #8991a2; font-size: 10px; }
-.provider-empty { display: grid; min-height: 180px; color: #8991a2; place-items: center; font-size: 12px; }
+.provider-copy strong { font-size: var(--font-body); }
+.provider-copy small { margin-top: 3px; color: var(--muted); font-size: var(--font-caption); }
+.provider-empty { display: grid; min-height: 180px; color: var(--muted); place-items: center; font-size: var(--font-small); }
 @media (max-width: 620px) {
   .provider-grid { grid-template-columns: 1fr; }
 }

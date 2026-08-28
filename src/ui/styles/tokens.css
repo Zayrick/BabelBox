@@ -1,13 +1,37 @@
-/* 跨扩展页面共享的视觉语义；短变量名供现有页面样式使用。 */
-:root {
+/* FluentRead 页面与独立浮层共享的视觉语义；Element Plus 和自定义界面共用这一层 token。 */
+:root,
+.fr-theme {
+  color-scheme: light;
   --fr-color-brand: #ef4776;
   --fr-color-brand-strong: #dc315f;
   --fr-color-brand-soft: #fff0f4;
   --fr-color-ink: #172033;
   --fr-color-muted: #737c8f;
   --fr-color-line: #e5e8ef;
+  --fr-color-page: #f5f6fa;
   --fr-color-surface: #fff;
   --fr-color-surface-soft: #f7f8fb;
+  --fr-color-canvas: #e9eef6;
+  --fr-color-mask: rgba(17, 20, 29, .42);
+  --fr-font-family: Inter, "SF Pro Display", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --fr-font-size-caption: 10px;
+  --fr-font-size-small: 11px;
+  --fr-font-size-body: 13px;
+  --fr-font-size-subtitle: 15px;
+  --fr-font-size-reading: 17px;
+  --fr-font-size-title: 20px;
+  --fr-font-size-display: 26px;
+  --fr-font-weight-medium: 600;
+  --fr-font-weight-semibold: 700;
+  --fr-font-weight-bold: 800;
+  --fr-line-height-tight: 1.35;
+  --fr-line-height-body: 1.55;
+  --fr-radius-control: 8px;
+  --fr-radius-panel: 12px;
+  --fr-radius-overlay: 14px;
+  --fr-control-height-small: 32px;
+  --fr-control-height: 38px;
+  --fr-control-height-large: 44px;
 
   --brand: var(--fr-color-brand);
   --brand-strong: var(--fr-color-brand-strong);
@@ -15,6 +39,115 @@
   --ink: var(--fr-color-ink);
   --muted: var(--fr-color-muted);
   --line: var(--fr-color-line);
+  --page: var(--fr-color-page);
   --surface: var(--fr-color-surface);
   --surface-soft: var(--fr-color-surface-soft);
+  --canvas: var(--fr-color-canvas);
+  --mask: var(--fr-color-mask);
+  --font-family: var(--fr-font-family);
+  --font-caption: var(--fr-font-size-caption);
+  --font-small: var(--fr-font-size-small);
+  --font-body: var(--fr-font-size-body);
+  --font-subtitle: var(--fr-font-size-subtitle);
+  --font-reading: var(--fr-font-size-reading);
+  --font-title: var(--fr-font-size-title);
+  --font-display: var(--fr-font-size-display);
+  --weight-medium: var(--fr-font-weight-medium);
+  --weight-semibold: var(--fr-font-weight-semibold);
+  --weight-bold: var(--fr-font-weight-bold);
+  --line-height-tight: var(--fr-line-height-tight);
+  --line-height-body: var(--fr-line-height-body);
+  --radius-control: var(--fr-radius-control);
+  --radius-panel: var(--fr-radius-panel);
+  --radius-overlay: var(--fr-radius-overlay);
+  --control-height-small: var(--fr-control-height-small);
+  --control-height: var(--fr-control-height);
+  --control-height-large: var(--fr-control-height-large);
+}
+
+:root.dark,
+.fr-theme.fr-dark-theme {
+  color-scheme: dark;
+  --fr-color-brand-strong: #ff7aa2;
+  --fr-color-brand-soft: rgba(239, 71, 118, .16);
+  --fr-color-ink: #f4f5f8;
+  --fr-color-muted: #b8bec9;
+  --fr-color-line: #343844;
+  --fr-color-page: #14161b;
+  --fr-color-surface: #20232a;
+  --fr-color-surface-soft: #292c34;
+  --fr-color-canvas: #151a23;
+  --fr-color-mask: rgba(0, 0, 0, .62);
+}
+
+/*
+ * 扩展页面由 Element Plus 官方 dark CSS 补齐组件状态；这里统一品牌色、
+ * 页面语义和独立 Shadow UI 所需的基础变量。
+ */
+:root,
+:root.dark,
+.fr-theme {
+  --el-color-white: #fff;
+  --el-color-black: #000;
+  --el-color-primary: var(--brand);
+  --el-color-primary-light-3: color-mix(in srgb, var(--brand) 70%, var(--surface));
+  --el-color-primary-light-5: color-mix(in srgb, var(--brand) 50%, var(--surface));
+  --el-color-primary-light-7: color-mix(in srgb, var(--brand) 30%, var(--surface));
+  --el-color-primary-light-8: color-mix(in srgb, var(--brand) 20%, var(--surface));
+  --el-color-primary-light-9: color-mix(in srgb, var(--brand) 12%, var(--surface));
+  --el-color-primary-dark-2: color-mix(in srgb, var(--brand) 80%, var(--ink));
+  --el-bg-color: var(--surface);
+  --el-bg-color-page: var(--page);
+  --el-bg-color-overlay: var(--surface);
+  --el-fill-color-blank: var(--surface);
+  --el-fill-color-light: var(--surface-soft);
+  --el-text-color-primary: var(--ink);
+  --el-text-color-regular: var(--ink);
+  --el-text-color-secondary: var(--muted);
+  --el-text-color-placeholder: var(--muted);
+  --el-text-color-disabled: var(--muted);
+  --el-border-color: var(--line);
+  --el-border-color-light: var(--line);
+  --el-border-color-lighter: var(--line);
+  --el-border-color-extra-light: var(--line);
+  --el-border-color-dark: var(--line);
+  --el-border-color-darker: var(--line);
+  --el-border-color-hover: var(--el-color-primary-light-3);
+  --el-fill-color: var(--surface-soft);
+  --el-fill-color-lighter: var(--surface-soft);
+  --el-fill-color-extra-light: var(--surface-soft);
+  --el-fill-color-dark: var(--line);
+  --el-fill-color-darker: var(--line);
+  --el-disabled-bg-color: var(--surface-soft);
+  --el-disabled-border-color: var(--line);
+  --el-disabled-text-color: var(--muted);
+  --el-mask-color: var(--mask);
+  --el-font-family: var(--font-family);
+  --el-font-size-extra-small: var(--font-caption);
+  --el-font-size-small: var(--font-small);
+  --el-font-size-base: var(--font-body);
+  --el-font-size-medium: var(--font-subtitle);
+  --el-font-size-large: var(--font-title);
+  --el-border-radius-base: var(--radius-control);
+  --el-border-radius-small: 6px;
+  --el-border-radius-round: 999px;
+  --el-border-radius-circle: 50%;
+  --el-transition-duration: .3s;
+  --el-transition-duration-fast: .2s;
+  --el-component-size-small: var(--control-height-small);
+  --el-component-size: var(--control-height);
+  --el-component-size-large: var(--control-height-large);
+
+  --on-brand: var(--el-color-white, #fff);
+  --success: var(--el-color-success, #18835d);
+  --success-soft: var(--el-color-success-light-9, #effaf5);
+  --success-border: var(--el-color-success-light-5, #b8e0cb);
+  --warning: var(--el-color-warning, #956713);
+  --warning-soft: var(--el-color-warning-light-9, #fff8e8);
+  --warning-border: var(--el-color-warning-light-5, #f0d49a);
+  --danger: var(--el-color-danger, #d9345e);
+  --danger-soft: var(--el-color-danger-light-9, #fff1f4);
+  --danger-border: var(--el-color-danger-light-5, #f2c0ca);
+  --info: var(--el-color-info, #2a68a1);
+  --info-soft: var(--el-color-info-light-9, #e8f3ff);
 }

@@ -14,6 +14,10 @@ vi.mock('wxt/browser', () => ({
     },
 }));
 
+vi.mock('@/src/services/config/store', () => ({
+    config: {theme: 'auto'},
+}));
+
 import {showPageNotice} from '@/src/features/page-notice/content/notice';
 
 const originalDocument = globalThis.document;

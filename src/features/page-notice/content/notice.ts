@@ -2,6 +2,8 @@ import {browser} from 'wxt/browser';
 import {throttle} from '@/src/shared/function/throttle';
 import {X} from 'lucide';
 import {createLucideIconElement} from '@/src/ui/icons/lucideDom';
+import {config} from '@/src/services/config/store';
+import {resolvesToDarkTheme} from '@/src/ui/theme/theme';
 import noticeStyles from './notice.css?inline';
 
 type NoticeType = 'error' | 'success';
@@ -123,6 +125,9 @@ export function showPageNotice(message: string, type: NoticeType): HTMLElement {
     const stack = getNoticeStack();
     const notice = document.createElement('section');
     notice.className = `page-notice page-notice-${tone}`;
+    const prefersDark = typeof window.matchMedia === 'function'
+        && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    notice.classList.toggle('fr-dark-theme', resolvesToDarkTheme(config.theme, prefersDark));
     notice.setAttribute('role', 'alert');
     notice.setAttribute('aria-atomic', 'true');
 

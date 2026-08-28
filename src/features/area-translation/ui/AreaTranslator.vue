@@ -32,6 +32,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { X } from '@lucide/vue';
 import { config } from '@/src/services/config/store';
+import {resolvesToDarkTheme} from '@/src/ui/theme/theme';
 import { captureVisibleAreaInExtension, translateCapturedAreaInExtension } from '@/src/features/area-translation/services/client';
 import { isAreaHotkey, isAreaZKey, isUsableAreaRect, normalizeAreaRect, type AreaPoint, type AreaRect } from '@/src/features/area-translation/core';
 
@@ -70,7 +71,10 @@ function errorStyle(rect: AreaRect): Record<string, string> {
 }
 
 function updateTheme(): void {
-  isDarkTheme.value = config.theme === 'dark' || (config.theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  isDarkTheme.value = resolvesToDarkTheme(
+    config.theme,
+    systemThemeMedia?.matches ?? window.matchMedia('(prefers-color-scheme: dark)').matches,
+  );
 }
 
 function isInsideExtensionUi(target: EventTarget | null): boolean {
@@ -271,27 +275,47 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.fr-area-translator-root { position: fixed; inset: 0; z-index: 2147483647; width: 100vw; height: 100vh; pointer-events: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #25252a; }
+.fr-area-translator-root { --fr-area-font-caption: 10px; --fr-area-font-small: 11px; --fr-area-font-body: 13px; --fr-area-weight-semibold: 700; position: fixed; inset: 0; z-index: 2147483647; width: 100vw; height: 100vh; pointer-events: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #25252a; }
 .fr-area-selection { position: fixed; box-sizing: border-box; border: 2px solid #ef4b86; border-radius: 9px; background: rgba(239, 75, 134, .12); box-shadow: 0 0 0 1px rgba(255, 255, 255, .8), 0 8px 26px rgba(163, 35, 91, .2); pointer-events: none; }
-.fr-area-selection span { position: absolute; left: 8px; top: 8px; padding: 4px 8px; border-radius: 999px; background: rgba(44, 35, 43, .88); color: #fff; font-size: 11px; white-space: nowrap; }
+.fr-area-selection span { position: absolute; left: 8px; top: 8px; padding: 4px 8px; border-radius: 999px; background: rgba(44, 35, 43, .88); color: #fff; font-size: var(--fr-area-font-small); white-space: nowrap; }
 .fr-area-loading, .fr-area-error { position: fixed; box-sizing: border-box; pointer-events: auto; }
-.fr-area-loading { display: flex; align-items: center; justify-content: center; gap: 9px; min-width: 190px; min-height: 58px; border: 1px solid rgba(239, 75, 134, .55); border-radius: 12px; background: rgba(38, 31, 39, .8); color: #fff; font-size: 13px; box-shadow: 0 12px 30px rgba(35, 25, 38, .24); backdrop-filter: blur(8px); }
+.fr-area-loading { display: flex; align-items: center; justify-content: center; gap: 9px; min-width: 190px; min-height: 58px; border: 1px solid rgba(239, 75, 134, .55); border-radius: 12px; background: rgba(38, 31, 39, .8); color: #fff; font-size: var(--fr-area-font-body); box-shadow: 0 12px 30px rgba(35, 25, 38, .24); backdrop-filter: blur(8px); }
 .fr-area-spinner { width: 18px; height: 18px; border: 2px solid rgba(255, 255, 255, .35); border-top-color: #ef4b86; border-radius: 50%; animation: fr-area-spin .7s linear infinite; }
 @keyframes fr-area-spin { to { transform: rotate(360deg); } }
-.fr-area-result { position: fixed; overflow: hidden; border: 1px solid rgba(28, 28, 36, .14); border-radius: 10px; background: #fff; box-shadow: 0 14px 35px rgba(30, 28, 40, .24); pointer-events: auto; }
+.fr-area-result,
+.fr-area-error {
+  --fr-area-result-border: rgba(28, 28, 36, .14);
+  --fr-area-result-surface: #fff;
+  --fr-area-error-border: #f0b4c8;
+  --fr-area-error-surface: rgba(255, 248, 250, .98);
+  --fr-area-error-ink: #6c263d;
+  --fr-area-error-button-border: #e6a3ba;
+  --fr-area-error-button-surface: #fff;
+  --fr-area-error-button-ink: #c43b63;
+  --fr-area-error-button-hover: #fff0f5;
+}
+.fr-area-result { position: fixed; overflow: hidden; border: 1px solid var(--fr-area-result-border); border-radius: 10px; background: var(--fr-area-result-surface); box-shadow: 0 14px 35px rgba(30, 28, 40, .24); pointer-events: auto; }
 .fr-area-result img { display: block; width: 100%; height: 100%; user-select: none; -webkit-user-drag: none; }
-.fr-area-toolbar { position: absolute; top: 7px; right: 7px; display: flex; align-items: center; gap: 5px; padding: 3px 4px 3px 8px; border-radius: 999px; background: rgba(30, 27, 34, .82); color: #fff; font-size: 10px; line-height: 22px; pointer-events: none; backdrop-filter: blur(6px); }
-.fr-area-toolbar button { width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .14); color: #fff; font-size: 17px; line-height: 18px; cursor: pointer; pointer-events: auto; }
+.fr-area-toolbar { position: absolute; top: 7px; right: 7px; display: flex; align-items: center; gap: 5px; padding: 3px 4px 3px 8px; border-radius: 999px; background: rgba(30, 27, 34, .82); color: #fff; font-size: var(--fr-area-font-caption); line-height: 22px; pointer-events: none; backdrop-filter: blur(6px); }
+.fr-area-toolbar button { width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .14); color: #fff; line-height: 18px; cursor: pointer; pointer-events: auto; }
 .fr-area-toolbar button svg { width: 13px; height: 13px; }
 .fr-area-toolbar button:hover, .fr-area-toolbar button:focus-visible { background: rgba(255, 255, 255, .28); outline: none; }
-.fr-area-error { display: flex; flex-direction: column; gap: 7px; min-width: 230px; max-width: 340px; padding: 13px; border: 1px solid #f0b4c8; border-radius: 12px; background: rgba(255, 248, 250, .98); color: #6c263d; font-size: 12px; box-shadow: 0 12px 30px rgba(75, 30, 47, .2); }
-.fr-area-error strong { font-size: 13px; }
+.fr-area-error { display: flex; flex-direction: column; gap: 7px; min-width: 230px; max-width: 340px; padding: 13px; border: 1px solid var(--fr-area-error-border); border-radius: 12px; background: var(--fr-area-error-surface); color: var(--fr-area-error-ink); font-size: var(--fr-area-font-small); box-shadow: 0 12px 30px rgba(75, 30, 47, .2); }
+.fr-area-error strong { font-size: var(--fr-area-font-body); font-weight: var(--fr-area-weight-semibold); }
 .fr-area-error span { line-height: 1.45; overflow-wrap: anywhere; }
 .fr-area-error div { display: flex; gap: 7px; }
-.fr-area-error button { padding: 5px 10px; border: 1px solid #e6a3ba; border-radius: 7px; background: #fff; color: #c43b63; cursor: pointer; }
-.fr-area-error button:hover, .fr-area-error button:focus-visible { background: #fff0f5; outline: none; }
-.fr-dark-theme.fr-area-result { border-color: #53535f; background: #2e2e38; }
-.fr-dark-theme.fr-area-error { border-color: #744356; background: rgba(47, 35, 43, .98); color: #ffd8e4; }
-.fr-dark-theme.fr-area-error button { border-color: #9d5871; background: #3d2c36; color: #ffd8e4; }
+.fr-area-error button { padding: 5px 10px; border: 1px solid var(--fr-area-error-button-border); border-radius: 7px; background: var(--fr-area-error-button-surface); color: var(--fr-area-error-button-ink); cursor: pointer; }
+.fr-area-error button:hover, .fr-area-error button:focus-visible { background: var(--fr-area-error-button-hover); outline: none; }
+.fr-dark-theme {
+  --fr-area-result-border: #53535f;
+  --fr-area-result-surface: #2e2e38;
+  --fr-area-error-border: #744356;
+  --fr-area-error-surface: rgba(47, 35, 43, .98);
+  --fr-area-error-ink: #ffd8e4;
+  --fr-area-error-button-border: #9d5871;
+  --fr-area-error-button-surface: #3d2c36;
+  --fr-area-error-button-ink: #ffd8e4;
+  --fr-area-error-button-hover: #513443;
+}
 @media (prefers-reduced-motion: reduce) { .fr-area-spinner { animation: none; } }
 </style>

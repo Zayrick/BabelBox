@@ -72,7 +72,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import {
   ArrowRight,
   BookMarked,
@@ -93,6 +93,12 @@ import {
 import SettingsSections from '@/src/features/settings/ui/SettingsSections.vue'
 import VocabularyBook from '@/src/features/vocabulary/ui/VocabularyBook.vue'
 import {
+  config as runtimeConfig,
+  configReady,
+  subscribeConfig,
+} from '@/src/services/config/store'
+import { useDocumentTheme } from '@/src/ui/composables/useDocumentTheme'
+import {
   filterNavigationItems,
   navigationGroups,
   navigationItems,
@@ -104,6 +110,15 @@ import {
 const version = process.env.VUE_APP_VERSION
 const query = ref('')
 const activeSection = ref('settings-general')
+const theme = ref(runtimeConfig.theme || 'auto')
+const unsubscribeTheme = subscribeConfig((nextConfig) => {
+  theme.value = nextConfig.theme || 'auto'
+})
+
+useDocumentTheme(theme)
+void configReady.then(() => {
+  theme.value = runtimeConfig.theme || 'auto'
+})
 
 const navigationIcons: Record<NavigationIconKey, LucideIcon> = {
   general: House,
@@ -141,4 +156,6 @@ function selectResult(id: string) {
 onMounted(() => {
   activeSection.value = resolveRequestedSection(window.location.hash)
 })
+
+onBeforeUnmount(unsubscribeTheme)
 </script>

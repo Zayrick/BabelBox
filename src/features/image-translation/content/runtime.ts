@@ -68,7 +68,6 @@ function ensureImageOverlayRoot(): HTMLDivElement {
         border: 1px solid rgba(255,255,255,.7) !important; border-radius: 999px !important;
         background: rgba(20,20,20,.68) !important; color: rgba(255,255,255,.95) !important;
         box-shadow: 0 1px 5px rgba(0,0,0,.28) !important; cursor: pointer !important;
-        font: 14px/24px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif !important;
         opacity: .78 !important; pointer-events: auto !important;
         transition: opacity .15s ease, transform .15s ease, background .15s ease !important;
       }

@@ -2,6 +2,7 @@ import {createApp, type Component} from 'vue';
 import {ElOption, ElSelect} from 'element-plus';
 import DocumentApp from './DocumentApp.vue';
 import 'element-plus/es/components/select/style/css';
+import 'element-plus/theme-chalk/dark/css-vars.css';
 import './document-page.css';
 
 const ELEMENT_COMPONENTS: Component[] = [ElSelect, ElOption];

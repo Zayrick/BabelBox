@@ -780,18 +780,6 @@ const props = withDefaults(defineProps<{
   activeSection: 'settings-general',
 })
 
-// 初始化深色模式媒体查询
-const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-// 更新主题函数
-function updateTheme(theme: string) {
-  if (theme === 'auto') {
-    // 自动模式下，直接使用系统主题
-    document.documentElement.classList.toggle('dark', darkModeMediaQuery.matches);
-  } else {
-    // 手动模式下，使用选择的主题
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-  }
-}
 // 配置信息
 const config = ref(new Config());
 const persistConfig = (value: unknown) => requestConfigSave(value, browser.runtime.sendMessage.bind(browser.runtime));
@@ -815,7 +803,6 @@ void configReady
     Object.assign(config.value, runtimeConfig);
     lastSerialized = JSON.stringify(config.value);
     hydrated = true;
-    updateTheme(config.value.theme || 'auto');
   })
   .catch((error) => console.warn('[FluentRead] 无法读取本地配置', error));
 
@@ -1005,21 +992,8 @@ async function removeTranslationService(id: string): Promise<void> {
   ElMessage.success(`已删除 ${instance.name}`);
 }
 
-// 监听主题变化
-watch(() => config.value.theme, (newTheme) => {
-  updateTheme(newTheme || 'auto');
-});
-
-// 使用 onchange 监听系统主题变化
-darkModeMediaQuery.onchange = () => {
-  if (config.value.theme === 'auto') {
-    updateTheme('auto');
-  }
-};
-
 // 组件卸载时清理
 onUnmounted(() => {
-  darkModeMediaQuery.onchange = null;
   unsubscribeConfig();
   unsubscribeHistory();
   unsubscribeBackups();

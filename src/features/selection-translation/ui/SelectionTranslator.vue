@@ -109,6 +109,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, wa
 import { ArrowUpRight, Copy, Pause, Star, Volume2, X } from '@lucide/vue';
 import {browser} from 'wxt/browser';
 import { config, subscribeConfig } from '@/src/services/config/store';
+import {resolvesToDarkTheme} from '@/src/ui/theme/theme';
 import {usesAnimatedEffects} from '@/src/core/config/animation';
 import {translateText} from '@/src/services/translation/client';
 import { detectlang } from '@/src/core/language/detect';
@@ -244,7 +245,10 @@ const vocabularyButtonTitle = computed(() => {
 });
 
 function updateTheme(): void {
-  isDarkTheme.value = config.theme === 'dark' || (config.theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  isDarkTheme.value = resolvesToDarkTheme(
+    config.theme,
+    systemThemeMedia?.matches ?? window.matchMedia('(prefers-color-scheme: dark)').matches,
+  );
 }
 
 function toSelectionRect(rect: DOMRect | DOMRectReadOnly): SelectionRect {
@@ -1205,93 +1209,165 @@ onBeforeUnmount(() => {
 .fr-selection-indicator:hover, .fr-selection-indicator:focus-visible { transform: translate(-50%, -50%) scale(1.1); box-shadow: 0 4px 14px rgba(204, 40, 104, .4), 0 0 0 3px rgba(255, 255, 255, .95); outline: none; }
 .fr-selection-indicator-glyph { width: 11px; height: 11px; stroke-width: 2.4; }
 .fr-translation-tooltip, .fr-translation-tooltip * { box-sizing: border-box; }
-.fr-translation-tooltip { position: fixed; width: min(360px, calc(100vw - 20px)); max-height: min(500px, calc(100vh - 20px)); overflow: hidden; border: 1px solid rgba(35, 35, 43, .11); border-radius: 17px; background: rgba(255, 254, 252, .98); box-shadow: 0 18px 46px rgba(35, 33, 43, .15), 0 3px 10px rgba(35, 33, 43, .06); backdrop-filter: blur(18px); -webkit-user-select: none; user-select: none; }
-.fr-tooltip-header { display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; border-bottom: 1px solid #eeecee; font-size: 14px; font-weight: 700; }
+.fr-translation-tooltip, .fr-copy-success-toast, .fr-action-toast {
+  --fr-selection-font-caption: 10px;
+  --fr-selection-font-small: 11px;
+  --fr-selection-font-body: 13px;
+  --fr-selection-font-subtitle: 15px;
+  --fr-selection-font-reading: 18px;
+  --fr-selection-font-display: 27px;
+  --fr-selection-weight-medium: 600;
+  --fr-selection-weight-semibold: 700;
+  --fr-selection-weight-bold: 800;
+  --fr-selection-toast-surface: #2c2c35;
+  --fr-selection-toast-ink: #fff;
+  --fr-selection-toast-action: #ffc2d5;
+}
+.fr-translation-tooltip {
+  --fr-selection-border: rgba(35, 35, 43, .11);
+  --fr-selection-surface: rgba(255, 254, 252, .98);
+  --fr-selection-ink: #39363d;
+  --fr-selection-heading: #292832;
+  --fr-selection-line: #eeecee;
+  --fr-selection-line-soft: #f2f0f1;
+  --fr-selection-muted: #9a9298;
+  --fr-selection-accent-muted: #9e5d71;
+  --fr-selection-pronunciation-label: #a36b7b;
+  --fr-selection-ipa: #4a454c;
+  --fr-selection-hover: #f4f4f7;
+  --fr-selection-hover-ink: #303038;
+  --fr-selection-action-hover-ink: #ef4b86;
+  --fr-selection-original-surface: #f7f7f9;
+  --fr-selection-original-ink: #666670;
+  --fr-selection-result-surface: #fff3f7;
+  --fr-selection-result-ink: #33333a;
+  --fr-selection-audio-surface: #f5eff1;
+  --fr-selection-audio-ink: #936173;
+  --fr-selection-badge-border: #ead8de;
+  --fr-selection-badge-surface: #fbf5f6;
+  --fr-selection-badge-ink: #9e5d71;
+  --fr-selection-secondary-ink: #74676d;
+  --fr-selection-fallback-surface: #fff8fa;
+  --fr-selection-brand: #ef4b86;
+  --fr-selection-brand-soft: rgba(239, 75, 134, .13);
+  --fr-selection-danger: #c43b63;
+  --fr-selection-danger-border: #e8a4bc;
+  --fr-selection-spinner-border: #f5bfd3;
+  position: fixed;
+  width: min(360px, calc(100vw - 20px));
+  max-height: min(500px, calc(100vh - 20px));
+  overflow: hidden;
+  border: 1px solid var(--fr-selection-border);
+  border-radius: 17px;
+  color: var(--fr-selection-ink);
+  background: var(--fr-selection-surface);
+  box-shadow: 0 18px 46px rgba(35, 33, 43, .15), 0 3px 10px rgba(35, 33, 43, .06);
+  backdrop-filter: blur(18px);
+  -webkit-user-select: none;
+  user-select: none;
+}
+.fr-tooltip-header { display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; border-bottom: 1px solid var(--fr-selection-line); font-size: var(--fr-selection-font-body); font-weight: var(--fr-selection-weight-semibold); }
 .fr-tooltip-title { display: flex; align-items: baseline; gap: 6px; }
-.fr-tooltip-header small { color: #aaa7ae; font-size: 10px; font-weight: 550; letter-spacing: .01em; }
+.fr-tooltip-header small { color: var(--fr-selection-muted); font-size: var(--fr-selection-font-caption); font-weight: var(--fr-selection-weight-medium); letter-spacing: .01em; }
 .fr-tooltip-actions { display: flex; align-items: center; gap: 2px; }
-.fr-action-btn, .fr-close-btn, .fr-text-audio-btn, .fr-playing-status button { border: 0; background: transparent; color: #777780; cursor: pointer; }
+.fr-action-btn, .fr-close-btn, .fr-text-audio-btn, .fr-playing-status button { border: 0; background: transparent; color: var(--fr-selection-muted); cursor: pointer; }
 .fr-action-btn { display: grid; width: 26px; height: 26px; place-items: center; border-radius: 7px; }
 .fr-action-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.fr-action-btn:hover, .fr-action-btn:focus-visible { background: #f4f4f7; color: #ef4b86; outline: none; }
+.fr-action-btn:hover, .fr-action-btn:focus-visible { background: var(--fr-selection-hover); color: var(--fr-selection-action-hover-ink); outline: none; }
 .fr-action-btn:disabled { cursor: not-allowed; opacity: .38; }
-.fr-vocabulary-btn.fr-saved { color: #ef4b86; }
+.fr-vocabulary-btn.fr-saved { color: var(--fr-selection-brand); }
 .fr-vocabulary-btn.fr-saved svg { fill: currentColor; stroke: currentColor; }
 .fr-close-btn { display: grid; width: 26px; height: 26px; place-items: center; border-radius: 7px; }
 .fr-close-btn svg { width: 16px; height: 16px; }
-.fr-close-btn:hover, .fr-close-btn:focus-visible { background: #f4f4f7; color: #303038; outline: none; }
+.fr-close-btn:hover, .fr-close-btn:focus-visible { background: var(--fr-selection-hover); color: var(--fr-selection-hover-ink); outline: none; }
 .fr-tooltip-content { max-height: min(440px, calc(100vh - 72px)); overflow: auto; padding: 13px 14px 15px; scrollbar-color: rgba(108, 105, 112, .4) transparent; scrollbar-width: thin; }
-.fr-loading-state, .fr-error-state { display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 80px; color: #777780; font-size: 13px; }
-.fr-error-state { flex-direction: column; color: #c43b63; }
+.fr-loading-state, .fr-error-state { display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 80px; color: var(--fr-selection-muted); font-size: var(--fr-selection-font-body); }
+.fr-error-state { flex-direction: column; color: var(--fr-selection-danger); }
 .fr-error-state button { border: 1px solid currentColor; border-radius: 7px; padding: 4px 10px; background: transparent; color: inherit; cursor: pointer; }
-.fr-loading-spinner { width: 18px; height: 18px; border: 2px solid #f5bfd3; border-top-color: #ef4b86; border-radius: 50%; animation: fr-spin .7s linear infinite; }
+.fr-loading-spinner { width: 18px; height: 18px; border: 2px solid var(--fr-selection-spinner-border); border-top-color: var(--fr-selection-brand); border-radius: 50%; animation: fr-spin .7s linear infinite; }
 .fr-loading-spinner.fr-static { animation: none; }
 @keyframes fr-spin { to { transform: rotate(360deg); } }
-.fr-word-learning-card { padding: 1px 1px 0; color: #39363d; }
-.fr-word-card-loading { display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 74px; color: #77747c; font-size: 13px; }
-.fr-word-heading { position: relative; display: flex; align-items: flex-start; justify-content: space-between; min-height: 58px; padding: 4px 34px 14px 1px; border-bottom: 1px solid #eeecee; }
-.fr-word-heading h3 { margin: 0; color: #292832; font-size: 27px; font-weight: 700; letter-spacing: -.035em; line-height: 1.08; }
-.fr-word-normalized { display: block; margin-top: 5px; color: #aaa1a6; font-size: 10px; }
-.fr-word-heading-audio { top: 1px; right: 0; background: #f5eff1; color: #936173; }
-.fr-word-pronunciations { display: grid; gap: 0; margin-top: 10px; padding-bottom: 10px; border-bottom: 1px solid #eeecee; }
-.fr-word-pronunciation { position: relative; display: flex; align-items: center; gap: 8px; min-height: 29px; padding: 3px 31px 3px 1px; border-bottom: 1px solid #f2f0f1; }
+.fr-word-learning-card { padding: 1px 1px 0; color: var(--fr-selection-ink); }
+.fr-word-card-loading { display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 74px; color: var(--fr-selection-muted); font-size: var(--fr-selection-font-body); }
+.fr-word-heading { position: relative; display: flex; align-items: flex-start; justify-content: space-between; min-height: 58px; padding: 4px 34px 14px 1px; border-bottom: 1px solid var(--fr-selection-line); }
+.fr-word-heading h3 { margin: 0; color: var(--fr-selection-heading); font-size: var(--fr-selection-font-display); font-weight: var(--fr-selection-weight-semibold); letter-spacing: -.035em; line-height: 1.08; }
+.fr-word-normalized { display: block; margin-top: 5px; color: var(--fr-selection-muted); font-size: var(--fr-selection-font-caption); }
+.fr-word-heading-audio { top: 1px; right: 0; background: var(--fr-selection-audio-surface); color: var(--fr-selection-audio-ink); }
+.fr-word-pronunciations { display: grid; gap: 0; margin-top: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--fr-selection-line); }
+.fr-word-pronunciation { position: relative; display: flex; align-items: center; gap: 8px; min-height: 29px; padding: 3px 31px 3px 1px; border-bottom: 1px solid var(--fr-selection-line-soft); }
 .fr-word-pronunciation:last-child { border-bottom: 0; }
-.fr-word-pronunciation-label { min-width: 34px; color: #a36b7b; font-size: 10px; font-weight: 700; }
-.fr-word-ipa { color: #4a454c; font-family: Georgia, "Times New Roman", serif; font-size: 14px; }
-.fr-word-translation { margin-top: 12px; padding: 1px 1px 12px; border-bottom: 1px solid #eeecee; color: #3a363d; }
-.fr-word-translation pre { margin: 0; white-space: pre-wrap; word-break: break-word; font: inherit; font-size: 18px; font-weight: 700; line-height: 1.3; }
-.fr-word-translation-loading, .fr-word-empty { margin-top: 12px; color: #9a9298; font-size: 12px; }
-.fr-word-meaning-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; color: #9a9298; font-size: 11px; font-weight: 700; }
-.fr-word-meaning-toolbar button { border: 0; padding: 3px 0; background: transparent; color: #9e5d71; cursor: pointer; font: inherit; font-weight: 600; }
-.fr-word-meaning-toolbar button:hover, .fr-word-meaning-toolbar button:focus-visible { color: #7f4156; text-decoration: underline; outline: none; }
+.fr-word-pronunciation-label { min-width: 34px; color: var(--fr-selection-pronunciation-label); font-size: var(--fr-selection-font-caption); font-weight: var(--fr-selection-weight-semibold); }
+.fr-word-ipa { color: var(--fr-selection-ipa); font-family: Georgia, "Times New Roman", serif; font-size: var(--fr-selection-font-body); }
+.fr-word-translation { margin-top: 12px; padding: 1px 1px 12px; border-bottom: 1px solid var(--fr-selection-line); color: var(--fr-selection-ink); }
+.fr-word-translation pre { margin: 0; white-space: pre-wrap; word-break: break-word; font: inherit; font-size: var(--fr-selection-font-reading); font-weight: var(--fr-selection-weight-semibold); line-height: 1.3; }
+.fr-word-translation-loading, .fr-word-empty { margin-top: 12px; color: var(--fr-selection-muted); font-size: var(--fr-selection-font-small); }
+.fr-word-meaning-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; color: var(--fr-selection-muted); font-size: var(--fr-selection-font-small); font-weight: var(--fr-selection-weight-semibold); }
+.fr-word-meaning-toolbar button { border: 0; padding: 3px 0; background: transparent; color: var(--fr-selection-accent-muted); cursor: pointer; font: inherit; font-weight: var(--fr-selection-weight-medium); }
+.fr-word-meaning-toolbar button:hover, .fr-word-meaning-toolbar button:focus-visible { color: var(--fr-selection-brand); text-decoration: underline; outline: none; }
 .fr-word-meanings { display: grid; gap: 16px; margin-top: 14px; }
 .fr-word-meaning-toolbar + .fr-word-meanings { margin-top: 8px; }
-.fr-word-meaning { color: #454149; font-size: 12.5px; line-height: 1.52; }
-.fr-word-meaning > strong { display: inline-flex; padding: 3px 7px; border: 1px solid #ead8de; border-radius: 6px; background: #fbf5f6; color: #9e5d71; font-size: 10px; font-weight: 700; }
+.fr-word-meaning { color: var(--fr-selection-ink); font-size: var(--fr-selection-font-body); line-height: 1.52; }
+.fr-word-meaning > strong { display: inline-flex; padding: 3px 7px; border: 1px solid var(--fr-selection-badge-border); border-radius: 6px; background: var(--fr-selection-badge-surface); color: var(--fr-selection-badge-ink); font-size: var(--fr-selection-font-caption); font-weight: var(--fr-selection-weight-semibold); }
 .fr-word-meaning ol { margin: 7px 0 0; padding: 0; list-style: none; counter-reset: definition; }
 .fr-word-meaning li { position: relative; padding-left: 21px; }
-.fr-word-meaning li::before { position: absolute; top: 0; left: 0; width: 14px; color: #b5adb2; content: counter(definition); counter-increment: definition; font-size: 11px; text-align: right; }
+.fr-word-meaning li::before { position: absolute; top: 0; left: 0; width: 14px; color: var(--fr-selection-muted); content: counter(definition); counter-increment: definition; font-size: var(--fr-selection-font-small); text-align: right; }
 .fr-word-meaning li + li { margin-top: 9px; }
 .fr-word-definition-en, .fr-word-example-en { display: block; }
-.fr-word-definition-zh, .fr-word-example-zh { display: block; margin-top: 3px; color: #9a7f89; font-size: 11.5px; }
-.fr-word-meaning em { display: block; margin-top: 4px; padding-left: 8px; border-left: 2px solid #ead8de; color: #74676d; font-size: 11px; font-style: normal; line-height: 1.45; }
-.fr-word-card-footer { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 8px; margin-top: 16px; padding-top: 10px; border-top: 1px solid #eeecee; color: #aaa1a6; font-size: 10px; }
-.fr-word-card-footer a { color: #9e5d71; text-decoration: none; }
+.fr-word-definition-zh, .fr-word-example-zh { display: block; margin-top: 3px; color: var(--fr-selection-muted); font-size: var(--fr-selection-font-small); }
+.fr-word-meaning em { display: block; margin-top: 4px; padding-left: 8px; border-left: 2px solid var(--fr-selection-badge-border); color: var(--fr-selection-secondary-ink); font-size: var(--fr-selection-font-small); font-style: normal; line-height: 1.45; }
+.fr-word-card-footer { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 8px; margin-top: 16px; padding-top: 10px; border-top: 1px solid var(--fr-selection-line); color: var(--fr-selection-muted); font-size: var(--fr-selection-font-caption); }
+.fr-word-card-footer a { color: var(--fr-selection-accent-muted); text-decoration: none; }
 .fr-word-card-footer a:hover, .fr-word-card-footer a:focus-visible { text-decoration: underline; }
-.fr-word-fallback-note, .fr-inline-error { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; color: #a56578; font-size: 11px; }
-.fr-word-fallback-note { padding: 6px 8px; border-radius: 7px; background: #fff8fa; }
-.fr-inline-error button, .fr-word-fallback-note button { border: 1px solid currentColor; border-radius: 6px; padding: 2px 7px; background: transparent; color: inherit; cursor: pointer; font-size: 11px; }
+.fr-word-fallback-note, .fr-inline-error { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; color: var(--fr-selection-danger); font-size: var(--fr-selection-font-small); }
+.fr-word-fallback-note { padding: 6px 8px; border-radius: 7px; background: var(--fr-selection-fallback-surface); }
+.fr-inline-error button, .fr-word-fallback-note button { border: 1px solid currentColor; border-radius: 6px; padding: 2px 7px; background: transparent; color: inherit; cursor: pointer; font-size: var(--fr-selection-font-small); }
 .fr-text-block { position: relative; padding: 9px 36px 10px 11px; border-radius: 11px; }
 .fr-text-block + .fr-text-block { margin-top: 8px; }
-.fr-original-text { background: #f7f7f9; color: #666670; }
-.fr-translation-result { background: #fff3f7; color: #33333a; box-shadow: inset 2px 0 0 rgba(239, 75, 134, .28); }
-.fr-text-label { margin-bottom: 3px; color: #9a9aa4; font-size: 10px; font-weight: 700; letter-spacing: .02em; }
-.fr-text-block pre { max-height: 170px; margin: 0; overflow: auto; white-space: pre-wrap; word-break: break-word; font: inherit; font-size: 15px; line-height: 1.48; }
+.fr-original-text { background: var(--fr-selection-original-surface); color: var(--fr-selection-original-ink); }
+.fr-translation-result { background: var(--fr-selection-result-surface); color: var(--fr-selection-result-ink); box-shadow: inset 2px 0 0 var(--fr-selection-brand-soft); }
+.fr-text-label { margin-bottom: 3px; color: var(--fr-selection-muted); font-size: var(--fr-selection-font-caption); font-weight: var(--fr-selection-weight-semibold); letter-spacing: .02em; }
+.fr-text-block pre { max-height: 170px; margin: 0; overflow: auto; white-space: pre-wrap; word-break: break-word; font: inherit; font-size: var(--fr-selection-font-subtitle); line-height: 1.48; }
 .fr-text-audio-btn { position: absolute; top: 8px; right: 7px; display: grid; width: 26px; height: 26px; place-items: center; border-radius: 8px; }
 .fr-text-audio-btn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.fr-text-audio-btn:hover, .fr-text-audio-btn:focus-visible { background: rgba(239, 75, 134, .13); color: #ef4b86; outline: none; }
-.fr-playing-status { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; color: #777780; font-size: 12px; }
-.fr-playing-status button { border: 1px solid #e8a4bc; border-radius: 7px; padding: 3px 8px; color: #d83e70; }
-.fr-copy-success-toast { position: fixed; right: 18px; bottom: 18px; padding: 9px 13px; border-radius: 9px; background: #2c2c35; color: #fff; font-size: 12px; box-shadow: 0 6px 18px rgba(0, 0, 0, .18); }
-.fr-action-toast { position: fixed; right: 18px; bottom: 18px; display: flex; align-items: center; gap: 10px; padding: 9px 13px; border-radius: 9px; background: #2c2c35; color: #fff; font-size: 12px; box-shadow: 0 6px 18px rgba(0, 0, 0, .18); }
-.fr-action-toast button { padding: 0; border: 0; color: #ffc2d5; background: transparent; cursor: pointer; font: inherit; font-weight: 700; }
-.fr-dark-theme { border-color: #44444e; background: rgba(40, 40, 48, .98); color: #f1f1f4; }
-.fr-dark-theme .fr-tooltip-header { border-color: #4b4b56; }
-.fr-dark-theme .fr-action-btn:hover, .fr-dark-theme .fr-close-btn:hover { background: #50505b; color: #fff; }
-.fr-dark-theme .fr-original-text { background: #34343d; color: #d0d0d7; }
-.fr-dark-theme .fr-translation-result { background: #4b2e3a; color: #fff0f5; }
-.fr-dark-theme .fr-word-learning-card { background: transparent; }
-.fr-dark-theme .fr-word-heading, .fr-dark-theme .fr-word-pronunciations, .fr-dark-theme .fr-word-translation, .fr-dark-theme .fr-word-card-footer { border-color: #4b4148; }
-.fr-dark-theme .fr-word-heading h3, .fr-dark-theme .fr-word-meaning, .fr-dark-theme .fr-word-translation { color: #f2e8ed; }
-.fr-dark-theme .fr-word-meaning-toolbar { color: #c8aab5; }
-.fr-dark-theme .fr-word-meaning-toolbar button { color: #f0b9cb; }
-.fr-dark-theme .fr-word-heading-audio { background: #493842; color: #f0c3d2; }
-.fr-dark-theme .fr-word-pronunciation { border-color: #443a42; }
-.fr-dark-theme .fr-word-pronunciation-label { color: #e0a7b9; }
-.fr-dark-theme .fr-word-ipa { color: #f0dce4; }
-.fr-dark-theme .fr-word-meaning > strong { border-color: #684b58; background: #493842; color: #ffd9e7; }
-.fr-dark-theme .fr-word-meaning em { border-color: #684b58; }
-.fr-dark-theme .fr-word-meaning em, .fr-dark-theme .fr-word-definition-zh, .fr-dark-theme .fr-word-example-zh, .fr-dark-theme .fr-word-translation-loading, .fr-dark-theme .fr-word-empty { color: #c8aab5; }
-.fr-dark-theme .fr-word-fallback-note { background: #4a303b; }
+.fr-text-audio-btn:hover, .fr-text-audio-btn:focus-visible { background: var(--fr-selection-brand-soft); color: var(--fr-selection-brand); outline: none; }
+.fr-playing-status { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; color: var(--fr-selection-muted); font-size: var(--fr-selection-font-small); }
+.fr-playing-status button { border: 1px solid var(--fr-selection-danger-border); border-radius: 7px; padding: 3px 8px; color: var(--fr-selection-danger); }
+.fr-copy-success-toast { position: fixed; right: 18px; bottom: 18px; padding: 9px 13px; border-radius: 9px; background: var(--fr-selection-toast-surface); color: var(--fr-selection-toast-ink); font-size: var(--fr-selection-font-small); box-shadow: 0 6px 18px rgba(0, 0, 0, .18); }
+.fr-action-toast { position: fixed; right: 18px; bottom: 18px; display: flex; align-items: center; gap: 10px; padding: 9px 13px; border-radius: 9px; background: var(--fr-selection-toast-surface); color: var(--fr-selection-toast-ink); font-size: var(--fr-selection-font-small); box-shadow: 0 6px 18px rgba(0, 0, 0, .18); }
+.fr-action-toast button { padding: 0; border: 0; color: var(--fr-selection-toast-action); background: transparent; cursor: pointer; font: inherit; font-weight: var(--fr-selection-weight-semibold); }
+.fr-dark-theme {
+  --fr-selection-toast-surface: #f4f5f8;
+  --fr-selection-toast-ink: #25252a;
+  --fr-selection-toast-action: #b02f5d;
+  --fr-selection-border: #44444e;
+  --fr-selection-surface: rgba(40, 40, 48, .98);
+  --fr-selection-ink: #f2e8ed;
+  --fr-selection-heading: #f2e8ed;
+  --fr-selection-line: #4b4148;
+  --fr-selection-line-soft: #443a42;
+  --fr-selection-muted: #c8aab5;
+  --fr-selection-accent-muted: #f0b9cb;
+  --fr-selection-pronunciation-label: #e0a7b9;
+  --fr-selection-ipa: #f0dce4;
+  --fr-selection-hover: #50505b;
+  --fr-selection-hover-ink: #fff;
+  --fr-selection-action-hover-ink: #fff;
+  --fr-selection-original-surface: #34343d;
+  --fr-selection-original-ink: #d0d0d7;
+  --fr-selection-result-surface: #4b2e3a;
+  --fr-selection-result-ink: #fff0f5;
+  --fr-selection-audio-surface: #493842;
+  --fr-selection-audio-ink: #f0c3d2;
+  --fr-selection-badge-border: #684b58;
+  --fr-selection-badge-surface: #493842;
+  --fr-selection-badge-ink: #ffd9e7;
+  --fr-selection-secondary-ink: #c8aab5;
+  --fr-selection-fallback-surface: #4a303b;
+  --fr-selection-brand: #ff80ae;
+  --fr-selection-brand-soft: rgba(255, 128, 174, .16);
+  --fr-selection-danger: #ffc0d3;
+  --fr-selection-danger-border: #9d5871;
+  --fr-selection-spinner-border: #684b58;
+}
 @media (prefers-reduced-motion: reduce) { .fr-selection-indicator, .fr-loading-spinner { transition: none; animation: none; } }
 </style>

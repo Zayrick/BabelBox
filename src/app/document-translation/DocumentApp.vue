@@ -1,6 +1,6 @@
 <!-- 文档页面归 app 层所有；WXT 入口只负责启动。 -->
 <template>
-  <div class="document-app" :class="{ dark: isDark }">
+  <div class="document-app">
     <header class="document-header">
       <a class="document-brand" href="#" aria-label="流畅阅读文档翻译" @click.prevent="resetDocument">
         <img src="/icon/128.png" alt="" />
@@ -224,7 +224,7 @@
                   <div class="pdf-page-frame" :style="{ aspectRatio: `${pdfPage.width} / ${pdfPage.height}` }">
                     <img v-if="pdfPage.translatedUrl" :src="pdfPage.translatedUrl" :alt="`PDF 译文第 ${pdfPage.pageNumber} 页`" />
                     <div v-else class="pdf-page-pending">
-                      <span v-if="pdfPage.loading || pdfPreviewLoading" class="spinner dark-spinner" />
+                      <span v-if="pdfPage.loading || pdfPreviewLoading" class="spinner brand-spinner" />
                       <strong>{{ translating ? '正在翻译并重排本页' : '等待生成译页' }}</strong>
                       <small>译文会写回对应文本框，图表与页面布局保持原位</small>
                     </div>
@@ -247,7 +247,7 @@
               </details>
             </article>
             <div v-if="!pdfPreviewPageStates.length" class="pdf-page-empty">
-              <span class="spinner dark-spinner" />
+              <span class="spinner brand-spinner" />
               <strong>正在准备 PDF 连续阅读页…</strong>
             </div>
           </div>
@@ -427,6 +427,7 @@ import {computed, onMounted, onUnmounted, reactive, ref, watch} from 'vue';
 import {ArrowRight, CircleCheck, ExternalLink} from '@lucide/vue';
 import {browser} from 'wxt/browser';
 import ServiceIcon from '@/src/ui/components/ServiceIcon.vue';
+import {useDocumentTheme} from '@/src/ui/composables/useDocumentTheme';
 import {
   Config,
   DOCUMENT_MAX_BYTES,
@@ -490,8 +491,7 @@ const pdfPreviewPageStates = ref<PdfPreviewPageState[]>([]);
 const epubChapterIndex = ref(0);
 const docxPartIndex = ref(0);
 const hydrated = ref(false);
-const colorSchemeMedia = window.matchMedia('(prefers-color-scheme: dark)');
-const isDark = ref(colorSchemeMedia.matches);
+useDocumentTheme(() => config.theme);
 let abortController: AbortController | null = null;
 let translationRequestId = 0;
 let lastSerialized = '';
@@ -710,10 +710,6 @@ function readerSourceClass(value: string): string {
   return getDocumentReaderSourceClass(parsedDocument.value?.format, value);
 }
 
-function applyTheme(): void {
-  isDark.value = colorSchemeMedia.matches;
-}
-
 async function hydrateConfig(): Promise<void> {
   await configReady;
   if (!configMounted) return;
@@ -911,7 +907,6 @@ async function openSettings(): Promise<void> {
 }
 
 onMounted(() => {
-  colorSchemeMedia.addEventListener?.('change', applyTheme);
   window.addEventListener('pagehide', resetDocument);
 });
 
@@ -923,7 +918,6 @@ onUnmounted(() => {
   if (noticeTimer) clearTimeout(noticeTimer);
   if (pdfPreviewTimer) clearTimeout(pdfPreviewTimer);
   clearPdfPreviewUrls();
-  colorSchemeMedia.removeEventListener?.('change', applyTheme);
   window.removeEventListener('pagehide', resetDocument);
 });
 </script>

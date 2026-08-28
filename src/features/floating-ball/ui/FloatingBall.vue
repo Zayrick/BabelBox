@@ -8,6 +8,7 @@
       'is-translating': isTranslating,
       animating: isAnimating && animationsEnabled,
       'static-mode': !animationsEnabled,
+      'fr-dark-theme': isDarkTheme,
     }"
     :data-position="currentDisplayPosition"
     :style="positionStyle"
@@ -65,8 +66,9 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { PropType, CSSProperties } from 'vue';
 import {Languages, Settings} from '@lucide/vue';
-import {config} from '@/src/services/config/store';
+import {config, subscribeConfig} from '@/src/services/config/store';
 import {usesAnimatedEffects} from '@/src/core/config/animation';
+import {resolvesToDarkTheme} from '@/src/ui/theme/theme';
 
 const DRAG_THRESHOLD = 6;
 const BALL_SIZE = 42;
@@ -119,11 +121,16 @@ const isTranslating = ref(props.initialTranslating);
 const floatingBall = ref<HTMLElement | null>(null);
 const showShortcutTooltip = ref(false);
 const shortcutTip = ref('快捷键：Alt+T');
-const animationsEnabled = computed(() => usesAnimatedEffects(config.animationMode));
+const animationsEnabled = ref(usesAnimatedEffects(config.animationMode));
+const configuredTheme = ref(config.theme || 'auto');
+const prefersDark = ref(false);
+const isDarkTheme = computed(() => resolvesToDarkTheme(configuredTheme.value, prefersDark.value));
 const dragState = ref<PointerDragState | null>(null);
 const isAnimating = ref(false);
+const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 let animationTimer: ReturnType<typeof setTimeout> | undefined;
 let tooltipTimer: ReturnType<typeof setTimeout> | undefined;
+let unsubscribeConfig: (() => void) | null = null;
 
 const currentDisplayPosition = computed(() => internalPosition.value || props.position);
 
@@ -274,6 +281,12 @@ function handleDocumentKeydown(event: KeyboardEvent) {
 }
 
 onMounted(() => {
+  prefersDark.value = darkModeMediaQuery.matches;
+  darkModeMediaQuery.addEventListener('change', updatePreferredTheme);
+  unsubscribeConfig = subscribeConfig((nextConfig) => {
+    animationsEnabled.value = usesAnimatedEffects(nextConfig.animationMode);
+    configuredTheme.value = nextConfig.theme || 'auto';
+  });
   internalPosition.value = props.position;
   updatePositionStyle();
   window.addEventListener('resize', updatePositionStyle);
@@ -281,12 +294,19 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  darkModeMediaQuery.removeEventListener('change', updatePreferredTheme);
+  unsubscribeConfig?.();
+  unsubscribeConfig = null;
   removePointerListeners();
   window.removeEventListener('resize', updatePositionStyle);
   document.removeEventListener('keydown', handleDocumentKeydown);
   if (animationTimer) clearTimeout(animationTimer);
   if (tooltipTimer) clearTimeout(tooltipTimer);
 });
+
+function updatePreferredTheme(event: MediaQueryListEvent): void {
+  prefersDark.value = event.matches;
+}
 
 watch(() => props.position, (newPosition) => {
   if (newPosition === internalPosition.value) return;
@@ -302,6 +322,18 @@ watch(() => props.initialTranslating, (nextState) => {
 
 <style scoped>
 .fr-floating-ball {
+  --fr-floating-ink: #596273;
+  --fr-floating-tool-border: rgba(217, 222, 231, .96);
+  --fr-floating-tool-surface: rgba(255, 255, 255, .94);
+  --fr-floating-tool-ink: #626b79;
+  --fr-floating-hover-border: #f06a92;
+  --fr-floating-hover-surface: #fff7fa;
+  --fr-floating-hover-ink: #ec4d7d;
+  --fr-floating-success: #22c55e;
+  --fr-floating-on-brand: #fff;
+  --fr-floating-tooltip-surface: rgba(17, 24, 39, .9);
+  --fr-floating-tooltip-ink: #fff;
+  --fr-floating-font-small: 11px;
   position: fixed;
   z-index: 2147483647;
   display: flex;
@@ -309,12 +341,22 @@ watch(() => props.initialTranslating, (nextState) => {
   flex-direction: column;
   align-items: flex-end;
   gap: 8px;
-  color: #596273;
+  color: var(--fr-floating-ink);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   transition: transform 0.46s cubic-bezier(0.22, 1, 0.36, 1);
   user-select: none;
   touch-action: none;
   will-change: transform;
+}
+
+.fr-floating-ball.fr-dark-theme {
+  --fr-floating-ink: #d8dbe2;
+  --fr-floating-tool-border: rgba(90, 94, 108, .96);
+  --fr-floating-tool-surface: rgba(40, 40, 48, .96);
+  --fr-floating-tool-ink: #e5e7ec;
+  --fr-floating-hover-border: #ff80aa;
+  --fr-floating-hover-surface: #4b2e3a;
+  --fr-floating-hover-ink: #ffc3d6;
 }
 
 .fr-floating-ball[data-position="left"] {
@@ -411,10 +453,10 @@ watch(() => props.initialTranslating, (nextState) => {
   align-items: center;
   justify-content: center;
   padding: 0;
-  border: 1px solid rgba(217, 222, 231, 0.96);
+  border: 1px solid var(--fr-floating-tool-border);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.94);
-  color: #626b79;
+  background: var(--fr-floating-tool-surface);
+  color: var(--fr-floating-tool-ink);
   cursor: pointer;
   opacity: 0;
 }
@@ -430,9 +472,9 @@ watch(() => props.initialTranslating, (nextState) => {
 .floating-ball-tool:hover,
 .floating-ball-tool:focus-visible {
   outline: none;
-  border-color: #f06a92;
-  background: #fff7fa;
-  color: #ec4d7d;
+  border-color: var(--fr-floating-hover-border);
+  background: var(--fr-floating-hover-surface);
+  color: var(--fr-floating-hover-ink);
   box-shadow: 0 8px 22px rgba(240, 106, 146, 0.2);
 }
 
@@ -452,9 +494,9 @@ watch(() => props.initialTranslating, (nextState) => {
   bottom: -1px;
   width: 9px;
   height: 9px;
-  border: 1px solid #fff;
+  border: 1px solid var(--fr-floating-on-brand);
   border-radius: 50%;
-  background: #22c55e;
+  background: var(--fr-floating-success);
 }
 
 .check-mark::after {
@@ -463,8 +505,8 @@ watch(() => props.initialTranslating, (nextState) => {
   left: 2px;
   width: 3px;
   height: 5px;
-  border-right: 1px solid #fff;
-  border-bottom: 1px solid #fff;
+  border-right: 1px solid var(--fr-floating-on-brand);
+  border-bottom: 1px solid var(--fr-floating-on-brand);
   content: '';
   transform: rotate(45deg);
 }
@@ -481,9 +523,9 @@ watch(() => props.initialTranslating, (nextState) => {
   z-index: 2;
   padding: 5px 8px;
   border-radius: 6px;
-  background: rgba(17, 24, 39, 0.9);
-  color: #fff;
-  font-size: 12px;
+  background: var(--fr-floating-tooltip-surface);
+  color: var(--fr-floating-tooltip-ink);
+  font-size: var(--fr-floating-font-small);
   white-space: nowrap;
   pointer-events: none;
   transform: translateY(-50%);
@@ -498,7 +540,7 @@ watch(() => props.initialTranslating, (nextState) => {
   transform: none !important;
   opacity: 1;
   cursor: grabbing;
-  border-color: #f06a92;
+  border-color: var(--fr-floating-hover-border);
   box-shadow: 0 8px 25px rgba(240, 106, 146, 0.28);
 }
 

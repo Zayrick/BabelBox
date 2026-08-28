@@ -464,6 +464,8 @@ function installVideoSubtitleStyle(): HTMLStyleElement {
   style.id = 'fluent-read-video-subtitle-style';
   style.textContent = `
     #${VIDEO_TRANSLATION_LAYER_ID} {
+      --fr-video-weight-medium: 600;
+      --fr-video-weight-semibold: 700;
       position: absolute !important;
       inset: 0 !important;
       z-index: 2147483645 !important;
@@ -508,7 +510,7 @@ function installVideoSubtitleStyle(): HTMLStyleElement {
       color: #ffe45c !important;
       font-family: Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif !important;
       font-size: var(--fluent-read-video-subtitle-font-size, clamp(16px, 2.2vw, 30px)) !important;
-      font-weight: 700 !important;
+      font-weight: var(--fr-video-weight-semibold) !important;
       line-height: 1.28 !important;
       text-align: center !important;
       -webkit-text-stroke: 1px #000 !important;
@@ -532,7 +534,7 @@ function installVideoSubtitleStyle(): HTMLStyleElement {
       color: #fff !important;
       font-family: Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif !important;
       font-size: var(--fluent-read-video-subtitle-font-size, clamp(16px, 2.2vw, 30px)) !important;
-      font-weight: 600 !important;
+      font-weight: var(--fr-video-weight-medium) !important;
       line-height: 1.28 !important;
       text-align: center !important;
       text-shadow: 0 1px 2px rgba(0, 0, 0, .9), 0 0 4px rgba(0, 0, 0, .8) !important;
@@ -601,6 +603,15 @@ function installVideoSubtitleStyle(): HTMLStyleElement {
       box-shadow: 0 0 0 1px rgba(236, 72, 153, .62), 0 2px 8px rgba(236, 72, 153, .2) !important;
     }
     #${VIDEO_TRANSLATION_MENU_ID} {
+      --fr-video-menu-font-caption: 10px;
+      --fr-video-menu-font-small: 11px;
+      --fr-video-menu-font-body: 13px;
+      --fr-video-menu-weight-medium: 600;
+      --fr-video-menu-weight-semibold: 700;
+      --fr-video-menu-weight-bold: 800;
+      --fr-video-menu-control-small: 32px;
+      --fr-video-menu-control-large: 44px;
+      --fr-video-menu-radius-control: 8px;
       position: absolute !important;
       right: 12px !important;
       bottom: 52px !important;
@@ -613,7 +624,9 @@ function installVideoSubtitleStyle(): HTMLStyleElement {
       background: rgba(30, 30, 30, .97) !important;
       box-shadow: 0 8px 28px rgba(0, 0, 0, .42) !important;
       color: #fff !important;
-      font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+      font-size: var(--fr-video-menu-font-body) !important;
+      line-height: 1.4 !important;
     }
     #${VIDEO_TRANSLATION_MENU_ID}[hidden] { display: none !important; }
     #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-title {
@@ -622,7 +635,7 @@ function installVideoSubtitleStyle(): HTMLStyleElement {
       justify-content: space-between !important;
       padding: 4px 8px 8px !important;
       color: rgba(255, 255, 255, .92) !important;
-      font-weight: 700 !important;
+      font-weight: var(--fr-video-menu-weight-semibold) !important;
     }
     #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-heading {
       display: inline-flex !important;
@@ -631,29 +644,29 @@ function installVideoSubtitleStyle(): HTMLStyleElement {
     }
     #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-brand {
       color: #ff8fbd !important;
-      font-size: 10px !important;
+      font-size: var(--fr-video-menu-font-caption) !important;
       letter-spacing: .02em !important;
-      font-weight: 800 !important;
+      font-weight: var(--fr-video-menu-weight-bold) !important;
     }
     #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-title-text {
       color: rgba(255, 255, 255, .92) !important;
     }
     #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-beta {
       color: #ff8fbd !important;
-      font-size: 10px !important;
-      font-weight: 700 !important;
+      font-size: var(--fr-video-menu-font-caption) !important;
+      font-weight: var(--fr-video-menu-weight-semibold) !important;
     }
     #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-item,
     #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-mode {
       display: flex !important;
       align-items: center !important;
       width: 100% !important;
-      min-height: 34px !important;
+      min-height: var(--fr-video-menu-control-small) !important;
       box-sizing: border-box !important;
       margin: 1px 0 !important;
       padding: 6px 8px !important;
       border: 0 !important;
-      border-radius: 7px !important;
+      border-radius: var(--fr-video-menu-radius-control) !important;
       background: transparent !important;
       color: rgba(255, 255, 255, .9) !important;
       cursor: pointer !important;
@@ -672,12 +685,12 @@ function installVideoSubtitleStyle(): HTMLStyleElement {
       opacity: .55 !important;
     }
     #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-primary-action {
-      min-height: 42px !important;
+      min-height: var(--fr-video-menu-control-large) !important;
       margin: 4px 0 8px !important;
       border: 1px solid rgba(236, 72, 153, .42) !important;
       background: linear-gradient(135deg, rgba(236, 72, 153, .26), rgba(236, 72, 153, .12)) !important;
       color: #fff !important;
-      font-weight: 800 !important;
+      font-weight: var(--fr-video-menu-weight-bold) !important;
       box-shadow: 0 4px 12px rgba(236, 72, 153, .16) !important;
     }
     #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-primary-action[aria-checked="true"] {
@@ -693,7 +706,7 @@ function installVideoSubtitleStyle(): HTMLStyleElement {
       align-items: center !important;
       width: 20px !important;
       color: #ff8fbd !important;
-      font-weight: 800 !important;
+      font-weight: var(--fr-video-menu-weight-bold) !important;
     }
     #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-check svg {
       width: 14px !important;
@@ -706,7 +719,7 @@ function installVideoSubtitleStyle(): HTMLStyleElement {
       align-items: center !important;
       gap: 5px !important;
       color: rgba(255, 255, 255, .58) !important;
-      font-size: 11px !important;
+      font-size: var(--fr-video-menu-font-small) !important;
       white-space: nowrap !important;
     }
     #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-item[aria-busy="true"] .fluent-read-video-menu-value::before {
@@ -738,7 +751,7 @@ function installVideoSubtitleStyle(): HTMLStyleElement {
       display: block !important;
       padding: 4px 8px 2px !important;
       color: rgba(255, 255, 255, .52) !important;
-      font-size: 11px !important;
+      font-size: var(--fr-video-menu-font-small) !important;
     }
     #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-mode {
       width: auto !important;

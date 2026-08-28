@@ -110,15 +110,6 @@ describe('VocabularyBook mounted lifecycle', () => {
       removeEventListener: { configurable: true, value: windowRemove },
     });
     const documentAdd = vi.spyOn(document, 'addEventListener');
-    const mediaAdd = vi.fn();
-    const mediaRemove = vi.fn();
-    const matchMedia = vi.fn(() => ({
-      matches: false,
-      addEventListener: mediaAdd,
-      removeEventListener: mediaRemove,
-    }));
-    window.matchMedia = matchMedia as unknown as typeof window.matchMedia;
-
     vi.stubGlobal('window', window);
     vi.stubGlobal('document', document);
     vi.stubGlobal('Node', window.Node);
@@ -168,8 +159,6 @@ describe('VocabularyBook mounted lifecycle', () => {
       app.config.warnHandler = () => undefined;
       app.mount({});
       await vueRuntime.nextTick();
-      expect(matchMedia).toHaveBeenCalledTimes(1);
-
       app.unmount();
       resolveConfigReady();
       await configReady;
@@ -179,8 +168,6 @@ describe('VocabularyBook mounted lifecycle', () => {
       expect(calls).toEqual({ runtimeAdd: 0, runtimeSend: 0, subscribe: 0 });
       expect(windowAdd.mock.calls.filter(([type]) => type === 'keydown')).toHaveLength(0);
       expect(documentAdd.mock.calls.filter(([type]) => type === 'visibilitychange')).toHaveLength(0);
-      expect(mediaAdd).toHaveBeenCalledTimes(1);
-      expect(mediaRemove).toHaveBeenCalledTimes(1);
     } finally {
       await server.close();
     }

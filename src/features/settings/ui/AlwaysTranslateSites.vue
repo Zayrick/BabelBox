@@ -164,11 +164,11 @@ function removeDomain(domain: string) {
 .site-rules-editor {
   margin: 0;
   padding: 16px;
-  background: var(--surface, #fff);
+  background: var(--surface);
 }
 
 .site-rules-editor + .site-rules-editor {
-  border-top: 1px solid var(--line, #e5e8ef);
+  border-top: 1px solid var(--line);
 }
 
 .site-rules-heading {
@@ -184,15 +184,15 @@ function removeDomain(domain: string) {
 
 .site-rules-heading h3 {
   margin: 0 0 4px;
-  color: var(--ink, #172033);
-  font-size: 15px;
+  color: var(--ink);
+  font-size: var(--font-subtitle);
 }
 
 .site-rules-heading p {
   margin: 0;
-  color: var(--muted, #737c8f);
-  font-size: 11px;
-  line-height: 1.55;
+  color: var(--muted);
+  font-size: var(--font-small);
+  line-height: var(--line-height-body);
 }
 
 .site-rules-count {
@@ -201,10 +201,10 @@ function removeDomain(domain: string) {
   align-items: center;
   min-height: 24px;
   padding: 0;
-  color: var(--muted, #737c8f);
+  color: var(--muted);
   background: transparent;
-  font-size: 10px;
-  font-weight: 750;
+  font-size: var(--font-caption);
+  font-weight: var(--weight-semibold);
 }
 
 .site-rules-form {
@@ -220,76 +220,76 @@ function removeDomain(domain: string) {
 
 .site-rules-input-wrap input {
   width: 100%;
-  min-height: 40px;
+  min-height: var(--control-height);
   padding: 0 12px;
-  border: 1px solid #dfe4ed;
-  border-radius: 8px;
+  border: 1px solid var(--el-border-color);
+  border-radius: var(--radius-control);
   outline: 0;
-  color: var(--ink, #172033);
-  background: var(--surface, #fff);
-  font-size: 13px;
+  color: var(--ink);
+  background: var(--surface);
+  font-size: var(--font-body);
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
 .site-rules-input-wrap input:hover {
-  border-color: #ef9ab1;
+  border-color: var(--el-color-primary-light-3);
 }
 
 .site-rules-input-wrap input:focus {
-  border-color: var(--brand, #ef4776);
-  box-shadow: 0 0 0 3px rgba(239, 71, 118, .1);
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-soft);
 }
 
 .site-rules-input-wrap input[aria-invalid="true"] {
-  border-color: #d9345e;
+  border-color: var(--danger);
 }
 
 .site-rules-input-wrap input::placeholder {
-  color: #9299a8;
+  color: var(--el-text-color-placeholder);
 }
 
 .site-rules-add,
 .site-rule-remove {
-  border-radius: 8px;
-  font-weight: 750;
+  border-radius: var(--radius-control);
+  font-weight: var(--weight-semibold);
   cursor: pointer;
 }
 
 .site-rules-add {
   min-width: 92px;
-  min-height: 40px;
+  min-height: var(--control-height);
   padding: 0 14px;
   border: 0;
-  color: #fff;
-  background: var(--brand, #ef4776);
+  color: var(--on-brand);
+  background: var(--brand);
 }
 
 .site-rules-add:hover {
-  background: var(--brand-strong, #dc315f);
+  background: var(--brand-strong);
 }
 
 .site-rules-feedback {
   min-height: 18px;
   margin: 7px 2px 0;
-  color: var(--muted, #737c8f);
-  font-size: 10px;
-  line-height: 1.5;
+  color: var(--muted);
+  font-size: var(--font-caption);
+  line-height: var(--line-height-body);
 }
 
 .site-rules-feedback strong {
-  color: var(--ink, #172033);
+  color: var(--ink);
 }
 
 .site-rules-feedback.error {
-  color: #d9345e;
+  color: var(--danger);
 }
 
 .site-rules-list {
   max-height: 360px;
   margin-top: 14px;
   overflow-y: auto;
-  border: 1px solid var(--line, #e5e8ef);
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
   scrollbar-width: thin;
 }
 
@@ -300,8 +300,8 @@ function removeDomain(domain: string) {
   gap: 12px;
   min-height: 52px;
   padding: 8px 12px;
-  border-bottom: 1px solid var(--line, #e5e8ef);
-  background: var(--surface, #fff);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
 }
 
 .site-rule-item:last-child { border-bottom: 0; }
@@ -310,8 +310,8 @@ function removeDomain(domain: string) {
 
 .site-rule-copy strong {
   overflow: hidden;
-  color: var(--ink, #172033);
-  font-size: 13px;
+  color: var(--ink);
+  font-size: var(--font-body);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -320,14 +320,14 @@ function removeDomain(domain: string) {
   min-height: 32px;
   padding: 0 4px;
   border: 0;
-  color: var(--brand-strong, #dc315f);
+  color: var(--brand-strong);
   background: transparent;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--font-small);
+  font-weight: var(--weight-medium);
 }
 
 .site-rule-remove:hover {
-  color: var(--brand, #ef4776);
+  color: var(--brand);
 }
 
 .site-rules-empty {
@@ -337,9 +337,9 @@ function removeDomain(domain: string) {
   min-height: 96px;
   margin-top: 14px;
   padding: 16px;
-  border: 1px dashed #d9dde6;
-  border-radius: 8px;
-  color: var(--muted, #737c8f);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-control);
+  color: var(--muted);
   background: transparent;
   text-align: center;
   flex-direction: column;
@@ -347,19 +347,19 @@ function removeDomain(domain: string) {
 
 .site-rules-empty > svg {
   margin-bottom: 5px;
-  color: var(--brand-strong, #dc315f);
+  color: var(--brand-strong);
 }
 
 .site-rules-empty strong {
-  color: var(--ink, #172033);
-  font-size: 13px;
+  color: var(--ink);
+  font-size: var(--font-body);
 }
 
 .site-rules-empty small {
   max-width: 390px;
   margin-top: 5px;
-  font-size: 10px;
-  line-height: 1.55;
+  font-size: var(--font-caption);
+  line-height: var(--line-height-body);
 }
 
 .sr-only {
@@ -371,32 +371,6 @@ function removeDomain(domain: string) {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
-}
-
-:root.dark .site-rules-editor,
-:root.dark .site-rule-item,
-:root.dark .site-rules-empty,
-:root.dark .site-rules-input-wrap input {
-  border-color: #30333c;
-}
-
-:root.dark .site-rules-input-wrap input {
-  background: #252830;
-}
-
-:root.dark .site-rules-editor {
-  --brand-strong: #ff7aa2;
-  --brand-soft: rgba(239, 71, 118, .16);
-  --ink: #f4f5f8;
-  --muted: #b7bdc9;
-  --line: #3b3f49;
-  --surface: #252830;
-  --surface-soft: #20232a;
-}
-
-:root.dark .site-rules-input-wrap input:focus {
-  border-color: #ef4776;
-  background: #1d2027;
 }
 
 @media (max-width: 600px) {

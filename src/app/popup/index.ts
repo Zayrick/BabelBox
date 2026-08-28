@@ -1,7 +1,8 @@
 import {createApp} from 'vue';
-import './popup.css';
 import App from './PopupApp.vue';
 import 'element-plus/dist/index.css'
+import 'element-plus/theme-chalk/dark/css-vars.css'
+import './popup.css';
 
 import {
   ElRow,

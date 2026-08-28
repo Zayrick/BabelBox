@@ -1,5 +1,5 @@
 <template>
-  <div class="fr-userscript-settings-backdrop" :class="{ dark: isDark }" role="presentation" @click.self="close">
+  <div class="fr-userscript-settings-backdrop fr-theme" :class="{ 'fr-dark-theme': isDark }" role="presentation" @click.self="close">
     <section class="fr-userscript-settings" role="dialog" aria-modal="true" aria-labelledby="fr-userscript-settings-title">
       <header>
         <div class="brand">
@@ -16,13 +16,13 @@
       <div class="settings-grid">
         <fieldset>
           <legend>基础设置</legend>
-          <label class="toggle"><span>启用 FluentRead</span><input v-model="draft.on" type="checkbox" /></label>
+          <label class="toggle"><span>启用 FluentRead</span><el-switch v-model="draft.on" class="fr-userscript-switch" aria-label="启用 FluentRead" /></label>
           <label><span>源语言</span><el-select v-model="draft.from" class="fr-userscript-select" aria-label="源语言" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.form" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
           <label><span>目标语言</span><el-select v-model="draft.to" class="fr-userscript-select" aria-label="目标语言" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.to" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
           <label><span>译文显示</span><el-select v-model="draft.display" class="fr-userscript-select" aria-label="译文显示" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.display" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
           <label><span>双语样式</span><el-select v-model="draft.style" class="fr-userscript-select" aria-label="双语样式" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in styleOptions" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
-          <label class="toggle"><span>打开网页后自动翻译</span><input v-model="draft.autoTranslate" type="checkbox" /></label>
-          <label class="toggle"><span>使用翻译缓存</span><input v-model="draft.useCache" type="checkbox" /></label>
+          <label class="toggle"><span>打开网页后自动翻译</span><el-switch v-model="draft.autoTranslate" class="fr-userscript-switch" aria-label="打开网页后自动翻译" /></label>
+          <label class="toggle"><span>使用翻译缓存</span><el-switch v-model="draft.useCache" class="fr-userscript-switch" aria-label="使用翻译缓存" /></label>
         </fieldset>
 
         <fieldset>
@@ -37,7 +37,7 @@
               <button type="button" class="service-row-main" @click="selectManagedService(item.id)"><strong>{{ item.name }}</strong><small>{{ providerLabel(item.provider) }}<template v-if="item.modelId"> · {{ item.modelId }}</template></small></button>
               <div class="service-row-actions">
                 <button v-if="item.kind === 'ai'" type="button" class="delete-service" :aria-label="`删除 ${item.name}`" @click.stop="removeAIService(item)">删除</button>
-                <input type="checkbox" role="switch" :aria-label="`${item.name} 启用状态`" :checked="item.enabled" @click.stop @change="setServiceEnabled(item, $event)" />
+                <el-switch class="fr-userscript-switch" size="small" :aria-label="`${item.name} 启用状态`" :model-value="item.enabled" @click.stop @change="setServiceEnabled(item, Boolean($event))" />
               </div>
             </div>
           </div>
@@ -84,7 +84,7 @@
               </el-select>
               <input v-else v-model.trim="selectedInstance.modelId" autocomplete="off" />
             </label>
-            <label v-if="selectedInstance.kind === 'ai' && usesToken" class="toggle"><span>当前模型需要 API Key</span><input v-model="selectedInstance.requireApiKey" type="checkbox" /></label>
+            <label v-if="selectedInstance.kind === 'ai' && usesToken" class="toggle"><span>当前模型需要 API Key</span><el-switch v-model="selectedInstance.requireApiKey" class="fr-userscript-switch" aria-label="当前模型需要 API Key" /></label>
             <label v-if="usesToken"><span>API Key / Token</span><input v-model.trim="serviceApiKey" type="password" autocomplete="off" @change="refreshModelCatalogIfSupported" /></label>
             <label v-if="selectedInstance.kind === 'ai'"><span>请求地址（可选）</span><input v-model.trim="serviceEndpoint" inputmode="url" placeholder="留空使用供应商默认接口" @change="refreshModelCatalogIfSupported" /></label>
             <label v-if="selectedProvider === services.deeplx"><span>DeepLX 地址</span><input v-model.trim="draft.deeplx" inputmode="url" /></label>
@@ -100,13 +100,13 @@
           </template>
           <label v-if="selectedInstance && servicesType.isCoze(selectedProvider)"><span>Bot ID</span><input v-model.trim="selectedInstance.robotId" autocomplete="off" /></label>
           <p v-if="credentialWarning" class="warning">{{ credentialWarning }}</p>
-          <label class="toggle"><span>AI 网页上下文</span><input v-model="draft.enableAIContext" type="checkbox" :disabled="!canUseAIContext" /></label>
+          <label class="toggle"><span>AI 网页上下文</span><el-switch v-model="draft.enableAIContext" class="fr-userscript-switch" aria-label="AI 网页上下文" :disabled="!canUseAIContext" /></label>
         </fieldset>
 
         <fieldset>
           <legend>页面交互</legend>
-          <label class="toggle"><span>显示全文翻译悬浮球</span><input v-model="floatingBallEnabled" type="checkbox" /></label>
-          <label class="toggle"><span>显示翻译进度面板</span><input v-model="draft.translationProgressPanelEnabled" type="checkbox" /></label>
+          <label class="toggle"><span>显示全文翻译悬浮球</span><el-switch v-model="floatingBallEnabled" class="fr-userscript-switch" aria-label="显示全文翻译悬浮球" /></label>
+          <label class="toggle"><span>显示翻译进度面板</span><el-switch v-model="draft.translationProgressPanelEnabled" class="fr-userscript-switch" aria-label="显示翻译进度面板" /></label>
           <label><span>全文快捷键</span><el-select v-model="draft.floatingBallHotkey" class="fr-userscript-select" aria-label="全文快捷键" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.floatingBallHotkeys" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
           <label><span>全文翻译范围</span><el-select v-model="draft.fullPageTranslationMode" class="fr-userscript-select" aria-label="全文翻译范围" :teleported="false" :popper-options="selectPopperOptions"><el-option label="按阅读进度（推荐）" value="viewport" /><el-option label="立即翻译到网页底部" value="all" /></el-select></label>
           <p class="hint">“立即翻译到网页底部”会处理当前已加载的整页内容，并持续翻译之后新增的内容；它不会自动滚动页面，但可能产生更多请求。</p>
@@ -143,8 +143,10 @@
 <script setup lang="ts">
 import {computed, onBeforeUnmount, onMounted, ref, watch} from 'vue';
 import {X} from '@lucide/vue';
-import {ElOption, ElSelect} from 'element-plus';
+import {ElOption, ElSelect, ElSwitch} from 'element-plus';
 import 'element-plus/es/components/select/style/css';
+import 'element-plus/es/components/switch/style/css';
+import '@/src/ui/styles/tokens.css';
 import {browser} from 'wxt/browser';
 import ServiceIcon from '@/src/ui/components/ServiceIcon.vue';
 import {Config, type TranslationServiceCredential} from '@/src/core/config/model';
@@ -163,6 +165,7 @@ import {
   type TranslationServiceInstance,
 } from '@/src/core/config/translationServices';
 import {getSelectableTranslationServices} from '@/src/services/translation/capabilities';
+import {resolvesToDarkTheme} from '@/src/ui/theme/theme';
 import {
   hasDynamicTranslationModelCatalog,
   TRANSLATION_MODEL_CATALOG_MESSAGE,
@@ -277,12 +280,18 @@ const floatingBallEnabled = computed({
   get: () => !draft.value.disableFloatingBall,
   set: (enabled: boolean) => { draft.value.disableFloatingBall = !enabled; },
 });
-const isDark = computed(() => draft.value.theme === 'dark' || (
-  draft.value.theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches
-));
+const themeMedia = window.matchMedia('(prefers-color-scheme: dark)');
+const prefersDark = ref(themeMedia.matches);
+const isDark = computed(() => resolvesToDarkTheme(draft.value.theme, prefersDark.value));
+
+function updatePreferredTheme(event: MediaQueryListEvent): void {
+  prefersDark.value = event.matches;
+}
 
 onMounted(async () => {
+  themeMedia.addEventListener('change', updatePreferredTheme);
   await configReady;
+  if (!modelCatalogMounted) return;
   draft.value = normalizeUserscriptConfig(runtimeConfig);
   managedServiceId.value = draft.value.service;
 });
@@ -331,6 +340,7 @@ watch([() => selectedInstance.value?.id, modelCatalogSupported], ([, supported])
 }, {immediate: true});
 
 onBeforeUnmount(() => {
+  themeMedia.removeEventListener('change', updatePreferredTheme);
   modelCatalogMounted = false;
   modelCatalogRequestVersion += 1;
 });
@@ -343,13 +353,10 @@ function selectManagedService(serviceId: string): void {
   managedServiceId.value = serviceId;
 }
 
-function setServiceEnabled(instance: TranslationServiceInstance, event: Event): void {
-  const input = event.target as HTMLInputElement;
-  const enabled = input.checked;
+function setServiceEnabled(instance: TranslationServiceInstance, enabled: boolean): void {
   if (!enabled) {
     const remaining = getEnabledUserscriptServices(draft.value).filter(item => item.id !== instance.id);
     if (!remaining.length) {
-      input.checked = true;
       statusIsError.value = true;
       status.value = '至少需要保留一个可用的翻译服务。';
       return;
@@ -468,98 +475,103 @@ async function togglePageTranslation(): Promise<void> {
 </script>
 
 <style scoped>
-.fr-userscript-settings-backdrop { position: fixed; inset: 0; z-index: 2147483647; display: grid; width: 100vw; height: 100vh; padding: 22px; place-items: center; box-sizing: border-box; background: rgba(20, 24, 34, .48); color: #182033; font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif; pointer-events: auto; backdrop-filter: blur(8px); }
-.fr-userscript-settings { --el-color-primary: #ef4776; --el-text-color-primary: #20283a; --el-text-color-regular: #4d5668; --el-text-color-placeholder: #8b93a2; --el-border-color: #dfe3eb; --el-border-color-light: #e5e8ef; --el-fill-color-blank: #fff; --el-fill-color-light: #f3f5f9; --el-bg-color-overlay: #fff; display: flex; width: min(980px, calc(100vw - 32px)); max-height: min(900px, calc(100vh - 32px)); overflow: hidden; border: 1px solid rgba(25, 35, 54, .12); border-radius: 22px; background: #f7f8fb; box-shadow: 0 28px 90px rgba(15, 20, 32, .32); flex-direction: column; }
-header, footer { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 16px 20px; background: #fff; }
-header { border-bottom: 1px solid #e5e8ef; }
-footer { border-top: 1px solid #e5e8ef; }
+.fr-userscript-settings-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: grid;
+  width: 100vw;
+  height: 100vh;
+  box-sizing: border-box;
+  padding: 22px;
+  place-items: center;
+  color: var(--ink);
+  background: var(--mask);
+  font-family: var(--font-family);
+  pointer-events: auto;
+  backdrop-filter: blur(8px);
+}
+.fr-userscript-settings {
+  display: flex;
+  width: min(980px, calc(100vw - 32px));
+  max-height: min(900px, calc(100vh - 32px));
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--page);
+  box-shadow: 0 28px 90px rgba(15, 20, 32, .32);
+  flex-direction: column;
+}
+header, footer { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 16px 20px; background: var(--surface); }
+header { border-bottom: 1px solid var(--line); }
+footer { border-top: 1px solid var(--line); }
 .brand { display: flex; align-items: center; gap: 11px; }
-.brand img { width: 38px; height: 38px; border-radius: 11px; }
+.brand img { width: 38px; height: 38px; border-radius: var(--radius-panel); }
 .brand span { display: flex; flex-direction: column; }
-.brand strong { font-size: 16px; }
-.brand small { margin-top: 2px; color: #7c8493; font-size: 10px; }
-button { border: 0; font: inherit; cursor: pointer; }
-.close { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 10px; background: #f2f3f7; color: #727a88; line-height: 1; }
+.brand strong { font-size: var(--font-subtitle); font-weight: var(--weight-bold); }
+.brand small { margin-top: 2px; color: var(--muted); font-size: var(--font-caption); }
+button { border: 0; color: inherit; font: inherit; cursor: pointer; }
+button:focus-visible { outline: 3px solid var(--brand-soft); outline-offset: 2px; }
+.close { display: grid; width: 34px; height: 34px; place-items: center; border-radius: var(--radius-control); color: var(--muted); background: var(--surface-soft); line-height: 1; }
+.close:hover { color: var(--ink); }
 .close svg { width: 18px; height: 18px; }
-.notice { margin: 14px 18px 0; padding: 10px 13px; border: 1px solid #f0c7d4; border-radius: 11px; background: #fff4f7; color: #7a3148; font-size: 11px; line-height: 1.55; }
+.notice { margin: 14px 18px 0; padding: 10px 13px; border: 1px solid var(--el-color-primary-light-5); border-radius: var(--radius-panel); color: var(--brand-strong); background: var(--brand-soft); font-size: var(--font-small); line-height: var(--line-height-body); }
 .settings-grid { display: grid; overflow: auto; padding: 16px 18px 20px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-fieldset, details { min-width: 0; margin: 0; padding: 15px; border: 1px solid #e2e6ee; border-radius: 15px; background: #fff; }
+fieldset, details { min-width: 0; margin: 0; padding: 15px; border: 1px solid var(--line); border-radius: var(--radius-overlay); background: var(--surface); }
 fieldset:nth-of-type(3), details { grid-column: 1 / -1; }
-legend, summary { color: #d93d6b; font-size: 12px; font-weight: 800; }
+legend, summary { color: var(--brand-strong); font-size: var(--font-small); font-weight: var(--weight-bold); }
 summary { cursor: pointer; }
-.service-heading { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; color: #4d5668; font-size: 11px; font-weight: 700; }
-.add-service { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 8px; background: #fff0f4; color: #d93d6b; font-size: 19px; line-height: 1; }
+.service-heading { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; color: var(--muted); font-size: var(--font-small); font-weight: var(--weight-semibold); }
+.add-service { display: grid; width: 28px; height: 28px; place-items: center; border-radius: var(--radius-control); color: var(--brand-strong); background: var(--brand-soft); font-size: var(--font-title); line-height: 1; }
 .service-inventory { display: grid; max-height: 172px; overflow: auto; margin-top: 8px; gap: 6px; }
-.service-row { display: flex; align-items: center; min-width: 0; padding: 7px 9px; border: 1px solid #e2e6ee; border-radius: 10px; background: #f8f9fb; gap: 8px; }
-.service-row.selected { border-color: #ef8eaa; background: #fff4f7; }
+.service-row { display: flex; min-width: 0; align-items: center; gap: 8px; padding: 7px 9px; border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--surface-soft); }
+.service-row.selected { border-color: var(--el-color-primary-light-5); background: var(--brand-soft); }
 .service-row.disabled { opacity: .62; }
-.service-row-main { display: flex; min-width: 0; padding: 0; background: transparent; color: #20283a; text-align: left; flex: 1; flex-direction: column; }
+.service-row-main { display: flex; min-width: 0; padding: 0; flex: 1; flex-direction: column; color: var(--ink); background: transparent; text-align: left; }
 .service-row-main strong, .service-row-main small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.service-row-main strong { font-size: 11px; }
-.service-row-main small { margin-top: 2px; color: #7c8493; font-size: 9px; }
+.service-row-main strong { font-size: var(--font-small); }
+.service-row-main small { margin-top: 2px; color: var(--muted); font-size: var(--font-caption); }
 .service-row-actions { display: flex; align-items: center; gap: 7px; flex: 0 0 auto; }
-.service-row-actions > input { width: 34px; height: 18px; padding: 0; accent-color: #ef4776; flex: 0 0 auto; }
-.delete-service { padding: 3px 5px; border-radius: 6px; background: transparent; color: #a44d67; font-size: 9px; }
-.delete-service:hover { background: #ffe7ee; color: #bd3159; }
-.add-service-panel { margin-top: 9px; padding: 10px; border: 1px solid #f0c7d4; border-radius: 11px; background: #fff8fa; }
+.delete-service { padding: 3px 5px; border-radius: 6px; color: var(--danger); background: transparent; font-size: var(--font-caption); }
+.delete-service:hover { color: var(--danger); background: var(--danger-soft); }
+.add-service-panel { margin-top: 9px; padding: 10px; border: 1px solid var(--el-color-primary-light-5); border-radius: var(--radius-panel); background: var(--brand-soft); }
 .add-service-title { display: flex; align-items: center; gap: 8px; }
-.add-service-title strong { color: #d93d6b; font-size: 11px; }
+.add-service-title strong { color: var(--brand-strong); font-size: var(--font-small); }
 .add-provider-grid { display: grid; max-height: 210px; overflow-y: auto; margin-top: 9px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-.add-provider-grid button { display: grid; min-width: 0; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 7px; padding: 7px; border: 1px solid #e2e6ee; border-radius: 9px; background: #fff; color: #20283a; text-align: left; }
-.add-provider-grid button:hover { border-color: #ef8eaa; background: #fff0f4; }
-.add-provider-grid button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; font-weight: 700; }
-.add-provider-grid button small { color: #b43d61; font-size: 9px; }
+.add-provider-grid button { display: grid; min-width: 0; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 7px; padding: 7px; border: 1px solid var(--line); border-radius: var(--radius-control); color: var(--ink); background: var(--surface); text-align: left; }
+.add-provider-grid button:hover { border-color: var(--el-color-primary-light-5); background: var(--brand-soft); }
+.add-provider-grid button span { overflow: hidden; font-size: var(--font-caption); font-weight: var(--weight-semibold); text-overflow: ellipsis; white-space: nowrap; }
+.add-provider-grid button small { color: var(--brand-strong); font-size: var(--font-caption); }
 .add-service-actions { display: flex; justify-content: flex-end; margin-top: 10px; gap: 7px; }
-.add-service-actions button { padding: 7px 11px; border-radius: 8px; font-size: 10px; font-weight: 700; }
-label { display: grid; align-items: center; gap: 10px; margin-top: 11px; grid-template-columns: minmax(120px, .8fr) minmax(0, 1.4fr); color: #4d5668; font-size: 11px; }
-label > span { line-height: 1.35; }
-input, textarea { width: 100%; min-width: 0; padding: 9px 10px; border: 1px solid #dfe3eb; border-radius: 9px; outline: none; box-sizing: border-box; background: #f8f9fb; color: #20283a; font: inherit; font-size: 12px; }
-input:focus, textarea:focus { border-color: #ef4776; box-shadow: 0 0 0 3px rgba(239, 71, 118, .1); background: #fff; }
-.fr-userscript-select { width: 100%; min-width: 0; font-size: 12px; }
-.fr-userscript-select :deep(.el-select__wrapper) { min-height: 36px; padding: 0 10px; border: 1px solid #dfe3eb; border-radius: 9px; background: #f8f9fb; box-shadow: none; }
-.fr-userscript-select :deep(.el-select__wrapper:hover) { border-color: #ef8eaa; }
-.fr-userscript-select :deep(.el-select__wrapper.is-focused) { border-color: #ef4776; background: #fff; box-shadow: 0 0 0 3px rgba(239, 71, 118, .1); }
-.fr-userscript-select :deep(.el-select__selected-item), .fr-userscript-select :deep(.el-select__placeholder) { color: #20283a; font-size: 12px; }
-.fr-userscript-settings :deep(.el-select__popper.el-popper) { border-color: #dfe3eb; background: #fff; }
-.fr-userscript-settings :deep(.el-select-dropdown__item) { color: #20283a; font-size: 12px; }
-.fr-userscript-settings :deep(.el-select-dropdown__item.is-hovering) { background: #fff0f4; }
-.fr-userscript-settings :deep(.el-select-dropdown__item.is-selected) { color: #d93d6b; font-weight: 700; }
-.fr-userscript-settings :deep(.fr-userscript-model-catalog-popper .el-select-dropdown__item) { height: auto; min-width: 0; min-height: 34px; padding-top: 8px; padding-bottom: 8px; overflow: hidden; line-height: 1.35; white-space: normal; }
+.add-service-actions button { padding: 7px 11px; border-radius: var(--radius-control); font-size: var(--font-caption); font-weight: var(--weight-semibold); }
+label { display: grid; align-items: center; gap: 10px; margin-top: 11px; grid-template-columns: minmax(120px, .8fr) minmax(0, 1.4fr); color: var(--muted); font-size: var(--font-small); }
+label > span { line-height: var(--line-height-tight); }
+input, textarea { width: 100%; min-width: 0; box-sizing: border-box; padding: 9px 10px; border: 1px solid var(--line); border-radius: var(--radius-control); color: var(--ink); background: var(--surface-soft); font: inherit; font-size: var(--font-body); outline: none; }
+input:focus, textarea:focus { border-color: var(--brand); background: var(--surface); box-shadow: 0 0 0 3px var(--brand-soft); }
+.fr-userscript-select { width: 100%; min-width: 0; font-size: var(--font-body); }
+.fr-userscript-select :deep(.el-select__wrapper) { min-height: var(--control-height); padding: 0 10px; border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--surface-soft); box-shadow: none; }
+.fr-userscript-select :deep(.el-select__wrapper:hover) { border-color: var(--el-color-primary-light-3); }
+.fr-userscript-select :deep(.el-select__wrapper.is-focused) { border-color: var(--brand); background: var(--surface); box-shadow: 0 0 0 3px var(--brand-soft); }
+.fr-userscript-select :deep(.el-select__selected-item), .fr-userscript-select :deep(.el-select__placeholder) { color: var(--ink); font-size: var(--font-body); }
+.fr-userscript-settings :deep(.el-select__popper.el-popper) { border-color: var(--line); background: var(--surface); }
+.fr-userscript-settings :deep(.el-select-dropdown__item) { color: var(--ink); font-size: var(--font-body); }
+.fr-userscript-settings :deep(.el-select-dropdown__item.is-hovering) { background: var(--brand-soft); }
+.fr-userscript-settings :deep(.el-select-dropdown__item.is-selected) { color: var(--brand-strong); font-weight: var(--weight-semibold); }
+.fr-userscript-settings :deep(.fr-userscript-model-catalog-popper .el-select-dropdown__item) { height: auto; min-width: 0; min-height: 34px; padding-top: 8px; padding-bottom: 8px; overflow: hidden; line-height: var(--line-height-tight); white-space: normal; }
 .model-catalog-option { display: block; width: 100%; min-width: 0; overflow-wrap: anywhere; white-space: normal; }
-textarea { resize: vertical; line-height: 1.45; }
-.toggle input { justify-self: end; width: 38px; height: 20px; accent-color: #ef4776; }
-.hint, .warning { margin: 8px 0 0; padding: 8px 10px; border-radius: 9px; font-size: 10px; line-height: 1.5; }
-.hint { background: #f3f5f9; color: #70798a; }
-.warning { background: #fff2e7; color: #8a4a1e; }
+textarea { resize: vertical; line-height: var(--line-height-body); }
+.fr-userscript-switch { --el-switch-on-color: var(--brand); --el-switch-off-color: var(--el-border-color); --el-switch-border-color: var(--el-border-color); justify-self: end; }
+.hint, .warning { margin: 8px 0 0; padding: 8px 10px; border-radius: var(--radius-control); font-size: var(--font-caption); line-height: var(--line-height-body); }
+.hint { color: var(--muted); background: var(--surface-soft); }
+.warning { color: var(--warning); background: var(--warning-soft); }
 footer > div { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
-footer button { padding: 9px 13px; border-radius: 9px; font-size: 11px; font-weight: 700; }
-.secondary { border: 1px solid #dfe3eb; background: #fff; color: #4c5567; }
-.primary { background: #ef4776; color: #fff; }
-.primary:disabled { opacity: .55; cursor: wait; }
-.status { min-height: 16px; color: #2c7a55; font-size: 10px; }
-.status.error { color: #b72f4e; }
-.dark { color: #f2f3f7; }
-.dark .fr-userscript-settings { --el-text-color-primary: #f1f2f5; --el-text-color-regular: #d2d5dc; --el-text-color-placeholder: #aeb3be; --el-border-color: #50535f; --el-border-color-light: #444754; --el-fill-color-blank: #30323c; --el-fill-color-light: #393c46; --el-bg-color-overlay: #30323c; border-color: #444754; background: #272932; }
-.dark header, .dark footer, .dark fieldset, .dark details { border-color: #444754; background: #30323c; }
-.dark .notice { border-color: #6f4654; background: #3b2e35; color: #f0c0d0; }
-.dark label { color: #d2d5dc; }
-.dark input, .dark textarea, .dark .close, .dark .secondary { border-color: #50535f; background: #3a3d47; color: #f1f2f5; }
-.dark .service-heading { color: #d2d5dc; }
-.dark .add-service { background: #49323b; color: #f0a9bf; }
-.dark .service-row { border-color: #4b4e59; background: #373a44; }
-.dark .service-row.selected, .dark .add-service-panel { border-color: #775060; background: #3b2e35; }
-.dark .add-provider-grid button { border-color: #50535f; background: #373a44; color: #f1f2f5; }
-.dark .add-provider-grid button:hover { border-color: #775060; background: #49323b; }
-.dark .service-row-main { color: #f1f2f5; }
-.dark .service-row-main small { color: #b7bbc5; }
-.dark .delete-service { color: #e6a0b6; }
-.dark .delete-service:hover { background: #563440; color: #ffc1d4; }
-.dark .fr-userscript-select :deep(.el-select__wrapper), .dark .fr-userscript-select :deep(.el-select__wrapper.is-focused) { border-color: #50535f; background: #3a3d47; }
-.dark .fr-userscript-select :deep(.el-select__selected-item), .dark .fr-userscript-select :deep(.el-select__placeholder), .dark .fr-userscript-select :deep(.el-select__caret) { color: #f1f2f5; }
-.dark .fr-userscript-settings :deep(.el-select__popper.el-popper) { border-color: #50535f; background: #30323c; }
-.dark .fr-userscript-settings :deep(.el-select-dropdown__item) { color: #f1f2f5; }
-.dark .fr-userscript-settings :deep(.el-select-dropdown__item.is-hovering) { background: #3b2e35; }
-.dark .hint { background: #393c46; color: #bdc1cb; }
+footer button { padding: 9px 13px; border-radius: var(--radius-control); font-size: var(--font-small); font-weight: var(--weight-semibold); }
+.secondary { border: 1px solid var(--line); color: var(--ink); background: var(--surface); }
+.secondary:hover { border-color: var(--el-color-primary-light-5); color: var(--brand-strong); background: var(--brand-soft); }
+.primary { color: var(--on-brand); background: var(--brand); }
+.primary:disabled { cursor: wait; opacity: .55; }
+.status { min-height: 16px; color: var(--success); font-size: var(--font-caption); }
+.status.error { color: var(--danger); }
 @media (max-width: 720px) {
   .fr-userscript-settings-backdrop { padding: 0; place-items: stretch; }
   .fr-userscript-settings { width: 100vw; max-height: 100vh; border: 0; border-radius: 0; }
