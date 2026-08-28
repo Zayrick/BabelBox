@@ -2,7 +2,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {parseHTML} from 'linkedom';
 
 const mocks = vi.hoisted(() => ({
-  config: {animations: true, service: 'deepseek'},
+  config: {animationMode: 'default', service: 'deepseek'},
   sendErrorMessage: vi.fn(),
 }));
 
@@ -28,7 +28,7 @@ beforeEach(() => {
   const {document, window} = parseHTML('<html><body><p id="target">Source</p></body></html>');
   Object.defineProperty(globalThis, 'document', {value: document, configurable: true});
   Object.defineProperty(globalThis, 'window', {value: window, configurable: true});
-  mocks.config.animations = true;
+  mocks.config.animationMode = 'default';
   mocks.config.service = 'deepseek';
   mocks.sendErrorMessage.mockReset();
 });
@@ -65,13 +65,15 @@ describe('全文翻译节点状态指示', () => {
     await Promise.resolve();
 
     expect(cached.getAttribute('data-fr-translation-owned')).toBe('true');
+    expect(cached.dataset.animationMode).toBe('default');
     expect(cached.style.getPropertyValue('border-top')).toBe('3px solid green');
     expect(cached.classList.contains('static')).toBe(false);
 
-    mocks.config.animations = false;
+    mocks.config.animationMode = 'static';
     const staticSpinner = insertLoadingSpinner(target);
     await Promise.resolve();
     expect(staticSpinner.style.getPropertyValue('border-top')).not.toBe('3px solid green');
+    expect(staticSpinner.dataset.animationMode).toBe('static');
     expect(staticSpinner.classList.contains('static')).toBe(true);
   });
 });

@@ -407,13 +407,15 @@
           </el-col>
         </el-row>
 
-        <!-- 禁用动画设置 -->
+        <!-- 动画模式 -->
         <el-row class="settings-control-row">
-          <el-col :span="20" class="settings-control-label lightblue rounded-corner">
-            <SettingsHelpLabel content="动画效果（默认开）：禁用后将关闭加载/悬浮等动画，以节省GPU资源和电量。适合低配置设备或希望节省资源的用户。">动画效果</SettingsHelpLabel>
+          <el-col :span="12" class="settings-control-label lightblue rounded-corner">
+            <SettingsHelpLabel content="选择加载与悬浮等界面的动画模式。静态效果会关闭运动，以节省 GPU 资源和电量；后续新增动画也会在此选择。">动画效果</SettingsHelpLabel>
           </el-col>
-          <el-col :span="4" class="settings-control-field flex-end">
-            <el-switch v-model="config.animations" class="settings-toggle" aria-label="动画效果" />
+          <el-col :span="12" class="settings-control-field">
+            <el-select v-model="config.animationMode" aria-label="动画效果" placeholder="请选择动画效果">
+              <el-option v-for="item in options.animationModes" :key="item.value" :label="item.label" :value="item.value" />
+            </el-select>
           </el-col>
         </el-row>
 

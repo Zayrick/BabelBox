@@ -3,6 +3,11 @@ import type { MiniMaxBillingPlan, MiniMaxRegion, MiMoBillingPlan, MiMoRegion } f
 import { normalizeCustomBodyMapping } from "./customBody";
 import { normalizeSelectionTtsVoiceOrder } from "./selectionTts";
 import {
+    DEFAULT_ANIMATION_MODE,
+    normalizeAnimationMode,
+    type AnimationMode,
+} from './animation';
+import {
     normalizeAlwaysTranslateDomains,
     normalizeDisabledExtensionDomains,
 } from "@/src/core/site-rules/domain";
@@ -149,7 +154,7 @@ export class Config {
     tencentSecretId: string; // 腾讯云 Secret ID
     tencentSecretKey: string; // 腾讯云 Secret Key
     azureOpenaiEndpoint: string; // Azure OpenAI 端点地址
-    animations: boolean; // 是否启用动画效果
+    animationMode: AnimationMode; // 动画效果模式
     translationProgressPanelEnabled: boolean; // 是否显示全文翻译进度面板
     inputBoxTranslationTrigger: string; // 输入框翻译触发方式
     inputBoxTranslationTarget: string; // 输入框翻译目标语言
@@ -231,7 +236,7 @@ export class Config {
         this.tencentSecretId = ''; // 腾讯云 Secret ID
         this.tencentSecretKey = ''; // 腾讯云 Secret Key
         this.azureOpenaiEndpoint = ''; // Azure OpenAI 端点地址
-        this.animations = true; // 默认启用动画
+        this.animationMode = DEFAULT_ANIMATION_MODE;
         this.translationProgressPanelEnabled = false; // 默认关闭全文翻译进度面板
         this.inputBoxTranslationTrigger = 'disabled'; // 默认关闭输入框翻译
         this.inputBoxTranslationTarget = 'en'; // 默认翻译成英文
@@ -321,6 +326,9 @@ export function normalizeConfig(value: unknown): Config {
         ? cloneConfigValue(value) as Partial<Config>
         : {};
     Object.assign(normalized, source);
+    const legacyAnimations = (source as unknown as Record<string, unknown>).animations;
+    normalized.animationMode = normalizeAnimationMode(source.animationMode, legacyAnimations);
+    delete (normalized as unknown as Record<string, unknown>).animations;
     const legacyTranslationStatus = (source as unknown as Record<string, unknown>).translationStatus;
     if (typeof source.translationProgressPanelEnabled !== 'boolean') {
         normalized.translationProgressPanelEnabled = typeof legacyTranslationStatus === 'boolean'

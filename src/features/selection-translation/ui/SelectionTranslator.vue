@@ -25,11 +25,11 @@
       </header>
 
       <div class="fr-tooltip-content" aria-live="polite">
-        <div v-if="isLoading && !translationResult && !wordCard && !wordCardError" class="fr-loading-state"><span :class="['fr-loading-spinner', { 'fr-static': !config.animations }]" aria-hidden="true" /><span>正在查询…</span></div>
+        <div v-if="isLoading && !translationResult && !wordCard && !wordCardError" class="fr-loading-state"><span :class="['fr-loading-spinner', { 'fr-static': !usesAnimatedEffects(config.animationMode) }]" aria-hidden="true" /><span>正在查询…</span></div>
         <div v-else-if="error && !translationResult && !wordCard" class="fr-error-state"><span>{{ error }}</span><button type="button" @click="retryTranslation">重试</button></div>
         <div v-else class="fr-translation-container">
           <section v-if="isWordSelection && (wordCard || isWordCardLoading)" class="fr-word-learning-card" aria-label="单词学习卡">
-            <div v-if="isWordCardLoading && !wordCard" class="fr-word-card-loading"><span :class="['fr-loading-spinner', { 'fr-static': !config.animations }]" aria-hidden="true" /><span>正在查词…</span></div>
+            <div v-if="isWordCardLoading && !wordCard" class="fr-word-card-loading"><span :class="['fr-loading-spinner', { 'fr-static': !usesAnimatedEffects(config.animationMode) }]" aria-hidden="true" /><span>正在查词…</span></div>
             <template v-else-if="wordCard">
               <div class="fr-word-heading">
                 <div>
@@ -109,6 +109,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, wa
 import { ArrowUpRight, Copy, Pause, Star, Volume2, X } from '@lucide/vue';
 import {browser} from 'wxt/browser';
 import { config, subscribeConfig } from '@/src/services/config/store';
+import {usesAnimatedEffects} from '@/src/core/config/animation';
 import {translateText} from '@/src/services/translation/client';
 import { detectlang } from '@/src/core/language/detect';
 import { matchesConfiguredHotkey, matchesModifierOnlyHotkey, resolveConfiguredHotkey } from '@/src/core/hotkey';

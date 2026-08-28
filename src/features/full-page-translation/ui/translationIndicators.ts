@@ -5,6 +5,7 @@ import {config} from '@/src/services/config/store';
 import {getTranslationErrorMessage} from '@/src/features/full-page-translation/core/errorMessage';
 import {CircleAlert, RotateCcw, type IconNode} from 'lucide';
 import {createLucideIconElement} from '@/src/ui/icons/lucideDom';
+import {usesAnimatedEffects} from '@/src/core/config/animation';
 
 // 插入失败提示并处理错误
 export function insertFailedTip(
@@ -92,10 +93,11 @@ export function insertLoadingSpinner(
   const spinner = document.createElement("span");
   spinner.className = "fluent-read-loading";
   spinner.setAttribute("data-fr-translation-owned", "true");
+  spinner.dataset.animationMode = config.animationMode;
   if (isCache) spinner.style.borderTop = "3px solid green"; // 存在缓存时改为绿色
   
   void Promise.resolve().then(() => {
-    if (!config.animations) spinner.classList.add('static');
+    if (!usesAnimatedEffects(config.animationMode)) spinner.classList.add('static');
   });
   
   node.appendChild(spinner);

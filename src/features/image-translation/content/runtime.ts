@@ -74,8 +74,8 @@ function ensureImageOverlayRoot(): HTMLDivElement {
       }
       .${IMAGE_TRANSLATION_BUTTON}:hover, .${IMAGE_TRANSLATION_BUTTON}:focus-visible { background: rgba(20,20,20,.9) !important; opacity: 1 !important; outline: none !important; transform: scale(1.06); }
       .${IMAGE_TRANSLATION_BUTTON} svg { display: block !important; width: 15px !important; height: 15px !important; margin: auto !important; stroke-width: 2 !important; }
-      .${IMAGE_TRANSLATION_BUTTON}[data-animations="true"][data-phase="loading"] { animation: fluent-read-image-translation-pulse 1.1s ease-in-out infinite; }
-      .${IMAGE_TRANSLATION_BUTTON}[data-animations="true"][data-phase="loading"] svg { animation: fluent-read-image-translation-spin .9s linear infinite; }
+      .${IMAGE_TRANSLATION_BUTTON}[data-animation-mode="default"][data-phase="loading"] { animation: fluent-read-image-translation-pulse 1.1s ease-in-out infinite; }
+      .${IMAGE_TRANSLATION_BUTTON}[data-animation-mode="default"][data-phase="loading"] svg { animation: fluent-read-image-translation-spin .9s linear infinite; }
       .${IMAGE_TRANSLATION_BUTTON}[data-phase="error"] { background: rgba(185,28,28,.88) !important; }
       @keyframes fluent-read-image-translation-pulse { 0%,100% { opacity:.52; } 50% { opacity:1; } }
       @keyframes fluent-read-image-translation-spin { to { transform: rotate(360deg); } }
@@ -157,7 +157,7 @@ function createState(image: HTMLImageElement): ImageTranslationState {
     button.type = 'button';
     button.className = IMAGE_TRANSLATION_BUTTON;
     button.dataset.phase = 'idle';
-    button.dataset.animations = String(config.animations);
+    button.dataset.animationMode = config.animationMode;
     replaceLucideIcon(button, Languages);
     button.title = '翻译图片';
     button.setAttribute('aria-label', '翻译图片');
@@ -366,7 +366,7 @@ function setButtonState(state: ImageTranslationState, phase: ImageTranslationPha
     state.button.title = userMessage;
     state.button.setAttribute('aria-label', userMessage);
     state.button.dataset.phase = phase;
-    state.button.dataset.animations = String(config.animations);
+    state.button.dataset.animationMode = config.animationMode;
 }
 
 function restoreImageTranslation(state: ImageTranslationState): void {

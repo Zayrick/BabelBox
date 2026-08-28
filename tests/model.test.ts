@@ -193,6 +193,26 @@ describe('翻译进度面板配置', () => {
     });
 });
 
+describe('动画模式配置', () => {
+    it('默认使用旋转动画，并保留静态模式', () => {
+        expect(options.animationModes.map(({value}) => value)).toEqual(['default', 'static']);
+        expect(new Config().animationMode).toBe('default');
+        expect(normalizeConfig({}).animationMode).toBe('default');
+        expect(normalizeConfig({animationMode: 'static'}).animationMode).toBe('static');
+        expect(normalizeConfig({animationMode: 'invalid'}).animationMode).toBe('default');
+    });
+
+    it('迁移旧动画开关并移除旧字段', () => {
+        const enabled = normalizeConfig({animations: true});
+        const disabled = normalizeConfig({animations: false});
+
+        expect(enabled.animationMode).toBe('default');
+        expect(disabled.animationMode).toBe('static');
+        expect((enabled as unknown as Record<string, unknown>).animations).toBeUndefined();
+        expect((disabled as unknown as Record<string, unknown>).animations).toBeUndefined();
+    });
+});
+
 describe('鼠标悬浮翻译延迟配置', () => {
     it('默认保留现有 50ms 行为，并归一化用户设置', () => {
         expect(new Config().mouseHoverTranslationDelay).toBe(DEFAULT_MOUSE_HOVER_TRANSLATION_DELAY);

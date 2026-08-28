@@ -92,7 +92,7 @@
           <label><span>输入框翻译</span><el-select v-model="draft.inputBoxTranslationTrigger" class="fr-userscript-select" aria-label="输入框翻译" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.inputBoxTranslationTrigger" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
           <label v-if="draft.inputBoxTranslationTrigger !== 'disabled'"><span>输入框目标语言</span><el-select v-model="draft.inputBoxTranslationTarget" class="fr-userscript-select" aria-label="输入框目标语言" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.inputBoxTranslationTarget" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
           <label><span>并发翻译数</span><input v-model.number="draft.maxConcurrentTranslations" type="number" min="1" max="20" /></label>
-          <label class="toggle"><span>界面动画</span><input v-model="draft.animations" type="checkbox" /></label>
+          <label><span>动画效果</span><el-select v-model="draft.animationMode" class="fr-userscript-select" aria-label="动画效果" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.animationModes" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
           <label><span>主题</span><el-select v-model="draft.theme" class="fr-userscript-select" aria-label="主题" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.theme" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
         </fieldset>
 

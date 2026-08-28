@@ -6,8 +6,8 @@
       'floating-ball-expanded': isExpanded,
       dragging: isDragging,
       'is-translating': isTranslating,
-      animating: isAnimating && config.animations,
-      'static-mode': !config.animations,
+      animating: isAnimating && animationsEnabled,
+      'static-mode': !animationsEnabled,
     }"
     :data-position="currentDisplayPosition"
     :style="positionStyle"
@@ -66,6 +66,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { PropType, CSSProperties } from 'vue';
 import {Languages, Settings} from '@lucide/vue';
 import {config} from '@/src/services/config/store';
+import {usesAnimatedEffects} from '@/src/core/config/animation';
 
 const DRAG_THRESHOLD = 6;
 const BALL_SIZE = 42;
@@ -118,6 +119,7 @@ const isTranslating = ref(props.initialTranslating);
 const floatingBall = ref<HTMLElement | null>(null);
 const showShortcutTooltip = ref(false);
 const shortcutTip = ref('快捷键：Alt+T');
+const animationsEnabled = computed(() => usesAnimatedEffects(config.animationMode));
 const dragState = ref<PointerDragState | null>(null);
 const isAnimating = ref(false);
 let animationTimer: ReturnType<typeof setTimeout> | undefined;
@@ -239,7 +241,7 @@ function removePointerListeners() {
 }
 
 function triggerAnimation() {
-  if (!config.animations) return;
+  if (!animationsEnabled.value) return;
 
   if (animationTimer) clearTimeout(animationTimer);
   if (tooltipTimer) clearTimeout(tooltipTimer);

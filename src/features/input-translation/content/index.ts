@@ -2,6 +2,7 @@ import type { ContentScriptContext } from 'wxt/utils/content-script-context';
 import type { ShadowRootContentScriptUi } from 'wxt/utils/content-script-ui/shadow-root';
 import { CircleAlert, CircleCheck, LoaderCircle, type IconNode } from 'lucide';
 import { createLucideIconElement } from '@/src/ui/icons/lucideDom';
+import {usesAnimatedEffects, type AnimationMode} from '@/src/core/config/animation';
 import {
     canCommitInputBoxTranslation,
     getDeepActiveElement,
@@ -17,7 +18,7 @@ export interface InputTranslationContentConfig {
     on?: boolean;
     inputBoxTranslationTrigger: string;
     inputBoxTranslationTarget: string;
-    animations?: boolean;
+    animationMode?: AnimationMode;
 }
 
 export interface InputTranslationContentDependencies {
@@ -118,6 +119,7 @@ export function createInputTranslationContentFeature(
     let activeInputTranslationElement: HTMLElement | null = null;
 
     const isEnabled = () => isInputBoxTranslationEnabled(deps.config, deps.isSiteDisabled());
+    const animationsEnabled = () => usesAnimatedEffects(deps.config.animationMode);
 
     const removeExistingTooltip = (ownerRequestId?: number): void => {
         if (ownerRequestId !== undefined && inputTooltipOwnerRequestId !== ownerRequestId) return;
@@ -128,7 +130,7 @@ export function createInputTranslationContentFeature(
         inputTooltipOwnerRequestId = null;
         if (!ui) return;
 
-        if (!existing || !deps.config.animations) {
+        if (!existing || !animationsEnabled()) {
             ui.remove();
             return;
         }
@@ -149,7 +151,7 @@ export function createInputTranslationContentFeature(
         animationType: 'translating' | 'success' | 'error',
         ownerRequestId: number,
     ): void => {
-        if (!deps.config.animations) return;
+        if (!animationsEnabled()) return;
 
         element.classList.remove('fluent-input-translating', 'fluent-input-success', 'fluent-input-error');
         element.classList.add(`fluent-input-${animationType}`);
@@ -221,7 +223,7 @@ export function createInputTranslationContentFeature(
                 .fluent-input-tooltip.success { background: rgba(34, 197, 94, 0.9); }
                 .fluent-input-tooltip.error { background: rgba(239, 68, 68, 0.9); }
                 .fluent-input-tooltip-icon { width: 14px; height: 14px; flex: 0 0 auto; stroke-width: 2; }
-                ${deps.config.animations ? '.fluent-input-tooltip.translating .fluent-input-tooltip-icon { animation: fluent-read-input-icon-spin .9s linear infinite; }' : ''}
+                ${animationsEnabled() ? '.fluent-input-tooltip.translating .fluent-input-tooltip-icon { animation: fluent-read-input-icon-spin .9s linear infinite; }' : ''}
                 @keyframes fluent-read-input-icon-spin { to { transform: rotate(360deg); } }
                 @media (prefers-reduced-motion: reduce) {
                     .fluent-input-tooltip { transition: none; }
@@ -241,7 +243,7 @@ export function createInputTranslationContentFeature(
                 tooltip.style.top = `${rect.bottom + 12}px`;
                 tooltip.style.left = `${rect.left + (rect.width / 2)}px`;
                 tooltip.style.transform = 'translateX(-50%) translateY(3px)';
-                tooltip.style.opacity = deps.config.animations ? '0' : '1';
+                tooltip.style.opacity = animationsEnabled() ? '0' : '1';
                 container.appendChild(tooltip);
                 return tooltip;
             },
@@ -263,7 +265,7 @@ export function createInputTranslationContentFeature(
         ui.mount();
 
         const tooltip = ui.mounted!;
-        if (!deps.config.animations) {
+        if (!animationsEnabled()) {
             tooltip.style.opacity = '1';
             tooltip.style.transform = 'translateX(-50%) translateY(0)';
         } else {

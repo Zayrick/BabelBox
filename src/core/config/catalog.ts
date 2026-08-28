@@ -1,4 +1,5 @@
 import {DEFAULT_DEEPLX_ENDPOINT} from "./deeplx";
+import {animationModeOptions} from './animation';
 
 export const services = {
     // 机器翻译
@@ -465,6 +466,7 @@ export const options = {
         {value: 0, label: "仅译文模式"},
         {value: 1, label: "双语对照模式"},
     ],
+    animationModes: animationModeOptions,
     // 双语翻译样式
     styles: [
         // 基础样式

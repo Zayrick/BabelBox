@@ -49,10 +49,11 @@ import {
   subscribeFullPageTranslationProgress,
 } from '@/src/features/full-page-translation/progress';
 import {config, subscribeConfig} from '@/src/services/config/store';
+import {usesAnimatedEffects} from '@/src/core/config/animation';
 
 const progress = ref(getFullPageTranslationProgress());
 const dismissedSessionId = ref<number | null>(null);
-const animationsEnabled = ref(config.animations !== false);
+const animationsEnabled = ref(usesAnimatedEffects(config.animationMode));
 const configuredTheme = ref(config.theme || 'auto');
 const prefersDark = ref(false);
 const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -90,7 +91,7 @@ onMounted(() => {
     progress.value = nextProgress;
   });
   unsubscribeConfig = subscribeConfig((nextConfig) => {
-    animationsEnabled.value = nextConfig.animations !== false;
+    animationsEnabled.value = usesAnimatedEffects(nextConfig.animationMode);
     configuredTheme.value = nextConfig.theme || 'auto';
   });
 });

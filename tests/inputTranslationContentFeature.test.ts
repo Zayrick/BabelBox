@@ -104,7 +104,7 @@ function mountHarness(overrides: {
         on: true,
         inputBoxTranslationTrigger: 'ctrl_enter',
         inputBoxTranslationTarget: 'zh',
-        animations: false,
+        animationMode: 'static',
         ...overrides.config,
     };
     const sendMessage = vi.fn(overrides.sendMessage || (async () => ({
@@ -465,7 +465,7 @@ describe('input translation content feature', () => {
 
     it('invalidate 只清理当前请求拥有的样式和 tooltip', async () => {
         vi.useFakeTimers();
-        const {fakeDocument, feature, tooltipRecords} = mountHarness({config: {animations: true}});
+        const {fakeDocument, feature, tooltipRecords} = mountHarness({config: {animationMode: 'default'}});
         const input = fakeElement('input');
         input.value = 'Hello';
         fakeDocument.activeElement = input;
@@ -480,7 +480,7 @@ describe('input translation content feature', () => {
 
     it('动画开启时成功状态会在所有权仍有效时自动清理', async () => {
         vi.useFakeTimers();
-        const {fakeDocument} = mountHarness({config: {animations: true}});
+        const {fakeDocument} = mountHarness({config: {animationMode: 'default'}});
         const input = fakeElement('input');
         input.value = 'Hello';
         fakeDocument.activeElement = input;
@@ -494,7 +494,7 @@ describe('input translation content feature', () => {
     it('动画开启时错误状态会在所有权仍有效时自动清理', async () => {
         vi.useFakeTimers();
         const {fakeDocument} = mountHarness({
-            config: {animations: true},
+            config: {animationMode: 'default'},
             sendMessage: async () => ({success: true, translatedText: 'Hello'}),
         });
         const input = fakeElement('input');
