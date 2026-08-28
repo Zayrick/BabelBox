@@ -208,21 +208,6 @@
   margin-right: 1em;
 }
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--el-border-color);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--el-fill-color-light);
-  border-radius: 3px;
-}
-
 .hotkey-config {
   display: flex;
   flex-direction: column;

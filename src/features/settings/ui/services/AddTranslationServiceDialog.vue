@@ -15,22 +15,29 @@
       <input v-model.trim="providerQuery" type="search" placeholder="搜索供应商" />
     </label>
 
-    <div v-if="filteredProviders.length" class="provider-grid" aria-label="可添加的 AI 翻译供应商">
-      <button
-        v-for="provider in filteredProviders"
-        :key="provider.value"
-        type="button"
-        class="provider-card"
-        @click="addProvider(provider.value)"
-      >
-        <ServiceIcon :service="provider.value" :label="provider.label" size="large" />
-        <span class="provider-copy">
-          <strong>{{ provider.label }}</strong>
-          <small>{{ providerDescription(provider.value) || '添加后配置模型和连接参数' }}</small>
-        </span>
-        <Plus :size="17" aria-hidden="true" />
-      </button>
-    </div>
+    <el-scrollbar
+      v-if="filteredProviders.length"
+      class="provider-list"
+      max-height="min(520px, 60vh)"
+      aria-label="可添加的 AI 翻译供应商"
+    >
+      <div class="provider-grid">
+        <button
+          v-for="provider in filteredProviders"
+          :key="provider.value"
+          type="button"
+          class="provider-card"
+          @click="addProvider(provider.value)"
+        >
+          <ServiceIcon :service="provider.value" :label="provider.label" size="large" />
+          <span class="provider-copy">
+            <strong>{{ provider.label }}</strong>
+            <small>{{ providerDescription(provider.value) || '添加后配置模型和连接参数' }}</small>
+          </span>
+          <Plus :size="17" aria-hidden="true" />
+        </button>
+      </div>
+    </el-scrollbar>
     <div v-else class="provider-empty">没有匹配的 AI 翻译供应商</div>
 
     <template #footer>
@@ -41,6 +48,7 @@
 
 <script setup lang="ts">
 import {computed, ref} from 'vue'
+import {ElScrollbar} from 'element-plus'
 import {Plus, Search} from '@lucide/vue'
 import ServiceIcon from '@/src/ui/components/ServiceIcon.vue'
 import {options, servicesType} from '@/src/core/config/catalog'
@@ -95,7 +103,8 @@ function addProvider(provider: string): void {
 .provider-search:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
 .provider-search svg { color: var(--muted); }
 .provider-search input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; font-size: var(--font-body); }
-.provider-grid { display: grid; max-height: min(520px, 60vh); margin-top: 14px; overflow-y: auto; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.provider-list { height: auto; margin-top: 14px; }
+.provider-grid { display: grid; padding-right: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
 .provider-card { display: grid; min-width: 0; grid-template-columns: 38px minmax(0, 1fr) 18px; align-items: center; gap: 11px; padding: 12px; border: 1px solid var(--line); border-radius: var(--radius-panel); color: var(--ink); background: var(--surface); text-align: left; cursor: pointer; }
 .provider-card:hover { border-color: var(--el-color-primary-light-3); background: var(--brand-soft); }
 .provider-card > svg { color: var(--brand-strong); }

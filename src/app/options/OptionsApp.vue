@@ -6,7 +6,12 @@
         <div><strong>流畅阅读</strong><small>FluentRead · V{{ version }}</small></div>
       </div>
 
-      <nav aria-label="设置分类">
+      <el-scrollbar
+        class="sidebar-navigation"
+        tag="nav"
+        aria-label="设置分类"
+        view-class="sidebar-navigation-view"
+      >
         <section v-for="group in navigationGroups" :key="group.label" class="nav-group">
           <span class="nav-group-label">{{ group.label }}</span>
           <button
@@ -27,7 +32,7 @@
             </span>
           </button>
         </section>
-      </nav>
+      </el-scrollbar>
     </aside>
 
     <main class="workspace">
@@ -47,7 +52,14 @@
       </div>
       <div v-else-if="query" class="search-empty">没有找到“{{ query }}”相关设置</div>
 
-      <section class="settings-card" :class="{ 'services-view': activeSection === 'settings-services', 'translation-center-view': activeSection === 'settings-translation-center', 'vocabulary-view': activeSection === 'settings-vocabulary' }" :aria-label="activeItem.title">
+      <el-scrollbar
+        ref="settingsScrollbar"
+        class="settings-card"
+        :class="{ 'services-view': activeSection === 'settings-services', 'translation-center-view': activeSection === 'settings-translation-center', 'vocabulary-view': activeSection === 'settings-vocabulary' }"
+        tag="section"
+        :aria-label="activeItem.title"
+        view-class="settings-card-view"
+      >
         <section v-if="activeSection === 'settings-about'" id="settings-about" class="about-page" aria-labelledby="about-title">
           <div class="about-summary">
             <img class="about-logo" src="/icon/128.png" alt="流畅阅读图标" />
@@ -65,14 +77,15 @@
         </section>
         <VocabularyBook v-else-if="activeSection === 'settings-vocabulary'" @navigate="selectSection" />
         <SettingsSections v-else :active-section="activeSection" />
-      </section>
+      </el-scrollbar>
 
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { ElScrollbar, type ScrollbarInstance } from 'element-plus'
 import {
   ArrowRight,
   BookMarked,
@@ -110,6 +123,7 @@ import {
 const version = process.env.VUE_APP_VERSION
 const query = ref('')
 const activeSection = ref('settings-general')
+const settingsScrollbar = ref<ScrollbarInstance | null>(null)
 const theme = ref(runtimeConfig.theme || 'auto')
 const unsubscribeTheme = subscribeConfig((nextConfig) => {
   theme.value = nextConfig.theme || 'auto'
@@ -146,7 +160,7 @@ function selectSection(id: string) {
   activeSection.value = id
   query.value = ''
   history.replaceState(null, '', `#${id}`)
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+  void nextTick(() => settingsScrollbar.value?.scrollTo({ top: 0, left: 0, behavior: 'smooth' }))
 }
 
 function selectResult(id: string) {

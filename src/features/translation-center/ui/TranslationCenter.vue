@@ -1,7 +1,8 @@
 <template>
-  <section class="translation-center" aria-label="翻译中心">
-    <p v-if="hiddenUnavailableServices.length" class="translation-capability-warning" role="status">当前浏览器暂不支持 Chrome 内置翻译；该对比项已暂时隐藏，原配置会保留。</p>
-    <div class="translation-center-toolbar">
+  <el-scrollbar class="translation-center-scrollbar" tag="section" aria-label="翻译中心">
+    <div class="translation-center">
+      <p v-if="hiddenUnavailableServices.length" class="translation-capability-warning" role="status">当前浏览器暂不支持 Chrome 内置翻译；该对比项已暂时隐藏，原配置会保留。</p>
+      <div class="translation-center-toolbar">
       <div class="language-picker-group">
         <label for="translation-center-source">源语言</label>
         <el-select
@@ -65,34 +66,36 @@
               <Search class="service-picker-search-icon" aria-hidden="true" />
               <input v-model.trim="serviceSearchQuery" type="search" placeholder="搜索服务名称" aria-label="搜索翻译服务" />
             </label>
-            <div class="service-picker-groups">
-              <section v-for="group in filteredServiceGroups" :key="group.key" class="service-picker-group">
-                <div class="service-picker-group-heading">
-                  <strong>{{ group.label }}</strong>
-                </div>
-                <button
-                  v-for="item in group.items"
-                  :key="item.value"
-                  type="button"
-                  class="service-picker-option"
-                  @click="addService(item.value)"
-                >
-                  <ServiceIcon :service="item.provider" :label="item.label" size="small" />
-                  <span class="service-picker-option-copy">
-                    <strong>{{ item.label }}</strong>
-                    <small>{{ serviceDescription(item.value) }}</small>
-                  </span>
-                  <span class="service-picker-option-add" aria-hidden="true"><Plus /></span>
-                </button>
-              </section>
-              <p v-if="filteredServiceGroups.length === 0">没有找到可添加的翻译服务</p>
-            </div>
+            <el-scrollbar class="service-picker-groups" aria-label="可添加的翻译服务">
+              <div class="service-picker-groups-content">
+                <section v-for="group in filteredServiceGroups" :key="group.key" class="service-picker-group">
+                  <div class="service-picker-group-heading">
+                    <strong>{{ group.label }}</strong>
+                  </div>
+                  <button
+                    v-for="item in group.items"
+                    :key="item.value"
+                    type="button"
+                    class="service-picker-option"
+                    @click="addService(item.value)"
+                  >
+                    <ServiceIcon :service="item.provider" :label="item.label" size="small" />
+                    <span class="service-picker-option-copy">
+                      <strong>{{ item.label }}</strong>
+                      <small>{{ serviceDescription(item.value) }}</small>
+                    </span>
+                    <span class="service-picker-option-add" aria-hidden="true"><Plus /></span>
+                  </button>
+                </section>
+                <p v-if="filteredServiceGroups.length === 0">没有找到可添加的翻译服务</p>
+              </div>
+            </el-scrollbar>
           </div>
         </div>
       </div>
-    </div>
+      </div>
 
-    <div class="translation-center-layout">
+      <div class="translation-center-layout">
       <section class="translation-input-panel" aria-labelledby="translation-input-title">
         <div class="translation-panel-heading">
           <div>
@@ -143,16 +146,17 @@
           </div>
         </div>
 
-        <div class="translation-result-list">
-          <article
-            v-for="card in cards"
-            :key="card.service"
-            class="translation-result-card"
-            :data-service="card.service"
-            :data-status="card.status"
-            :class="{ 'is-dragging': draggingService === card.service, 'is-drag-over': dragOverService === card.service }"
-          >
-            <header class="translation-result-card-header">
+        <el-scrollbar class="translation-result-list" aria-label="翻译结果列表">
+          <div class="translation-result-list-content">
+            <article
+              v-for="card in cards"
+              :key="card.service"
+              class="translation-result-card"
+              :data-service="card.service"
+              :data-status="card.status"
+              :class="{ 'is-dragging': draggingService === card.service, 'is-drag-over': dragOverService === card.service }"
+            >
+              <header class="translation-result-card-header">
               <div class="translation-result-service-name">
                 <button
                   class="drag-handle"
@@ -185,41 +189,44 @@
                   <X aria-hidden="true" />
                 </button>
               </div>
-            </header>
+              </header>
 
-            <div v-if="card.status === 'idle'" class="translation-result-placeholder">
-              点击“开始翻译”，在这里查看结果
-            </div>
-            <div v-else-if="card.status === 'loading'" class="translation-result-placeholder loading-placeholder">
-              <span class="loading-bars"><i /><i /><i /></span>
-              正在请求 {{ serviceLabel(card.service) }}…
-            </div>
-            <div v-else-if="card.status === 'success'" class="translation-result-content">
-              <p>{{ card.result }}</p>
-              <footer>
-                <span>{{ card.duration }} ms · 第 {{ card.run }} 次</span>
-                <button type="button" @click="copyResult(card)">
-                  <Copy aria-hidden="true" />
-                  {{ copiedService === card.service ? '已复制' : '复制译文' }}
+              <div v-if="card.status === 'idle'" class="translation-result-placeholder">
+                点击“开始翻译”，在这里查看结果
+              </div>
+              <div v-else-if="card.status === 'loading'" class="translation-result-placeholder loading-placeholder">
+                <span class="loading-bars"><i /><i /><i /></span>
+                正在请求 {{ serviceLabel(card.service) }}…
+              </div>
+              <div v-else-if="card.status === 'success'" class="translation-result-content">
+                <p>{{ card.result }}</p>
+                <footer>
+                  <span>{{ card.duration }} ms · 第 {{ card.run }} 次</span>
+                  <button type="button" @click="copyResult(card)">
+                    <Copy aria-hidden="true" />
+                    {{ copiedService === card.service ? '已复制' : '复制译文' }}
+                  </button>
+                </footer>
+              </div>
+              <div v-else class="translation-result-error">
+                <p>{{ card.error }}</p>
+                <button type="button" :disabled="!sourceText.trim() || isRunning" @click="retryService(card.service)">
+                  <RefreshCw aria-hidden="true" />
+                  重试
                 </button>
-              </footer>
-            </div>
-            <div v-else class="translation-result-error">
-              <p>{{ card.error }}</p>
-              <button type="button" :disabled="!sourceText.trim() || isRunning" @click="retryService(card.service)">
-                <RefreshCw aria-hidden="true" />
-                重试
-              </button>
-            </div>
-          </article>
-        </div>
+              </div>
+            </article>
+          </div>
+        </el-scrollbar>
       </section>
+      </div>
     </div>
-  </section>
+  </el-scrollbar>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { ElScrollbar } from 'element-plus'
 import {
   ArrowLeftRight,
   ChevronDown,
@@ -630,6 +637,7 @@ onUnmounted(() => {
 
 <style scoped>
 .translation-capability-warning { margin: 0; padding: 9px 12px; border: 1px dashed var(--line); border-radius: var(--radius-control); color: var(--muted); background: var(--surface-soft); font-size: var(--font-caption); }
+.translation-center-scrollbar { width: 100%; height: 100%; min-height: 0; }
 .translation-center {
   display: grid;
   gap: 12px;
@@ -746,7 +754,8 @@ onUnmounted(() => {
 .service-picker-search-icon { width: 16px; height: 16px; flex: none; }
 .service-picker-search input { width: 100%; min-width: 0; border: 0; outline: 0; color: var(--ink); background: transparent; font: inherit; font-size: var(--font-small); }
 .service-picker-search input::placeholder { color: var(--el-text-color-placeholder); }
-.service-picker-groups { min-height: 0; flex: 1 1 auto; overflow-y: auto; padding: 0 7px 8px; }
+.service-picker-groups { height: auto; min-height: 0; flex: 1 1 auto; }
+.service-picker-groups-content { padding: 0 7px 8px; }
 .service-picker-group + .service-picker-group { margin-top: 8px; }
 .service-picker-group-heading { padding: 7px 7px 5px; }
 .service-picker-group-heading strong { color: var(--ink); font-size: var(--font-caption); }
@@ -757,7 +766,7 @@ onUnmounted(() => {
 .service-picker-option-copy small { overflow: hidden; color: var(--muted); font-size: var(--font-caption); line-height: var(--line-height-tight); text-overflow: ellipsis; white-space: nowrap; }
 .service-picker-option-add { display: grid; place-items: center; width: 23px; height: 23px; flex: none; border-radius: 7px; color: var(--brand-strong); background: var(--brand-soft); }
 .service-picker-option-add svg { width: 14px; height: 14px; }
-.service-picker-groups > p { margin: 28px 8px; color: var(--muted); font-size: var(--font-small); text-align: center; }
+.service-picker-groups-content > p { margin: 28px 8px; color: var(--muted); font-size: var(--font-small); text-align: center; }
 .translation-center-layout { display: grid; grid-template-columns: minmax(300px, .88fr) minmax(420px, 1.12fr); gap: 10px; height: auto; min-height: 0; }
 .translation-input-panel,
 .translation-results-panel { min-width: 0; border-radius: var(--radius-panel); }
@@ -798,7 +807,8 @@ onUnmounted(() => {
 .copy-all-button svg { width: 13px; height: 13px; }
 .copy-all-button:hover:not(:disabled) { border-color: var(--el-color-primary-light-3); background: var(--brand-soft); }
 .copy-all-button:disabled { cursor: not-allowed; color: var(--muted); }
-.translation-result-list { display: grid; gap: 0; min-height: 0; overflow-y: auto; padding: 0 3px 0 0; }
+.translation-result-list { height: auto; min-height: 0; flex: 1 1 auto; }
+.translation-result-list-content { display: grid; gap: 0; padding: 0 7px 0 0; }
 .translation-result-card { padding: 12px 0; border-bottom: 1px solid var(--line); background: transparent; cursor: grab; transition: border-color .16s ease, opacity .16s ease, transform .16s ease; }
 .translation-result-card:active { cursor: grabbing; }
 .translation-result-card.is-dragging { opacity: .5; transform: scale(.985); }
@@ -844,7 +854,7 @@ onUnmounted(() => {
 }
 
 @media (max-width: 900px) {
-  .translation-center { height: auto; max-height: 100%; grid-template-rows: none; overflow-y: auto; }
+  .translation-center { height: auto; min-height: 100%; max-height: none; grid-template-rows: none; }
   .translation-center-layout { grid-template-columns: 1fr; height: auto; }
   .translation-input-panel { min-height: 300px; }
   .translation-results-panel { min-height: 320px; }

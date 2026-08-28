@@ -7,70 +7,72 @@
     :data-presentation-mode="presentation.mode"
   >
     <div class="catalog-layout">
-      <aside class="service-rail" aria-label="翻译服务列表">
-        <div class="catalog-search-row">
-          <label class="catalog-search">
-            <Search :size="16" :stroke-width="1.8" aria-hidden="true" focusable="false" />
-            <input v-model.trim="serviceQuery" type="search" placeholder="搜索翻译服务" />
-          </label>
-          <button
-            type="button"
-            class="catalog-add-button"
-            aria-label="添加翻译服务"
-            title="添加翻译服务"
-            @click="$emit('add')"
-          >
-            <Plus :size="18" :stroke-width="2" aria-hidden="true" focusable="false" />
-          </button>
-        </div>
-
-        <div v-if="filteredGroups.length" class="service-groups">
-          <section v-for="group in filteredGroups" :key="group.id" class="service-group">
-            <div class="group-heading">
-              <strong>{{ group.label }}</strong>
-              <span>{{ group.items.length }} 项</span>
-            </div>
-            <div
-              v-for="item in group.items"
-              :key="item.value"
-              class="service-item"
-              :data-service-value="item.value"
-              :data-service-enabled="serviceEnabled(item) ? 'true' : 'false'"
-              :class="{
-                active: service === item.value,
-                'is-disabled': !serviceEnabled(item),
-              }"
+      <el-scrollbar class="service-rail" tag="aside" aria-label="翻译服务列表">
+        <div class="service-rail-content">
+          <div class="catalog-search-row">
+            <label class="catalog-search">
+              <Search :size="16" :stroke-width="1.8" aria-hidden="true" focusable="false" />
+              <input v-model.trim="serviceQuery" type="search" placeholder="搜索翻译服务" />
+            </label>
+            <button
+              type="button"
+              class="catalog-add-button"
+              aria-label="添加翻译服务"
+              title="添加翻译服务"
+              @click="$emit('add')"
             >
-              <button
-                type="button"
-                class="service-select"
-                :aria-pressed="service === item.value"
-                @click="$emit('update:service', item.value)"
+              <Plus :size="18" :stroke-width="2" aria-hidden="true" focusable="false" />
+            </button>
+          </div>
+
+          <div v-if="filteredGroups.length" class="service-groups">
+            <section v-for="group in filteredGroups" :key="group.id" class="service-group">
+              <div class="group-heading">
+                <strong>{{ group.label }}</strong>
+                <span>{{ group.items.length }} 项</span>
+              </div>
+              <div
+                v-for="item in group.items"
+                :key="item.value"
+                class="service-item"
+                :data-service-value="item.value"
+                :data-service-enabled="serviceEnabled(item) ? 'true' : 'false'"
+                :class="{
+                  active: service === item.value,
+                  'is-disabled': !serviceEnabled(item),
+                }"
               >
-                <ServiceIcon :service="serviceProvider(item)" :label="item.label" />
-                <span class="service-copy">
-                  <strong>{{ item.label }}</strong>
-                  <span v-if="serviceModelId(item) || defaultService === item.value" class="service-meta">
-                    <small v-if="serviceModelId(item)" :title="serviceModelId(item)">{{ serviceModelId(item) }}</small>
-                    <small v-if="defaultService === item.value" class="default-service-label">默认</small>
+                <button
+                  type="button"
+                  class="service-select"
+                  :aria-pressed="service === item.value"
+                  @click="$emit('update:service', item.value)"
+                >
+                  <ServiceIcon :service="serviceProvider(item)" :label="item.label" />
+                  <span class="service-copy">
+                    <strong>{{ item.label }}</strong>
+                    <span v-if="serviceModelId(item) || defaultService === item.value" class="service-meta">
+                      <small v-if="serviceModelId(item)" :title="serviceModelId(item)">{{ serviceModelId(item) }}</small>
+                      <small v-if="defaultService === item.value" class="default-service-label">默认</small>
+                    </span>
                   </span>
+                </button>
+                <span class="service-row-actions">
+                  <el-switch
+                    class="service-enabled-switch"
+                    size="small"
+                    :model-value="serviceEnabled(item)"
+                    :aria-label="`${serviceEnabled(item) ? '禁用' : '启用'}${item.label}`"
+                    @click.stop
+                    @update:model-value="updateServiceEnabled(item, $event)"
+                  />
                 </span>
-              </button>
-              <span class="service-row-actions">
-                <el-switch
-                  class="service-enabled-switch"
-                  size="small"
-                  :model-value="serviceEnabled(item)"
-                  :aria-label="`${serviceEnabled(item) ? '禁用' : '启用'}${item.label}`"
-                  @click.stop
-                  @update:model-value="updateServiceEnabled(item, $event)"
-                />
-              </span>
-            </div>
-          </section>
+              </div>
+            </section>
+          </div>
+          <p v-else class="catalog-empty">没有匹配的翻译服务</p>
         </div>
-        <p v-else class="catalog-empty">没有匹配的翻译服务</p>
-      </aside>
+      </el-scrollbar>
 
       <section class="service-detail" aria-label="当前翻译服务详情">
         <div class="detail-hero">
@@ -95,13 +97,14 @@
           </div>
         </div>
 
-        <div
+        <el-scrollbar
           v-if="presentation.showConnectionConfiguration"
           class="service-configuration-slot"
+          tag="section"
           aria-label="当前服务配置"
         >
           <slot name="configuration" />
-        </div>
+        </el-scrollbar>
         <div v-else class="service-action-host">
           <slot name="configuration" />
         </div>
@@ -140,6 +143,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { ElScrollbar } from 'element-plus'
 import { CircleCheck, CircleX, Plus, Search, Trash2 } from '@lucide/vue'
 import ServiceIcon from '@/src/ui/components/ServiceIcon.vue'
 import {
@@ -196,7 +200,8 @@ function updateServiceEnabled(item: TranslationServiceOption, value: boolean | s
 <style scoped>
 .service-catalog { display: flex; height: clamp(520px, calc(100vh - 270px), 760px); min-height: 520px; margin: 0; border: 1px solid var(--line); border-radius: var(--radius-panel); overflow: hidden; background: var(--surface); flex-direction: column; }
 .catalog-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); min-height: 0; flex: 1; overflow: hidden; }
-.service-rail { min-height: 0; padding: 12px 10px 14px; border-right: 1px solid var(--line); background: var(--surface-soft); overflow-y: auto; }
+.service-rail { height: auto; min-height: 0; border-right: 1px solid var(--line); background: var(--surface-soft); }
+.service-rail-content { min-height: 100%; padding: 12px 10px 14px; }
 .catalog-search-row { display: grid; grid-template-columns: minmax(0, 1fr) var(--control-height); gap: 8px; }
 .catalog-search { display: flex; align-items: center; gap: 8px; height: var(--control-height); padding: 0 10px; border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--surface); box-sizing: border-box; }
 .catalog-search > svg { flex: 0 0 auto; color: var(--muted); }
@@ -232,7 +237,7 @@ function updateServiceEnabled(item: TranslationServiceOption, value: boolean | s
 .service-remove-button:hover { border-color: var(--danger); color: var(--on-brand); background: var(--danger); }
 .detail-hero h4 { min-width: 0; margin: 0; overflow: hidden; color: var(--ink); font-size: var(--font-title); text-overflow: ellipsis; white-space: nowrap; }
 .detail-hero-copy small { overflow: hidden; margin-top: 4px; color: var(--muted); font-size: var(--font-small); text-overflow: ellipsis; white-space: nowrap; }
-.service-configuration-slot { min-height: 0; margin-top: 16px; overflow-y: auto; flex: 1; }
+.service-configuration-slot { height: auto; min-height: 0; margin-top: 16px; flex: 1; }
 .service-action-host { display: contents; }
 .service-ready-state { display: grid; width: 100%; min-height: 220px; flex: 1; place-items: center; }
 .service-ready-content { display: flex; align-items: center; justify-content: center; gap: 14px; max-width: 460px; padding: 24px; flex-direction: column; text-align: center; }
@@ -254,7 +259,7 @@ function updateServiceEnabled(item: TranslationServiceOption, value: boolean | s
   .service-detail { padding: 16px; }
   .service-detail { min-height: 520px; margin: 0; padding: 18px; border: 0; border-radius: 0; overflow: visible; }
   .detail-hero { flex-wrap: wrap; }
-  .service-configuration-slot { max-height: none; overflow: visible; }
+  .service-configuration-slot { max-height: none; }
   .service-ready-state { min-height: 0; }
 }
 </style>

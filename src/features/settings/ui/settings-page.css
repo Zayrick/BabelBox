@@ -39,7 +39,8 @@ input[type="checkbox"]:focus-visible {
 .brand strong { font-size: var(--font-subtitle); }
 .brand small { margin-top: 2px; color: var(--muted); font-size: var(--font-caption); }
 
-.sidebar nav { display: grid; gap: 16px; overflow-y: auto; padding: 0 0 12px; }
+.sidebar-navigation { height: auto; min-height: 0; flex: 1 1 auto; }
+.sidebar-navigation-view { display: grid; gap: 16px; padding: 0 0 12px; }
 .nav-group { display: grid; gap: 2px; }
 .nav-group-label { padding: 0 9px 4px; color: var(--muted); font-size: var(--font-caption); font-weight: var(--weight-semibold); letter-spacing: .08em; }
 .sidebar nav button {
@@ -121,29 +122,28 @@ h1 { margin: 0; font-size: var(--font-display); line-height: var(--line-height-t
 
 .settings-card {
   width: 100%;
+  height: auto;
   min-height: 0;
   flex: 1 1 auto;
-  overflow: auto;
-  scrollbar-gutter: stable;
 }
-.settings-card.services-view,
-.settings-card.translation-center-view { display: flex; flex-direction: column; overflow: hidden; }
-.settings-card.services-view > .settings-main-sections { display: flex; min-height: 0; flex: 1 1 auto; flex-direction: column; }
+.settings-card.services-view .settings-card-view,
+.settings-card.translation-center-view .settings-card-view { display: flex; height: 100%; min-height: 0; flex-direction: column; }
+.settings-card.services-view .settings-card-view > .settings-main-sections { display: flex; min-height: 0; flex: 1 1 auto; flex-direction: column; }
 .settings-card.services-view #settings-services { display: flex !important; min-height: 0; flex: 1 1 auto; flex-direction: column; }
 .settings-card.services-view .service-catalog { height: 100%; min-height: 0 !important; margin: 0; flex: 1 1 auto; }
 .settings-card.services-view .service-catalog .catalog-layout { min-height: 0; overflow: hidden; }
 .settings-card.services-view .service-configuration-slot .service-connection-section { margin-top: 0; padding-top: 0; border-top: 0; }
 .settings-card.services-view .service-configuration-slot .subsection-heading { margin-right: 0; margin-left: 0; }
 .settings-card.services-view .service-configuration-slot .el-row { margin-right: 0 !important; margin-left: 0 !important; }
-.settings-card.translation-center-view > .settings-main-sections { display: none !important; }
-.settings-card.translation-center-view > #settings-translation-center {
+.settings-card.translation-center-view .settings-card-view > .settings-main-sections { display: none !important; }
+.settings-card.translation-center-view .settings-card-view > #settings-translation-center {
   display: flex !important;
   min-height: 0;
   height: 100%;
   flex: 1 1 auto;
   overflow: hidden;
 }
-.settings-card.translation-center-view .translation-center { width: 100%; height: 100%; max-height: none; overflow: hidden; }
+.settings-card.translation-center-view .translation-center-scrollbar { width: 100%; height: 100%; max-height: none; }
 
 .settings-card .settings-list-section,
 .settings-card .settings-data-section {
@@ -292,7 +292,7 @@ h1 { margin: 0; font-size: var(--font-display); line-height: var(--line-height-t
 }
 
 @media (max-width: 900px) {
-  .settings-card.translation-center-view .translation-center { height: auto; max-height: 100%; overflow-y: auto; }
+  .settings-card.translation-center-view .translation-center-scrollbar { height: 100%; max-height: 100%; }
 }
 
 @media (max-width: 700px) {
@@ -308,7 +308,8 @@ h1 { margin: 0; font-size: var(--font-display); line-height: var(--line-height-t
   .brand { gap: 9px; padding: 0 4px 12px; }
   .brand img { width: 36px; height: 36px; }
   .brand strong { font-size: var(--font-subtitle); }
-  .sidebar nav { display: flex; gap: 7px; padding-bottom: 2px; overflow-x: auto; overflow-y: hidden; }
+  .sidebar-navigation { width: 100%; flex: 0 0 auto; }
+  .sidebar-navigation-view { display: flex; width: max-content; min-width: 100%; gap: 7px; padding-bottom: 2px; }
   .nav-group { display: flex; flex: 0 0 auto; gap: 4px; }
   .nav-group-label { display: none; }
   .sidebar nav button { width: auto; min-width: max-content; grid-template-columns: 26px auto; padding: 5px 9px 5px 6px; }
@@ -319,9 +320,9 @@ h1 { margin: 0; font-size: var(--font-display); line-height: var(--line-height-t
   .search-box { width: 100%; }
   .settings-card.services-view .service-catalog { height: 100%; min-height: 0 !important; flex: 1 1 auto; }
   .settings-card.services-view .service-catalog .catalog-layout { display: flex; min-height: 0; flex: 1 1 auto; flex-direction: column; overflow: hidden; }
-  .settings-card.services-view .service-catalog .service-rail { min-height: 0; max-height: 190px; flex: 0 0 190px; overflow-y: auto; }
+  .settings-card.services-view .service-catalog .service-rail { min-height: 0; max-height: 190px; flex: 0 0 190px; }
   .settings-card.services-view .service-catalog .service-detail { min-height: 0; flex: 1 1 auto; overflow: hidden; }
-  .settings-card.services-view .service-catalog .service-configuration-slot { max-height: none; overflow-y: auto; }
+  .settings-card.services-view .service-catalog .service-configuration-slot { max-height: none; }
 }
 
 @media (max-width: 600px) {

@@ -26,83 +26,85 @@
           </button>
         </header>
 
-        <div class="dialog-body">
-          <section class="recording-card" :class="{ 'is-recording': isRecording }">
-            <div class="section-heading">
-              <div>
-                <h3>按下你想使用的快捷键</h3>
+        <el-scrollbar class="dialog-body-scrollbar">
+          <div class="dialog-body">
+            <section class="recording-card" :class="{ 'is-recording': isRecording }">
+              <div class="section-heading">
+                <div>
+                  <h3>按下你想使用的快捷键</h3>
+                </div>
+                <span class="state-badge" :class="{ active: isRecording, ready: !!currentHotkey && !isRecording }">
+                  {{ isRecording ? '录制中' : currentHotkey ? '已设置' : '待设置' }}
+                </span>
               </div>
-              <span class="state-badge" :class="{ active: isRecording, ready: !!currentHotkey && !isRecording }">
-                {{ isRecording ? '录制中' : currentHotkey ? '已设置' : '待设置' }}
-              </span>
-            </div>
 
-            <button
-              ref="inputField"
-              type="button"
-              class="hotkey-input-field"
-              :class="{
-                recording: isRecording,
-                error: !!errorMessage,
-                warning: !!conflictWarning,
-                success: isValidHotkey
-              }"
-              :aria-label="isRecording ? '正在录制快捷键，请按下组合键' : currentHotkey ? `当前快捷键为 ${displayHotkey}` : '点击开始录制快捷键'"
-              @click="startRecording"
-              @keydown="handleKeyDown"
-              @keyup="handleKeyUp"
-            >
-              <span v-if="!isRecording && !currentHotkey" class="placeholder">
-                点击后按下快捷键组合
-              </span>
-              <span v-else-if="isRecording" class="recording-text">
-                <el-icon class="recording-icon"><Loading /></el-icon>
-                正在录制，请按下快捷键…
-              </span>
-              <span v-else class="hotkey-display">
-                <kbd>{{ displayHotkey }}</kbd>
-              </span>
-            </button>
-          </section>
-
-          <div
-            v-if="errorMessage || conflictWarning || isValidHotkey"
-            class="hotkey-status"
-            :class="{ error: !!errorMessage, warning: !!conflictWarning && !errorMessage, success: isValidHotkey }"
-            :role="errorMessage ? 'alert' : 'status'"
-            aria-live="polite"
-          >
-            <el-icon v-if="errorMessage"><WarningFilled /></el-icon>
-            <el-icon v-else-if="conflictWarning"><Warning /></el-icon>
-            <el-icon v-else><CircleCheckFilled /></el-icon>
-            <span>{{ errorMessage || conflictWarning || '快捷键有效，可以使用' }}</span>
-          </div>
-
-          <section class="preset-section">
-            <div class="section-heading preset-heading">
-              <div>
-                <h3>推荐快捷键</h3>
-              </div>
-              <span class="section-note">也可以直接录制</span>
-            </div>
-            <div class="preset-buttons">
               <button
-                v-for="preset in recommendedHotkeys"
-                :key="preset.value"
+                ref="inputField"
                 type="button"
-                class="preset-button"
-                :class="{ selected: currentHotkey === preset.value }"
-                :aria-label="preset.label"
-                :aria-pressed="currentHotkey === preset.value"
-                @click="selectPreset(preset.value)"
+                class="hotkey-input-field"
+                :class="{
+                  recording: isRecording,
+                  error: !!errorMessage,
+                  warning: !!conflictWarning,
+                  success: isValidHotkey
+                }"
+                :aria-label="isRecording ? '正在录制快捷键，请按下组合键' : currentHotkey ? `当前快捷键为 ${displayHotkey}` : '点击开始录制快捷键'"
+                @click="startRecording"
+                @keydown="handleKeyDown"
+                @keyup="handleKeyUp"
               >
-                <span class="preset-label">{{ currentHotkey === preset.value ? '当前选择' : '使用' }}</span>
-                <kbd>{{ preset.label }}</kbd>
+                <span v-if="!isRecording && !currentHotkey" class="placeholder">
+                  点击后按下快捷键组合
+                </span>
+                <span v-else-if="isRecording" class="recording-text">
+                  <el-icon class="recording-icon"><Loading /></el-icon>
+                  正在录制，请按下快捷键…
+                </span>
+                <span v-else class="hotkey-display">
+                  <kbd>{{ displayHotkey }}</kbd>
+                </span>
               </button>
-            </div>
-          </section>
+            </section>
 
-        </div>
+            <div
+              v-if="errorMessage || conflictWarning || isValidHotkey"
+              class="hotkey-status"
+              :class="{ error: !!errorMessage, warning: !!conflictWarning && !errorMessage, success: isValidHotkey }"
+              :role="errorMessage ? 'alert' : 'status'"
+              aria-live="polite"
+            >
+              <el-icon v-if="errorMessage"><WarningFilled /></el-icon>
+              <el-icon v-else-if="conflictWarning"><Warning /></el-icon>
+              <el-icon v-else><CircleCheckFilled /></el-icon>
+              <span>{{ errorMessage || conflictWarning || '快捷键有效，可以使用' }}</span>
+            </div>
+
+            <section class="preset-section">
+              <div class="section-heading preset-heading">
+                <div>
+                  <h3>推荐快捷键</h3>
+                </div>
+                <span class="section-note">也可以直接录制</span>
+              </div>
+              <div class="preset-buttons">
+                <button
+                  v-for="preset in recommendedHotkeys"
+                  :key="preset.value"
+                  type="button"
+                  class="preset-button"
+                  :class="{ selected: currentHotkey === preset.value }"
+                  :aria-label="preset.label"
+                  :aria-pressed="currentHotkey === preset.value"
+                  @click="selectPreset(preset.value)"
+                >
+                  <span class="preset-label">{{ currentHotkey === preset.value ? '当前选择' : '使用' }}</span>
+                  <kbd>{{ preset.label }}</kbd>
+                </button>
+              </div>
+            </section>
+
+          </div>
+        </el-scrollbar>
 
         <footer class="dialog-footer">
           <button v-if="currentHotkey" class="clear-button" type="button" @click="clearHotkey"><Trash2 aria-hidden="true" />清除快捷键</button>
@@ -118,7 +120,7 @@
 
 <script setup lang="ts" name="CustomHotkeyInput">
 import { ref, computed, nextTick, watch } from 'vue';
-import { ElIcon } from 'element-plus';
+import { ElIcon, ElScrollbar } from 'element-plus';
 import {
   CircleAlert as WarningFilled,
   CircleCheck as CircleCheckFilled,
@@ -375,7 +377,7 @@ function handleCancel() {
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow-y: auto;
+  overflow: hidden;
   padding: 20px;
   background: var(--mask);
   font-family: inherit;
@@ -457,12 +459,16 @@ function handleCancel() {
   background: var(--brand-soft);
 }
 
+.dialog-body-scrollbar {
+  height: auto;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
 .dialog-body {
   display: grid;
   gap: 14px;
-  min-height: 0;
   padding: 18px 22px;
-  overflow-y: auto;
 }
 
 .recording-card {

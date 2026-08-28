@@ -39,7 +39,14 @@
       <template v-else>支持粘贴完整 URL；端口、路径和参数不会进入规则。</template>
     </p>
 
-    <div v-if="domains.length" class="site-rules-list" role="list" :aria-label="labels.listLabel">
+    <el-scrollbar
+      v-if="domains.length"
+      class="site-rules-list"
+      max-height="360px"
+      tag="div"
+      role="list"
+      :aria-label="labels.listLabel"
+    >
       <article
         v-for="domain in domains"
         :key="domain"
@@ -54,7 +61,7 @@
           删除
         </button>
       </article>
-    </div>
+    </el-scrollbar>
 
     <div v-else class="site-rules-empty" data-site-rules-empty>
       <component :is="emptyIcon" :size="24" :stroke-width="1.7" aria-hidden="true" focusable="false" />
@@ -66,6 +73,7 @@
 
 <script lang="ts" setup>
 import { computed, nextTick, ref } from 'vue';
+import { ElScrollbar } from 'element-plus';
 import { Globe, ShieldCheck } from '@lucide/vue';
 import { getSiteBaseDomain } from '@/src/core/site-rules/domain';
 
@@ -285,12 +293,10 @@ function removeDomain(domain: string) {
 }
 
 .site-rules-list {
-  max-height: 360px;
+  height: auto;
   margin-top: 14px;
-  overflow-y: auto;
   border: 1px solid var(--line);
   border-radius: var(--radius-control);
-  scrollbar-width: thin;
 }
 
 .site-rule-item {
