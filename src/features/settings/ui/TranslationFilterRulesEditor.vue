@@ -2,8 +2,8 @@
   <div class="translation-filter-rule-editor" :class="{ compact: props.compact }">
     <div class="translation-filter-rule-heading">
       <div>
-        <strong>CSS 过滤规则</strong>
-        <small>从上到下匹配；网站规则优先，同一范围内越靠前的规则优先。</small>
+        <strong>CSS 规则</strong>
+        <small v-if="rules.length > 1">从上到下匹配，靠前优先。</small>
       </div>
       <button class="filter-rule-add-trigger" type="button" @click="startAdding">
         <Plus aria-hidden="true" />添加规则
@@ -65,7 +65,7 @@
 
     <div v-else-if="editingIndex !== -1" class="translation-filter-rule-empty">
       <ListFilter :size="22" :stroke-width="1.7" aria-hidden="true" />
-      <span><strong>当前没有额外规则</strong><small>{{ props.emptyDescription }}</small></span>
+      <span><strong>暂无规则</strong><small>{{ props.emptyDescription }}</small></span>
     </div>
 
     <p class="filter-rule-sort-status" aria-live="polite">{{ sortAnnouncement }}</p>
@@ -108,7 +108,7 @@ const props = withDefaults(defineProps<{
 }>(), {
   modelValue: () => [],
   compact: false,
-  emptyDescription: '添加 CSS 选择器后，命中的内容会按指定方式处理。',
+  emptyDescription: '使用 CSS 选择器匹配网页内容。',
 });
 
 const emit = defineEmits<{

@@ -3,25 +3,29 @@
     <header class="translation-filter-settings-heading">
       <div>
         <h3 id="translation-filter-title">内容过滤</h3>
-        <p>控制哪些网页 DOM 不翻译或强制翻译。内置规则只是默认值，可以编辑、删除或恢复。</p>
+        <p>设置网页内容的翻译范围。</p>
       </div>
       <button class="translation-filter-reset" type="button" @click="resetDefaults">
         <RotateCcw aria-hidden="true" />恢复默认
       </button>
     </header>
 
+    <p class="translation-filter-boundary-note">
+      <Info aria-hidden="true" />
+      <span>父级已设为“不翻译”时，子级的“强制翻译”不会生效。</span>
+    </p>
+
     <section class="translation-filter-scope" aria-labelledby="global-filter-title">
       <div class="translation-filter-scope-heading">
         <div>
           <strong id="global-filter-title">全局规则</strong>
-          <small>应用到所有网页；网站规则命中同一元素时优先。</small>
         </div>
         <span>{{ filterConfig.global.rules.length }} 条规则</span>
       </div>
 
       <div class="translation-filter-toggles">
         <label>
-          <span><strong>跳过隐藏内容</strong><small>包括 display:none、aria-hidden 和视觉隐藏节点</small></span>
+          <span><strong>跳过隐藏内容</strong></span>
           <el-switch
             :model-value="filterConfig.global.excludeHidden"
             aria-label="跳过隐藏内容"
@@ -29,10 +33,10 @@
           />
         </label>
         <label>
-          <span><strong>跳过可编辑内容</strong><small>避免翻译输入区域、草稿与在线编辑器</small></span>
+          <span><strong>跳过编辑区域</strong></span>
           <el-switch
             :model-value="filterConfig.global.excludeEditable"
-            aria-label="跳过可编辑内容"
+            aria-label="跳过编辑区域"
             @change="updateGlobalOption('excludeEditable', Boolean($event))"
           />
         </label>
@@ -40,7 +44,7 @@
 
       <TranslationFilterRulesEditor
         :model-value="filterConfig.global.rules"
-        empty-description="没有全局 CSS 规则时，只保留上面的隐藏与可编辑内容开关。"
+        empty-description="未添加规则时，仅使用上方开关。"
         @update:model-value="updateGlobalRules"
       />
     </section>
@@ -49,7 +53,7 @@
       <div class="translation-filter-scope-heading">
         <div>
           <strong id="site-filter-title">网站规则</strong>
-          <small>按主域名生效，并覆盖同一元素命中的全局规则。</small>
+          <small>同一元素上优先于全局规则，并应用到所有子域。</small>
         </div>
         <span>{{ filterConfig.sites.length }} 个网站</span>
       </div>
@@ -69,7 +73,6 @@
         <button type="submit">添加网站</button>
       </form>
       <p v-if="siteError" class="translation-filter-site-error" role="alert">{{ siteError }}</p>
-      <p v-else class="translation-filter-site-help">网站规则只保存主域名，并对其所有子域生效。</p>
 
       <div v-if="filterConfig.sites.length" class="translation-filter-site-list">
         <details v-for="site in filterConfig.sites" :key="site.domain" class="translation-filter-site-item">
@@ -88,11 +91,10 @@
             <ChevronDown aria-hidden="true" />
           </summary>
           <div class="translation-filter-site-body">
-            <p class="translation-filter-site-note">父级被全局排除时，子级的“强制翻译”不会重新打开该区域。</p>
             <TranslationFilterRulesEditor
               compact
               :model-value="site.rules"
-              empty-description="添加规则后才会覆盖此网站上的全局处理。"
+              empty-description="未添加规则时，使用全局规则。"
               @update:model-value="updateSiteRules(site.domain, $event)"
             />
           </div>
@@ -100,7 +102,7 @@
       </div>
       <div v-else class="translation-filter-site-empty">
         <Globe2 :size="24" :stroke-width="1.7" aria-hidden="true" />
-        <span><strong>还没有网站规则</strong><small>也可以从扩展弹窗为当前网站快速添加。</small></span>
+        <span><strong>暂无网站规则</strong><small>添加后可单独设置。</small></span>
       </div>
     </section>
   </section>
@@ -108,7 +110,7 @@
 
 <script lang="ts" setup>
 import {computed, ref} from 'vue';
-import {ChevronDown, Globe2, RotateCcw, Trash2} from '@lucide/vue';
+import {ChevronDown, Globe2, Info, RotateCcw, Trash2} from '@lucide/vue';
 import {ElMessageBox} from 'element-plus';
 import {getSiteBaseDomain} from '@/src/core/site-rules/domain';
 import {
@@ -217,14 +219,14 @@ async function resetDefaults() {
 .translation-filter-toggles label > span { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
 .translation-filter-toggles strong { color: var(--ink); font-size: var(--font-small); }
 .translation-filter-toggles small { color: var(--muted); font-size: var(--font-caption); line-height: var(--line-height-tight); }
+.translation-filter-boundary-note { display: flex; align-items: center; gap: 6px; margin: 12px 16px 0; padding: 8px 9px; border-radius: 7px; color: var(--muted); background: var(--surface-soft); font-size: var(--font-caption); line-height: var(--line-height-tight); }
+.translation-filter-boundary-note svg { width: 14px; height: 14px; flex: none; color: var(--brand-strong); }
 .translation-filter-site-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin-top: 12px; }
 .translation-filter-site-form input { box-sizing: border-box; width: 100%; min-height: var(--control-height); padding: 0 11px; border: 1px solid var(--line); border-radius: 8px; outline: 0; color: var(--ink); background: var(--surface); font-size: var(--font-small); }
 .translation-filter-site-form input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
 .translation-filter-site-form input[aria-invalid="true"] { border-color: var(--danger); }
 .translation-filter-site-form button { min-width: 88px; min-height: var(--control-height); padding: 0 12px; border: 0; border-radius: 8px; color: #fff; background: var(--brand); font-size: var(--font-small); font-weight: var(--weight-semibold); cursor: pointer; }
-.translation-filter-site-help, .translation-filter-site-error { min-height: 18px; margin: 6px 0 0; font-size: var(--font-caption); line-height: var(--line-height-tight); }
-.translation-filter-site-help { color: var(--muted); }
-.translation-filter-site-error { color: var(--danger); }
+.translation-filter-site-error { margin: 6px 0 0; color: var(--danger); font-size: var(--font-caption); line-height: var(--line-height-tight); }
 .translation-filter-site-list { display: grid; gap: 8px; margin-top: 10px; }
 .translation-filter-site-item { overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); }
 .translation-filter-site-item summary { display: grid; min-height: 54px; grid-template-columns: 32px minmax(0, 1fr) auto auto; align-items: center; gap: 9px; padding: 7px 10px; list-style: none; cursor: pointer; }
@@ -240,7 +242,7 @@ async function resetDefaults() {
 .translation-filter-site-item summary > svg { width: 16px; height: 16px; color: var(--muted); transition: transform 160ms ease; }
 .translation-filter-site-item[open] summary > svg { transform: rotate(180deg); }
 .translation-filter-site-body { padding: 12px; border-top: 1px solid var(--line); background: var(--surface-soft); }
-.translation-filter-site-note { margin: 0; color: var(--muted); font-size: var(--font-caption); line-height: var(--line-height-tight); }
+.translation-filter-site-body :deep(.translation-filter-rule-editor) { margin-top: 0; }
 .translation-filter-site-empty { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 12px; border: 1px dashed var(--line); border-radius: 9px; color: var(--muted); }
 .translation-filter-site-empty > span { display: flex; flex-direction: column; gap: 3px; }
 .translation-filter-site-empty strong { color: var(--ink); font-size: var(--font-small); }

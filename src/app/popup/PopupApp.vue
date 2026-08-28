@@ -502,13 +502,13 @@
 
       <div v-else-if="activeDrawer === 'filter'" class="drawer-content site-filter-drawer">
         <div class="site-filter-drawer-intro">
-          <span><strong>{{ currentSiteDomain }}</strong><small>网站规则优先于全局规则，并对所有子域生效。</small></span>
+          <span><strong>{{ currentSiteDomain }}</strong><small>优先于全局规则，并应用到所有子域。</small></span>
           <em>{{ currentSiteFilterRuleCount }} 条</em>
         </div>
         <TranslationFilterRulesEditor
           compact
           :model-value="currentSiteFilterRules"
-          empty-description="添加规则后，会优先处理当前网站中命中的内容。"
+          empty-description="未添加规则时，使用全局规则。"
           @update:model-value="setCurrentSiteFilterRules"
         />
         <button
