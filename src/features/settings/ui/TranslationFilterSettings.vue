@@ -76,15 +76,19 @@
           <summary>
             <span class="translation-filter-site-icon" aria-hidden="true"><Globe2 /></span>
             <span><strong>{{ site.domain }}</strong><small>{{ site.rules.length }} 条网站规则</small></span>
+            <button
+              class="translation-filter-site-remove"
+              type="button"
+              :aria-label="`删除 ${site.domain} 的内容过滤规则`"
+              :title="`删除 ${site.domain}`"
+              @click.stop.prevent="removeSite(site.domain)"
+            >
+              <Trash2 aria-hidden="true" />
+            </button>
             <ChevronDown aria-hidden="true" />
           </summary>
           <div class="translation-filter-site-body">
-            <div class="translation-filter-site-actions">
-              <p>父级被全局排除时，子级的“强制翻译”不会重新打开该区域。</p>
-              <button type="button" :aria-label="`删除 ${site.domain} 的内容过滤规则`" @click="removeSite(site.domain)">
-                <Trash2 aria-hidden="true" />删除网站规则
-              </button>
-            </div>
+            <p class="translation-filter-site-note">父级被全局排除时，子级的“强制翻译”不会重新打开该区域。</p>
             <TranslationFilterRulesEditor
               compact
               :model-value="site.rules"
@@ -223,21 +227,20 @@ async function resetDefaults() {
 .translation-filter-site-error { color: var(--danger); }
 .translation-filter-site-list { display: grid; gap: 8px; margin-top: 10px; }
 .translation-filter-site-item { overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); }
-.translation-filter-site-item summary { display: grid; min-height: 54px; grid-template-columns: 32px minmax(0, 1fr) auto; align-items: center; gap: 9px; padding: 7px 10px; list-style: none; cursor: pointer; }
+.translation-filter-site-item summary { display: grid; min-height: 54px; grid-template-columns: 32px minmax(0, 1fr) auto auto; align-items: center; gap: 9px; padding: 7px 10px; list-style: none; cursor: pointer; }
 .translation-filter-site-item summary::-webkit-details-marker { display: none; }
 .translation-filter-site-icon { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 8px; color: var(--brand-strong); background: var(--brand-soft); }
 .translation-filter-site-icon svg { width: 16px; height: 16px; }
 .translation-filter-site-item summary > span:nth-child(2) { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
 .translation-filter-site-item summary strong { overflow: hidden; color: var(--ink); font-size: var(--font-small); text-overflow: ellipsis; white-space: nowrap; }
 .translation-filter-site-item summary small { color: var(--muted); font-size: var(--font-caption); }
+.translation-filter-site-remove { display: grid; width: 30px; height: 30px; margin-right: -4px; padding: 0; place-items: center; border: 0; border-radius: 7px; color: var(--muted); background: transparent; cursor: pointer; }
+.translation-filter-site-remove:hover, .translation-filter-site-remove:focus-visible { color: var(--danger); background: var(--danger-soft); }
+.translation-filter-site-remove svg { width: 14px; height: 14px; }
 .translation-filter-site-item summary > svg { width: 16px; height: 16px; color: var(--muted); transition: transform 160ms ease; }
 .translation-filter-site-item[open] summary > svg { transform: rotate(180deg); }
 .translation-filter-site-body { padding: 12px; border-top: 1px solid var(--line); background: var(--surface-soft); }
-.translation-filter-site-actions { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.translation-filter-site-actions p { margin: 0; color: var(--muted); font-size: var(--font-caption); line-height: var(--line-height-tight); }
-.translation-filter-site-actions button { display: inline-flex; min-height: 28px; flex: none; align-items: center; gap: 4px; padding: 0 7px; border: 0; border-radius: 7px; color: var(--danger); background: transparent; font-size: var(--font-caption); cursor: pointer; }
-.translation-filter-site-actions button:hover { background: var(--danger-soft); }
-.translation-filter-site-actions svg { width: 13px; height: 13px; }
+.translation-filter-site-note { margin: 0; color: var(--muted); font-size: var(--font-caption); line-height: var(--line-height-tight); }
 .translation-filter-site-empty { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 12px; border: 1px dashed var(--line); border-radius: 9px; color: var(--muted); }
 .translation-filter-site-empty > span { display: flex; flex-direction: column; gap: 3px; }
 .translation-filter-site-empty strong { color: var(--ink); font-size: var(--font-small); }

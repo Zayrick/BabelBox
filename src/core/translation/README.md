@@ -19,9 +19,9 @@ outside the directory import `public.ts`; WXT treats a directory-level
 
 ## Decision model
 
-Global and site filters use ordered CSS rules with `exclude` or `include`
-actions. A matching site rule wins on the same element, then the global rule
-list and hidden/editable switches apply. A child include cannot reopen an
+Global and site filters use top-to-bottom, first-match CSS rules with `exclude`
+or `include` actions. A matching site rule wins on the same element, then the
+global rule list and hidden/editable switches apply. A child include cannot reopen an
 excluded ancestor. Scripts/styles, form inputs, code, `translate=no`, SVG/math,
 and the supported-site selectors are stored as editable defaults rather than
 engine constants. Only FluentRead-owned DOM and the composed-ancestor depth cap

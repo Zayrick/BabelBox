@@ -64,7 +64,7 @@ describe('translation filter configuration', () => {
         }).translationFilter).toEqual(emptyFilters());
     });
 
-    it('normalizes domains and keeps the last action for an exact selector', () => {
+    it('normalizes domains and keeps the first action for an exact selector', () => {
         const normalized = normalizeTranslationFilterConfig({
             global: {
                 excludeHidden: true,
@@ -83,9 +83,8 @@ describe('translation filter configuration', () => {
         });
 
         expect(normalized.global.rules).toEqual([{
-            action: 'include',
+            action: 'exclude',
             selector: '.duplicate',
-            label: 'Latest',
         }]);
         expect(normalized.sites).toEqual([{domain: 'example.com', rules: []}]);
         expect(normalizeTranslationFilterRules('invalid')).toEqual([]);
@@ -124,7 +123,7 @@ describe('translation filter configuration', () => {
 });
 
 describe('translation filter policy', () => {
-    it('persists reordered rules and gives the later matching rule priority', () => {
+    it('persists reordered rules and gives the earlier matching rule priority', () => {
         const document = documentWith('<button class="target">Channel category</button>');
         const rules = [
             {action: 'exclude' as const, selector: '.target', label: 'Exclude target'},
@@ -135,7 +134,7 @@ describe('translation filter policy', () => {
         expect(createTranslationFilterPolicy({
             ...emptyFilters(),
             global: {...emptyFilters().global, rules},
-        }).evaluateElement(target).action).toBe('include');
+        }).evaluateElement(target).action).toBe('exclude');
 
         const reordered = reorderTranslationFilterRules(rules, 1, 0);
         const restored = normalizeTranslationFilterConfig(JSON.parse(JSON.stringify({
@@ -144,7 +143,7 @@ describe('translation filter policy', () => {
         })));
 
         expect(reordered.map((rule) => rule.label)).toEqual(['Include buttons', 'Exclude target']);
-        expect(createTranslationFilterPolicy(restored).evaluateElement(target).action).toBe('exclude');
+        expect(createTranslationFilterPolicy(restored).evaluateElement(target).action).toBe('include');
     });
 
     it('invalidates the shared URL core when runtime filter configuration changes', () => {

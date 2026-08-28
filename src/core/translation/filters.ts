@@ -302,16 +302,16 @@ export function normalizeTranslationFilterRules(
 ): TranslationFilterRule[] {
     if (!Array.isArray(value)) return fallback.map(cloneRule);
 
-    // A later rule wins when selectors overlap. Keep the last occurrence of an
-    // exact selector so changing its action cannot leave a hidden stale rule.
+    // Rules are evaluated from top to bottom. Keep the first occurrence of an
+    // exact selector so normalization preserves the visible priority order.
     const rules: TranslationFilterRule[] = [];
     const seen = new Set<string>();
-    const candidates = value.slice(-MAX_TRANSLATION_FILTER_RULES);
-    for (let index = candidates.length - 1; index >= 0; index -= 1) {
-        const rule = normalizeRule(candidates[index]);
+    const candidates = value.slice(0, MAX_TRANSLATION_FILTER_RULES);
+    for (const candidate of candidates) {
+        const rule = normalizeRule(candidate);
         if (!rule || seen.has(rule.selector)) continue;
         seen.add(rule.selector);
-        rules.unshift(rule);
+        rules.push(rule);
     }
     return rules;
 }
@@ -438,8 +438,7 @@ function matchingRuleDecision(
     rules: readonly TranslationFilterRule[],
     scope: 'global' | 'site',
 ): TranslationFilterDecision {
-    for (let index = rules.length - 1; index >= 0; index -= 1) {
-        const rule = rules[index]!;
+    for (const rule of rules) {
         if (!safeMatches(element, rule.selector)) continue;
         return {
             action: rule.action,

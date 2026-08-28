@@ -3,7 +3,7 @@
     <div class="translation-filter-rule-heading">
       <div>
         <strong>CSS 过滤规则</strong>
-        <small>拖动调整顺序；网站规则优先，同一范围内越靠后的规则优先。</small>
+        <small>从上到下匹配；网站规则优先，同一范围内越靠前的规则优先。</small>
       </div>
       <button class="filter-rule-add-trigger" type="button" @click="startAdding">
         <Plus aria-hidden="true" />添加规则
@@ -192,7 +192,7 @@ function saveDraft() {
   };
   const nextRules = [...rules.value];
   if (currentIndex >= 0) nextRules.splice(currentIndex, 1, nextRule);
-  else nextRules.push(nextRule);
+  else nextRules.unshift(nextRule);
   rules.value = normalizeTranslationFilterRules(nextRules);
   cancelDraft();
 }
@@ -208,7 +208,7 @@ function reorderRule(fromSelector: string, targetIndex: number) {
   const movedRule = rules.value[fromIndex];
   if (!movedRule) return;
   rules.value = reorderTranslationFilterRules(rules.value, fromIndex, targetIndex);
-  sortAnnouncement.value = `${movedRule.label || movedRule.selector} 已移到第 ${targetIndex + 1} 项，越靠后的规则优先。`;
+  sortAnnouncement.value = `${movedRule.label || movedRule.selector} 已移到第 ${targetIndex + 1} 项，越靠前的规则优先。`;
 }
 
 function moveRule(selector: string, offset: number) {
