@@ -427,7 +427,7 @@ export const options = {
         {value: services.microsoft, label: "微软翻译"},
         {value: services.google, label: "谷歌翻译"},
         {value: services.deepL, label: "DeepL"},
-        {value: services.deeplx, label: "DeepLX（免费非官方）"},
+        {value: services.deeplx, label: "DeepLX"},
         {value: services.xiaoniu, label: "小牛翻译"},
         {value: services.youdao, label: "有道翻译"},
         {value: services.tencent, label: "腾讯云翻译"},

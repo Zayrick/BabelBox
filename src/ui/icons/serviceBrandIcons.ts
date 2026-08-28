@@ -1,4 +1,4 @@
-import {hex as microsoftHex, svg as microsoftSvg} from 'thesvg/azure-translator-text'
+import {hex as microsoftHex, svg as microsoftSvg} from 'thesvg/microsoft'
 import {hex as googleHex, svg as googleSvg} from 'thesvg/google-translate'
 import {hex as deepLHex, svg as deepLSvg} from 'thesvg/deepl'
 import {hex as tencentHex, svg as tencentSvg} from 'thesvg/tencentcloud'
@@ -54,10 +54,13 @@ function createBrandIcon(slug: string, svg: string, hex: string): ServiceBrandIc
   })
 }
 
+const deepLBrandIcon = createBrandIcon('deepl', deepLSvg, deepLHex)
+
 export const serviceBrandIcons: Readonly<Record<string, ServiceBrandIcon>> = Object.freeze({
-  microsoft: createBrandIcon('azure-translator-text', microsoftSvg, microsoftHex),
+  microsoft: createBrandIcon('microsoft', microsoftSvg, microsoftHex),
   google: createBrandIcon('google-translate', googleSvg, googleHex),
-  deepL: createBrandIcon('deepl', deepLSvg, deepLHex),
+  deepL: deepLBrandIcon,
+  deeplx: deepLBrandIcon,
   tencent: createBrandIcon('tencentcloud', tencentSvg, tencentHex),
   chromeTranslator: createBrandIcon('chrome', chromeSvg, chromeHex),
   openai: createBrandIcon('openai', resolveVariant(openaiVariants, 'light', 'openai'), openaiHex),
@@ -96,7 +99,6 @@ export type ServiceFallbackIconKey = 'languages' | 'server' | 'custom' | 'unknow
 /** TheSVG 3.3.1 中没有准确品牌资源的服务使用语义图标，不再回退为文字缩写。 */
 export const serviceFallbackIconKeys: Readonly<Record<string, ServiceFallbackIconKey>> = Object.freeze({
   freeTranslation: 'languages',
-  deeplx: 'server',
   xiaoniu: 'languages',
   youdao: 'languages',
   custom: 'custom',

@@ -17,7 +17,7 @@ describe('translation service brand icons', () => {
   })
 
   it('uses product-specific TheSVG assets for representative services', () => {
-    expect(resolveServiceBrandIcon(services.microsoft)?.slug).toBe('azure-translator-text')
+    expect(resolveServiceBrandIcon(services.microsoft)?.slug).toBe('microsoft')
     expect(resolveServiceBrandIcon(services.google)?.slug).toBe('google-translate')
     expect(resolveServiceBrandIcon(services.chromeTranslator)?.slug).toBe('chrome')
     expect(resolveServiceBrandIcon(services.azureOpenai)?.slug).toBe('azure-azure-openai')
@@ -45,10 +45,9 @@ describe('translation service brand icons', () => {
     }
   })
 
-  it('uses semantic Lucide fallbacks only when TheSVG has no exact service asset', () => {
-    expect(resolveServiceBrandIcon(services.deeplx)).toBeUndefined()
+  it('shares the DeepL brand icon with DeepLX and uses semantic fallbacks for unbranded services', () => {
+    expect(resolveServiceBrandIcon(services.deeplx)).toBe(resolveServiceBrandIcon(services.deepL))
     expect(resolveServiceFallbackIconKey(services.freeTranslation)).toBe('languages')
-    expect(resolveServiceFallbackIconKey(services.deeplx)).toBe('server')
     expect(resolveServiceFallbackIconKey(services.xiaoniu)).toBe('languages')
     expect(resolveServiceFallbackIconKey(services.youdao)).toBe('languages')
     expect(resolveServiceFallbackIconKey(services.custom)).toBe('custom')
