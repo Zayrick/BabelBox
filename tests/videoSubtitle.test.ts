@@ -24,6 +24,7 @@ import {
     VIDEO_CAPTION_SEGMENT_SELECTOR,
 } from '@/src/features/video-subtitle/content/runtime';
 import {normalizeVideoSubtitleFontSize} from '@/src/core/config/model';
+import {createAITranslationService} from '@/src/core/config/translationServices';
 
 describe('YouTube 视频字幕识别', () => {
     it('只把 YouTube 视频页识别为视频字幕目标', () => {
@@ -78,6 +79,15 @@ describe('YouTube 视频字幕识别', () => {
         expect(getVideoServiceLabel('custom-service')).toBe('custom-service');
         expect(getVideoPretranslationWindowMs('microsoft')).toBe(10_000);
         expect(getVideoPretranslationWindowMs('openai')).toBe(30_000);
+        const instanceConfig = {
+            translationServices: [createAITranslationService('openai', {
+                id: 'service:openai:video',
+                name: '视频专用 GPT',
+                modelId: 'gpt-video',
+            })],
+        };
+        expect(getVideoServiceLabel('service:openai:video', instanceConfig)).toBe('视频专用 GPT');
+        expect(getVideoPretranslationWindowMs('service:openai:video', instanceConfig)).toBe(30_000);
         expect(normalizeVideoSubtitleFontSize(undefined)).toBe(100);
         expect(normalizeVideoSubtitleFontSize(125)).toBe(130);
         expect(normalizeVideoSubtitleFontSize(10)).toBe(80);

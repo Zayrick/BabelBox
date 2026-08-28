@@ -1,6 +1,6 @@
 // 全文翻译节点中的加载与失败反馈。
 import {sendErrorMessage} from '@/src/features/page-notice/public';
-import {options} from '@/src/core/config/catalog';
+import {getTranslationServiceLabel} from '@/src/core/config/translationServices';
 import {config} from '@/src/services/config/store';
 import {getTranslationErrorMessage} from '@/src/features/full-page-translation/core/errorMessage';
 import {CircleAlert, RotateCcw, type IconNode} from 'lucide';
@@ -68,8 +68,7 @@ function handleErrorClick(errMsg: string) {
 
 // 根据错误信息返回错误提示
 function resolveErrorMessage(errMsg: string): string {
-  const service = options.services.find(({value}) => value === config.service);
-  return getTranslationErrorMessage(errMsg, service?.label || config.service);
+  return getTranslationErrorMessage(errMsg, getTranslationServiceLabel(config, config.service));
 }
 
 // 创建图标元素

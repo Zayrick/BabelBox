@@ -1,3 +1,10 @@
+import type {
+    TranslationServiceCredential,
+} from '@/src/core/config/model';
+import type {
+    TranslationServiceInstance,
+} from '@/src/core/config/translationServices';
+
 export interface TranslationRequestMessageBase {
     context?: string;
     pageContext?: string;
@@ -60,6 +67,7 @@ export interface TranslationConfigSnapshot {
     user_role: Record<string, string>;
     deepseekApiType: string;
     deepseekThinkingMode: string;
+    translationServices?: readonly TranslationServiceInstance[];
 }
 
 export interface TranslationProviderConfigFields {
@@ -69,6 +77,7 @@ export interface TranslationProviderConfigFields {
     youdaoAppSecret: string;
     tencentSecretId: string;
     tencentSecretKey: string;
+    serviceCredentials?: Record<string, TranslationServiceCredential>;
 }
 
 /** 一次 provider 调用使用的完整、不可变配置视图。 */

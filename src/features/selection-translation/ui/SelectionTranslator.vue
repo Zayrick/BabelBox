@@ -119,6 +119,7 @@ import {
 } from '@/src/features/selection-translation/protocol';
 import { createSelectionTtsContentController } from '@/src/features/selection-translation/content/selectionTtsContentController';
 import { VOCABULARY_BOOK_CHANGED_MESSAGE, VOCABULARY_BOOK_MESSAGE, type VocabularyBookResponse } from '@/src/features/vocabulary/protocol';
+import {getTranslationServiceModel} from '@/src/core/config/translationServices';
 
 type SelectionTrigger = 'direct' | 'icon' | 'dot' | 'shortcut';
 type AudioKind = 'source' | 'translation' | 'word';
@@ -205,7 +206,7 @@ const selectionSettings = computed(() => {
     from: config.from,
     to: config.to,
     service: config.service,
-    model: `${config.model?.[config.service] || ''}:${config.customModel?.[config.service] || ''}`,
+    model: getTranslationServiceModel(config, config.service),
   };
 });
 const selectionShortcutConfig = computed(() => selectionShortcutTriggers.has(selectionSettings.value.trigger)

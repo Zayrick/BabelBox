@@ -5,6 +5,7 @@ import {
     SESSION_CREDENTIALS_STORAGE_KEY,
     credentialsEqual,
     extractConfigCredentials,
+    filterConfigCredentialsForDestination,
     hasCredentialData,
     hasCredentialFields,
     mergeConfigCredentials,
@@ -302,7 +303,13 @@ function handleStoredConfigChange(value: unknown): void {
     const parsed = parseStoredConfig(value);
     if (!parsed) return;
 
-    const normalized = normalizeConfig(mergeConfigCredentials(parsed, extractConfigCredentials(config)));
+    const targetConfig = normalizeConfig(sanitizeConfigCredentials(parsed));
+    const credentials = filterConfigCredentialsForDestination(
+        extractConfigCredentials(config),
+        config,
+        targetConfig,
+    );
+    const normalized = normalizeConfig(mergeConfigCredentials(targetConfig, credentials));
     const serialized = serializeConfig(normalized);
     const storedRevision = getStoredConfigRevision(parsed);
     if (storedRevision && storedRevision < persistedConfigRevision) return;
@@ -395,6 +402,10 @@ async function initializeConfig(): Promise<void> {
         const normalized = parsed
             ? normalizeConfig(mergeConfigCredentials(parsed, activeCredentials))
             : normalizeConfig(mergeConfigCredentials(new Config(), activeCredentials));
+        // normalizeConfig may materialize instance-scoped credentials while
+        // splitting legacy webpage/document models into separate instances.
+        // Every checkpoint must persist that migrated result, not its input.
+        const checkpointCredentials = extractConfigCredentials(normalized);
         const serialized = serializeConfig(normalized);
 
         initialized = true;
@@ -402,13 +413,13 @@ async function initializeConfig(): Promise<void> {
 
         const hasLegacyCredentialStorage = Boolean(legacyCredentials || localCredentials || historyNeedsSanitizing);
         credentialCleanupRequired = hasLegacyCredentialStorage && !normalized.persistCredentials;
-        const mustCheckpointCredentials = hasCredentialData(activeCredentials) || hasLegacyCredentialStorage;
+        const mustCheckpointCredentials = hasCredentialData(checkpointCredentials) || hasLegacyCredentialStorage;
 
         // 凭据迁移严格先写 session 并读回。失败时不改写旧 config/history，亦不删除 local 凭据。
         if (mustCheckpointCredentials) {
             try {
                 if (sessionReadError) throw sessionReadError;
-                await writeAndVerifyCredentials(SESSION_CREDENTIALS_STORAGE_KEY, activeCredentials);
+                await writeAndVerifyCredentials(SESSION_CREDENTIALS_STORAGE_KEY, checkpointCredentials);
             } catch (error) {
                 lastPersistedSerialized = serialized;
                 console.warn('[FluentRead] session 凭据不可用，保留旧凭据存储以避免数据丢失', error);
@@ -423,11 +434,11 @@ async function initializeConfig(): Promise<void> {
             && !localCredentials) {
             // 旧 config 的迁移可能在后续 config/history 写入时中断。先建立一个
             // 可读回的 local 临时检查点，成功清理全部旧载体后再删，避免崩溃窗口丢 Key。
-            await writeAndVerifyCredentials(LOCAL_CREDENTIALS_STORAGE_KEY, activeCredentials);
+            await writeAndVerifyCredentials(LOCAL_CREDENTIALS_STORAGE_KEY, checkpointCredentials);
             localCredentialSnapshotPresent = true;
         }
         if (normalized.persistCredentials) {
-            await writeAndVerifyCredentials(LOCAL_CREDENTIALS_STORAGE_KEY, activeCredentials);
+            await writeAndVerifyCredentials(LOCAL_CREDENTIALS_STORAGE_KEY, checkpointCredentials);
             localCredentialSnapshotPresent = true;
         }
 
@@ -495,10 +506,16 @@ export function prepareConfigSaveRequest(
     if (allowCredentialUpdates) return normalizeConfig(value);
 
     const currentConfig = normalizeConfig(currentValue);
-    return normalizeConfig(mergeConfigCredentials({
+    const targetConfig = normalizeConfig({
         ...sanitizeConfigCredentials(normalizeConfig(value)),
         persistCredentials: currentConfig.persistCredentials,
-    }, extractConfigCredentials(currentConfig)));
+    });
+    const credentials = filterConfigCredentialsForDestination(
+        extractConfigCredentials(currentConfig),
+        currentConfig,
+        targetConfig,
+    );
+    return normalizeConfig(mergeConfigCredentials(targetConfig, credentials));
 }
 
 export function getConfigHistorySnapshot(): ConfigHistoryState {
@@ -586,11 +603,17 @@ export async function applyConfigHistoryAction(action: ConfigHistoryAction, vers
     if (targetIndex === historyState.cursor) return getConfigHistorySnapshot();
     const target = historyState.entries[targetIndex];
     const currentCredentials = extractConfigCredentials(config);
-    const normalized = normalizeConfig(mergeConfigCredentials({
+    const targetConfig = normalizeConfig({
         ...target.config,
         // 凭据持久化是显式安全选择，不随普通配置历史静默回滚。
         persistCredentials: config.persistCredentials,
-    }, currentCredentials));
+    });
+    const safeCredentials = filterConfigCredentialsForDestination(
+        currentCredentials,
+        config,
+        targetConfig,
+    );
+    const normalized = normalizeConfig(mergeConfigCredentials(targetConfig, safeCredentials));
     await persistNormalizedConfig(normalized);
     if (serializeConfig(config) !== serializeConfig(normalized)) applyConfig(normalized);
 

@@ -27,26 +27,54 @@
 
         <fieldset>
           <legend>翻译服务</legend>
-          <label><span>服务</span><el-select v-model="draft.service" class="fr-userscript-select" aria-label="翻译服务" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in serviceOptions" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
+          <div class="service-heading">
+            <span>已添加服务</span>
+            <button type="button" class="add-service" aria-label="添加 AI 翻译服务" @click="showAddService = !showAddService">{{ showAddService ? '×' : '+' }}</button>
+          </div>
+          <div class="service-inventory">
+            <div v-for="item in managedServices" :key="item.id" class="service-row" :class="{ selected: managedServiceId === item.id, disabled: !item.enabled }">
+              <ServiceIcon :service="item.provider" :label="providerLabel(item.provider)" size="small" />
+              <button type="button" class="service-row-main" @click="selectManagedService(item.id)"><strong>{{ item.name }}</strong><small>{{ providerLabel(item.provider) }}<template v-if="item.modelId"> · {{ item.modelId }}</template></small></button>
+              <div class="service-row-actions">
+                <button v-if="item.kind === 'ai'" type="button" class="delete-service" :aria-label="`删除 ${item.name}`" @click.stop="removeAIService(item)">删除</button>
+                <input type="checkbox" role="switch" :aria-label="`${item.name} 启用状态`" :checked="item.enabled" @click.stop @change="setServiceEnabled(item, $event)" />
+              </div>
+            </div>
+          </div>
+
+          <div v-if="showAddService" class="add-service-panel">
+            <div class="add-service-title">
+              <ServiceIcon :service="addDraft.provider" :label="providerLabel(addDraft.provider)" size="small" />
+              <strong>添加 AI 翻译服务</strong>
+            </div>
+            <label><span>供应商</span><el-select v-model="addDraft.provider" class="fr-userscript-select" aria-label="AI 供应商" :teleported="false" :popper-options="selectPopperOptions" @change="resetAddProviderDefaults"><el-option v-for="item in aiProviderOptions" :key="item.value" :label="item.label" :value="item.value"><span class="provider-option"><ServiceIcon :service="item.value" :label="item.label" size="small" /><span>{{ item.label }}</span></span></el-option></el-select></label>
+            <label><span>模型 ID</span><input v-model.trim="addDraft.modelId" autocomplete="off" :placeholder="suggestedModelId || '请输入模型 ID'" /></label>
+            <label><span>自定义名称</span><input v-model.trim="addDraft.name" autocomplete="off" :placeholder="suggestedServiceName" /></label>
+            <label><span>请求地址</span><input v-model.trim="addDraft.endpoint" inputmode="url" placeholder="可选；自定义、New API 和 Azure OpenAI 请填写" /></label>
+            <label><span>API Key</span><input v-model.trim="addDraft.apiKey" type="password" autocomplete="off" placeholder="可稍后配置" /></label>
+            <div class="add-service-actions"><button type="button" class="secondary" @click="showAddService = false">取消</button><button type="button" class="primary" @click="addAIService">添加</button></div>
+          </div>
+
+          <label><span>当前使用</span><el-select v-model="draft.service" class="fr-userscript-select" aria-label="翻译服务" :teleported="false" :popper-options="selectPopperOptions" @change="managedServiceId = draft.service"><el-option v-for="item in serviceOptions" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
           <p v-if="serviceDescription" class="hint">{{ serviceDescription }}</p>
-          <label v-if="usesModel"><span>模型</span><el-select v-model="draft.model[draft.service]" class="fr-userscript-select" aria-label="翻译模型" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="model in modelOptions" :key="model" :label="model" :value="model" /></el-select></label>
-          <label v-if="usesModel && draft.model[draft.service] === customModelString"><span>自定义模型</span><input v-model.trim="draft.customModel[draft.service]" autocomplete="off" /></label>
-          <label v-if="servicesType.isAI(draft.service) && usesToken" class="toggle"><span>当前模型需要 API Key</span><input v-model="requiresApiKey" type="checkbox" /></label>
-          <label v-if="usesToken"><span>API Key / Token</span><input v-model.trim="draft.token[draft.service]" type="password" autocomplete="off" /></label>
-          <label v-if="draft.service === services.custom"><span>自定义接口地址</span><input v-model.trim="draft.custom" inputmode="url" /></label>
-          <label v-if="draft.service === services.deeplx"><span>DeepLX 地址</span><input v-model.trim="draft.deeplx" inputmode="url" /></label>
-          <label v-if="draft.service === services.newapi"><span>New API 地址</span><input v-model.trim="draft.newApiUrl" inputmode="url" /></label>
-          <label v-if="draft.service === services.azureOpenai"><span>Azure OpenAI 地址</span><input v-model.trim="draft.azureOpenaiEndpoint" inputmode="url" /></label>
-          <label v-if="servicesType.isUseProxy(draft.service)"><span>代理地址（可选）</span><input v-model.trim="draft.proxy[draft.service]" inputmode="url" placeholder="留空使用默认接口" /></label>
-          <template v-if="draft.service === services.youdao">
-            <label><span>有道 App Key</span><input v-model.trim="draft.youdaoAppKey" autocomplete="off" /></label>
-            <label><span>有道 App Secret</span><input v-model.trim="draft.youdaoAppSecret" type="password" autocomplete="off" /></label>
+          <template v-if="selectedInstance">
+            <label v-if="selectedInstance.kind === 'ai'"><span>服务名称</span><input v-model.trim="selectedInstance.name" autocomplete="off" /></label>
+            <label v-if="selectedInstance.kind === 'ai'"><span>模型 ID</span><input v-model.trim="selectedInstance.modelId" autocomplete="off" /></label>
+            <label v-if="selectedInstance.kind === 'ai' && usesToken" class="toggle"><span>当前模型需要 API Key</span><input v-model="selectedInstance.requireApiKey" type="checkbox" /></label>
+            <label v-if="usesToken"><span>API Key / Token</span><input v-model.trim="serviceApiKey" type="password" autocomplete="off" /></label>
+            <label v-if="selectedInstance.kind === 'ai'"><span>请求地址（可选）</span><input v-model.trim="serviceEndpoint" inputmode="url" placeholder="留空使用供应商默认接口" /></label>
+            <label v-if="selectedProvider === services.deeplx"><span>DeepLX 地址</span><input v-model.trim="draft.deeplx" inputmode="url" /></label>
+            <label v-if="selectedInstance.kind === 'machine' && servicesType.isUseProxy(selectedProvider)"><span>代理地址（可选）</span><input v-model.trim="selectedInstance.proxy" inputmode="url" placeholder="留空使用默认接口" /></label>
           </template>
-          <template v-if="servicesType.isTencent(draft.service)">
-            <label><span>腾讯 Secret ID</span><input v-model.trim="draft.tencentSecretId" autocomplete="off" /></label>
-            <label><span>腾讯 Secret Key</span><input v-model.trim="draft.tencentSecretKey" type="password" autocomplete="off" /></label>
+          <template v-if="selectedProvider === services.youdao">
+            <label><span>有道 App Key</span><input v-model.trim="serviceAppKey" autocomplete="off" /></label>
+            <label><span>有道 App Secret</span><input v-model.trim="serviceAppSecret" type="password" autocomplete="off" /></label>
           </template>
-          <label v-if="servicesType.isCoze(draft.service)"><span>Bot ID</span><input v-model.trim="draft.robot_id[draft.service]" autocomplete="off" /></label>
+          <template v-if="servicesType.isTencent(selectedProvider)">
+            <label><span>腾讯 Secret ID</span><input v-model.trim="serviceSecretId" autocomplete="off" /></label>
+            <label><span>腾讯 Secret Key</span><input v-model.trim="serviceSecretKey" type="password" autocomplete="off" /></label>
+          </template>
+          <label v-if="selectedInstance && servicesType.isCoze(selectedProvider)"><span>Bot ID</span><input v-model.trim="selectedInstance.robotId" autocomplete="off" /></label>
           <p v-if="credentialWarning" class="warning">{{ credentialWarning }}</p>
           <label class="toggle"><span>AI 网页上下文</span><input v-model="draft.enableAIContext" type="checkbox" :disabled="!canUseAIContext" /></label>
         </fieldset>
@@ -68,11 +96,11 @@
           <label><span>主题</span><el-select v-model="draft.theme" class="fr-userscript-select" aria-label="主题" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.theme" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
         </fieldset>
 
-        <details>
+        <details v-if="selectedInstance?.kind === 'ai'">
           <summary>高级 AI 请求设置</summary>
-          <label><span>自定义请求体（JSON）</span><textarea v-model="draft.customBody[draft.service]" rows="4" placeholder="可选：合并到请求体顶层" /></label>
-          <label><span>System 提示词</span><textarea v-model="draft.system_role[draft.service]" rows="4" /></label>
-          <label><span>User 提示词</span><textarea v-model="draft.user_role[draft.service]" rows="5" /></label>
+          <label><span>自定义请求体（JSON）</span><textarea v-model="selectedInstance.customBody" rows="4" placeholder="可选：合并到请求体顶层" /></label>
+          <label><span>System 提示词</span><textarea v-model="selectedInstance.systemRole" rows="4" /></label>
+          <label><span>User 提示词</span><textarea v-model="selectedInstance.userRole" rows="5" /></label>
         </details>
       </div>
 
@@ -94,11 +122,29 @@ import {X} from '@lucide/vue';
 import {ElOption, ElSelect} from 'element-plus';
 import 'element-plus/es/components/select/style/css';
 import {browser} from 'wxt/browser';
-import {Config} from '@/src/core/config/model';
+import ServiceIcon from '@/src/ui/components/ServiceIcon.vue';
+import {Config, type TranslationServiceCredential} from '@/src/core/config/model';
 import {config as runtimeConfig, configReady, saveConfig} from '@/src/services/config/store';
-import {customModelString, models, options, services, servicesType} from '@/src/core/config/catalog';
-import {getApiKeyRequirementKey, getMissingCredentialMessage, isApiKeyRequired} from '@/src/core/config/validation';
-import {isUserscriptServiceSupported, normalizeUserscriptConfig} from './initialize';
+import {defaultModels, options, services, servicesType} from '@/src/core/config/catalog';
+import {getMissingCredentialMessage} from '@/src/core/config/validation';
+import {clearTranslationServiceCredentials} from '@/src/core/config/credentials';
+import {
+  aiTranslationProviders,
+  clearLegacyTranslationServiceConfiguration,
+  createAITranslationService,
+  createTranslationServiceId,
+  getDefaultTranslationServiceName,
+  getTranslationProviderDescription,
+  getTranslationProviderLabel,
+  getTranslationServiceInstance,
+  type TranslationServiceInstance,
+} from '@/src/core/config/translationServices';
+import {getSelectableTranslationServices} from '@/src/services/translation/capabilities';
+import {
+  getEnabledUserscriptServices,
+  isUserscriptServiceSupported,
+  normalizeUserscriptConfig,
+} from './initialize';
 
 const emit = defineEmits<{close: []}>();
 const versionLabel = `FluentRead V${process.env.VUE_APP_VERSION} · Userscript V${process.env.VUE_APP_USERSCRIPT_VERSION}`;
@@ -107,27 +153,111 @@ const draft = ref(new Config());
 const saving = ref(false);
 const status = ref('');
 const statusIsError = ref(false);
+const showAddService = ref(false);
+const managedServiceId = ref('');
 const selectPopperOptions = {strategy: 'fixed'} as const;
 
-const serviceOptions = options.services.filter(item => !item.disabled && isUserscriptServiceSupported(item.value));
+interface AddServiceDraft {
+  provider: string;
+  modelId: string;
+  name: string;
+  endpoint: string;
+  apiKey: string;
+}
+
+const firstAIProvider = aiTranslationProviders.find(isUserscriptServiceSupported) || services.openai;
+const addDraft = ref<AddServiceDraft>({
+  provider: firstAIProvider,
+  modelId: defaultModels.get(firstAIProvider) || '',
+  name: '',
+  endpoint: '',
+  apiKey: '',
+});
+const serviceOptions = computed(() => getSelectableTranslationServices(draft.value)
+  .filter(item => isUserscriptServiceSupported(item.provider)));
+const managedServices = computed(() => draft.value.translationServices
+  .filter(item => isUserscriptServiceSupported(item.provider)));
+const aiProviderOptions = options.services.filter(item => (
+  !item.disabled && aiTranslationProviders.includes(item.value) && isUserscriptServiceSupported(item.value)
+));
 const styleOptions = options.styles.filter(item => !item.disabled && typeof item.value === 'number');
 const hoverOptions = options.keys.filter(item => !item.disabled);
-const selectedService = computed(() => serviceOptions.find(item => item.value === draft.value.service));
-const serviceDescription = computed(() => selectedService.value && 'description' in selectedService.value ? selectedService.value.description : '');
-const modelOptions = computed(() => models.get(draft.value.service) || []);
-const usesModel = computed(() => servicesType.isUseModel(draft.value.service));
-const usesToken = computed(() => servicesType.isUseToken(draft.value.service));
-const requiresApiKey = computed({
-  get: () => isApiKeyRequired(draft.value.service, draft.value),
-  set: (required: boolean) => {
-    draft.value.requireApiKey[getApiKeyRequirementKey(draft.value.service, draft.value)] = required;
+const selectedInstance = computed(() => getTranslationServiceInstance(
+  draft.value,
+  managedServiceId.value || draft.value.service,
+));
+const selectedProvider = computed(() => selectedInstance.value?.provider || '');
+const serviceDescription = computed(() => getTranslationProviderDescription(selectedProvider.value));
+const usesToken = computed(() => servicesType.isUseToken(selectedProvider.value));
+const canUseAIContext = computed(() => servicesType.isUseAIContext(
+  selectedProvider.value,
+  selectedInstance.value?.modelId || '',
+));
+const credentialWarning = computed(() => selectedInstance.value
+  ? getMissingCredentialMessage(selectedInstance.value.id, draft.value) || ''
+  : '');
+const suggestedModelId = computed(() => defaultModels.get(addDraft.value.provider) || '');
+const suggestedServiceName = computed(() => getDefaultTranslationServiceName(
+  addDraft.value.provider,
+  addDraft.value.modelId.trim() || suggestedModelId.value,
+));
+
+type CredentialKey = keyof TranslationServiceCredential;
+
+function selectedCredentialValue(key: CredentialKey): string {
+  const instance = selectedInstance.value;
+  if (!instance) return '';
+  const credential = draft.value.serviceCredentials[instance.id];
+  if (credential) return credential[key] || '';
+  if (instance.id !== instance.provider) return '';
+  if (key === 'apiKey') return draft.value.token[instance.provider] || '';
+  if (key === 'appKey') return draft.value.youdaoAppKey || '';
+  if (key === 'appSecret') return draft.value.youdaoAppSecret || '';
+  if (key === 'secretId') return draft.value.tencentSecretId || '';
+  return draft.value.tencentSecretKey || '';
+}
+
+function ensureSelectedCredential(): TranslationServiceCredential | null {
+  const instance = selectedInstance.value;
+  if (!instance) return null;
+  const existing = draft.value.serviceCredentials[instance.id];
+  if (existing) return existing;
+  const legacy = instance.id === instance.provider;
+  const credential: TranslationServiceCredential = {
+    apiKey: legacy ? draft.value.token[instance.provider] || '' : '',
+    appKey: legacy ? draft.value.youdaoAppKey || '' : '',
+    appSecret: legacy ? draft.value.youdaoAppSecret || '' : '',
+    secretId: legacy ? draft.value.tencentSecretId || '' : '',
+    secretKey: legacy ? draft.value.tencentSecretKey || '' : '',
+  };
+  draft.value.serviceCredentials[instance.id] = credential;
+  return credential;
+}
+
+function credentialBinding(key: CredentialKey) {
+  return computed({
+    get: () => selectedCredentialValue(key),
+    set: (value: string) => {
+      const credential = ensureSelectedCredential();
+      if (credential) credential[key] = value;
+    },
+  });
+}
+
+const serviceApiKey = credentialBinding('apiKey');
+const serviceAppKey = credentialBinding('appKey');
+const serviceAppSecret = credentialBinding('appSecret');
+const serviceSecretId = credentialBinding('secretId');
+const serviceSecretKey = credentialBinding('secretKey');
+const serviceEndpoint = computed({
+  get: () => selectedInstance.value?.proxy || selectedInstance.value?.endpoint || '',
+  set: (value: string) => {
+    const instance = selectedInstance.value;
+    if (!instance) return;
+    instance.endpoint = value;
+    instance.proxy = '';
   },
 });
-const canUseAIContext = computed(() => servicesType.isUseAIContext(
-  draft.value.service,
-  draft.value.model[draft.value.service] || '',
-));
-const credentialWarning = computed(() => getMissingCredentialMessage(draft.value.service, draft.value) || '');
 const floatingBallEnabled = computed({
   get: () => !draft.value.disableFloatingBall,
   set: (enabled: boolean) => { draft.value.disableFloatingBall = !enabled; },
@@ -139,7 +269,118 @@ const isDark = computed(() => draft.value.theme === 'dark' || (
 onMounted(async () => {
   await configReady;
   draft.value = normalizeUserscriptConfig(runtimeConfig);
+  managedServiceId.value = draft.value.service;
 });
+
+function providerLabel(provider: string): string {
+  return getTranslationProviderLabel(provider);
+}
+
+function selectManagedService(serviceId: string): void {
+  managedServiceId.value = serviceId;
+}
+
+function setServiceEnabled(instance: TranslationServiceInstance, event: Event): void {
+  const input = event.target as HTMLInputElement;
+  const enabled = input.checked;
+  if (!enabled) {
+    const remaining = getEnabledUserscriptServices(draft.value).filter(item => item.id !== instance.id);
+    if (!remaining.length) {
+      input.checked = true;
+      statusIsError.value = true;
+      status.value = '至少需要保留一个可用的翻译服务。';
+      return;
+    }
+  }
+
+  instance.enabled = enabled;
+  if (!enabled && draft.value.service === instance.id) {
+    draft.value.service = getEnabledUserscriptServices(draft.value)[0]?.id || services.microsoft;
+  }
+  draft.value.translationCenterServices = draft.value.translationCenterServices
+    .filter(serviceId => serviceId !== instance.id || enabled);
+  statusIsError.value = false;
+  status.value = enabled ? `已启用「${instance.name}」。` : `已禁用「${instance.name}」。`;
+}
+
+function removeAIService(instance: TranslationServiceInstance): void {
+  if (instance.kind !== 'ai') return;
+  const remainingEnabled = getEnabledUserscriptServices(draft.value)
+    .filter(item => item.id !== instance.id);
+  if (instance.enabled && !remainingEnabled.length) {
+    statusIsError.value = true;
+    status.value = '无法删除最后一个可用的翻译服务。';
+    return;
+  }
+  if (!window.confirm(`确定删除翻译服务「${instance.name}」吗？`)) return;
+
+  draft.value.translationServices = draft.value.translationServices
+    .filter(item => item.id !== instance.id);
+  clearLegacyTranslationServiceConfiguration(draft.value, instance);
+  clearTranslationServiceCredentials(draft.value, instance.id);
+  draft.value.translationCenterServices = draft.value.translationCenterServices
+    .filter(serviceId => serviceId !== instance.id);
+  const fallbackId = remainingEnabled[0]?.id || services.microsoft;
+  if (draft.value.service === instance.id) draft.value.service = fallbackId;
+  if (draft.value.documentService === instance.id) draft.value.documentService = fallbackId;
+  if (draft.value.videoService === instance.id) draft.value.videoService = fallbackId;
+  if (managedServiceId.value === instance.id) managedServiceId.value = draft.value.service;
+  statusIsError.value = false;
+  status.value = `已删除「${instance.name}」，保存设置后生效。`;
+}
+
+function resetAddProviderDefaults(): void {
+  addDraft.value.modelId = defaultModels.get(addDraft.value.provider) || '';
+  addDraft.value.name = '';
+  addDraft.value.endpoint = '';
+  addDraft.value.apiKey = '';
+}
+
+function addAIService(): void {
+  const provider = addDraft.value.provider;
+  if (!isUserscriptServiceSupported(provider) || !servicesType.isAI(provider)) {
+    statusIsError.value = true;
+    status.value = '请选择 userscript 支持的 AI 供应商。';
+    return;
+  }
+  const modelId = addDraft.value.modelId.trim() || defaultModels.get(provider) || '';
+  if (servicesType.isUseModel(provider) && !modelId) {
+    statusIsError.value = true;
+    status.value = '请填写模型 ID。';
+    return;
+  }
+  const endpointRequiredProviders = new Set<string>([
+    services.custom,
+    services.newapi,
+    services.azureOpenai,
+  ]);
+  if (endpointRequiredProviders.has(provider) && !addDraft.value.endpoint.trim()) {
+    statusIsError.value = true;
+    status.value = '该供应商需要填写请求地址。';
+    return;
+  }
+
+  const instance = createAITranslationService(provider, {
+    id: createTranslationServiceId(provider, draft.value.translationServices),
+    modelId,
+    name: addDraft.value.name.trim() || getDefaultTranslationServiceName(provider, modelId),
+    endpoint: addDraft.value.endpoint.trim(),
+  });
+  draft.value.translationServices.push(instance);
+  draft.value.serviceCredentials[instance.id] = {
+    apiKey: addDraft.value.apiKey.trim(),
+    appKey: '',
+    appSecret: '',
+    secretId: '',
+    secretKey: '',
+  };
+  draft.value.service = instance.id;
+  managedServiceId.value = instance.id;
+  showAddService.value = false;
+  resetAddProviderDefaults();
+  statusIsError.value = false;
+  status.value = `已添加「${instance.name}」，保存设置后生效。`;
+}
 
 function close(): void {
   emit('close');
@@ -169,6 +410,8 @@ async function save(): Promise<void> {
     const next = normalizeUserscriptConfig(draft.value);
     await saveConfig(next, {recordHistory: true, immediateHistory: true});
     draft.value = normalizeUserscriptConfig(next);
+    managedServiceId.value = getTranslationServiceInstance(draft.value, managedServiceId.value)?.id
+      || draft.value.service;
     await syncCurrentPage(next);
     status.value = '设置已保存，并已应用到当前页面。';
   } catch (error) {
@@ -183,6 +426,8 @@ function restoreDefaults(): void {
   const next = new Config();
   next.disableFloatingBall = false;
   draft.value = normalizeUserscriptConfig(next);
+  managedServiceId.value = draft.value.service;
+  showAddService.value = false;
   statusIsError.value = false;
   status.value = '已载入 userscript 默认设置，点击“保存设置”后生效。';
 }
@@ -213,6 +458,25 @@ fieldset, details { min-width: 0; margin: 0; padding: 15px; border: 1px solid #e
 fieldset:nth-of-type(3), details { grid-column: 1 / -1; }
 legend, summary { color: #d93d6b; font-size: 12px; font-weight: 800; }
 summary { cursor: pointer; }
+.service-heading { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; color: #4d5668; font-size: 11px; font-weight: 700; }
+.add-service { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 8px; background: #fff0f4; color: #d93d6b; font-size: 19px; line-height: 1; }
+.service-inventory { display: grid; max-height: 172px; overflow: auto; margin-top: 8px; gap: 6px; }
+.service-row { display: flex; align-items: center; min-width: 0; padding: 7px 9px; border: 1px solid #e2e6ee; border-radius: 10px; background: #f8f9fb; gap: 8px; }
+.service-row.selected { border-color: #ef8eaa; background: #fff4f7; }
+.service-row.disabled { opacity: .62; }
+.service-row-main { display: flex; min-width: 0; padding: 0; background: transparent; color: #20283a; text-align: left; flex: 1; flex-direction: column; }
+.service-row-main strong, .service-row-main small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.service-row-main strong { font-size: 11px; }
+.service-row-main small { margin-top: 2px; color: #7c8493; font-size: 9px; }
+.service-row-actions { display: flex; align-items: center; gap: 7px; flex: 0 0 auto; }
+.service-row-actions > input { width: 34px; height: 18px; padding: 0; accent-color: #ef4776; flex: 0 0 auto; }
+.delete-service { padding: 3px 5px; border-radius: 6px; background: transparent; color: #a44d67; font-size: 9px; }
+.delete-service:hover { background: #ffe7ee; color: #bd3159; }
+.add-service-panel { margin-top: 9px; padding: 10px; border: 1px solid #f0c7d4; border-radius: 11px; background: #fff8fa; }
+.add-service-title, .provider-option { display: flex; align-items: center; gap: 8px; }
+.add-service-title strong { color: #d93d6b; font-size: 11px; }
+.add-service-actions { display: flex; justify-content: flex-end; margin-top: 10px; gap: 7px; }
+.add-service-actions button { padding: 7px 11px; border-radius: 8px; font-size: 10px; font-weight: 700; }
 label { display: grid; align-items: center; gap: 10px; margin-top: 11px; grid-template-columns: minmax(120px, .8fr) minmax(0, 1.4fr); color: #4d5668; font-size: 11px; }
 label > span { line-height: 1.35; }
 input, textarea { width: 100%; min-width: 0; padding: 9px 10px; border: 1px solid #dfe3eb; border-radius: 9px; outline: none; box-sizing: border-box; background: #f8f9fb; color: #20283a; font: inherit; font-size: 12px; }
@@ -244,6 +508,14 @@ footer button { padding: 9px 13px; border-radius: 9px; font-size: 11px; font-wei
 .dark .notice { border-color: #6f4654; background: #3b2e35; color: #f0c0d0; }
 .dark label { color: #d2d5dc; }
 .dark input, .dark textarea, .dark .close, .dark .secondary { border-color: #50535f; background: #3a3d47; color: #f1f2f5; }
+.dark .service-heading { color: #d2d5dc; }
+.dark .add-service { background: #49323b; color: #f0a9bf; }
+.dark .service-row { border-color: #4b4e59; background: #373a44; }
+.dark .service-row.selected, .dark .add-service-panel { border-color: #775060; background: #3b2e35; }
+.dark .service-row-main { color: #f1f2f5; }
+.dark .service-row-main small { color: #b7bbc5; }
+.dark .delete-service { color: #e6a0b6; }
+.dark .delete-service:hover { background: #563440; color: #ffc1d4; }
 .dark .fr-userscript-select :deep(.el-select__wrapper), .dark .fr-userscript-select :deep(.el-select__wrapper.is-focused) { border-color: #50535f; background: #3a3d47; }
 .dark .fr-userscript-select :deep(.el-select__selected-item), .dark .fr-userscript-select :deep(.el-select__placeholder), .dark .fr-userscript-select :deep(.el-select__caret) { color: #f1f2f5; }
 .dark .fr-userscript-settings :deep(.el-select__popper.el-popper) { border-color: #50535f; background: #30323c; }

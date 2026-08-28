@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {defaultOption} from '@/src/core/config/catalog'
+import {defaultOption, services} from '@/src/core/config/catalog'
 import {
   isConfigImportValid,
   prepareConfigForImport,
@@ -113,6 +113,29 @@ describe('configuration transfer helpers', () => {
     expect(prepared.token.openai).toBe(legacySecret)
     expect(prepared.extra).toEqual({jwt: legacySecret})
     expect(prepared.persistCredentials).toBe(false)
+  })
+
+  it('导入带凭据的旧双模型配置时保留新文档实例的凭据', () => {
+    const importedSecret = 'legacy-document-import-secret'
+    const prepared = prepareConfigForImport(
+      {
+        ...validConfig,
+        service: services.openai,
+        documentService: services.openai,
+        model: {[services.openai]: 'web-model'},
+        documentModel: {[services.openai]: 'document-model'},
+        token: {[services.openai]: importedSecret},
+      },
+      {
+        ...validConfig,
+        token: {[services.openai]: 'current-session-secret'},
+        persistCredentials: false,
+      },
+    )
+
+    expect(prepared.documentService).toBe('service:openai:document')
+    expect(prepared.token[services.openai]).toBe(importedSecret)
+    expect(prepared.serviceCredentials[prepared.documentService]?.apiKey).toBe(importedSecret)
   })
 
   it('preserves always-translate site rules through export and normalized import', () => {

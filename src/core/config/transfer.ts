@@ -1,6 +1,7 @@
 import { isCustomBodyMapping } from './customBody'
 import {
   extractConfigCredentials,
+  filterConfigCredentialsForDestination,
   hasCredentialFields,
   mergeConfigCredentials,
   sanitizeConfigCredentials,
@@ -66,8 +67,14 @@ export function prepareConfigForImport(value: unknown, current: unknown): Config
   const currentConfig = normalizeConfig(current)
   const importedConfig = normalizeConfig(value)
   const credentials = hasCredentialFields(value)
-    ? extractConfigCredentials(value)
-    : extractConfigCredentials(currentConfig)
+    // Normalization can split legacy webpage/document models into two service
+    // instances and copy the explicitly imported credential to the new ID.
+    ? extractConfigCredentials(importedConfig)
+    : filterConfigCredentialsForDestination(
+      extractConfigCredentials(currentConfig),
+      currentConfig,
+      importedConfig,
+    )
 
   return normalizeConfig(mergeConfigCredentials({
     ...sanitizeConfigCredentials(importedConfig),

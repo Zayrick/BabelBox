@@ -1,6 +1,9 @@
 import {Config, normalizeConfig} from '@/src/core/config/model';
 import {getApiKeyRequirementKey} from '@/src/core/config/validation';
 import {customModelString, defaultModels, models, services, servicesType} from '@/src/core/config/catalog';
+import {
+    type TranslationServiceInstance,
+} from '@/src/core/config/translationServices';
 import {getStoredValue, setStoredValue} from './storage';
 
 const CONFIG_STORAGE_KEY = 'local:config';
@@ -44,17 +47,53 @@ export function isUserscriptServiceSupported(service: unknown): service is strin
     return typeof service === 'string' && supportedUserscriptServices.has(service);
 }
 
+export function getEnabledUserscriptServices(config: Pick<Config, 'translationServices'>): TranslationServiceInstance[] {
+    return config.translationServices.filter((instance) => (
+        instance.enabled && isUserscriptServiceSupported(instance.provider)
+    ));
+}
+
 /** Keep extension-only capabilities disabled even when an existing GM config enables them. */
 export function normalizeUserscriptConfig(value: unknown): Config {
+    const source = value && typeof value === 'object'
+        ? value as {service?: unknown; videoService?: unknown}
+        : {};
     const next = normalizeConfig(value);
-    if (!isUserscriptServiceSupported(next.service)) next.service = services.microsoft;
-    if (!isUserscriptServiceSupported(next.videoService)) next.videoService = services.microsoft;
+    let enabledServices = getEnabledUserscriptServices(next);
+    if (!enabledServices.length) {
+        const fallback = next.translationServices.find((instance) => (
+            instance.id === services.microsoft && isUserscriptServiceSupported(instance.provider)
+        )) || next.translationServices.find((instance) => isUserscriptServiceSupported(instance.provider));
+        if (fallback) fallback.enabled = true;
+        enabledServices = getEnabledUserscriptServices(next);
+    }
+    const enabledIds = new Set(enabledServices.map((instance) => instance.id));
+    const fallbackId = enabledServices.find((instance) => instance.id === services.microsoft)?.id
+        || enabledServices[0]?.id
+        || services.microsoft;
+    const originalService = typeof source.service === 'string'
+        ? getServiceById(next, source.service)
+        : undefined;
+    const originalVideoService = typeof source.videoService === 'string'
+        ? getServiceById(next, source.videoService)
+        : undefined;
+    const originalServiceUnsupported = typeof source.service === 'string'
+        && (!originalService || !isUserscriptServiceSupported(originalService.provider));
+    const originalVideoServiceUnsupported = typeof source.videoService === 'string'
+        && (!originalVideoService || !isUserscriptServiceSupported(originalVideoService.provider));
+    if (originalServiceUnsupported || !enabledIds.has(next.service)) next.service = fallbackId;
+    if (originalVideoServiceUnsupported || !enabledIds.has(next.videoService)) next.videoService = fallbackId;
+    next.translationCenterServices = next.translationCenterServices.filter((serviceId) => enabledIds.has(serviceId));
     next.contextMenuEnabled = false;
     next.selectionAreaEnabled = false;
     next.disableImageTranslator = true;
     next.videoTranslationEnabled = false;
     next.maxConcurrentTranslations = Math.min(20, Math.max(1, Number(next.maxConcurrentTranslations) || 6));
     return next;
+}
+
+function getServiceById(config: Pick<Config, 'translationServices'>, serviceId: string): TranslationServiceInstance | undefined {
+    return config.translationServices.find((instance) => instance.id === serviceId);
 }
 
 function migrateLegacyModel(next: Config, legacyName: string, service: string, selectedModel: string): void {
@@ -136,7 +175,11 @@ async function migrateLegacyConfig(): Promise<Config> {
         allowLegacyOllamaWithoutApiKey(next);
     }
 
-    return normalizeUserscriptConfig(next);
+    // Config() already contains the new machine-only inventory. Omitting that
+    // field here lets normalizeConfig infer the AI instances genuinely present
+    // in the legacy provider-keyed data before the inventory becomes explicit.
+    const legacyConfig = {...next, translationServices: undefined};
+    return normalizeUserscriptConfig(legacyConfig);
 }
 
 /** Seed or migrate once, then enforce the userscript capability boundary on every startup. */

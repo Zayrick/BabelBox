@@ -21,7 +21,7 @@
   <section
     v-if="presentation.showConnectionConfiguration"
     class="settings-section service-connection-section"
-    :data-service-configuration-service="service"
+    :data-service-configuration-service="instanceId"
     :data-custom-service-configuration="presentation.fields.customService ? 'true' : 'false'"
   >
     <div v-if="credentialWarning" class="credential-warning" role="alert">
@@ -36,6 +36,27 @@
       </div>
     </div>
 
+    <template v-if="isAIInstance">
+      <el-row class="margin-bottom margin-left-2em">
+        <el-col :span="12" class="lightblue rounded-corner">
+          <SettingsHelpLabel content="显示在服务列表、下拉菜单和翻译中心中的名称。">服务名称</SettingsHelpLabel>
+        </el-col>
+        <el-col :span="12"><el-input v-model="instanceName" maxlength="80" placeholder="请输入服务名称" /></el-col>
+      </el-row>
+      <el-row class="margin-bottom margin-left-2em">
+        <el-col :span="12" class="lightblue rounded-corner">
+          <SettingsHelpLabel content="当前服务实例实际请求的模型标识；同一供应商可以添加多个不同模型。">模型 ID</SettingsHelpLabel>
+        </el-col>
+        <el-col :span="12"><el-input v-model="instanceModelId" placeholder="请输入模型 ID" /></el-col>
+      </el-row>
+      <el-row v-if="showInstanceEndpoint" class="margin-bottom margin-left-2em">
+        <el-col :span="12" class="lightblue rounded-corner">
+          <SettingsHelpLabel content="可选。留空时使用供应商默认请求地址；自定义、New API 和 Azure OpenAI 服务必须填写。">请求地址</SettingsHelpLabel>
+        </el-col>
+        <el-col :span="12"><el-input v-model="instanceEndpoint" inputmode="url" placeholder="留空使用供应商默认地址" /></el-col>
+      </el-row>
+    </template>
+
     <div v-if="presentation.fields.apiKeyPolicy" class="api-key-policy">
       <div class="api-key-policy-copy">
         <div class="api-key-policy-title">
@@ -47,7 +68,7 @@
             {{ requireApiKey ? '需要' : '免 Key' }}
           </span>
         </div>
-        <small class="api-key-policy-model">{{ config.model[service] || '未选择' }}</small>
+        <small class="api-key-policy-model">{{ configuredModelId || '未选择' }}</small>
       </div>
       <el-switch v-model="requireApiKey" aria-label="当前模型是否需要 API Key" size="small" />
     </div>
@@ -56,7 +77,7 @@
       <el-col :span="12" class="lightblue rounded-corner">
         <SettingsHelpLabel content="API 访问令牌默认仅保存在当前浏览器会话。只有在配置管理中明确开启后，才会以明文写入扩展本地存储并跨重启保留。获取方式请参考对应服务的官方文档；翻译服务为 ollama 时，token 可为任意值">访问令牌</SettingsHelpLabel>
       </el-col>
-      <el-col :span="12"><el-input v-model="config.token[service]" type="password" show-password placeholder="请输入API访问令牌" /></el-col>
+      <el-col :span="12"><el-input v-model="apiKey" type="password" show-password placeholder="请输入API访问令牌" /></el-col>
     </el-row>
     <p v-if="presentation.fields.minimaxRegion && minimaxKeyMismatch" class="minimax-key-note is-warning">
       {{ minimaxKeyMismatch }}
@@ -67,7 +88,7 @@
         <SettingsHelpLabel content="按量付费和 Token Plan 使用不同的账户权益；请按控制台中 Key 的来源选择。">MiniMax 计费方式</SettingsHelpLabel>
       </el-col>
       <el-col :span="12">
-        <el-select v-model="config.minimaxBillingPlan" aria-label="MiniMax 计费方式" placeholder="请选择 MiniMax 计费方式">
+        <el-select v-model="minimaxBillingPlan" aria-label="MiniMax 计费方式" placeholder="请选择 MiniMax 计费方式">
           <el-option class="select-left" v-for="item in options.minimaxBillingPlan" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </el-col>
@@ -78,7 +99,7 @@
         <SettingsHelpLabel content="选择与 MiniMax Key 来源一致的 API 区域。Token Plan Key（sk-cp-）和按量付费 Key 不能互换。">MiniMax 区域</SettingsHelpLabel>
       </el-col>
       <el-col :span="12">
-        <el-select v-model="config.minimaxRegion" aria-label="MiniMax API 区域" placeholder="请选择 MiniMax API 区域">
+        <el-select v-model="minimaxRegion" aria-label="MiniMax API 区域" placeholder="请选择 MiniMax API 区域">
           <el-option class="select-left" v-for="item in options.minimaxRegion" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </el-col>
@@ -98,7 +119,7 @@
         <SettingsHelpLabel content="按量付费和 Token Plan 使用不同的账户权益；请按小米 MiMo 控制台中 Key 的来源选择。">小米 MiMo 计费方式</SettingsHelpLabel>
       </el-col>
       <el-col :span="12">
-        <el-select v-model="config.mimoBillingPlan" aria-label="小米 MiMo 计费方式" placeholder="请选择小米 MiMo 计费方式">
+        <el-select v-model="mimoBillingPlan" aria-label="小米 MiMo 计费方式" placeholder="请选择小米 MiMo 计费方式">
           <el-option class="select-left" v-for="item in options.mimoBillingPlan" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </el-col>
@@ -109,7 +130,7 @@
         <SettingsHelpLabel content="Token Plan 必须使用购买页面提供的集群地址；中国、新加坡和欧洲集群的 tp- Key 不能混用。按量付费统一使用 api.xiaomimimo.com。">MiMo API 集群</SettingsHelpLabel>
       </el-col>
       <el-col :span="12">
-        <el-select v-model="config.mimoRegion" aria-label="小米 MiMo API 集群" placeholder="请选择小米 MiMo API 集群">
+        <el-select v-model="mimoRegion" aria-label="小米 MiMo API 集群" placeholder="请选择小米 MiMo API 集群">
           <el-option class="select-left" v-for="item in options.mimoRegion" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </el-col>
@@ -120,7 +141,7 @@
       <code>{{ mimoEndpoint }}</code>
     </div>
 
-    <el-row v-if="presentation.fields.azureOpenaiEndpoint" class="margin-bottom margin-left-2em">
+    <el-row v-if="presentation.fields.azureOpenaiEndpoint && !isAIInstance" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner">
         <SettingsHelpLabel content="Azure OpenAI 服务端点地址，必须包含完整的部署信息。">Azure 端点</SettingsHelpLabel>
       </el-col>
@@ -148,42 +169,42 @@
 
     <el-row v-if="presentation.fields.youdaoCredentials" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="有道翻译服务提供的 App Key。" :show-after="300">App Key</SettingsHelpLabel></el-col>
-      <el-col :span="12"><el-input v-model="config.youdaoAppKey" placeholder="有道 AppKey" /></el-col>
+      <el-col :span="12"><el-input v-model="appKey" placeholder="有道 AppKey" /></el-col>
     </el-row>
     <el-row v-if="presentation.fields.youdaoCredentials" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="有道翻译服务提供的 App Secret。" :show-after="300">App Secret</SettingsHelpLabel></el-col>
-      <el-col :span="12"><el-input v-model="config.youdaoAppSecret" type="password" show-password placeholder="有道 AppSecret" /></el-col>
+      <el-col :span="12"><el-input v-model="appSecret" type="password" show-password placeholder="有道 AppSecret" /></el-col>
     </el-row>
 
     <el-row v-if="presentation.fields.tencentCredentials" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="腾讯云翻译服务提供的 SecretId。" :show-after="300">Secret ID</SettingsHelpLabel></el-col>
-      <el-col :span="12"><el-input v-model="config.tencentSecretId" placeholder="腾讯云 SecretId" /></el-col>
+      <el-col :span="12"><el-input v-model="secretId" placeholder="腾讯云 SecretId" /></el-col>
     </el-row>
     <el-row v-if="presentation.fields.tencentCredentials" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="腾讯云翻译服务提供的 SecretKey。" :show-after="300">Secret Key</SettingsHelpLabel></el-col>
-      <el-col :span="12"><el-input v-model="config.tencentSecretKey" type="password" show-password placeholder="腾讯云 SecretKey" /></el-col>
+      <el-col :span="12"><el-input v-model="secretKey" type="password" show-password placeholder="腾讯云 SecretKey" /></el-col>
     </el-row>
 
     <el-row v-if="presentation.fields.robotId" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="填写对应 Coze 机器人的 ID。" :show-after="300">机器人ID</SettingsHelpLabel></el-col>
-      <el-col :span="12"><el-input v-model="config.robot_id[service]" placeholder="请输入Coze机器人ID" /></el-col>
+      <el-col :span="12"><el-input v-model="robotId" placeholder="请输入Coze机器人ID" /></el-col>
     </el-row>
 
-    <el-row v-if="presentation.fields.customService" class="margin-bottom margin-left-2em">
+    <el-row v-if="presentation.fields.customService && !isAIInstance" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="填写兼容翻译请求的自定义接口地址。" :show-after="300">自定义接口</SettingsHelpLabel></el-col>
       <el-col :span="12"><el-input v-model="config.custom" placeholder="请输入自定义接口地址" /></el-col>
     </el-row>
 
     <el-row v-if="presentation.fields.customService" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="可选的代理地址；填写后，自定义接口请求会优先发送到这里。" :show-after="300">代理地址</SettingsHelpLabel></el-col>
-      <el-col :span="12"><el-input v-model="config.proxy[service]" placeholder="默认直连自定义接口" /></el-col>
+      <el-col :span="12"><el-input v-model="proxy" placeholder="默认直连自定义接口" /></el-col>
     </el-row>
-    <el-row v-if="presentation.fields.newApiEndpoint" class="margin-bottom margin-left-2em">
+    <el-row v-if="presentation.fields.newApiEndpoint && !isAIInstance" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="填写 New API 服务的接口地址。" :show-after="300">NewAPI接口</SettingsHelpLabel></el-col>
       <el-col :span="12"><el-input v-model="config.newApiUrl" placeholder="请输入您的New API接口地址" /></el-col>
     </el-row>
 
-    <el-row v-if="presentation.fields.customModel" class="margin-bottom margin-left-2em">
+    <el-row v-if="presentation.fields.customModel && !isAIInstance" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="填写服务商支持的模型标识；选择自定义模型后，网页翻译会使用这里的值。" :show-after="300">{{ service === 'doubao' ? '接入点' : '自定义模型' }}</SettingsHelpLabel></el-col>
       <el-col :span="12"><el-input v-model="config.customModel[service]" placeholder="例如：gemma:7b" /></el-col>
     </el-row>
@@ -202,7 +223,7 @@
           <SettingsHelpLabel content="以 system 身份发送的对话内容。" :show-after="300">system</SettingsHelpLabel>
         </el-col>
         <el-col :span="16" class="settings-control-field">
-          <el-input v-model="config.system_role[service]" type="textarea" maxlength="8192" placeholder="system message" />
+          <el-input v-model="systemRole" type="textarea" maxlength="8192" placeholder="system message" />
         </el-col>
       </el-row>
 
@@ -211,25 +232,25 @@
           <SettingsHelpLabel content="以 user 身份发送的对话模板；{{to}} 表示目标语言，{{origin}} 表示待翻译文本。" :show-after="300">user</SettingsHelpLabel>
         </el-col>
         <el-col :span="16" class="settings-control-field">
-          <el-input v-model="config.user_role[service]" type="textarea" maxlength="8192" placeholder="user message template" />
+          <el-input v-model="userRole" type="textarea" maxlength="8192" placeholder="user message template" />
         </el-col>
       </el-row>
     </template>
 
     <el-row v-if="presentation.fields.deepseekApiType" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="选择 DeepSeek 接口使用的 API 格式。" :show-after="300">API 格式</SettingsHelpLabel></el-col>
-      <el-col :span="12"><el-select v-model="config.deepseekApiType" placeholder="请选择 API 格式"><el-option class="select-left" v-for="item in options.deepseekApiType" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-col>
+      <el-col :span="12"><el-select v-model="deepseekApiType" placeholder="请选择 API 格式"><el-option class="select-left" v-for="item in options.deepseekApiType" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-col>
     </el-row>
     <el-row v-if="presentation.fields.deepseekThinkingMode" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="控制 DeepSeek 是否启用思考过程。" :show-after="300">思考模式</SettingsHelpLabel></el-col>
-      <el-col :span="12"><el-select v-model="config.deepseekThinkingMode" placeholder="请选择思考模式"><el-option class="select-left" v-for="item in options.deepseekThinkingMode" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-col>
+      <el-col :span="12"><el-select v-model="deepseekThinkingMode" placeholder="请选择思考模式"><el-option class="select-left" v-for="item in options.deepseekThinkingMode" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-col>
     </el-row>
 
     <el-row v-if="presentation.fields.customBody" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="填写要合并到翻译请求中的 JSON 参数对象。" :show-after="300">自定义请求体</SettingsHelpLabel></el-col>
       <el-col :span="12">
-        <el-input v-model="config.customBody[service]" :class="{ 'input-error': !isValidCustomBody(config.customBody[service]) }" placeholder='例如：{"thinking": {"type": "disabled"}}' />
-        <div v-if="!isValidCustomBody(config.customBody[service])" class="error-text">请输入合法的 JSON 对象，否则该配置将被忽略</div>
+        <el-input v-model="customBody" :class="{ 'input-error': !isValidCustomBody(customBody) }" placeholder='例如：{"thinking": {"type": "disabled"}}' />
+        <div v-if="!isValidCustomBody(customBody)" class="error-text">请输入合法的 JSON 对象，否则该配置将被忽略</div>
       </el-col>
     </el-row>
   </section>
@@ -246,8 +267,9 @@ import {
   RotateCcw,
   TriangleAlert,
 } from '@lucide/vue'
-import type { Config } from '@/src/core/config/model'
-import { defaultOption, options as optionConfig } from '@/src/core/config/catalog'
+import type { Config, TranslationServiceCredential } from '@/src/core/config/model'
+import type { TranslationServiceInstance } from '@/src/core/config/translationServices'
+import { defaultOption, options as optionConfig, servicesType } from '@/src/core/config/catalog'
 import { isValidCustomBody } from '@/src/core/config/customBody'
 import {
   getApiKeyRequirementKey,
@@ -264,53 +286,236 @@ import SettingsHelpLabel from '../SettingsHelpLabel.vue'
 const props = defineProps<{
   config: Config
   service: string
+  instance?: TranslationServiceInstance
   presentation: ServiceConfigurationPresentation
   options: typeof optionConfig
   isValidAzureEndpoint: (endpoint: string) => boolean
 }>()
 
 const config = toRef(props, 'config')
-const service = toRef(props, 'service')
+const instance = computed(() => props.instance)
+const instanceId = computed(() => instance.value?.id || props.service)
+const service = computed(() => instance.value?.provider || props.service)
+const isAIInstance = computed(() => instance.value?.kind === 'ai')
+const showInstanceEndpoint = computed(() => isAIInstance.value
+  && (servicesType.isUseProxy(service.value) || servicesType.isUseCustomUrl(service.value)))
 const presentation = toRef(props, 'presentation')
 const options = toRef(props, 'options')
 const isValidAzureEndpoint = toRef(props, 'isValidAzureEndpoint')
 
+function ensureInstanceCredential(): TranslationServiceCredential {
+  const id = instanceId.value
+  const existing = config.value.serviceCredentials[id]
+  if (existing) return existing
+  const legacyProviderConfig = instance.value?.id === instance.value?.provider
+  const credential = {
+    apiKey: legacyProviderConfig ? config.value.token[service.value] || '' : '',
+    appKey: legacyProviderConfig ? config.value.youdaoAppKey || '' : '',
+    appSecret: legacyProviderConfig ? config.value.youdaoAppSecret || '' : '',
+    secretId: legacyProviderConfig ? config.value.tencentSecretId || '' : '',
+    secretKey: legacyProviderConfig ? config.value.tencentSecretKey || '' : '',
+  }
+  config.value.serviceCredentials[id] = credential
+  return credential
+}
+
+function instanceCredentialValue(key: keyof TranslationServiceCredential): string {
+  const credential = config.value.serviceCredentials[instanceId.value]
+  if (credential) return credential[key] || ''
+  if (instance.value?.id !== instance.value?.provider) return ''
+  if (key === 'apiKey') return config.value.token[service.value] || ''
+  if (key === 'appKey') return config.value.youdaoAppKey || ''
+  if (key === 'appSecret') return config.value.youdaoAppSecret || ''
+  if (key === 'secretId') return config.value.tencentSecretId || ''
+  return config.value.tencentSecretKey || ''
+}
+
+function legacyProviderMappingValue(mapping: Record<string, string>): string {
+  const selected = instance.value
+  if (selected && selected.id !== selected.provider) return ''
+  return mapping[service.value] || ''
+}
+
+const instanceName = computed({
+  get: () => instance.value?.name || '',
+  set: (value: string) => {
+    if (instance.value) instance.value.name = value.trimStart().slice(0, 80)
+  },
+})
+const instanceModelId = computed({
+  get: () => instance.value?.modelId || legacyProviderMappingValue(config.value.model),
+  set: (value: string) => {
+    if (instance.value) instance.value.modelId = value.trim()
+    else config.value.model[service.value] = value
+  },
+})
+const configuredModelId = computed(() => instanceModelId.value)
+const instanceEndpoint = computed({
+  get: () => {
+    const selected = instance.value
+    if (!selected) return ''
+    return servicesType.isCustom(service.value)
+      ? selected.endpoint
+      : selected.proxy || selected.endpoint
+  },
+  set: (value: string) => {
+    if (!instance.value) return
+    instance.value.endpoint = value.trim()
+    if (!servicesType.isCustom(service.value)) instance.value.proxy = ''
+  },
+})
+const apiKey = computed({
+  get: () => isAIInstance.value
+    ? instanceCredentialValue('apiKey')
+    : config.value.token[service.value] || '',
+  set: (value: string) => {
+    if (isAIInstance.value) ensureInstanceCredential().apiKey = value
+    else config.value.token[service.value] = value
+  },
+})
+const appKey = computed({
+  get: () => isAIInstance.value ? instanceCredentialValue('appKey') : config.value.youdaoAppKey,
+  set: (value: string) => {
+    if (isAIInstance.value) ensureInstanceCredential().appKey = value
+    else config.value.youdaoAppKey = value
+  },
+})
+const appSecret = computed({
+  get: () => isAIInstance.value ? instanceCredentialValue('appSecret') : config.value.youdaoAppSecret,
+  set: (value: string) => {
+    if (isAIInstance.value) ensureInstanceCredential().appSecret = value
+    else config.value.youdaoAppSecret = value
+  },
+})
+const secretId = computed({
+  get: () => isAIInstance.value ? instanceCredentialValue('secretId') : config.value.tencentSecretId,
+  set: (value: string) => {
+    if (isAIInstance.value) ensureInstanceCredential().secretId = value
+    else config.value.tencentSecretId = value
+  },
+})
+const secretKey = computed({
+  get: () => isAIInstance.value ? instanceCredentialValue('secretKey') : config.value.tencentSecretKey,
+  set: (value: string) => {
+    if (isAIInstance.value) ensureInstanceCredential().secretKey = value
+    else config.value.tencentSecretKey = value
+  },
+})
+const robotId = computed({
+  get: () => instance.value?.robotId || legacyProviderMappingValue(config.value.robot_id),
+  set: (value: string) => {
+    if (instance.value) instance.value.robotId = value
+    else config.value.robot_id[service.value] = value
+  },
+})
+const proxy = computed({
+  get: () => instance.value?.proxy || legacyProviderMappingValue(config.value.proxy),
+  set: (value: string) => {
+    if (instance.value) instance.value.proxy = value.trim()
+    else config.value.proxy[service.value] = value
+  },
+})
+const systemRole = computed({
+  get: () => instance.value?.systemRole || legacyProviderMappingValue(config.value.system_role),
+  set: (value: string) => {
+    if (instance.value) instance.value.systemRole = value
+    else config.value.system_role[service.value] = value
+  },
+})
+const userRole = computed({
+  get: () => instance.value?.userRole || legacyProviderMappingValue(config.value.user_role),
+  set: (value: string) => {
+    if (instance.value) instance.value.userRole = value
+    else config.value.user_role[service.value] = value
+  },
+})
+const customBody = computed({
+  get: () => instance.value?.customBody || legacyProviderMappingValue(config.value.customBody),
+  set: (value: string) => {
+    if (instance.value) instance.value.customBody = value
+    else config.value.customBody[service.value] = value
+  },
+})
+const minimaxBillingPlan = computed({
+  get: () => instance.value?.minimaxBillingPlan || config.value.minimaxBillingPlan,
+  set: (value: Config['minimaxBillingPlan']) => {
+    if (instance.value) instance.value.minimaxBillingPlan = value
+    else config.value.minimaxBillingPlan = value
+  },
+})
+const minimaxRegion = computed({
+  get: () => instance.value?.minimaxRegion || config.value.minimaxRegion,
+  set: (value: Config['minimaxRegion']) => {
+    if (instance.value) instance.value.minimaxRegion = value
+    else config.value.minimaxRegion = value
+  },
+})
+const mimoBillingPlan = computed({
+  get: () => instance.value?.mimoBillingPlan || config.value.mimoBillingPlan,
+  set: (value: Config['mimoBillingPlan']) => {
+    if (instance.value) instance.value.mimoBillingPlan = value
+    else config.value.mimoBillingPlan = value
+  },
+})
+const mimoRegion = computed({
+  get: () => instance.value?.mimoRegion || config.value.mimoRegion,
+  set: (value: Config['mimoRegion']) => {
+    if (instance.value) instance.value.mimoRegion = value
+    else config.value.mimoRegion = value
+  },
+})
+const deepseekApiType = computed({
+  get: () => instance.value?.deepseekApiType || config.value.deepseekApiType,
+  set: (value: Config['deepseekApiType']) => {
+    if (instance.value) instance.value.deepseekApiType = value
+    else config.value.deepseekApiType = value
+  },
+})
+const deepseekThinkingMode = computed({
+  get: () => instance.value?.deepseekThinkingMode || config.value.deepseekThinkingMode,
+  set: (value: Config['deepseekThinkingMode']) => {
+    if (instance.value) instance.value.deepseekThinkingMode = value
+    else config.value.deepseekThinkingMode = value
+  },
+})
+
 const requireApiKey = computed({
-  get: () => isApiKeyRequired(service.value, config.value),
+  get: () => instance.value?.requireApiKey ?? isApiKeyRequired(instanceId.value, config.value),
   set: (value: boolean) => {
-    config.value.requireApiKey[getApiKeyRequirementKey(service.value, config.value)] = value
+    if (instance.value) instance.value.requireApiKey = value
+    else config.value.requireApiKey[getApiKeyRequirementKey(instanceId.value, config.value)] = value
   },
 })
 const credentialWarning = computed(
-  () => getMissingCredentialMessage(service.value, config.value),
+  () => getMissingCredentialMessage(instanceId.value, config.value),
 )
 
 const minimaxKeyKind = computed(() => {
-  const token = config.value.token[service.value]?.trim() || ''
+  const token = apiKey.value.trim()
   return token.startsWith('sk-cp-') ? 'token-plan' : token ? 'other' : 'empty'
 })
 
 const minimaxKeyMismatch = computed(() => {
   if (minimaxKeyKind.value === 'empty') return ''
-  if (config.value.minimaxBillingPlan === 'token-plan' && minimaxKeyKind.value !== 'token-plan') {
+  if (minimaxBillingPlan.value === 'token-plan' && minimaxKeyKind.value !== 'token-plan') {
     return '当前选择的是 Token Plan，但 Key 不是 sk-cp- 开头；请确认 Key 来源，Token Plan 订阅必须有效。'
   }
-  if (config.value.minimaxBillingPlan === 'payg' && minimaxKeyKind.value === 'token-plan') {
+  if (minimaxBillingPlan.value === 'payg' && minimaxKeyKind.value === 'token-plan') {
     return '当前选择的是按量付费，但检测到 sk-cp- Token Plan Key；两类 Key 不能互换，请切换计费方式或更换 Key。'
   }
-  return config.value.minimaxBillingPlan === 'token-plan'
+  return minimaxBillingPlan.value === 'token-plan'
     ? '当前使用 Token Plan Key；请确认 Token Plan 订阅有效。'
     : ''
 })
 
 const minimaxEndpoint = computed(() => {
-  const plan = config.value.minimaxBillingPlan === 'token-plan' ? 'token-plan' : 'payg'
-  const region = config.value.minimaxRegion === 'cn' ? 'cn' : 'global'
+  const plan = minimaxBillingPlan.value === 'token-plan' ? 'token-plan' : 'payg'
+  const region = minimaxRegion.value === 'cn' ? 'cn' : 'global'
   return MINIMAX_ENDPOINTS[plan][region]
 })
 
 const mimoKeyKind = computed(() => {
-  const token = config.value.token[service.value]?.trim() || ''
+  const token = apiKey.value.trim()
   if (token.startsWith('tp-')) return 'token-plan'
   if (token.startsWith('sk-')) return 'payg'
   return token ? 'other' : 'empty'
@@ -318,22 +523,22 @@ const mimoKeyKind = computed(() => {
 
 const mimoKeyMismatch = computed(() => {
   if (mimoKeyKind.value === 'empty') return ''
-  if (config.value.mimoBillingPlan === 'token-plan' && mimoKeyKind.value !== 'token-plan') {
+  if (mimoBillingPlan.value === 'token-plan' && mimoKeyKind.value !== 'token-plan') {
     return '当前选择的是 MiMo Token Plan，但 Key 不是 tp- 开头；请确认 Key 来源和订阅状态。'
   }
-  if (config.value.mimoBillingPlan === 'payg' && mimoKeyKind.value === 'token-plan') {
+  if (mimoBillingPlan.value === 'payg' && mimoKeyKind.value === 'token-plan') {
     return '当前选择的是 MiMo 按量付费，但检测到 tp- Token Plan Key；两类 Key 不能互换，请切换计费方式或更换 Key。'
   }
-  if (config.value.mimoBillingPlan === 'payg' && mimoKeyKind.value === 'other') {
+  if (mimoBillingPlan.value === 'payg' && mimoKeyKind.value === 'other') {
     return 'MiMo 按量付费 Key 通常以 sk- 开头；请确认 Key 来自 API Keys 页面。'
   }
-  return config.value.mimoBillingPlan === 'token-plan'
+  return mimoBillingPlan.value === 'token-plan'
     ? '当前使用 MiMo Token Plan Key；请确认订阅仍在有效期内。'
     : ''
 })
 
 const mimoEndpoint = computed(() => {
-  return getMimoEndpoint(config.value.mimoBillingPlan, config.value.mimoRegion)
+  return getMimoEndpoint(mimoBillingPlan.value, mimoRegion.value)
 })
 
 type ConnectionTestState = 'idle' | 'testing' | 'success' | 'error'
@@ -385,7 +590,7 @@ async function testConnection(): Promise<void> {
     await requestConfigSave(config.value, browser.runtime.sendMessage.bind(browser.runtime))
     const response = await browser.runtime.sendMessage({
       type: CONNECTION_TEST_MESSAGE,
-      service: service.value,
+      service: instanceId.value,
     }) as {success?: boolean; durationMs?: number; error?: string} | undefined
 
     if (!response?.success) {
@@ -413,15 +618,15 @@ function resetCustomTemplate(): void {
       type: 'warning',
     },
   ).then(() => {
-    config.value.system_role[service.value] = defaultOption.system_role
-    config.value.user_role[service.value] = defaultOption.user_role
+    systemRole.value = defaultOption.system_role
+    userRole.value = defaultOption.user_role
     ElMessage.success('已恢复自定义接口默认模板')
   }).catch(() => {
     // 用户取消操作，不做任何处理。
   })
 }
 
-watch(service, resetConnectionTest)
+watch(instanceId, resetConnectionTest)
 onBeforeUnmount(() => {
   connectionTestMounted = false
   clearConnectionTestResetTimer()

@@ -25,9 +25,6 @@ const runtime = vi.hoisted(() => ({
 }));
 
 vi.mock('@/src/features/full-page-translation/content/configCheck', () => ({checkConfig: () => true}));
-vi.mock("@/src/core/config/catalog", () => ({
-    services: {microsoft: "microsoft", freeTranslation: "freeTranslation"},
-}));
 vi.mock("@/src/core/config/constants", () => ({
     styles: {singleTranslation: 0, bilingualTranslation: 1},
 }));

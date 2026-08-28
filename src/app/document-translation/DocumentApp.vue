@@ -116,37 +116,21 @@
             >
               <el-option
                 v-if="documentServiceUnavailableMessage"
-                label="Chrome内置AI翻译（当前浏览器不可用）"
+                :label="`${documentServiceLabel}（当前浏览器不可用）`"
                 :value="config.documentService"
                 disabled
               />
-              <el-option v-for="item in serviceOptions" :key="item.value" :label="item.label" :value="item.value" />
+              <el-option v-for="item in serviceOptions" :key="item.value" :label="item.label" :value="item.value">
+                <span class="document-service-option">
+                  <ServiceIcon :service="item.provider" :label="item.label" size="small" />
+                  <span>{{ item.label }}</span>
+                </span>
+              </el-option>
             </el-select>
           </label>
-          <label v-if="documentUsesModel" class="model-control">
+          <div class="model-summary">
             <span>模型</span>
-            <el-select
-              v-model="selectedDocumentModel"
-              class="document-control-select"
-              :disabled="translating"
-              :teleported="false"
-              popper-class="document-select-popper"
-              aria-label="文档翻译模型"
-            >
-              <el-option v-for="model in documentModelOptions" :key="model" :label="model" :value="model" />
-            </el-select>
-            <input
-              v-if="selectedDocumentModel === customModelString"
-              v-model="selectedDocumentCustomModel"
-              :disabled="translating"
-              type="text"
-              placeholder="输入自定义模型名称"
-              aria-label="文档自定义模型名称"
-            />
-          </label>
-          <div v-else class="model-summary">
-            <span>模型</span>
-            <strong>当前服务无需模型</strong>
+            <strong>{{ documentUsesModel ? documentModelValue : '当前服务无需模型' }}</strong>
           </div>
           <div class="mode-control" role="group" aria-label="导出模式">
             <span>译文显示</span>
@@ -442,13 +426,14 @@
 import {computed, onMounted, onUnmounted, reactive, ref, watch} from 'vue';
 import {ArrowRight, CircleCheck, ExternalLink} from '@lucide/vue';
 import {browser} from 'wxt/browser';
+import ServiceIcon from '@/src/ui/components/ServiceIcon.vue';
 import {
   Config,
   DOCUMENT_MAX_BYTES,
   createDocumentDownload,
   createDocumentPreviewHtml,
   createPdfPagePreview,
-  filterAvailableTranslationServices,
+  getSelectableTranslationServices,
   formatDocumentReaderText,
   getDocumentAcceptAttribute,
   getDocumentEmptyReaderHint,
@@ -461,16 +446,16 @@ import {
   getTranslationServiceUnavailableMessage,
   isRichDocumentFormat,
   isSubtitleDocumentFormat,
-  customModelString,
   configReady,
-  models,
+  getTranslationServiceModel,
+  getTranslationServiceLabel,
+  getTranslationServiceProvider,
   options,
   parseDocument,
   parseDocumentFile,
   requestConfigSave,
-  resolveConfiguredModel,
   runtimeConfig,
-  saveConfig,
+  subscribeConfig,
   servicesType,
   translateDocumentSegments,
   type DocumentRenderMode,
@@ -510,6 +495,9 @@ const isDark = ref(colorSchemeMedia.matches);
 let abortController: AbortController | null = null;
 let translationRequestId = 0;
 let lastSerialized = '';
+let applyingExternalConfig = false;
+let unsubscribeConfig: (() => void) | undefined;
+let configMounted = true;
 let noticeTimer: ReturnType<typeof setTimeout> | undefined;
 let pdfPreviewTimer: ReturnType<typeof setTimeout> | undefined;
 let pdfPreviewRequest = 0;
@@ -528,31 +516,23 @@ const formatCards = [
   {code: 'SUB', label: '各种字幕文件', tone: 'violet'},
 ];
 
-const serviceOptions = computed(() => filterAvailableTranslationServices(options.services).filter((item: any) => !item.disabled));
-const documentServiceUnavailableMessage = computed(() => getTranslationServiceUnavailableMessage(config.documentService));
-const documentUsesModel = computed(() => servicesType.isUseModel(config.documentService));
-const documentModelOptions = computed(() => models.get(config.documentService) || []);
-const selectedDocumentModel = computed({
-  get: () => config.documentModel[config.documentService] || documentModelOptions.value[0] || '',
-  set: (value: string) => { config.documentModel[config.documentService] = value; },
-});
-const selectedDocumentCustomModel = computed({
-  get: () => config.documentCustomModel[config.documentService] || '',
-  set: (value: string) => { config.documentCustomModel[config.documentService] = value; },
-});
-const documentModelValue = computed(() => resolveConfiguredModel(selectedDocumentModel.value, selectedDocumentCustomModel.value));
+const serviceOptions = computed(() => getSelectableTranslationServices(config));
+const documentServiceProvider = computed(() => getTranslationServiceProvider(config, config.documentService));
+const documentServiceLabel = computed(() => getTranslationServiceLabel(config, config.documentService));
+const documentServiceUnavailableMessage = computed(() => getTranslationServiceUnavailableMessage(
+  config.documentService,
+  undefined,
+  documentServiceProvider.value,
+));
+const documentUsesModel = computed(() => servicesType.isUseModel(documentServiceProvider.value));
+const documentModelValue = computed(() => getTranslationServiceModel(config, config.documentService));
 const credentialWarning = computed(() => {
   if (documentServiceUnavailableMessage.value) return documentServiceUnavailableMessage.value;
   if (documentUsesModel.value && !documentModelValue.value.trim()) {
     return '文档翻译模型尚未配置，请先选择模型或填写自定义模型名称。';
   }
 
-  const credentialConfig = {
-    ...config,
-    model: {...config.model, [config.documentService]: selectedDocumentModel.value},
-    customModel: {...config.customModel, [config.documentService]: selectedDocumentCustomModel.value},
-  };
-  return getMissingCredentialMessage(config.documentService, credentialConfig);
+  return getMissingCredentialMessage(config.documentService, config);
 });
 const previewRows = computed(() => (parsedDocument.value?.segments || []).slice(0, PREVIEW_LIMIT).map((segment) => ({
   index: segment.id,
@@ -736,14 +716,31 @@ function applyTheme(): void {
 
 async function hydrateConfig(): Promise<void> {
   await configReady;
-  Object.assign(config, runtimeConfig);
-  lastSerialized = JSON.stringify(config);
+  if (!configMounted) return;
+  applyingExternalConfig = true;
+  try {
+    Object.assign(config, runtimeConfig);
+    lastSerialized = JSON.stringify(config);
+  } finally {
+    applyingExternalConfig = false;
+  }
   hydrated.value = true;
+  unsubscribeConfig = subscribeConfig((nextConfig) => {
+    const serialized = JSON.stringify(nextConfig);
+    if (serialized === lastSerialized) return;
+    applyingExternalConfig = true;
+    try {
+      Object.assign(config, nextConfig);
+      lastSerialized = JSON.stringify(config);
+    } finally {
+      applyingExternalConfig = false;
+    }
+  });
 }
 void hydrateConfig();
 
 watch(config, (value) => {
-  if (!hydrated.value) return;
+  if (!hydrated.value || applyingExternalConfig) return;
   const serialized = JSON.stringify(value);
   if (serialized === lastSerialized) return;
   lastSerialized = serialized;
@@ -919,9 +916,10 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  configMounted = false;
+  unsubscribeConfig?.();
   translationRequestId += 1;
   abortController?.abort();
-  void saveConfig(config).catch(() => undefined);
   if (noticeTimer) clearTimeout(noticeTimer);
   if (pdfPreviewTimer) clearTimeout(pdfPreviewTimer);
   clearPdfPreviewUrls();

@@ -8,10 +8,21 @@
   >
     <div class="catalog-layout">
       <aside class="service-rail" aria-label="翻译服务列表">
-        <label class="catalog-search">
-          <Search :size="16" :stroke-width="1.8" aria-hidden="true" focusable="false" />
-          <input v-model.trim="serviceQuery" type="search" placeholder="搜索翻译服务" />
-        </label>
+        <div class="catalog-search-row">
+          <label class="catalog-search">
+            <Search :size="16" :stroke-width="1.8" aria-hidden="true" focusable="false" />
+            <input v-model.trim="serviceQuery" type="search" placeholder="搜索翻译服务" />
+          </label>
+          <button
+            type="button"
+            class="catalog-add-button"
+            aria-label="添加翻译服务"
+            title="添加翻译服务"
+            @click="$emit('add')"
+          >
+            <Plus :size="18" :stroke-width="2" aria-hidden="true" focusable="false" />
+          </button>
+        </div>
 
         <div v-if="filteredGroups.length" class="service-groups">
           <section v-for="group in filteredGroups" :key="group.id" class="service-group">
@@ -19,22 +30,53 @@
               <strong>{{ group.label }}</strong>
               <span>{{ group.items.length }} 项</span>
             </div>
-            <button
+            <div
               v-for="item in group.items"
               :key="item.value"
-              type="button"
               class="service-item"
               :data-service-value="item.value"
-              :class="{ active: service === item.value }"
-              :aria-pressed="service === item.value"
-              @click="$emit('update:service', item.value)"
+              :data-service-enabled="serviceEnabled(item) ? 'true' : 'false'"
+              :class="{
+                active: service === item.value,
+                'is-disabled': !serviceEnabled(item),
+              }"
             >
-              <ServiceIcon :service="item.value" :label="item.label" />
-              <span class="service-copy">
-                <strong>{{ item.label }}</strong>
-                <small v-if="defaultService === item.value">默认翻译服务</small>
+              <button
+                type="button"
+                class="service-select"
+                :aria-pressed="service === item.value"
+                @click="$emit('update:service', item.value)"
+              >
+                <ServiceIcon :service="serviceProvider(item)" :label="item.label" />
+                <span class="service-copy">
+                  <strong>{{ item.label }}</strong>
+                  <span v-if="serviceModelId(item) || defaultService === item.value" class="service-meta">
+                    <small v-if="serviceModelId(item)" :title="serviceModelId(item)">{{ serviceModelId(item) }}</small>
+                    <small v-if="defaultService === item.value" class="default-service-label">默认</small>
+                  </span>
+                </span>
+              </button>
+              <span class="service-row-actions">
+                <button
+                  v-if="serviceRemovable(item)"
+                  type="button"
+                  class="service-remove-button"
+                  :aria-label="`删除${item.label}`"
+                  :title="`删除${item.label}`"
+                  @click.stop="$emit('remove', item.value)"
+                >
+                  <Trash2 :size="15" aria-hidden="true" focusable="false" />
+                </button>
+                <el-switch
+                  class="service-enabled-switch"
+                  size="small"
+                  :model-value="serviceEnabled(item)"
+                  :aria-label="`${serviceEnabled(item) ? '禁用' : '启用'}${item.label}`"
+                  @click.stop
+                  @update:model-value="updateServiceEnabled(item, $event)"
+                />
               </span>
-            </button>
+            </div>
           </section>
         </div>
         <p v-else class="catalog-empty">没有匹配的翻译服务</p>
@@ -42,69 +84,13 @@
 
       <section class="service-detail" aria-label="当前翻译服务详情">
         <div class="detail-hero">
-          <ServiceIcon :service="service" :label="selectedService?.label" size="large" />
-          <h4>{{ selectedService?.label || '尚未配置服务' }}</h4>
-        </div>
-
-        <div v-if="presentation.showModelConfiguration" class="model-section">
-          <div class="model-heading">
-            <div>
-              <span>模型列表</span>
-              <strong>{{ selectedModelLabel || '尚未选择模型' }}</strong>
-            </div>
-            <label v-if="modelOptions.length > commonModelCount" class="model-search">
-              <Search :size="16" :stroke-width="1.8" aria-hidden="true" focusable="false" />
-              <input v-model.trim="modelQuery" type="search" placeholder="搜索模型" />
-            </label>
+          <ServiceIcon :service="selectedService ? serviceProvider(selectedService) : service" :label="selectedService?.label" size="large" />
+          <div class="detail-hero-copy">
+            <h4>{{ selectedService?.label || '尚未配置服务' }}</h4>
+            <small v-if="selectedService && serviceModelId(selectedService)" :title="serviceModelId(selectedService)">
+              {{ serviceModelId(selectedService) }}
+            </small>
           </div>
-
-          <div v-if="displayedModels.length" class="model-list">
-            <div class="model-list-heading">
-              <strong>{{ modelQuery ? '搜索结果' : moreModelsOpen ? '全部模型' : '常用模型' }}</strong>
-              <span>{{ displayedModels.length }}</span>
-            </div>
-            <div
-              id="model-options"
-              class="model-grid"
-              :class="{ expanded: moreModelsOpen || modelQuery }"
-              role="listbox"
-              aria-label="可用模型"
-            >
-              <button
-                v-for="model in displayedModels"
-                :key="model"
-                type="button"
-                class="model-item"
-                :class="{ active: selectedModel === model, custom: model === customModelLabel }"
-                role="option"
-                :aria-selected="selectedModel === model"
-                @click="$emit('update:model', model)"
-              >
-                <ServiceIcon :service="model === customModelLabel ? 'custom' : service" :label="model" size="model" />
-                <span>
-                  <strong>{{ model }}</strong>
-                  <small v-if="model === customModelLabel">填写服务商支持的模型标识</small>
-                </span>
-                <Check v-if="selectedModel === model" class="checkmark" :size="15" :stroke-width="2.4" aria-hidden="true" focusable="false" />
-              </button>
-            </div>
-
-            <button
-              v-if="!modelQuery && moreModels.length"
-              type="button"
-              class="more-models-toggle"
-              :aria-expanded="moreModelsOpen"
-              aria-controls="model-options"
-              @click="moreModelsOpen = !moreModelsOpen"
-            >
-              <span>
-                <strong>更多模型</strong>
-                <small>{{ moreModels.length }} 个较少使用的模型</small>
-              </span>
-              <b>{{ moreModelsOpen ? '收起' : '展开' }} <ChevronDown :size="13" :stroke-width="2" aria-hidden="true" focusable="false" /></b>
-            </button>
-          </div>
-          <p v-else class="catalog-empty">没有匹配的模型</p>
         </div>
 
         <div
@@ -151,67 +137,59 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { Check, ChevronDown, CircleCheck, CircleX, Search } from '@lucide/vue'
+import { computed, ref } from 'vue'
+import { CircleCheck, CircleX, Plus, Search, Trash2 } from '@lucide/vue'
 import ServiceIcon from '@/src/ui/components/ServiceIcon.vue'
-import { customModelString } from '@/src/core/config/catalog'
 import {
   buildServiceGroups,
-  filterModels,
   filterServiceGroups,
-  getSelectedModelLabel,
-  splitModelOptions,
-  type ServiceOption,
+  isServiceInstanceOption,
+  type ServiceCatalogOption,
 } from '@/src/ui/view-model/serviceCatalog'
 import type {ServiceConfigurationPresentation} from '@/src/features/settings/model/serviceConfiguration'
 
 const props = defineProps<{
   service: string
-  selectedServiceOption?: ServiceOption
+  selectedServiceOption?: ServiceCatalogOption
   defaultService: string
-  selectedModel?: string
-  services: ServiceOption[]
-  modelOptions: string[]
-  customModels: Record<string, string>
+  services: ServiceCatalogOption[]
   presentation: ServiceConfigurationPresentation
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   'update:service': [value: string]
-  'update:model': [value: string]
+  'update:enabled': [id: string, enabled: boolean]
+  remove: [id: string]
+  add: []
 }>()
 
 const serviceQuery = ref('')
-const modelQuery = ref('')
-const moreModelsOpen = ref(false)
-const commonModelCount = 4
-const customModelLabel = customModelString
 
 const groups = computed(() => buildServiceGroups(props.services))
 const filteredGroups = computed(() => filterServiceGroups(groups.value, serviceQuery.value))
-const filteredModels = computed(() => filterModels(props.modelOptions, modelQuery.value))
-const modelGroups = computed(() => splitModelOptions(props.modelOptions, props.selectedModel, commonModelCount))
-const moreModels = computed(() => modelGroups.value.more)
-const selectedModelLabel = computed(() => getSelectedModelLabel(
-  props.service,
-  {[props.service]: props.selectedModel || ''},
-  props.customModels,
-))
-const displayedModels = computed(() => modelQuery.value
-  ? filteredModels.value
-  : moreModelsOpen.value ? [...modelGroups.value.common, ...moreModels.value] : modelGroups.value.common)
 const selectedService = computed(() => groups.value
   .flatMap((group) => group.items)
   .find((item) => item.value === props.service) || props.selectedServiceOption)
 
-watch(() => props.service, () => {
-  modelQuery.value = ''
-  moreModelsOpen.value = false
-})
+function serviceProvider(item: ServiceCatalogOption): string {
+  return isServiceInstanceOption(item) ? item.provider : item.value
+}
 
-watch(modelQuery, () => {
-  moreModelsOpen.value = false
-})
+function serviceEnabled(item: ServiceCatalogOption): boolean {
+  return isServiceInstanceOption(item) ? item.enabled : true
+}
+
+function serviceModelId(item: ServiceCatalogOption): string {
+  return isServiceInstanceOption(item) ? item.modelId || '' : ''
+}
+
+function serviceRemovable(item: ServiceCatalogOption): boolean {
+  return isServiceInstanceOption(item) && item.kind === 'ai'
+}
+
+function updateServiceEnabled(item: ServiceCatalogOption, value: boolean | string | number): void {
+  emit('update:enabled', item.value, Boolean(value))
+}
 
 </script>
 
@@ -219,53 +197,40 @@ watch(modelQuery, () => {
 .service-catalog { display: flex; height: clamp(520px, calc(100vh - 270px), 760px); min-height: 520px; margin: 0; border: 1px solid #e4e7ef; border-radius: 12px; overflow: hidden; background: #fff; flex-direction: column; }
 .catalog-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); min-height: 0; flex: 1; overflow: hidden; }
 .service-rail { min-height: 0; padding: 12px 10px 14px; border-right: 1px solid #eceef3; background: #fafbfc; overflow-y: auto; }
-.catalog-search, .model-search { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px; border: 1px solid #dfe3eb; border-radius: 8px; background: #fff; }
-.catalog-search > svg, .model-search > svg { flex: 0 0 auto; color: #8991a2; }
-.catalog-search input, .model-search input { width: 100%; min-width: 0; border: 0; outline: 0; color: #172033; background: transparent; font-size: 13px; }
+.catalog-search-row { display: grid; grid-template-columns: minmax(0, 1fr) 36px; gap: 8px; }
+.catalog-search { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px; border: 1px solid #dfe3eb; border-radius: 8px; background: #fff; box-sizing: border-box; }
+.catalog-search > svg { flex: 0 0 auto; color: #8991a2; }
+.catalog-search input { width: 100%; min-width: 0; border: 0; outline: 0; color: #172033; background: transparent; font-size: 13px; }
+.catalog-search:focus-within { border-color: #ef4776; box-shadow: 0 0 0 3px rgba(239, 71, 118, .1); }
+.catalog-add-button { display: grid; width: 36px; height: 36px; padding: 0; place-items: center; border: 1px solid #efadc0; border-radius: 8px; color: #c72a56; background: #fff4f7; cursor: pointer; }
+.catalog-add-button:hover { border-color: #ef4776; color: #fff; background: #ef4776; }
+.catalog-add-button:focus-visible, .service-select:focus-visible { outline: 2px solid #ef4776; outline-offset: 1px; }
 .service-groups { display: grid; gap: 12px; margin-top: 12px; }
 .group-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; padding: 7px 6px 5px; border-bottom: 1px solid #e5e8ef; color: #667187; background: transparent; }
 .group-heading strong { color: #46526a; font-size: 12px; letter-spacing: .05em; }
 .group-heading span { font-size: 10px; }
 .service-group { min-width: 0; }
-.service-item { display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: center; gap: 9px; width: 100%; padding: 8px; border: 1px solid transparent; border-radius: 8px; color: #172033; background: transparent; text-align: left; cursor: pointer; transition: background 150ms ease, border-color 150ms ease; }
+.service-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px; width: 100%; padding: 2px 7px 2px 2px; border: 1px solid transparent; border-radius: 8px; color: #172033; background: transparent; transition: background 150ms ease, border-color 150ms ease; }
 .service-item:hover { border-color: #e2e5ec; background: #fff; }
 .service-item.active { border-color: #f3c4d1; background: #fff0f4; }
+.service-select { display: grid; min-width: 0; grid-template-columns: 40px minmax(0, 1fr); align-items: center; gap: 9px; padding: 6px; border: 0; border-radius: 7px; color: inherit; background: transparent; text-align: left; cursor: pointer; }
+.service-item.is-disabled .service-select { opacity: .54; }
+.service-enabled-switch { flex: none; }
+.service-row-actions { display: inline-flex; align-items: center; gap: 5px; }
+.service-remove-button { display: grid; width: 26px; height: 26px; padding: 0; place-items: center; border: 0; border-radius: 7px; color: #9aa2b1; background: transparent; cursor: pointer; }
+.service-remove-button:hover { color: #c52f58; background: #ffe9ef; }
 .service-copy { display: flex; min-width: 0; flex-direction: column; }
 .service-copy strong { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
-.service-copy small { margin-top: 3px; color: #9299a8; font-size: 10px; line-height: 1.3; }
+.service-meta { display: flex; min-width: 0; align-items: center; gap: 5px; margin-top: 3px; }
+.service-meta small { min-width: 0; overflow: hidden; color: #9299a8; font-size: 10px; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; }
+.service-meta .default-service-label { flex: none; padding: 1px 4px; border-radius: 999px; color: #b52b52; background: #ffe4ec; font-size: 8px; font-weight: 750; }
 .service-detail { display: flex; min-width: 0; min-height: 0; margin: 0; padding: 18px 20px; background: #fff; flex-direction: column; overflow: hidden; }
 .service-detail > .detail-hero,
-.service-detail > .model-section,
 .service-detail > .service-configuration-slot { width: min(100%, 1080px); }
 .detail-hero { display: flex; align-items: center; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid #eceef3; }
+.detail-hero-copy { display: flex; min-width: 0; flex-direction: column; }
 .detail-hero h4 { min-width: 0; margin: 0; overflow: hidden; color: #172033; font-size: 20px; text-overflow: ellipsis; white-space: nowrap; }
-.model-section { display: flex; min-height: 0; margin-top: 16px; flex: 0 0 auto; flex-direction: column; }
-.model-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 15px; margin-bottom: 12px; }
-.model-heading > div { display: flex; min-width: 0; flex-direction: column; }
-.model-heading span { color: #81899a; font-size: 11px; font-weight: 750; }
-.model-heading strong { overflow: hidden; margin-top: 3px; color: #172033; font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
-.model-search { width: 168px; height: 34px; }
-.model-list { display: flex; min-height: 0; flex: 1; flex-direction: column; }
-.model-list-heading { display: flex; align-items: center; justify-content: space-between; margin: 0 2px 8px; color: #81899a; flex: 0 0 auto; }
-.model-list-heading strong { font-size: 12px; }
-.model-list-heading span { font-size: 11px; }
-.model-grid { display: grid; min-height: 0; max-height: 246px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; align-content: start; overflow-y: auto; padding: 1px 4px 4px 1px; }
-.model-grid.expanded { max-height: none; overflow-y: visible; }
-.model-item { display: grid; grid-template-columns: 30px minmax(0, 1fr) 16px; align-items: center; gap: 9px; min-width: 0; padding: 9px; border: 1px solid #e4e7ee; border-radius: 8px; color: #172033; background: #fff; text-align: left; cursor: pointer; transition: border-color 150ms ease, background 150ms ease; }
-.model-item:hover { border-color: #f0a9bc; }
-.model-item.active { border-color: #ef4776; background: #fff4f7; }
-.model-item > span:nth-child(2) { display: flex; min-width: 0; flex-direction: column; }
-.model-item strong { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
-.model-item small { overflow: hidden; margin-top: 3px; color: #9299a8; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
-.checkmark { color: #da315f; }
-.more-models-toggle { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; gap: 10px; width: 100%; margin-top: 8px; padding: 9px 10px; border: 1px solid #e4e7ee; border-radius: 8px; color: #172033; background: #fafbfc; text-align: left; cursor: pointer; }
-.more-models-toggle:hover { border-color: #f0a9bc; background: #fff8fa; }
-.more-models-toggle > span { display: flex; flex-direction: column; }
-.more-models-toggle strong { font-size: 10px; }
-.more-models-toggle small { margin-top: 2px; color: #9299a8; font-size: 8px; }
-.more-models-toggle b { display: inline-flex; align-items: center; gap: 3px; color: #c72a56; font-size: 9px; font-weight: 750; white-space: nowrap; }
-.more-models-toggle b svg { transition: transform 150ms ease; }
-.more-models-toggle[aria-expanded="true"] b svg { transform: rotate(180deg); }
+.detail-hero-copy small { overflow: hidden; margin-top: 4px; color: #8991a2; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .service-configuration-slot { min-height: 0; margin-top: 16px; padding-top: 16px; border-top: 1px solid #eceef3; overflow-y: auto; flex: 1; }
 .service-catalog[data-presentation-mode="connection-only"] .service-configuration-slot { padding-top: 0; border-top: 0; }
 .service-action-host { display: contents; }
@@ -280,7 +245,6 @@ watch(modelQuery, () => {
 .catalog-empty { margin: 20px 8px; color: #9299a8; font-size: 10px; text-align: center; }
 @media (max-width: 900px) {
   .catalog-layout { grid-template-columns: 220px minmax(0, 1fr); }
-  .model-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 700px) {
   .service-catalog { height: auto; min-height: 0; }
@@ -288,11 +252,8 @@ watch(modelQuery, () => {
   .service-rail { border-right: 0; border-bottom: 1px solid #eceef3; }
   .service-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .service-detail { padding: 16px; }
-  .model-heading { align-items: stretch; flex-direction: column; }
-  .model-search { width: 100%; }
   .service-detail { min-height: 520px; margin: 0; padding: 18px; border: 0; border-radius: 0; overflow: visible; }
   .detail-hero { flex-wrap: wrap; }
-  .model-grid { max-height: 400px; }
   .service-configuration-slot { max-height: none; overflow: visible; }
   .service-ready-state { min-height: 0; }
 }

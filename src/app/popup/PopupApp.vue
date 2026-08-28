@@ -83,7 +83,7 @@
           :data-selected-model="serviceModelLabel || undefined"
           @click="toggleServicePicker"
         >
-          <ServiceIcon :service="config.service" :label="serviceLabel" size="small" />
+          <ServiceIcon :service="selectedServiceProvider" :label="serviceLabel" size="small" />
           <span class="service-copy">
             <small>翻译服务</small>
             <span class="service-value">
@@ -111,7 +111,7 @@
               :aria-selected="config.service === item.value"
               @click="selectService(item.value)"
             >
-              <ServiceIcon :service="item.value" :label="item.label" size="small" />
+              <ServiceIcon :service="item.provider" :label="item.label" size="small" />
               <span>{{ item.label }}</span>
               <Check v-if="config.service === item.value" class="service-option-check" aria-hidden="true" />
             </button>
@@ -133,7 +133,7 @@
               :aria-selected="config.service === item.value"
               @click="selectService(item.value)"
             >
-              <ServiceIcon :service="item.value" :label="item.label" size="small" />
+              <ServiceIcon :service="item.provider" :label="item.label" size="small" />
               <span>{{ item.label }}</span>
               <Check v-if="config.service === item.value" class="service-option-check" aria-hidden="true" />
             </button>
@@ -498,7 +498,7 @@
         <label class="select-row">
           <span><strong>视频翻译服务</strong><small>与网页翻译服务独立保存</small></span>
           <el-select v-model="config.videoService" aria-label="视频翻译服务" :disabled="!config.videoTranslationEnabled">
-            <el-option v-if="selectedVideoServiceUnavailableMessage" label="Chrome内置AI翻译（当前浏览器不可用）" :value="config.videoService" disabled />
+            <el-option v-if="selectedVideoServiceUnavailableMessage" :label="`${videoServiceLabel}（当前浏览器不可用）`" :value="config.videoService" disabled />
             <el-option v-for="item in videoServiceOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </label>
@@ -580,9 +580,13 @@ import {
   normalizeConfig,
   normalizeSelectionTranslatorDelay,
 } from '@/src/core/config/model';
-import { options, resolveConfiguredModel, servicesType } from '@/src/core/config/catalog';
+import { options, servicesType } from '@/src/core/config/catalog';
+import {
+  getTranslationServiceLabel,
+  getTranslationServiceModel,
+  getTranslationServiceProvider,
+} from '@/src/core/config/translationServices';
 import { getMissingCredentialMessage } from '@/src/core/config/validation';
-import { getSelectedModelLabel } from '@/src/ui/view-model/serviceCatalog';
 import { SELECTION_TTS_VOICE_OPTIONS } from '@/src/core/config/selectionTts';
 import { requestTranslationCacheClear } from './cache';
 import { useActionFeedback } from './actionFeedback';
@@ -591,7 +595,7 @@ import {isBrowserTabId} from '@/src/platform/browser/ids';
 import ServiceIcon from '@/src/ui/components/ServiceIcon.vue';
 import {browserCapabilities} from '@/src/platform/browser/capabilities';
 import {
-  filterAvailableTranslationServices,
+  getSelectableTranslationServices,
   getTranslationServiceUnavailableMessage,
 } from '@/src/services/translation/capabilities';
 
@@ -640,28 +644,33 @@ const drawerSettingsSection: Record<DrawerName, SettingsSection> = {
 };
 const persistConfig = (value: unknown) => requestConfigSave(value, browser.runtime.sendMessage.bind(browser.runtime));
 
-const allServiceOptions = computed(() => options.services.filter((item: any) => !item.disabled));
-const serviceOptions = computed(() => filterAvailableTranslationServices(allServiceOptions.value));
-const videoServiceOptions = computed(() => filterAvailableTranslationServices(allServiceOptions.value));
+const serviceOptions = computed(() => getSelectableTranslationServices(config.value));
+const videoServiceOptions = computed(() => getSelectableTranslationServices(config.value));
 const videoSubtitleFontSizeOptions = VIDEO_SUBTITLE_FONT_SIZE_OPTIONS;
-const popularServiceValues = ['freeTranslation', 'microsoft', 'google', 'deepL', 'deeplx', 'deepseek', 'openai', 'gemini', 'claude'];
-const popularServiceOptions = computed(() => popularServiceValues
-  .map(value => serviceOptions.value.find((item: any) => item.value === value))
-  .filter((item): item is any => Boolean(item)));
-const moreServiceOptions = computed(() => serviceOptions.value.filter((item: any) => !popularServiceValues.includes(item.value)));
+const popularServiceOptions = computed(() => serviceOptions.value.slice(0, 5));
+const moreServiceOptions = computed(() => serviceOptions.value.slice(5));
 const styleOptions = computed(() => options.styles.filter((item: any) => !item.disabled));
-const selectedServiceUnavailableMessage = computed(() => getTranslationServiceUnavailableMessage(config.value.service));
-const selectedVideoServiceUnavailableMessage = computed(() => getTranslationServiceUnavailableMessage(config.value.videoService));
+const selectedServiceProvider = computed(() => getTranslationServiceProvider(config.value, config.value.service));
+const selectedVideoServiceProvider = computed(() => getTranslationServiceProvider(config.value, config.value.videoService));
+const selectedServiceUnavailableMessage = computed(() => getTranslationServiceUnavailableMessage(
+  config.value.service,
+  browserCapabilities,
+  selectedServiceProvider.value,
+));
+const selectedVideoServiceUnavailableMessage = computed(() => getTranslationServiceUnavailableMessage(
+  config.value.videoService,
+  browserCapabilities,
+  selectedVideoServiceProvider.value,
+));
 const serviceLabel = computed(() => {
-  const label = allServiceOptions.value.find((item: any) => item.value === config.value.service)?.label || config.value.service;
+  const label = getTranslationServiceLabel(config.value, config.value.service);
   return selectedServiceUnavailableMessage.value ? `${label}（当前浏览器不可用）` : label;
 });
-const serviceModelLabel = computed(() => getSelectedModelLabel(config.value.service, config.value.model, config.value.customModel));
-const aiContextModel = computed(() => resolveConfiguredModel(
-  config.value.model[config.value.service],
-  config.value.customModel[config.value.service],
+const serviceModelLabel = computed(() => getTranslationServiceModel(config.value, config.value.service));
+const canUseAIContext = computed(() => servicesType.isUseAIContext(
+  selectedServiceProvider.value,
+  serviceModelLabel.value,
 ));
-const canUseAIContext = computed(() => servicesType.isUseAIContext(config.value.service, aiContextModel.value));
 const servicePickerAriaLabel = computed(() => serviceModelLabel.value
   ? `翻译服务：${serviceLabel.value}，当前模型：${serviceModelLabel.value}`
   : `翻译服务：${serviceLabel.value}`);
@@ -686,7 +695,7 @@ const currentSiteExtensionSwitchLabel = computed(() => currentSiteSupported.valu
     ? `恢复 ${currentSiteDomain.value} 的扩展`
     : `在 ${currentSiteDomain.value} 禁用扩展`
   : '在此网站禁用扩展（当前页面不可用）');
-const videoServiceLabel = computed(() => videoServiceOptions.value.find((item: any) => item.value === config.value.videoService)?.label || config.value.videoService);
+const videoServiceLabel = computed(() => getTranslationServiceLabel(config.value, config.value.videoService));
 const styleLabel = computed(() => styleOptions.value.find((item: any) => item.value === config.value.style)?.label || '默认样式');
 const hoverKey = computed(() => config.value.hotkey === 'custom' ? (config.value.customHotkey || '自定义') : config.value.hotkey);
 const hoverSummary = computed(() => config.value.hotkey === 'none' ? '已关闭' : `${hoverKey.value} + 鼠标悬停`);

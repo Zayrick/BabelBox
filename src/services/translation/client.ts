@@ -1,6 +1,10 @@
 import {browser} from 'wxt/browser';
 import {detectlang} from '@/src/core/language/detect';
-import {resolveConfiguredModel, servicesType} from '@/src/core/config/catalog';
+import {servicesType} from '@/src/core/config/catalog';
+import {
+  getTranslationServiceModel,
+  getTranslationServiceProvider,
+} from '@/src/core/config/translationServices';
 import {getMissingCredentialMessage} from '@/src/core/config/validation';
 import {isTrustedCredentialStorageContext} from '@/src/platform/storage/credentialContext';
 import {config, requestConfigSave} from '@/src/services/config/store';
@@ -158,10 +162,8 @@ function scheduleVideoCountSave(): void {
  */
 export async function translateText(origin: string, context: string = document.title, options: TranslateOptions = {}): Promise<string> {
   const selectedService = options.serviceOverride || config.service;
-  const selectedModel = resolveConfiguredModel(
-    options.modelOverride || config.model[selectedService],
-    options.modelOverride || config.customModel[selectedService],
-  );
+  const selectedProvider = getTranslationServiceProvider(config, selectedService);
+  const selectedModel = options.modelOverride || getTranslationServiceModel(config, selectedService);
   const selectedLanguages = getTranslationLanguages(options);
   const {
     retryDelay = 1000,
@@ -171,7 +173,7 @@ export async function translateText(origin: string, context: string = document.t
     signal,
     queueSession,
   } = options;
-  const aiSdkService = servicesType.isAiSdk(selectedService);
+  const aiSdkService = servicesType.isAiSdk(selectedProvider);
   const explicitRetryPolicy = options.maxRetries !== undefined;
   // AI SDK services own protocol-aware HTTP retries (429/5xx). Keep the
   // legacy outer retry loop for the adapters that have not migrated yet, plus
@@ -253,10 +255,8 @@ export async function translateTextBatch(
   if (origins.length === 0) return [];
 
   const selectedService = options.serviceOverride || config.service;
-  const selectedModel = resolveConfiguredModel(
-    options.modelOverride || config.model[selectedService],
-    options.modelOverride || config.customModel[selectedService],
-  );
+  const selectedProvider = getTranslationServiceProvider(config, selectedService);
+  const selectedModel = options.modelOverride || getTranslationServiceModel(config, selectedService);
   const selectedLanguages = getTranslationLanguages(options);
   const {
     retryDelay = 1000,
@@ -266,7 +266,7 @@ export async function translateTextBatch(
     queueSession,
   } = options;
   assertTranslationCredentials(selectedService, selectedModel);
-  const aiSdkService = servicesType.isAiSdk(selectedService);
+  const aiSdkService = servicesType.isAiSdk(selectedProvider);
   const explicitRetryPolicy = options.maxRetries !== undefined;
   const maxRetries = options.maxRetries ?? (aiSdkService ? 2 : 3);
   throwIfAborted(signal);
@@ -326,7 +326,7 @@ export async function translateVideoText(origin: string): Promise<string> {
   if (!cleanedOrigin) return origin || '';
 
   const service = config.videoService;
-  const model = resolveConfiguredModel(config.model[service], config.customModel[service]);
+  const model = getTranslationServiceModel(config, service);
   const languages = getTranslationLanguages();
   const useCache = config.useCache;
   const pageContext = await resolvePageContext(undefined, service, model);
@@ -407,7 +407,8 @@ function assertTranslationCredentials(service = config.service, modelOverride?: 
 
 async function resolvePageContext(suppliedContext?: string, serviceOverride = config.service, modelOverride?: string): Promise<string | undefined> {
   const service = serviceOverride || config.service;
-  const selectedModel = resolveConfiguredModel(modelOverride || config.model[service], modelOverride || config.customModel[service]);
-  if (!config.enableAIContext || !servicesType.isUseAIContext(service, selectedModel)) return undefined;
+  const provider = getTranslationServiceProvider(config, service);
+  const selectedModel = modelOverride || getTranslationServiceModel(config, service);
+  if (!config.enableAIContext || !servicesType.isUseAIContext(provider, selectedModel)) return undefined;
   return suppliedContext?.trim().slice(0, 4000) || await getPageTranslationContext() || undefined;
 }

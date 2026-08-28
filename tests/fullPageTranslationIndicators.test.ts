@@ -7,9 +7,13 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('@/src/services/config/store', () => ({config: mocks.config}));
-vi.mock('@/src/core/config/catalog', () => ({
-  options: {services: [{value: 'deepseek', label: 'DeepSeek'}]},
-}));
+vi.mock('@/src/core/config/catalog', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/src/core/config/catalog')>();
+  return {
+    ...actual,
+    options: {...actual.options, services: [{value: 'deepseek', label: 'DeepSeek'}]},
+  };
+});
 vi.mock('@/src/features/page-notice/public', () => ({sendErrorMessage: mocks.sendErrorMessage}));
 
 import {

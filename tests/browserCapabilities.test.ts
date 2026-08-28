@@ -12,9 +12,11 @@ import {services} from '@/src/core/config/catalog';
 import {
     CHROME_TRANSLATOR_UNAVAILABLE_MESSAGE,
     filterAvailableTranslationServices,
+    getSelectableTranslationServices,
     getTranslationServiceUnavailableMessage,
     isTranslationServiceAvailable,
 } from '@/src/services/translation/capabilities';
+import {Config} from '@/src/core/config/model';
 
 describe('browser capability contract', () => {
     it('normalizes Chrome MV3 and keeps Translation API separate from generic Offscreen support', () => {
@@ -147,5 +149,17 @@ describe('translation service capability contract', () => {
         expect(filterAvailableTranslationServices(options, chrome)).toEqual(options);
         expect(filterAvailableTranslationServices(options)).toEqual([options[0]]);
         expect(options).toHaveLength(2);
+    });
+
+    it('uses the shared picker selector to hide disabled instances and unavailable providers', () => {
+        const config = new Config();
+        const google = config.translationServices.find(item => item.id === services.google)!;
+        google.enabled = false;
+
+        const selectable = getSelectableTranslationServices(config, firefox);
+
+        expect(selectable.some(item => item.value === services.google)).toBe(false);
+        expect(selectable.some(item => item.provider === services.chromeTranslator)).toBe(false);
+        expect(selectable.some(item => item.value === services.microsoft)).toBe(true);
     });
 });

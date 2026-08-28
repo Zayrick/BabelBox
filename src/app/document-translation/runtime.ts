@@ -1,5 +1,6 @@
 import {translateText, translateTextBatch} from '@/src/services/translation/client';
 import {services} from '@/src/core/config/catalog';
+import {getTranslationServiceProvider} from '@/src/core/config/translationServices';
 import {
     createDocumentDownload as createDocumentDownloadWithAdapters,
     type CreateDocumentDownloadOptions,
@@ -21,7 +22,9 @@ const BATCH_DOCUMENT_SERVICES = new Set<string>([
 export const translateDocumentSegments = createDocumentSegmentTranslator({
     waitUntilReady: () => configReady,
     getDefaultService: () => config.service,
-    supportsBatch: (service) => BATCH_DOCUMENT_SERVICES.has(service),
+    supportsBatch: (service) => BATCH_DOCUMENT_SERVICES.has(
+        getTranslationServiceProvider(config, service),
+    ),
     translateText,
     translateTextBatch,
 });

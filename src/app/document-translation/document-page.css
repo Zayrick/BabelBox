@@ -152,6 +152,7 @@ h1, h2, p { margin-top: 0; }
 .document-app .document-select-popper .el-select-dropdown__item.is-hovering { background: var(--brand-soft); }
 .document-app .document-select-popper .el-select-dropdown__item.is-selected { color: var(--brand-strong); }
 .document-app .document-select-popper .el-select-dropdown__item.is-disabled { color: var(--muted); }
+.document-service-option { display: flex; align-items: center; gap: 8px; }
 .model-control input { width: 100%; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: var(--surface-soft); }
 .model-control input { height: 32px; cursor: text; }
 .language-arrow { display: inline-flex; align-self: center; padding-top: 18px; color: var(--muted); }

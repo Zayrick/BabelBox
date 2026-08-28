@@ -12,6 +12,7 @@ import type {
 import {
     attachTranslationProviderConfig,
     createTranslationProviderConfigSnapshot,
+    resolveTranslationServiceConfig,
 } from './requestSnapshot';
 
 export type {
@@ -32,6 +33,7 @@ type CacheRequestMode = 'single' | 'batch';
 
 interface TranslationRequestExecution {
     readonly config: TranslationProviderConfigSnapshot;
+    readonly instanceId: string;
     readonly service: string;
     readonly sourceLanguage: string;
     readonly targetLanguage: string;
@@ -121,7 +123,8 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
             sourceText: origin,
             sourceLanguage,
             targetLanguage,
-            service,
+            service: execution.instanceId,
+            provider: service,
             model: getSelectedModel(current, service, modelOverride),
             endpoint: getProviderEndpoint(current, service),
             azureOpenaiEndpoint: service === 'azureOpenai' ? current.azureOpenaiEndpoint : undefined,
@@ -193,7 +196,8 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
             sourceLanguage: current.from,
             targetLanguage: '',
             sourceText: pageContext,
-            service,
+            service: execution.instanceId,
+            provider: service,
             model: getSelectedModel(current, service, modelOverride),
             endpoint: getProviderEndpoint(current, service),
             customBody: current.customBody[service] || '',
@@ -461,29 +465,38 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
         const requestGeneration = cacheGeneration;
 
         // 在任何 cache/provider await 前复制一次配置；后续 UI 原地修改不能改变本请求身份。
-        const current = createTranslationProviderConfigSnapshot(config());
+        const sourceConfig = createTranslationProviderConfigSnapshot(config());
         const serviceOverride = message.serviceOverride;
-        const selectedService = serviceOverride || current.service;
+        const selectedService = serviceOverride || sourceConfig.service;
+        const resolvedService = resolveTranslationServiceConfig(sourceConfig, selectedService);
+        const current = resolvedService.config;
+        const selectedProvider = resolvedService.provider;
+        // 已安装实例的模型由后台当前配置决定。旧 content script 可能携带陈旧的
+        // modelOverride，不能让它覆盖用户刚刚为该实例保存的模型。
+        const effectiveModelOverride = resolvedService.instance
+            ? resolvedService.instance.modelId || undefined
+            : message.modelOverride;
         const {sourceLanguage, targetLanguage} = deps.getTranslationLanguages({
             sourceLanguage: message.sourceLanguage?.trim() || current.from,
             targetLanguage: message.targetLanguage?.trim() || current.to,
         });
         const execution: TranslationRequestExecution = {
             config: current,
-            service: selectedService,
+            instanceId: selectedService,
+            service: selectedProvider,
             sourceLanguage,
             targetLanguage,
         };
-        const credentialConfig = message.modelOverride
+        const credentialConfig = effectiveModelOverride
             ? {
                 ...current,
-                model: {...current.model, [selectedService]: message.modelOverride},
-                customModel: {...current.customModel, [selectedService]: message.modelOverride},
+                model: {...current.model, [selectedProvider]: effectiveModelOverride},
+                customModel: {...current.customModel, [selectedProvider]: effectiveModelOverride},
             }
             : current;
         const missingCredentialMessage = deps.getMissingCredentialMessage(selectedService, credentialConfig);
         if (missingCredentialMessage) throw new Error(missingCredentialMessage);
-        if (serviceOverride && !deps.serviceTypes.machine.has(serviceOverride) && !deps.serviceTypes.isAI(serviceOverride)) {
+        if (!deps.serviceTypes.machine.has(selectedProvider) && !deps.serviceTypes.isAI(selectedProvider)) {
             throw new Error('独立翻译服务不可用，请选择已配置的机器翻译或 AI 服务');
         }
 
@@ -501,7 +514,7 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
             rawPageContext,
             useCache,
             requestGeneration,
-            message.modelOverride,
+            effectiveModelOverride,
             summaryBudget,
         );
         const elapsed = now() - providerStartedAt;
@@ -510,6 +523,8 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
         // 把摘要耗时从剩余 provider 请求中扣除，避免后台无限等待。
         const normalizedMessage = {
             ...message,
+            serviceOverride: selectedProvider,
+            modelOverride: effectiveModelOverride,
             sourceLanguage,
             targetLanguage,
         } as TranslationRequestMessage;
@@ -517,7 +532,9 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
             providerBudget === undefined
                 ? normalizedMessage
                 : {
-                ...message,
+                ...normalizedMessage,
+                serviceOverride: selectedProvider,
+                modelOverride: effectiveModelOverride,
                 sourceLanguage,
                 targetLanguage,
                 requestTimeoutMs: Math.max(1_000, providerBudget - elapsed),

@@ -15,6 +15,7 @@ type CacheIdentity = {
     sourceLanguage?: string;
     targetLanguage?: string;
     service?: string;
+    provider?: string;
     model?: string;
     endpoint?: string;
     transportProfile?: string;
@@ -247,6 +248,10 @@ describe('translation broker', () => {
             mimo: 'mimo-model',
         };
         mocks.config.customModel = {};
+        delete (mocks.config as Record<string, unknown>).translationServices;
+        delete (mocks.config as Record<string, unknown>).serviceCredentials;
+        delete (mocks.config as Record<string, unknown>).token;
+        delete (mocks.config as Record<string, unknown>).requireApiKey;
         mocks.service.mockReset();
         mocks.service.mockResolvedValue('默认译文');
         mocks.getMissingCredentialMessage.mockReturnValue(null);
@@ -573,8 +578,105 @@ describe('translation broker', () => {
         })).rejects.toThrow('独立翻译服务不可用');
 
         mocks.config.service = 'missing';
+        mocks.machineServices.add('missing');
         await expect(translateWithCache({origin: 'Missing adapter'})).rejects.toThrow('未找到翻译服务适配器: missing');
 
+        expect(mocks.service).not.toHaveBeenCalled();
+    });
+
+    it('keeps sibling instances of one provider isolated in requests and cache identity', async () => {
+        const firstId = 'service:ai:first';
+        const secondId = 'service:ai:second';
+        const instance = (id: string, modelId: string, endpoint: string) => ({
+            id,
+            provider: 'ai',
+            name: modelId,
+            enabled: true,
+            kind: 'ai',
+            modelId,
+            endpoint,
+            proxy: '',
+            customBody: '',
+            systemRole: '',
+            userRole: '',
+            robotId: '',
+            requireApiKey: true,
+            deepseekApiType: 'auto',
+            deepseekThinkingMode: 'disabled',
+            minimaxBillingPlan: 'payg',
+            minimaxRegion: 'cn',
+            mimoBillingPlan: 'payg',
+            mimoRegion: 'cn',
+        });
+        Object.assign(mocks.config, {
+            service: firstId,
+            translationServices: [
+                instance(firstId, 'first-model', 'https://first.example.test/v1'),
+                instance(secondId, 'second-model', 'https://second.example.test/v1'),
+            ],
+            serviceCredentials: {
+                [firstId]: {apiKey: 'first-secret', appKey: '', appSecret: '', secretId: '', secretKey: ''},
+                [secondId]: {apiKey: 'second-secret', appKey: '', appSecret: '', secretId: '', secretKey: ''},
+            },
+            token: {ai: 'legacy-secret'},
+            requireApiKey: {},
+        });
+        mocks.service.mockImplementation(async (message: Record<string, unknown>) => {
+            const current = getTranslationProviderConfig(
+                message,
+                createTranslationProviderConfigSnapshot(mocks.config),
+            );
+            return `${current.model.ai}|${current.proxy.ai}|${current.token.ai}`;
+        });
+
+        await expect(translateWithCache({
+            origin: 'same',
+            serviceOverride: firstId,
+            modelOverride: 'stale-content-model',
+        }))
+            .resolves.toBe('first-model|https://first.example.test/v1|first-secret');
+        await expect(translateWithCache({origin: 'same', serviceOverride: secondId}))
+            .resolves.toBe('second-model|https://second.example.test/v1|second-secret');
+        await expect(translateWithCache({origin: 'same', serviceOverride: firstId}))
+            .resolves.toBe('first-model|https://first.example.test/v1|first-secret');
+
+        expect(mocks.service).toHaveBeenCalledTimes(2);
+        expect(translationCacheIdentities()).toEqual(expect.arrayContaining([
+            expect.objectContaining({service: firstId, provider: 'ai', model: 'first-model'}),
+            expect.objectContaining({service: secondId, provider: 'ai', model: 'second-model'}),
+        ]));
+    });
+
+    it('rejects a disabled instance before credentials, cache, or provider work', async () => {
+        const instanceId = 'service:ai:disabled';
+        Object.assign(mocks.config, {
+            service: instanceId,
+            translationServices: [{
+                id: instanceId,
+                provider: 'ai',
+                name: 'Disabled AI',
+                enabled: false,
+                kind: 'ai',
+                modelId: 'disabled-model',
+                endpoint: '',
+                proxy: '',
+                customBody: '',
+                systemRole: '',
+                userRole: '',
+                robotId: '',
+                requireApiKey: true,
+                deepseekApiType: 'auto',
+                deepseekThinkingMode: 'disabled',
+                minimaxBillingPlan: 'payg',
+                minimaxRegion: 'cn',
+                mimoBillingPlan: 'payg',
+                mimoRegion: 'cn',
+            }],
+        });
+
+        await expect(translateWithCache({origin: 'blocked'})).rejects.toThrow('已禁用');
+        expect(mocks.getMissingCredentialMessage).not.toHaveBeenCalled();
+        expect(mocks.cacheGet).not.toHaveBeenCalled();
         expect(mocks.service).not.toHaveBeenCalled();
     });
 
@@ -603,6 +705,7 @@ describe('translation broker', () => {
             targetLanguage: '',
             sourceText: 'Persisted context',
             service: 'ai',
+            provider: 'ai',
             model: 'ai-model',
             endpoint: '',
             customBody: '',

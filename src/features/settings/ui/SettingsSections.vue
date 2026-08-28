@@ -45,8 +45,8 @@
       </el-col>
       <el-col :span="12">
         <el-select v-model="config.service" aria-label="文本翻译服务" placeholder="请选择文本翻译服务">
-          <el-option v-if="selectedTextServiceUnavailableMessage" :label="'Chrome内置AI翻译（当前浏览器不可用）'" :value="config.service" disabled />
-          <el-option class="select-left" v-for="item in availableServiceOptions" :key="item.value" :label="item.label" :value="item.value" :disabled="item.disabled" />
+          <el-option v-if="selectedTextServiceUnavailableMessage" :label="`${selectedTextServiceLabel}（当前浏览器不可用）`" :value="config.service" disabled />
+          <el-option class="select-left" v-for="item in availableServiceOptions" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
         <p v-if="selectedTextServiceUnavailableMessage" class="capability-warning">{{ selectedTextServiceUnavailableMessage }}</p>
       </el-col>
@@ -57,7 +57,7 @@
       </el-col>
       <el-col :span="12">
         <el-select v-model="config.videoService" aria-label="视频翻译服务" placeholder="请选择视频翻译服务">
-          <el-option v-if="selectedVideoServiceUnavailableMessage" :label="'Chrome内置AI翻译（当前浏览器不可用）'" :value="config.videoService" disabled />
+          <el-option v-if="selectedVideoServiceUnavailableMessage" :label="`${selectedVideoServiceLabel}（当前浏览器不可用）`" :value="config.videoService" disabled />
           <el-option class="select-left" v-for="item in videoServiceOptions" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
         <p v-if="selectedVideoServiceUnavailableMessage" class="capability-warning">{{ selectedVideoServiceUnavailableMessage }}</p>
@@ -115,18 +115,18 @@
         :service="selectedConfigurationService"
         :selected-service-option="configurationServiceOption"
         :default-service="config.service"
-        :selected-model="config.model[selectedConfigurationService]"
-        :services="filteredServices"
-        :model-options="configurationModelOptions"
-        :custom-models="config.customModel"
+        :services="serviceInventoryOptions"
         :presentation="configurationPresentation"
         @update:service="setConfigurationService"
-        @update:model="config.model[selectedConfigurationService] = $event"
+        @update:enabled="setTranslationServiceEnabled"
+        @remove="removeTranslationService"
+        @add="showAddTranslationServiceDialog = true"
       >
         <template #configuration>
           <ServiceConfiguration
             :config="config"
-            :service="selectedConfigurationService"
+            :service="selectedConfigurationProvider"
+            :instance="selectedConfigurationInstance"
             :presentation="configurationPresentation"
             :options="options"
             :is-valid-azure-endpoint="isValidAzureEndpoint"
@@ -152,7 +152,7 @@
         </el-col>
         <el-col :span="12" class="settings-control-field">
           <el-select v-model="config.videoService" aria-label="视频字幕翻译服务" :disabled="!config.videoTranslationEnabled" placeholder="请选择服务">
-            <el-option v-if="selectedVideoServiceUnavailableMessage" :label="'Chrome内置AI翻译（当前浏览器不可用）'" :value="config.videoService" disabled />
+            <el-option v-if="selectedVideoServiceUnavailableMessage" :label="`${selectedVideoServiceLabel}（当前浏览器不可用）`" :value="config.videoService" disabled />
             <el-option class="select-left" v-for="item in videoServiceOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
           <p v-if="selectedVideoServiceUnavailableMessage" class="capability-warning">{{ selectedVideoServiceUnavailableMessage }}</p>
@@ -467,7 +467,7 @@
             <SettingsHelpLabel content="使用代理可以解决网络无法访问的问题，如不熟悉代理设置请留空！">代理地址</SettingsHelpLabel>
           </el-col>
           <el-col :span="16" class="settings-control-field">
-            <el-input v-model="config.proxy[config.service]" placeholder="默认不使用代理" />
+            <el-input v-model="advancedProxy" placeholder="默认不使用代理" />
           </el-col>
         </el-row>
 
@@ -477,7 +477,7 @@
             <SettingsHelpLabel content="以系统身份 system 发送的对话，常用于指定 AI 要扮演的角色">system</SettingsHelpLabel>
           </el-col>
           <el-col :span="16" class="settings-control-field">
-            <el-input type="textarea" v-model="config.system_role[config.service]" maxlength="8192"
+            <el-input type="textarea" v-model="advancedSystemRole" maxlength="8192"
               placeholder="system message " />
           </el-col>
         </el-row>
@@ -486,7 +486,7 @@
             <SettingsHelpLabel content="以用户身份 user 发送的对话，其中{{to}}表示目标语言，{{origin}}表示待翻译的文本内容，两者不可缺少。">user</SettingsHelpLabel>
           </el-col>
           <el-col :span="16" class="settings-control-field">
-            <el-input type="textarea" v-model="config.user_role[config.service]" maxlength="8192"
+            <el-input type="textarea" v-model="advancedUserRole" maxlength="8192"
               placeholder="user message template" />
           </el-col>
         </el-row>
@@ -627,6 +627,11 @@
     @confirm="handleCustomSelectionHotkeyConfirm"
     @cancel="handleCustomSelectionHotkeyCancel"
   />
+  <AddTranslationServiceDialog
+    v-model="showAddTranslationServiceDialog"
+    :existing-services="config.translationServices"
+    @add="addTranslationService"
+  />
 
 
 
@@ -636,7 +641,7 @@
 
 // Main 处理配置信息
 import { computed, ref, watch, onUnmounted } from 'vue'
-import { models, options, resolveConfiguredModel, servicesType, defaultOption } from '@/src/core/config/catalog';
+import { options, servicesType, defaultOption } from '@/src/core/config/catalog';
 import {
   Config,
   MOUSE_HOVER_TRANSLATION_DELAY_MAX,
@@ -667,12 +672,15 @@ import { defineAsyncComponent } from 'vue';
 const CustomHotkeyInput = defineAsyncComponent(() => import('@/src/ui/components/CustomHotkeyInput.vue'));
 import ServiceCatalog from './services/ServiceCatalog.vue';
 import ServiceConfiguration from './services/ServiceConfiguration.vue';
+import AddTranslationServiceDialog from './services/AddTranslationServiceDialog.vue';
 import {createServiceConfigurationPresentation} from '@/src/features/settings/model/serviceConfiguration';
+import type {AddTranslationServicePayload} from '@/src/features/settings/model/addTranslationService';
 import SettingsHelpLabel from './SettingsHelpLabel.vue';
 import {TranslationCenter} from '@/src/features/translation-center/public';
 import AlwaysTranslateSites from './AlwaysTranslateSites.vue';
 import { parseHotkey } from '@/src/core/hotkey';
 import { isConfigImportValid, prepareConfigForImport, sanitizeConfigForExport } from '@/src/core/config/transfer';
+import {clearTranslationServiceCredentials} from '@/src/core/config/credentials';
 import {ImageOcrSettings} from '@/src/features/image-translation/public';
 import {
   config as runtimeConfig,
@@ -688,9 +696,18 @@ import {
   type ConfigHistoryState,
 } from '@/src/services/config/store';
 import {
-  filterAvailableTranslationServices,
+  getSelectableTranslationServices,
   getTranslationServiceUnavailableMessage,
 } from '@/src/services/translation/capabilities';
+import {
+  clearLegacyTranslationServiceConfiguration,
+  getTranslationServiceInstance,
+  getTranslationServiceLabel,
+  getTranslationServiceModel,
+  getTranslationServiceOptions,
+  getTranslationServiceProvider,
+  reconcileTranslationServiceReferences,
+} from '@/src/core/config/translationServices';
 
 const props = withDefaults(defineProps<{
   activeSection?: string
@@ -770,43 +787,58 @@ window.addEventListener('pagehide', saveOnPageHide);
 // 设置页左侧列表只切换正在编辑的服务，不改变网页翻译实际使用的默认服务。
 const configurationService = ref<string | null>(null);
 const selectedConfigurationService = computed(
-  () => configurationService.value ?? config.value.service,
+  () => configurationService.value
+    && getTranslationServiceInstance(config.value, configurationService.value)
+    ? configurationService.value
+    : config.value.service,
 );
 
 const setConfigurationService = (value: string) => {
   configurationService.value = value;
 };
 
-const actualService = computed(() => config.value.service);
-const aiContextModel = computed(() => resolveConfiguredModel(
-  config.value.model[config.value.service],
-  config.value.customModel[config.value.service],
+const actualService = computed(() => getTranslationServiceProvider(config.value, config.value.service));
+const selectedDefaultInstance = computed(() => getTranslationServiceInstance(config.value, config.value.service));
+const aiContextModel = computed(() => getTranslationServiceModel(config.value, config.value.service));
+const canUseAIContext = computed(() => servicesType.isUseAIContext(actualService.value, aiContextModel.value));
+const availableServiceOptions = computed(() => getSelectableTranslationServices(config.value));
+const videoServiceOptions = computed(() => availableServiceOptions.value);
+const selectedTextServiceLabel = computed(() => getTranslationServiceLabel(config.value, config.value.service));
+const selectedVideoServiceLabel = computed(() => getTranslationServiceLabel(config.value, config.value.videoService));
+const selectedTextServiceUnavailableMessage = computed(() => getTranslationServiceUnavailableMessage(
+  config.value.service,
+  undefined,
+  getTranslationServiceProvider(config.value, config.value.service),
 ));
-const canUseAIContext = computed(() => servicesType.isUseAIContext(config.value.service, aiContextModel.value));
-const availableServiceOptions = computed(() => filterAvailableTranslationServices(options.services));
-const videoServiceOptions = computed(() => availableServiceOptions.value.filter((item: any) => !item.disabled));
-const selectedTextServiceUnavailableMessage = computed(() => getTranslationServiceUnavailableMessage(config.value.service));
-const selectedVideoServiceUnavailableMessage = computed(() => getTranslationServiceUnavailableMessage(config.value.videoService));
+const selectedVideoServiceUnavailableMessage = computed(() => getTranslationServiceUnavailableMessage(
+  config.value.videoService,
+  undefined,
+  getTranslationServiceProvider(config.value, config.value.videoService),
+));
 const videoSubtitleFontSizeOptions = VIDEO_SUBTITLE_FONT_SIZE_OPTIONS;
-const filteredServices = computed(() =>
-  availableServiceOptions.value.filter((item: any) =>
-    !([item.google].includes(item.value) && config.value.display !== 1),
-  ),
-);
-const configurationModelOptions = computed(
-  () => models.get(selectedConfigurationService.value) || [],
-);
-const configurationServiceOption = computed(() => options.services.find(
-  (item) => !item.disabled && item.value === selectedConfigurationService.value,
+const serviceInventoryOptions = computed(() => getTranslationServiceOptions(config.value));
+const selectedConfigurationInstance = computed(() => getTranslationServiceInstance(
+  config.value,
+  selectedConfigurationService.value,
+));
+const selectedConfigurationProvider = computed(() => selectedConfigurationInstance.value?.provider
+  || selectedConfigurationService.value);
+const configurationServiceOption = computed(() => serviceInventoryOptions.value.find(
+  (item) => item.value === selectedConfigurationService.value,
 ));
 const configurationServiceUnavailableMessage = computed(
-  () => getTranslationServiceUnavailableMessage(selectedConfigurationService.value),
+  () => getTranslationServiceUnavailableMessage(
+    selectedConfigurationService.value,
+    undefined,
+    selectedConfigurationProvider.value,
+  ),
 );
 const configurationPresentation = computed(() => createServiceConfigurationPresentation(
-  selectedConfigurationService.value,
+  selectedConfigurationProvider.value,
   {
-    selectedModel: config.value.model[selectedConfigurationService.value],
-    deepseekApiType: config.value.deepseekApiType,
+    selectedModel: selectedConfigurationInstance.value?.modelId,
+    deepseekApiType: selectedConfigurationInstance.value?.deepseekApiType
+      || config.value.deepseekApiType,
     available: Boolean(configurationServiceOption.value)
       && !configurationServiceUnavailableMessage.value,
     unavailableMessage: configurationServiceUnavailableMessage.value || undefined,
@@ -817,6 +849,97 @@ const configurationPresentation = computed(() => createServiceConfigurationPrese
 const showAdvancedAI = computed(() => servicesType.isAI(actualService.value));
 const showAdvancedProxy = computed(() => servicesType.isUseProxy(actualService.value));
 const showAdvancedCustom = computed(() => servicesType.isCustom(actualService.value));
+function legacyDefaultMappingValue(mapping: Record<string, string>): string {
+  const selected = selectedDefaultInstance.value;
+  if (selected && selected.id !== selected.provider) return '';
+  return mapping[actualService.value] || '';
+}
+const advancedProxy = computed({
+  get: () => selectedDefaultInstance.value?.proxy || legacyDefaultMappingValue(config.value.proxy),
+  set: (value: string) => {
+    if (selectedDefaultInstance.value) selectedDefaultInstance.value.proxy = value.trim();
+    else config.value.proxy[actualService.value] = value;
+  },
+});
+const advancedSystemRole = computed({
+  get: () => selectedDefaultInstance.value?.systemRole || legacyDefaultMappingValue(config.value.system_role),
+  set: (value: string) => {
+    if (selectedDefaultInstance.value) selectedDefaultInstance.value.systemRole = value;
+    else config.value.system_role[actualService.value] = value;
+  },
+});
+const advancedUserRole = computed({
+  get: () => selectedDefaultInstance.value?.userRole || legacyDefaultMappingValue(config.value.user_role),
+  set: (value: string) => {
+    if (selectedDefaultInstance.value) selectedDefaultInstance.value.userRole = value;
+    else config.value.user_role[actualService.value] = value;
+  },
+});
+
+const showAddTranslationServiceDialog = ref(false);
+
+function setTranslationServiceEnabled(id: string, enabled: boolean): void {
+  const instance = getTranslationServiceInstance(config.value, id);
+  if (!instance || instance.enabled === enabled) return;
+  if (!enabled && !getSelectableTranslationServices(config.value).some((item) => item.value !== id)) {
+    ElMessage.warning('至少需要启用一个翻译服务');
+    return;
+  }
+  configurationService.value = id;
+  instance.enabled = enabled;
+  reconcileTranslationServiceReferences(config.value);
+  const selectableIds = new Set(getSelectableTranslationServices(config.value).map((item) => item.value));
+  const fallback = selectableIds.values().next().value as string | undefined;
+  if (fallback) {
+    if (!selectableIds.has(config.value.service)) config.value.service = fallback;
+    if (!selectableIds.has(config.value.documentService)) config.value.documentService = fallback;
+    if (!selectableIds.has(config.value.videoService)) config.value.videoService = fallback;
+  }
+}
+
+function addTranslationService(payload: AddTranslationServicePayload): void {
+  config.value.translationServices.push(payload.instance);
+  config.value.serviceCredentials[payload.instance.id] = payload.credential;
+  configurationService.value = payload.instance.id;
+  ElMessage.success(`已添加 ${payload.instance.name}`);
+}
+
+async function removeTranslationService(id: string): Promise<void> {
+  const instance = getTranslationServiceInstance(config.value, id);
+  if (!instance || instance.kind !== 'ai') return;
+  if (instance.enabled && !getSelectableTranslationServices(config.value).some((item) => item.value !== id)) {
+    ElMessage.warning('至少需要保留一个可用的翻译服务');
+    return;
+  }
+  try {
+    await ElMessageBox.confirm(
+      `确定删除“${instance.name}”吗？该实例的请求配置和凭据也会一并删除。`,
+      '删除 AI 翻译服务',
+      {
+        confirmButtonText: '删除',
+        cancelButtonText: '取消',
+        type: 'warning',
+      },
+    );
+  } catch {
+    return;
+  }
+
+  config.value.translationServices = config.value.translationServices.filter((item) => item.id !== id);
+  clearLegacyTranslationServiceConfiguration(config.value, instance);
+  clearTranslationServiceCredentials(config.value, id);
+  config.value.translationCenterServices = config.value.translationCenterServices.filter((item) => item !== id);
+  reconcileTranslationServiceReferences(config.value);
+  const selectableIds = new Set(getSelectableTranslationServices(config.value).map((item) => item.value));
+  const fallback = selectableIds.values().next().value as string | undefined;
+  if (fallback) {
+    if (!selectableIds.has(config.value.service)) config.value.service = fallback;
+    if (!selectableIds.has(config.value.documentService)) config.value.documentService = fallback;
+    if (!selectableIds.has(config.value.videoService)) config.value.videoService = fallback;
+  }
+  if (configurationService.value === id) configurationService.value = config.value.service;
+  ElMessage.success(`已删除 ${instance.name}`);
+}
 
 // 监听主题变化
 watch(() => config.value.theme, (newTheme) => {
@@ -861,8 +984,8 @@ const resetTemplate = () => {
       type: 'warning',
     }
   ).then(() => {
-    config.value.system_role[config.value.service] = defaultOption.system_role;
-    config.value.user_role[config.value.service] = defaultOption.user_role;
+    advancedSystemRole.value = defaultOption.system_role;
+    advancedUserRole.value = defaultOption.user_role;
     ElMessage({
       message: '已成功恢复默认翻译模板',
       type: 'success',
@@ -1202,7 +1325,7 @@ const formatHistoryTime = (savedAt: string): string => {
 
 const historySummary = (entry: ConfigHistoryEntry): string => {
   const target = options.to.find((item: any) => item.value === entry.config.to)?.label || entry.config.to;
-  const service = options.services.find((item: any) => item.value === entry.config.service)?.label || entry.config.service;
+  const service = getTranslationServiceLabel(entry.config, entry.config.service);
   const siteCount = entry.config.alwaysTranslateDomains?.length ?? 0;
   const disabledSiteCount = entry.config.disabledExtensionDomains?.length ?? 0;
   return `${target} · ${service} · 始终翻译 ${siteCount} 个网站 · 禁用扩展 ${disabledSiteCount} 个网站`;

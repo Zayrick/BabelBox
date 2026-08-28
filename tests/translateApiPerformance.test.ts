@@ -28,13 +28,18 @@ vi.mock('@/src/services/config/store', () => ({
   requestConfigSave: mocks.saveConfig,
 }));
 vi.mock('@/src/core/language/detect', () => ({detectlang: () => 'eng'}));
-vi.mock('@/src/core/config/catalog', () => ({
-  resolveConfiguredModel: (model: string) => model,
-  servicesType: {
-    isUseAIContext: (service: string) => service === 'mock-ai',
-    isAiSdk: (service: string) => service === 'mock-ai',
-  },
-}));
+vi.mock('@/src/core/config/catalog', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/src/core/config/catalog')>();
+  return {
+    ...actual,
+    resolveConfiguredModel: (model: string) => model,
+    servicesType: {
+      ...actual.servicesType,
+      isUseAIContext: (service: string) => service === 'mock-ai',
+      isAiSdk: (service: string) => service === 'mock-ai',
+    },
+  };
+});
 vi.mock('@/src/services/translation/context', () => ({getPageTranslationContext: mocks.getPageTranslationContext}));
 vi.mock('@/src/core/config/validation', () => ({getMissingCredentialMessage: mocks.getMissingCredentialMessage}));
 

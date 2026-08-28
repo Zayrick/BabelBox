@@ -1,4 +1,12 @@
 import { customModelString, options, services, servicesType } from './catalog';
+import type {TranslationServiceCredential} from './model';
+import {
+    getTranslationServiceInstance,
+    getTranslationServiceLabel,
+    getTranslationServiceModel,
+    getTranslationServiceProvider,
+    type TranslationServiceInstance,
+} from './translationServices';
 
 export interface CredentialConfig {
     token?: Record<string, string | undefined>;
@@ -9,15 +17,19 @@ export interface CredentialConfig {
     youdaoAppSecret?: string;
     tencentSecretId?: string;
     tencentSecretKey?: string;
+    translationServices?: readonly TranslationServiceInstance[];
+    serviceCredentials?: Record<string, TranslationServiceCredential | undefined>;
 }
 
-function getServiceLabel(service: string): string {
-    return options.services.find((item) => item.value === service)?.label || service;
+function getServiceLabel(service: string, config: CredentialConfig): string {
+    return getTranslationServiceLabel(config, service)
+        || options.services.find((item) => item.value === service)?.label
+        || service;
 }
 
 /** 使用服务和实际模型共同定位开关，避免切换模型时误用另一模型的设置。 */
 export function getApiKeyRequirementKey(service: string, config: CredentialConfig): string {
-    const selectedModel = config.model?.[service] || '';
+    const selectedModel = getTranslationServiceModel(config, service) || config.model?.[service] || '';
     const actualModel = selectedModel === customModelString
         ? config.customModel?.[service] || selectedModel
         : selectedModel;
@@ -25,7 +37,10 @@ export function getApiKeyRequirementKey(service: string, config: CredentialConfi
 }
 
 export function isApiKeyRequired(service: string, config: CredentialConfig): boolean {
-    if (!servicesType.isAI(service)) return true;
+    const instance = getTranslationServiceInstance(config, service);
+    if (instance?.kind === 'ai') return instance.requireApiKey;
+    const provider = getTranslationServiceProvider(config, service);
+    if (!servicesType.isAI(provider)) return true;
     return config.requireApiKey?.[getApiKeyRequirementKey(service, config)] !== false;
 }
 
@@ -34,21 +49,29 @@ export function getMissingCredentialMessage(
     service: string,
     config: CredentialConfig,
 ): string | null {
-    const serviceLabel = getServiceLabel(service);
+    const provider = getTranslationServiceProvider(config, service);
+    const serviceLabel = getServiceLabel(service, config);
+    const credential = config.serviceCredentials?.[service];
+    const legacyProviderConfig = provider === service;
+    const apiKey = credential?.apiKey
+        ?? config.token?.[service]
+        ?? (legacyProviderConfig ? config.token?.[provider] : undefined);
 
-    if (servicesType.isUseToken(service) && service !== services.deeplx && isApiKeyRequired(service, config)) {
-        if (!config.token?.[service]?.trim()) {
+    if (servicesType.isUseToken(provider) && provider !== services.deeplx && isApiKeyRequired(service, config)) {
+        if (!apiKey?.trim()) {
             return `${serviceLabel} 需要 API Key（访问令牌），当前尚未配置；请先在设置中填写，再开始翻译。`;
         }
     }
 
-    if (service === services.youdao
-        && (!config.youdaoAppKey?.trim() || !config.youdaoAppSecret?.trim())) {
+    const appKey = credential?.appKey || (legacyProviderConfig ? config.youdaoAppKey : '');
+    const appSecret = credential?.appSecret || (legacyProviderConfig ? config.youdaoAppSecret : '');
+    if (provider === services.youdao && (!appKey?.trim() || !appSecret?.trim())) {
         return `${serviceLabel} 需要 App Key 和 App Secret，当前尚未完整配置；请先在设置中填写，再开始翻译。`;
     }
 
-    if (service === services.tencent
-        && (!config.tencentSecretId?.trim() || !config.tencentSecretKey?.trim())) {
+    const secretId = credential?.secretId || (legacyProviderConfig ? config.tencentSecretId : '');
+    const secretKey = credential?.secretKey || (legacyProviderConfig ? config.tencentSecretKey : '');
+    if (servicesType.isTencent(provider) && (!secretId?.trim() || !secretKey?.trim())) {
         return `${serviceLabel} 需要 SecretId 和 SecretKey，当前尚未完整配置；请先在设置中填写，再开始翻译。`;
     }
 

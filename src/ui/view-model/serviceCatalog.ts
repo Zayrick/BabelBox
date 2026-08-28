@@ -1,23 +1,59 @@
 import { customModelString, resolveConfiguredModel, servicesType } from '@/src/core/config/catalog'
+import type {
+  TranslationServiceKind,
+  TranslationServiceOption,
+} from '@/src/core/config/translationServices'
 
-export interface ServiceOption {
+export type ServiceKind = TranslationServiceKind
+export type ServiceOption = TranslationServiceOption
+
+/**
+ * Transitional input accepted while callers move from the provider catalog to
+ * configured service instances. `disabled` marks the old group dividers, not
+ * a service's enabled state.
+ */
+export interface LegacyServiceOption {
   value: string
   label: string
   description?: string
   disabled?: boolean
 }
 
+export type ServiceCatalogOption = ServiceOption | LegacyServiceOption
+
 export interface ServiceGroup {
   id: string
   label: string
-  items: ServiceOption[]
+  items: ServiceCatalogOption[]
 }
 
 export function cleanServiceLabel(label: string) {
   return label.replace(/[⭐️★]+/gu, '').trim()
 }
 
-export function buildServiceGroups(options: ServiceOption[]): ServiceGroup[] {
+export function isServiceInstanceOption(option: ServiceCatalogOption): option is ServiceOption {
+  return 'provider' in option
+    && typeof option.provider === 'string'
+    && (option.kind === 'machine' || option.kind === 'ai')
+    && typeof option.enabled === 'boolean'
+}
+
+function cleanOption<T extends ServiceCatalogOption>(option: T): T {
+  return {...option, label: cleanServiceLabel(option.label)}
+}
+
+function buildInstanceGroups(options: ServiceOption[]): ServiceGroup[] {
+  return [
+    {id: 'machine', label: '机器翻译', kind: 'machine' as const},
+    {id: 'ai', label: 'AI 翻译', kind: 'ai' as const},
+  ].map(({id, label, kind}) => ({
+    id,
+    label,
+    items: options.filter((option) => option.kind === kind).map(cleanOption),
+  })).filter((group) => group.items.length > 0)
+}
+
+function buildLegacyGroups(options: LegacyServiceOption[]): ServiceGroup[] {
   const groups: ServiceGroup[] = []
   let current: ServiceGroup = { id: 'other', label: '其他服务', items: [] }
 
@@ -31,11 +67,16 @@ export function buildServiceGroups(options: ServiceOption[]): ServiceGroup[] {
       }
       continue
     }
-    current.items.push({ ...option, label: cleanServiceLabel(option.label) })
+    current.items.push(cleanOption(option))
   }
 
   if (current.items.length) groups.push(current)
   return groups
+}
+
+export function buildServiceGroups(options: ServiceCatalogOption[]): ServiceGroup[] {
+  if (options.every(isServiceInstanceOption)) return buildInstanceGroups(options)
+  return buildLegacyGroups(options as LegacyServiceOption[])
 }
 
 export function filterServiceGroups(groups: ServiceGroup[], query: string) {
@@ -46,7 +87,13 @@ export function filterServiceGroups(groups: ServiceGroup[], query: string) {
     .map((group) => ({
       ...group,
       items: group.items.filter((item) =>
-        `${item.label}${item.value}${item.description || ''}`.toLocaleLowerCase().includes(keyword),
+        [
+          item.label,
+          item.value,
+          isServiceInstanceOption(item) ? item.provider : '',
+          isServiceInstanceOption(item) ? item.modelId : '',
+          item.description || '',
+        ].join('').toLocaleLowerCase().includes(keyword),
       ),
     }))
     .filter((group) => group.items.length > 0)

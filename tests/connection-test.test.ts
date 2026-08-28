@@ -1,7 +1,8 @@
-import {afterEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
-const {adapter} = vi.hoisted(() => ({
+const {adapter, mockConfig} = vi.hoisted(() => ({
     adapter: vi.fn(),
+    mockConfig: {} as Record<string, unknown>,
 }));
 
 vi.mock('@/src/providers/translation/registry', () => ({
@@ -10,15 +11,57 @@ vi.mock('@/src/providers/translation/registry', () => ({
     },
 }));
 
+vi.mock('@/src/services/config/store', () => ({config: mockConfig}));
+
 import {
     CONNECTION_TEST_ORIGIN,
     formatConnectionTestError,
     runTranslationServiceConnectionTest,
 } from '@/src/providers/translation/connectionTest';
+import {TRANSLATION_PROVIDER_CONFIG} from '@/src/services/translation/requestSnapshot';
 import {formatServiceError, getServiceErrorMessage} from '@/src/services/translation/serviceErrors';
 import {services} from '@/src/core/config/catalog';
 
 describe('翻译服务连接测试', () => {
+    beforeEach(() => {
+        for (const key of Object.keys(mockConfig)) delete mockConfig[key];
+        Object.assign(mockConfig, {
+            service: 'demo',
+            from: 'auto',
+            to: 'zh-CN',
+            useCache: true,
+            enableAIContext: false,
+            model: {demo: 'legacy-model'},
+            customModel: {},
+            proxy: {},
+            custom: '',
+            deeplx: '',
+            newApiUrl: '',
+            minimaxBillingPlan: 'payg',
+            minimaxRegion: 'cn',
+            mimoBillingPlan: 'payg',
+            mimoRegion: 'cn',
+            azureOpenaiEndpoint: '',
+            robot_id: {},
+            customBody: {},
+            system_role: {},
+            user_role: {},
+            deepseekApiType: 'auto',
+            deepseekThinkingMode: 'disabled',
+            token: {demo: 'legacy-key'},
+            requireApiKey: {},
+            youdaoAppKey: '',
+            youdaoAppSecret: '',
+            tencentSecretId: '',
+            tencentSecretKey: '',
+            serviceCredentials: {},
+            // An empty inventory is the legacy compatibility path: service is
+            // already a provider registry key.
+            translationServices: [],
+        });
+        adapter.mockReset();
+    });
+
     afterEach(() => {
         vi.restoreAllMocks();
     });
@@ -32,8 +75,65 @@ describe('翻译服务连接测试', () => {
         expect(adapter).toHaveBeenCalledWith(expect.objectContaining({
             origin: CONNECTION_TEST_ORIGIN,
             serviceOverride: 'demo',
+            modelOverride: 'legacy-model',
             useCache: false,
         }));
+    });
+
+    it('按实例解析供应商，并把实例模型、凭据和端点固定到请求快照', async () => {
+        Object.assign(mockConfig, {
+            translationServices: [{
+                id: 'service:demo:first',
+                provider: 'demo',
+                name: 'Demo v2',
+                enabled: false,
+                kind: 'ai',
+                modelId: 'demo-v2',
+                endpoint: 'https://example.test/v2',
+                proxy: '',
+                customBody: '{"temperature":0}',
+                systemRole: 'system prompt',
+                userRole: 'user prompt',
+                robotId: '',
+                requireApiKey: true,
+                deepseekApiType: 'auto',
+                deepseekThinkingMode: 'disabled',
+                minimaxBillingPlan: 'payg',
+                minimaxRegion: 'cn',
+                mimoBillingPlan: 'payg',
+                mimoRegion: 'cn',
+            }],
+            serviceCredentials: {
+                'service:demo:first': {
+                    apiKey: 'instance-key',
+                    appKey: '',
+                    appSecret: '',
+                    secretId: '',
+                    secretKey: '',
+                },
+            },
+        });
+        adapter.mockResolvedValue('测试译文');
+
+        await expect(runTranslationServiceConnectionTest('service:demo:first')).resolves.toEqual(
+            expect.objectContaining({durationMs: expect.any(Number)}),
+        );
+
+        const request = adapter.mock.calls[0]?.[0] as Record<PropertyKey, unknown>;
+        expect(request).toEqual(expect.objectContaining({
+            serviceOverride: 'demo',
+            modelOverride: 'demo-v2',
+        }));
+        const snapshot = request[TRANSLATION_PROVIDER_CONFIG] as {
+            model: Record<string, string>;
+            token: Record<string, string>;
+            proxy: Record<string, string>;
+            customBody: Record<string, string>;
+        };
+        expect(snapshot.model.demo).toBe('demo-v2');
+        expect(snapshot.token.demo).toBe('instance-key');
+        expect(snapshot.proxy.demo).toBe('https://example.test/v2');
+        expect(snapshot.customBody.demo).toBe('{"temperature":0}');
     });
 
     it('拒绝空响应，避免把仅 HTTP 成功误报为连接正常', async () => {
@@ -58,6 +158,24 @@ describe('翻译服务连接测试', () => {
 
     it('复用统一服务错误格式化器', () => {
         expect(formatConnectionTestError('demo', new Error('plain failure'))).toBe('plain failure');
+    });
+
+    it('实例连接失败时按供应商而不是实例 ID 生成专用提示', () => {
+        mockConfig.translationServices = [{
+            id: 'service:minimax:first',
+            provider: services.minimax,
+            name: 'MiniMax first',
+            enabled: true,
+            modelId: 'MiniMax-Text-01',
+        }];
+
+        const message = formatConnectionTestError(
+            'service:minimax:first',
+            new Error('翻译失败: 401 Unauthorized'),
+        );
+
+        expect(message).toContain('Token Plan Key');
+        expect(message).toContain('不能互换');
     });
 
     it('将 MiniMax 2049 错误转换为 Key、区域和计费类型提示', () => {

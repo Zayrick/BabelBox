@@ -2,7 +2,13 @@ import {browser} from 'wxt/browser';
 import {Check, Download, Settings, type IconNode} from 'lucide';
 import { config, requestConfigSave, subscribeConfig } from '@/src/services/config/store';
 import {replaceLucideIcon} from '@/src/ui/icons/lucideDom';
-import { options, servicesType } from '@/src/core/config/catalog';
+import { servicesType } from '@/src/core/config/catalog';
+import {
+  getTranslationServiceConfigurationKey,
+  getTranslationServiceLabel,
+  getTranslationServiceProvider,
+  type TranslationServiceConfigLike,
+} from '@/src/core/config/translationServices';
 import {
   normalizeVideoSubtitleFontSize,
   type Config,
@@ -139,8 +145,11 @@ export async function translateVideoSubtitleCues(
   }));
 }
 
-export function getVideoPretranslationWindowMs(service: string): number {
-  return servicesType.isAI(service)
+export function getVideoPretranslationWindowMs(
+  service: string,
+  serviceConfig: TranslationServiceConfigLike = config,
+): number {
+  return servicesType.isAI(getTranslationServiceProvider(serviceConfig, service))
     ? VIDEO_PRETRANSLATION_AI_WINDOW_MS
     : VIDEO_PRETRANSLATION_MACHINE_WINDOW_MS;
 }
@@ -150,9 +159,11 @@ export function normalizeVideoSubtitleDisplayMode(value: unknown): VideoSubtitle
   return 'bilingual';
 }
 
-export function getVideoServiceLabel(service: string): string {
-  const item = options.services.find((candidate: any) => candidate.value === service);
-  return item?.label || service;
+export function getVideoServiceLabel(
+  service: string,
+  serviceConfig: TranslationServiceConfigLike = config,
+): string {
+  return getTranslationServiceLabel(serviceConfig, service);
 }
 
 export function normalizeVideoCaptionText(value: string): string {
@@ -809,7 +820,7 @@ export function mountVideoSubtitleTranslation(): () => void {
   let pretranslationTrackKey = '';
   let pretranslationCues: VideoSubtitleCue[] = [];
   let pretranslationCacheVersion = 0;
-  let pretranslationConfigKey = `${config.videoService}|${config.from}|${config.to}`;
+  let pretranslationConfigKey = `${getTranslationServiceConfigurationKey(config, config.videoService)}|${config.from}|${config.to}`;
   let progressiveCueKey = '';
   let progressiveCue: VideoSubtitleCue | null = null;
   let progressiveTranslation = '';
@@ -1801,7 +1812,7 @@ export function mountVideoSubtitleTranslation(): () => void {
   };
 
   const syncPretranslationConfig = () => {
-    const nextPretranslationConfigKey = `${config.videoService}|${config.from}|${config.to}`;
+    const nextPretranslationConfigKey = `${getTranslationServiceConfigurationKey(config, config.videoService)}|${config.from}|${config.to}`;
     if (nextPretranslationConfigKey === pretranslationConfigKey) return;
     pretranslationConfigKey = nextPretranslationConfigKey;
     subtitleDownloadAbortController?.abort();

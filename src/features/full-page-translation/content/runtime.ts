@@ -1,5 +1,9 @@
 import {checkConfig} from './configCheck';
 import { services } from "@/src/core/config/catalog";
+import {
+    getTranslationServiceConfigurationKey,
+    getTranslationServiceProvider,
+} from '@/src/core/config/translationServices';
 import {insertFailedTip, insertLoadingSpinner} from '@/src/features/full-page-translation/ui/translationIndicators';
 import { styles } from "@/src/core/config/constants";
 import {
@@ -314,7 +318,8 @@ function isTranslationArtifact(node: Node): boolean {
 }
 
 function isBatchFriendlyService(): boolean {
-    return config.service === services.microsoft || config.service === services.freeTranslation;
+    const provider = getTranslationServiceProvider(config, config.service);
+    return provider === services.microsoft || provider === services.freeTranslation;
 }
 
 function createAbortError(): Error {
@@ -384,7 +389,7 @@ async function translateSlotsIndividually(
 
 function createFullPageTranslationCacheKey(origin: string): string {
     return JSON.stringify({
-        service: config.service,
+        service: getTranslationServiceConfigurationKey(config, config.service),
         from: config.from,
         to: config.to,
         origin,

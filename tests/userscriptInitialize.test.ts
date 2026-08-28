@@ -2,7 +2,12 @@ import {afterEach, describe, expect, it} from 'vitest';
 import {Config} from '@/src/core/config/model';
 import {getApiKeyRequirementKey} from '@/src/core/config/validation';
 import {customModelString, defaultModels, services} from '@/src/core/config/catalog';
-import {ensureUserscriptConfig, normalizeUserscriptConfig} from '@/userscript/initialize';
+import {createAITranslationService} from '@/src/core/config/translationServices';
+import {
+    ensureUserscriptConfig,
+    getEnabledUserscriptServices,
+    normalizeUserscriptConfig,
+} from '@/userscript/initialize';
 
 function installLegacyStorage(entries: Array<[string, unknown]>) {
     const values = new Map<string, unknown>(entries);
@@ -135,5 +140,64 @@ describe('legacy userscript migration', () => {
         await ensureUserscriptConfig();
 
         expect(storage.writes).toBe(0);
+    });
+
+    it('preserves multiple instances of one provider and reconciles a disabled selection', () => {
+        const config = new Config();
+        const first = createAITranslationService(services.openai, {
+            id: 'service:openai:first',
+            modelId: 'gpt-first',
+            name: 'First model',
+            enabled: false,
+            endpoint: 'https://first.example.test/v1',
+        });
+        const second = createAITranslationService(services.openai, {
+            id: 'service:openai:second',
+            modelId: 'gpt-second',
+            name: 'Second model',
+            endpoint: 'https://second.example.test/v1',
+        });
+        config.translationServices.push(first, second);
+        config.service = first.id;
+        config.serviceCredentials[first.id] = {
+            apiKey: 'first-key',
+            appKey: '',
+            appSecret: '',
+            secretId: '',
+            secretKey: '',
+        };
+        config.serviceCredentials[second.id] = {
+            apiKey: 'second-key',
+            appKey: '',
+            appSecret: '',
+            secretId: '',
+            secretKey: '',
+        };
+
+        const safe = normalizeUserscriptConfig(config);
+
+        expect(safe.service).not.toBe(first.id);
+        expect(safe.translationServices.filter(item => item.provider === services.openai)).toEqual([
+            expect.objectContaining({id: first.id, modelId: 'gpt-first', enabled: false}),
+            expect.objectContaining({id: second.id, modelId: 'gpt-second', enabled: true}),
+        ]);
+        expect(safe.serviceCredentials[first.id].apiKey).toBe('first-key');
+        expect(safe.serviceCredentials[second.id].apiKey).toBe('second-key');
+        expect(getEnabledUserscriptServices(safe).map(item => item.id)).not.toContain(first.id);
+    });
+
+    it('reenables Microsoft when every userscript-supported service is disabled', () => {
+        const config = new Config();
+        config.translationServices.forEach((instance) => {
+            instance.enabled = instance.provider === services.chromeTranslator;
+        });
+        config.service = services.chromeTranslator;
+
+        const safe = normalizeUserscriptConfig(config);
+
+        expect(safe.service).toBe(services.microsoft);
+        expect(safe.translationServices.find(item => item.id === services.microsoft)?.enabled).toBe(true);
+        expect(getEnabledUserscriptServices(safe).map(item => item.id)).toContain(services.microsoft);
+        expect(getEnabledUserscriptServices(safe).map(item => item.id)).not.toContain(services.chromeTranslator);
     });
 });

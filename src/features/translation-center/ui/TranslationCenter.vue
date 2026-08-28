@@ -79,7 +79,7 @@
                   class="service-picker-option"
                   @click="addService(item.value)"
                 >
-                  <ServiceIcon :service="item.value" :label="item.label" size="small" />
+                  <ServiceIcon :service="item.provider" :label="item.label" size="small" />
                   <span class="service-picker-option-copy">
                     <strong>{{ item.label }}</strong>
                     <small>{{ serviceDescription(item.value) }}</small>
@@ -172,7 +172,7 @@
                 >
                   <GripVertical aria-hidden="true" />
                 </button>
-                <ServiceIcon :service="card.service" :label="serviceLabel(card.service)" size="medium" />
+                <ServiceIcon :service="serviceProvider(card.service)" :label="serviceLabel(card.service)" size="medium" />
                 <div>
                   <strong>{{ serviceLabel(card.service) }}</strong>
                 </div>
@@ -239,10 +239,14 @@ import {
 import {browser} from 'wxt/browser'
 import ServiceIcon from '@/src/ui/components/ServiceIcon.vue'
 import {
-  filterAvailableTranslationServices,
+  getSelectableTranslationServices,
   isTranslationServiceAvailable,
 } from '@/src/services/translation/capabilities'
-import { options, servicesType } from '@/src/core/config/catalog'
+import { options } from '@/src/core/config/catalog'
+import {
+  getTranslationServiceOptions,
+  type TranslationServiceOption,
+} from '@/src/core/config/translationServices'
 import { config, configReady, requestConfigSave, subscribeConfig } from '@/src/services/config/store'
 import { translateText } from '@/src/services/translation/client'
 
@@ -257,14 +261,7 @@ type TranslationCard = {
   run: number
 }
 
-type ServiceOption = {
-  value: string
-  label: string
-  description?: string
-  disabled?: boolean
-}
-
-const DEFAULT_COMPARISON_SERVICES = ['freeTranslation', 'google', 'openai', 'deepseek', 'gemini', 'deeplx']
+const DEFAULT_MACHINE_COMPARISON_SERVICES = ['freeTranslation', 'google', 'deeplx']
 const MAX_TEXT_LENGTH = 5000
 
 const sourceText = ref('')
@@ -279,17 +276,29 @@ const servicePicker = ref<HTMLElement | null>(null)
 const cards = ref<TranslationCard[]>([])
 const draggingService = ref('')
 const dragOverService = ref('')
+const configVersion = ref(0)
 let activeController: AbortController | null = null
 let activeRunId = 0
 let copiedTimer: ReturnType<typeof setTimeout> | undefined
 let unsubscribeConfig: (() => void) | undefined
 let configHydrated = false
+let pendingConfigHydration = false
 let pointerDrag: { service: string; pointerId: number } | null = null
 
-const serviceOptions = computed<ServiceOption[]>(() => filterAvailableTranslationServices(options.services)
-  .filter((item: any) => !item.disabled) as ServiceOption[])
+const enabledServiceOptions = computed(() => {
+  void configVersion.value
+  return getTranslationServiceOptions(config, true)
+})
+const serviceOptions = computed(() => {
+  void configVersion.value
+  return getSelectableTranslationServices(config)
+})
+const enabledServiceOptionById = computed(() => new Map(enabledServiceOptions.value.map(item => [item.value, item])))
 const hiddenUnavailableServices = computed(() => Array.isArray(config.translationCenterServices)
-  ? config.translationCenterServices.filter(service => !isTranslationServiceAvailable(service))
+  ? config.translationCenterServices.filter(service => {
+      const option = enabledServiceOptionById.value.get(service)
+      return option && !isTranslationServiceAvailable(option.value, undefined, option.provider)
+    })
   : [])
 const selectedServiceValues = computed(() => new Set(cards.value.map(card => card.service)))
 const availableServiceOptions = computed(() => serviceOptions.value.filter(item => !selectedServiceValues.value.has(item.value)))
@@ -301,7 +310,7 @@ const sourceLanguageOptions = computed(() => [
 const targetLanguageOptions = computed(() => options.to)
 const filteredServiceGroups = computed(() => {
   const keyword = serviceSearchQuery.value.toLocaleLowerCase()
-  const filterItems = (items: ServiceOption[]) => items.filter(item => {
+  const filterItems = (items: TranslationServiceOption[]) => items.filter(item => {
     if (!keyword) return true
     return `${item.label}${item.description || ''}`.toLocaleLowerCase().includes(keyword)
   })
@@ -309,12 +318,12 @@ const filteredServiceGroups = computed(() => {
     {
       key: 'machine',
       label: '机器翻译',
-      items: filterItems(availableServiceOptions.value.filter(item => servicesType.isMachine(item.value))),
+      items: filterItems(availableServiceOptions.value.filter(item => item.kind === 'machine')),
     },
     {
       key: 'ai',
       label: 'AI 翻译',
-      items: filterItems(availableServiceOptions.value.filter(item => servicesType.isAI(item.value))),
+      items: filterItems(availableServiceOptions.value.filter(item => item.kind === 'ai')),
     },
   ].filter(group => group.items.length > 0)
 })
@@ -324,11 +333,15 @@ function createCard(service: string): TranslationCard {
 }
 
 function serviceLabel(service: string): string {
-  return serviceOptions.value.find(item => item.value === service)?.label || service
+  return enabledServiceOptionById.value.get(service)?.label || service
+}
+
+function serviceProvider(service: string): string {
+  return enabledServiceOptionById.value.get(service)?.provider || service
 }
 
 function serviceDescription(service: string): string {
-  const option = serviceOptions.value.find(item => item.value === service)
+  const option = enabledServiceOptionById.value.get(service)
   if (option?.description) return option.description.split('；')[0]
   return service === 'freeTranslation' ? '无需密钥，自动尝试多个免费接口' : '使用设置中已保存的连接配置'
 }
@@ -345,8 +358,9 @@ function getValidServiceOrder(value: unknown): string[] {
 }
 
 function getDefaultServiceOrder(): string[] {
-  const configured = DEFAULT_COMPARISON_SERVICES.filter(service => serviceOptions.value.some(item => item.value === service))
-  return configured.length ? configured : [serviceOptions.value[0]?.value].filter(Boolean) as string[]
+  const machineOptions = serviceOptions.value.filter(item => item.kind === 'machine')
+  const configured = DEFAULT_MACHINE_COMPARISON_SERVICES.filter(service => machineOptions.some(item => item.value === service))
+  return configured.length ? configured : [machineOptions[0]?.value || serviceOptions.value[0]?.value].filter(Boolean) as string[]
 }
 
 function getCurrentServiceOrder(): string[] {
@@ -365,11 +379,12 @@ function persistTranslationCenterConfig(): void {
   if (!configHydrated) return
   const available = [...getCurrentServiceOrder()]
   const stored = Array.isArray(config.translationCenterServices) ? config.translationCenterServices : []
+  const unavailable = new Set(hiddenUnavailableServices.value)
   config.translationCenterServices = stored.flatMap(service => {
-    if (!isTranslationServiceAvailable(service)) return [service]
+    if (unavailable.has(service)) return [service]
     const replacement = available.shift()
     return replacement ? [replacement] : []
-  }).concat(available)
+  }).concat(available).filter((service, index, services) => services.indexOf(service) === index)
   config.translationCenterSourceLanguage = sourceLanguage.value
   config.translationCenterTargetLanguage = targetLanguage.value
   void requestConfigSave(config, browser.runtime.sendMessage.bind(browser.runtime)).catch(error => {
@@ -380,7 +395,13 @@ function persistTranslationCenterConfig(): void {
 function hydrateTranslationCenterConfig(nextConfig = config): void {
   const storedOrder = getValidServiceOrder(nextConfig.translationCenterServices)
   const nextOrder = storedOrder.length ? storedOrder : getDefaultServiceOrder()
-  if (!hasSameOrder(getCurrentServiceOrder(), nextOrder)) applyServiceOrder(nextOrder)
+  if (!hasSameOrder(getCurrentServiceOrder(), nextOrder)) {
+    activeController?.abort()
+    activeController = null
+    activeRunId += 1
+    isRunning.value = false
+    applyServiceOrder(nextOrder)
+  }
   const storedSource = nextConfig.translationCenterSourceLanguage || nextConfig.from || 'auto'
   const storedTarget = nextConfig.translationCenterTargetLanguage || nextConfig.to || 'zh-Hans'
   const nextSource = sourceLanguageOptions.value.some(item => item.value === storedSource) ? storedSource : 'auto'
@@ -467,6 +488,10 @@ function endCardDrag(): void {
   document.body.style.userSelect = ''
   draggingService.value = ''
   dragOverService.value = ''
+  if (pendingConfigHydration) {
+    pendingConfigHydration = false
+    hydrateTranslationCenterConfig()
+  }
 }
 
 function formatError(error: unknown): string {
@@ -583,10 +608,16 @@ function handleKeydown(event: KeyboardEvent): void {
 
 onMounted(async () => {
   await configReady
+  configVersion.value += 1
   hydrateTranslationCenterConfig()
   configHydrated = true
   unsubscribeConfig = subscribeConfig(nextConfig => {
-    if (!configHydrated || draggingService.value) return
+    if (!configHydrated) return
+    configVersion.value += 1
+    if (draggingService.value) {
+      pendingConfigHydration = true
+      return
+    }
     hydrateTranslationCenterConfig(nextConfig)
   })
   document.addEventListener('pointerdown', closeServicePicker)

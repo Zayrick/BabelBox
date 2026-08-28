@@ -1,4 +1,4 @@
-import { currentModelIds, defaultModels, defaultOption, services, servicesType } from "./catalog";
+import { currentModelIds, defaultModels, defaultOption, services } from "./catalog";
 import type { MiniMaxBillingPlan, MiniMaxRegion, MiMoBillingPlan, MiMoRegion } from "./catalog";
 import { normalizeCustomBodyMapping } from "./customBody";
 import { normalizeSelectionTtsVoiceOrder } from "./selectionTts";
@@ -6,6 +6,14 @@ import {
     normalizeAlwaysTranslateDomains,
     normalizeDisabledExtensionDomains,
 } from "@/src/core/site-rules/domain";
+import {
+    createDefaultTranslationServices,
+    getDefaultTranslationServiceName,
+    getTranslationServiceInstance,
+    normalizeTranslationServices,
+    reconcileTranslationServiceReferences,
+    type TranslationServiceInstance,
+} from './translationServices';
 
 export type DeepSeekApiType = 'auto' | 'responses' | 'chat';
 export type DeepSeekThinkingMode = 'enabled' | 'disabled';
@@ -62,6 +70,14 @@ interface IExtra {
     [key: string]: any
 }
 
+export interface TranslationServiceCredential {
+    apiKey: string;
+    appKey: string;
+    appSecret: string;
+    secretId: string;
+    secretKey: string;
+}
+
 export class Config {
     on: boolean; // 是否开启
     autoTranslate: boolean; // 是否即时翻译
@@ -73,6 +89,8 @@ export class Config {
     style: number;
     display: number = 1;
     service: string;
+    translationServices: TranslationServiceInstance[]; // 已添加的翻译服务实例
+    serviceCredentials: Record<string, TranslationServiceCredential>; // 按实例隔离的凭据
     documentService: string; // 文档翻译独立翻译服务
     documentModel: IMapping; // 文档翻译按服务保存的独立模型选择
     documentCustomModel: IMapping; // 文档翻译按服务保存的独立自定义模型
@@ -153,6 +171,8 @@ export class Config {
         this.display = defaultOption.display;
         this.hotkey = defaultOption.hotkey;
         this.service = defaultOption.service;
+        this.translationServices = createDefaultTranslationServices();
+        this.serviceCredentials = {};
         this.documentService = defaultOption.service;
         this.documentModel = Object.fromEntries(defaultModels);
         this.documentCustomModel = {};
@@ -313,6 +333,7 @@ export function normalizeConfig(value: unknown): Config {
     delete (normalized as unknown as Record<string, unknown>).__fluentConfigRevision;
 
     normalized.token = normalizeStringMapping(source.token);
+    normalized.serviceCredentials = normalizeServiceCredentials(source.serviceCredentials);
     normalized.model = normalizeStringMapping(source.model);
     normalized.documentModel = normalizeStringMapping(source.documentModel);
     normalized.requireApiKey = isBooleanMapping(source.requireApiKey) ? {...source.requireApiKey} : {};
@@ -329,12 +350,69 @@ export function normalizeConfig(value: unknown): Config {
         ...normalizeStringMapping(source.user_role),
     };
     normalized.customBody = normalizeCustomBodyMapping(source.customBody);
-
     if (typeof normalized.custom !== 'string') normalized.custom = defaultOption.custom;
     if (typeof normalized.newApiUrl !== 'string') normalized.newApiUrl = DEFAULT_NEW_API_URL;
 
-    const supportsDocumentService = servicesType.machine.has(normalized.documentService)
-        || servicesType.isAI(normalized.documentService);
+    // 服务实例迁移会用模型值判断旧 AI 供应商是否真的配置过，因此必须先把
+    // provider-keyed 的旧模型编号收敛为当前编号，避免默认旧值被误判为新增证据。
+    migrateModelIdentifiers(normalized.model);
+    migrateModelIdentifiers(normalized.documentModel);
+    defaultModels.forEach((defaultModel, service) => {
+        if (!normalized.model[service]) normalized.model[service] = defaultModel;
+        if (!normalized.documentModel[service]) normalized.documentModel[service] = defaultModel;
+    });
+
+    const selectedModel = normalized.model[services.deepseek];
+    const configuredThinkingMode = source.deepseekThinkingMode;
+    if (selectedModel === 'deepseek-chat') {
+        normalized.model[services.deepseek] = currentModelIds.deepseek;
+        normalized.deepseekThinkingMode = 'disabled';
+    } else if (selectedModel === 'deepseek-reasoner') {
+        normalized.model[services.deepseek] = currentModelIds.deepseek;
+        normalized.deepseekThinkingMode = 'enabled';
+    } else if (configuredThinkingMode !== 'enabled' && configuredThinkingMode !== 'disabled') {
+        normalized.deepseekThinkingMode = selectedModel === 'deepseek-v4-pro' ? 'enabled' : 'disabled';
+    }
+
+    if (!['auto', 'responses', 'chat'].includes(normalized.deepseekApiType)) {
+        normalized.deepseekApiType = 'auto';
+    }
+    if (!['payg', 'token-plan'].includes(normalized.minimaxBillingPlan)) {
+        normalized.minimaxBillingPlan = 'payg';
+    }
+    if (!['global', 'cn'].includes(normalized.minimaxRegion)) {
+        normalized.minimaxRegion = 'cn';
+    }
+    if (!['payg', 'token-plan'].includes(normalized.mimoBillingPlan)) {
+        normalized.mimoBillingPlan = 'payg';
+    }
+    if (!['cn', 'sgp', 'ams'].includes(normalized.mimoRegion)) {
+        normalized.mimoRegion = 'cn';
+    }
+
+    normalized.translationServices = normalizeTranslationServices(source.translationServices, normalized);
+    for (const instance of normalized.translationServices) {
+        if (instance.kind !== 'ai') continue;
+        const legacyModelId = instance.modelId;
+        const usedDefaultName = instance.name === getDefaultTranslationServiceName(
+            instance.provider,
+            legacyModelId,
+        );
+        instance.modelId = migrateModelIdentifier(instance.provider, legacyModelId);
+        if (instance.provider === services.deepseek
+            && (legacyModelId === 'deepseek-chat' || legacyModelId === 'deepseek-reasoner')) {
+            instance.modelId = currentModelIds.deepseek;
+            instance.deepseekThinkingMode = legacyModelId === 'deepseek-reasoner' ? 'enabled' : 'disabled';
+        }
+        if (usedDefaultName) {
+            instance.name = getDefaultTranslationServiceName(instance.provider, instance.modelId);
+        }
+    }
+    const installedServiceIds = new Set(normalized.translationServices.map((item) => item.id));
+    normalized.serviceCredentials = Object.fromEntries(Object.entries(normalized.serviceCredentials)
+        .filter(([serviceId]) => installedServiceIds.has(serviceId)));
+
+    const supportsDocumentService = Boolean(getTranslationServiceInstance(normalized, normalized.documentService));
     if (!supportsDocumentService) {
         normalized.documentService = defaultOption.service;
     }
@@ -346,8 +424,7 @@ export function normalizeConfig(value: unknown): Config {
     // 执行一次迁移，避免覆盖用户在新版本中主动选择的 DeepLX。
     const shouldMigrateLegacyVideoDefault = source.videoService === services.deeplx
         && source.videoServiceDefaultMigrated !== true;
-    const supportsVideoService = servicesType.machine.has(normalized.videoService)
-        || servicesType.isAI(normalized.videoService);
+    const supportsVideoService = Boolean(getTranslationServiceInstance(normalized, normalized.videoService));
     if (shouldMigrateLegacyVideoDefault || !supportsVideoService) {
         normalized.videoService = services.microsoft;
     }
@@ -359,50 +436,6 @@ export function normalizeConfig(value: unknown): Config {
         normalized.videoSubtitleDisplayMode = 'bilingual';
     }
     normalized.videoSubtitleFontSize = normalizeVideoSubtitleFontSize(normalized.videoSubtitleFontSize);
-
-    migrateModelIdentifiers(normalized.model);
-    migrateModelIdentifiers(normalized.documentModel);
-
-    // 旧配置可能没有保存过模型选择；为所有 AI 服务补齐各自的默认模型。
-    defaultModels.forEach((defaultModel, service) => {
-        if (!normalized.model[service]) normalized.model[service] = defaultModel;
-        if (!normalized.documentModel[service]) normalized.documentModel[service] = defaultModel;
-    });
-
-    const selectedModel = normalized.model[services.deepseek];
-    const configuredThinkingMode = source.deepseekThinkingMode;
-
-    if (selectedModel === 'deepseek-chat') {
-        normalized.model[services.deepseek] = currentModelIds.deepseek;
-        normalized.deepseekThinkingMode = 'disabled';
-    } else if (selectedModel === 'deepseek-reasoner') {
-        // 官方迁移指南要求 reasoner 使用 v4-flash 并显式开启 thinking。
-        normalized.model[services.deepseek] = currentModelIds.deepseek;
-        normalized.deepseekThinkingMode = 'enabled';
-    } else if (configuredThinkingMode !== 'enabled' && configuredThinkingMode !== 'disabled') {
-        // 兼容 #219 的早期配置：该实现把 v4-pro 作为默认思考模型。
-        normalized.deepseekThinkingMode = selectedModel === 'deepseek-v4-pro' ? 'enabled' : 'disabled';
-    }
-
-    if (!['auto', 'responses', 'chat'].includes(normalized.deepseekApiType)) {
-        normalized.deepseekApiType = 'auto';
-    }
-
-    if (!['payg', 'token-plan'].includes(normalized.minimaxBillingPlan)) {
-        normalized.minimaxBillingPlan = 'payg';
-    }
-
-    if (!['global', 'cn'].includes(normalized.minimaxRegion)) {
-        normalized.minimaxRegion = 'cn';
-    }
-
-    if (!['payg', 'token-plan'].includes(normalized.mimoBillingPlan)) {
-        normalized.mimoBillingPlan = 'payg';
-    }
-
-    if (!['cn', 'sgp', 'ams'].includes(normalized.mimoRegion)) {
-        normalized.mimoRegion = 'cn';
-    }
 
     normalized.mouseHoverTranslationDelay = normalizeMouseHoverTranslationDelay(
         source.mouseHoverTranslationDelay,
@@ -464,6 +497,7 @@ export function normalizeConfig(value: unknown): Config {
     normalized.translationCenterSourceLanguage = normalizeConfigLanguage(source.translationCenterSourceLanguage);
     normalized.translationCenterTargetLanguage = normalizeConfigLanguage(source.translationCenterTargetLanguage);
     normalized.persistCredentials = source.persistCredentials === true;
+    reconcileTranslationServiceReferences(normalized);
 
     return normalized;
 }
@@ -493,7 +527,7 @@ export function migrateModelIdentifier(service: string, selectedModel: string): 
     return modelMigrations[service]?.[selectedModel] || selectedModel;
 }
 
-function isRecord(value: unknown): value is Record<string, string> {
+function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
@@ -501,7 +535,24 @@ function normalizeStringMapping(value: unknown): IMapping {
     if (!isRecord(value)) return {};
     return Object.fromEntries(
         Object.entries(value).filter(([, item]) => typeof item === 'string'),
-    );
+    ) as IMapping;
+}
+
+function normalizeServiceCredentials(value: unknown): Record<string, TranslationServiceCredential> {
+    if (!isRecord(value)) return {};
+    const result: Record<string, TranslationServiceCredential> = {};
+    for (const [serviceId, credential] of Object.entries(value)) {
+        if (!credential || typeof credential !== 'object' || Array.isArray(credential)) continue;
+        const source = credential as Record<string, unknown>;
+        result[serviceId] = {
+            apiKey: typeof source.apiKey === 'string' ? source.apiKey : '',
+            appKey: typeof source.appKey === 'string' ? source.appKey : '',
+            appSecret: typeof source.appSecret === 'string' ? source.appSecret : '',
+            secretId: typeof source.secretId === 'string' ? source.secretId : '',
+            secretKey: typeof source.secretKey === 'string' ? source.secretKey : '',
+        };
+    }
+    return result;
 }
 
 function normalizeStringList(value: unknown): string[] {
