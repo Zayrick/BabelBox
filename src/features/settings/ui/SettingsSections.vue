@@ -41,9 +41,7 @@
     <!-- 文本与视频使用独立的翻译服务 -->
     <el-row class="margin-bottom margin-left-2em settings-preference-row">
       <el-col :span="12" class="lightblue rounded-corner">
-        <el-tooltip class="box-item" effect="dark" content="网页、划词和悬停翻译使用的默认服务。视频字幕服务可以单独选择。" placement="top-start" :show-after="500">
-          <span class="popup-text popup-vertical-left">文本翻译服务<el-icon class="icon-margin"><InfoFilled /></el-icon></span>
-        </el-tooltip>
+        <SettingsHelpLabel content="网页、划词和悬停翻译使用的默认服务。视频字幕服务可以单独选择。">文本翻译服务</SettingsHelpLabel>
       </el-col>
       <el-col :span="12">
         <el-select v-model="config.service" aria-label="文本翻译服务" placeholder="请选择文本翻译服务">
@@ -55,9 +53,7 @@
     </el-row>
     <el-row class="margin-bottom margin-left-2em settings-preference-row">
       <el-col :span="12" class="lightblue rounded-corner">
-        <el-tooltip class="box-item" effect="dark" content="YouTube 原生字幕下方显示的译文使用此服务，与文本翻译服务互不影响。" placement="top-start" :show-after="500">
-          <span class="popup-text popup-vertical-left">视频翻译服务<el-icon class="icon-margin"><InfoFilled /></el-icon></span>
-        </el-tooltip>
+        <SettingsHelpLabel content="YouTube 原生字幕下方显示的译文使用此服务，与文本翻译服务互不影响。">视频翻译服务</SettingsHelpLabel>
       </el-col>
       <el-col :span="12">
         <el-select v-model="config.videoService" aria-label="视频翻译服务" placeholder="请选择视频翻译服务">
@@ -70,12 +66,7 @@
     <!--    译文样式选择器-->
     <el-row v-show="config.display === 1" class="margin-bottom margin-left-2em settings-preference-row">
       <el-col :span="12" class="lightblue rounded-corner">
-        <el-tooltip class="box-item" effect="dark" content="选择双语模式下译文的显示样式，提供多种美观的效果" placement="top-start"
-          :show-after="500">
-          <span class="popup-text popup-vertical-left">译文样式<el-icon class="icon-margin">
-              <InfoFilled />
-            </el-icon></span>
-        </el-tooltip>
+        <SettingsHelpLabel content="选择双语模式下译文的显示样式，提供多种美观的效果">译文样式</SettingsHelpLabel>
       </el-col>
       <el-col :span="12">
         <el-select v-model="config.style" aria-label="译文样式" placeholder="请选择译文显示样式">
@@ -156,9 +147,7 @@
 
       <el-row class="settings-control-row">
         <el-col :span="12" class="settings-control-label lightblue rounded-corner">
-          <el-tooltip class="box-item" effect="dark" content="视频字幕独立选择翻译服务，默认微软翻译；AI 服务会提前预取字幕，网页翻译仍使用上方的文本翻译服务。" placement="top-start" :show-after="500">
-            <span class="popup-text popup-vertical-left">视频翻译服务<el-icon class="icon-margin"><InfoFilled /></el-icon></span>
-          </el-tooltip>
+          <SettingsHelpLabel content="视频字幕独立选择翻译服务，默认微软翻译；AI 服务会提前预取字幕，网页翻译仍使用上方的文本翻译服务。">视频翻译服务</SettingsHelpLabel>
         </el-col>
         <el-col :span="12" class="settings-control-field">
           <el-select v-model="config.videoService" aria-label="视频字幕翻译服务" :disabled="!config.videoTranslationEnabled" placeholder="请选择服务">
@@ -171,9 +160,7 @@
 
       <el-row class="settings-control-row">
         <el-col :span="12" class="settings-control-label lightblue rounded-corner">
-          <el-tooltip class="box-item" effect="dark" content="只调整 FluentRead 在播放器中显示的原文和译文字号，不改变 YouTube 原生字幕设置。" placement="top-start" :show-after="500">
-            <span class="popup-text popup-vertical-left">字幕字号<el-icon class="icon-margin"><InfoFilled /></el-icon></span>
-          </el-tooltip>
+          <SettingsHelpLabel content="只调整 FluentRead 在播放器中显示的原文和译文字号，不改变 YouTube 原生字幕设置。">字幕字号</SettingsHelpLabel>
         </el-col>
         <el-col :span="12" class="settings-control-field">
           <el-select v-model="config.videoSubtitleFontSize" aria-label="视频字幕字号" :disabled="!config.videoTranslationEnabled" placeholder="请选择字号">
@@ -191,14 +178,7 @@
     <section v-show="props.activeSection === 'settings-shortcuts'" id="settings-shortcuts" class="settings-section settings-list-section">
     <el-row class="settings-control-row" :class="{ 'custom-hotkey-row': config.hotkey === 'custom' }">
       <el-col :span="14" class="settings-control-label lightblue rounded-corner">
-        <el-tooltip class="box-item" effect="dark" content="按住指定快捷键并悬停在文本上进行翻译" placement="top-start" :show-after="500">
-        <span class="popup-text popup-vertical-left">
-          鼠标悬浮快捷键
-          <el-icon class="icon-margin">
-            <InfoFilled />
-          </el-icon>
-        </span>
-        </el-tooltip>
+        <SettingsHelpLabel content="按住指定快捷键并悬停在文本上进行翻译">鼠标悬浮快捷键</SettingsHelpLabel>
       </el-col>
       <el-col :span="10" class="settings-control-field flex-end">
         <div class="hotkey-config">
@@ -232,12 +212,7 @@
     <!-- 鼠标悬浮翻译延迟 -->
     <el-row class="settings-control-row">
       <el-col :span="14" class="settings-control-label lightblue rounded-corner">
-        <el-tooltip class="box-item" effect="dark" content="按住鼠标悬浮快捷键并移动鼠标后，等待指定时间再翻译；调高可以减少 Ctrl+C 等组合键带来的误触。松开快捷键触发的单次翻译不受影响。" placement="top-start" :show-after="500">
-          <span class="popup-text popup-vertical-left">
-            悬浮翻译延迟
-            <el-icon class="icon-margin"><InfoFilled /></el-icon>
-          </span>
-        </el-tooltip>
+        <SettingsHelpLabel content="按住鼠标悬浮快捷键并移动鼠标后，等待指定时间再翻译；调高可以减少 Ctrl+C 等组合键带来的误触。松开快捷键触发的单次翻译不受影响。">悬浮翻译延迟</SettingsHelpLabel>
       </el-col>
       <el-col :span="10" class="settings-control-field flex-end translation-delay-field">
         <el-input-number
@@ -256,14 +231,7 @@
     <!-- 全文翻译快捷键选择 -->
     <el-row v-if="config.on" class="settings-control-row" :class="{ 'custom-hotkey-row': config.floatingBallHotkey === 'custom' }">
       <el-col :span="14" class="settings-control-label lightblue rounded-corner">
-        <el-tooltip class="box-item" effect="dark" content="（测试版）设置快捷键以便快速切换全文翻译状态，无需鼠标点击悬浮球" placement="top-start" :show-after="500">
-        <span class="popup-text popup-vertical-left">
-          全文翻译快捷键
-          <el-icon class="icon-margin">
-            <InfoFilled />
-          </el-icon>
-        </span>
-        </el-tooltip>
+        <SettingsHelpLabel content="（测试版）设置快捷键以便快速切换全文翻译状态，无需鼠标点击悬浮球">全文翻译快捷键</SettingsHelpLabel>
       </el-col>
       <el-col :span="10" class="settings-control-field flex-end">
         <div class="hotkey-config">
@@ -297,20 +265,7 @@
     <!-- 全文翻译范围 -->
     <el-row v-if="config.on" class="settings-control-row">
       <el-col :span="14" class="settings-control-label lightblue rounded-corner">
-        <el-tooltip
-          class="box-item"
-          effect="dark"
-          content="按阅读进度会预翻译视口附近内容；立即翻译到网页底部会处理当前已加载的整页内容，并持续翻译之后新增的内容。它不会自动滚动页面，但在无限滚动页面可能产生较多翻译请求和服务费用。设置会在下次启动全文翻译时生效。"
-          placement="top-start"
-          :show-after="500"
-        >
-          <span class="popup-text popup-vertical-left">
-            全文翻译范围
-            <el-icon class="icon-margin">
-              <InfoFilled />
-            </el-icon>
-          </span>
-        </el-tooltip>
+        <SettingsHelpLabel content="按阅读进度会预翻译视口附近内容；立即翻译到网页底部会处理当前已加载的整页内容，并持续翻译之后新增的内容。它不会自动滚动页面，但在无限滚动页面可能产生较多翻译请求和服务费用。设置会在下次启动全文翻译时生效。">全文翻译范围</SettingsHelpLabel>
       </el-col>
       <el-col :span="10" class="settings-control-field flex-end">
         <el-select v-model="config.fullPageTranslationMode" aria-label="全文翻译范围" size="small" style="width: 100%">
@@ -323,14 +278,7 @@
     <!-- 右键全文翻译开关 -->
     <el-row v-if="config.on" class="settings-control-row">
       <el-col :span="20" class="settings-control-label lightblue rounded-corner">
-        <el-tooltip class="box-item" effect="dark" content="在网页右键菜单中显示“流畅阅读翻译”或“流畅阅读取消翻译”入口；关闭后不会影响全文翻译快捷键和悬浮球" placement="top-start" :show-after="500">
-          <span class="popup-text popup-vertical-left">
-            右键全文翻译
-            <el-icon class="icon-margin">
-              <InfoFilled />
-            </el-icon>
-          </span>
-        </el-tooltip>
+        <SettingsHelpLabel content="在网页右键菜单中显示“流畅阅读翻译”或“流畅阅读取消翻译”入口；关闭后不会影响全文翻译快捷键和悬浮球">右键全文翻译</SettingsHelpLabel>
       </el-col>
       <el-col :span="4" class="settings-control-field flex-end">
         <el-switch v-model="config.contextMenuEnabled" class="settings-toggle" aria-label="右键全文翻译" />
@@ -341,14 +289,7 @@
     <!-- 划词翻译模式选择 -->
     <el-row v-if="config.on" class="settings-control-row">
       <el-col :span="14" class="settings-control-label lightblue rounded-corner">
-        <el-tooltip class="box-item" effect="dark" content="选中文本后显示翻译入口；可选择直接弹出、图标、小点、预设快捷键或自定义快捷键。" placement="top-start" :show-after="500">
-      <span class="popup-text popup-vertical-left">
-        划词翻译
-        <el-icon class="icon-margin">
-          <InfoFilled />
-        </el-icon>
-      </span>
-        </el-tooltip>
+        <SettingsHelpLabel content="选中文本后显示翻译入口；可选择直接弹出、图标、小点、预设快捷键或自定义快捷键。">划词翻译</SettingsHelpLabel>
       </el-col>
       <el-col :span="10" class="settings-control-field flex-end">
         <el-select v-model="config.selectionTranslatorMode" aria-label="划词翻译模式" placeholder="选择模式" size="small" style="width: 100%">
@@ -360,12 +301,7 @@
     </el-row>
     <el-row v-if="config.on && config.selectionTranslatorMode !== 'disabled'" class="settings-control-row" :class="{ 'custom-hotkey-row': config.selectionTranslatorTrigger === 'custom' }">
       <el-col :span="14" class="settings-control-label lightblue rounded-corner">
-        <el-tooltip class="box-item" effect="dark" content="快捷键与直接弹出、显示图标和显示小点是并列的触发方式；选择快捷键后，选中文字时不会显示图标或小点。" placement="top-start" :show-after="500">
-          <span class="popup-text popup-vertical-left">
-            划词触发方式
-            <el-icon class="icon-margin"><InfoFilled /></el-icon>
-          </span>
-        </el-tooltip>
+        <SettingsHelpLabel content="快捷键与直接弹出、显示图标和显示小点是并列的触发方式；选择快捷键后，选中文字时不会显示图标或小点。">划词触发方式</SettingsHelpLabel>
       </el-col>
       <el-col :span="10" class="settings-control-field flex-end">
         <div class="hotkey-config">
@@ -388,12 +324,7 @@
     </el-row>
     <el-row v-if="config.on && config.selectionTranslatorMode !== 'disabled'" class="settings-control-row">
       <el-col :span="14" class="settings-control-label lightblue rounded-corner">
-        <el-tooltip class="box-item" effect="dark" content="从选区稳定后开始计时，再显示图标、小点或翻译面板；快捷键在等待结束后按下会立即显示。" placement="top-start" :show-after="500">
-          <span class="popup-text popup-vertical-left">
-            划词显示延迟
-            <el-icon class="icon-margin"><InfoFilled /></el-icon>
-          </span>
-        </el-tooltip>
+        <SettingsHelpLabel content="从选区稳定后开始计时，再显示图标、小点或翻译面板；快捷键在等待结束后按下会立即显示。">划词显示延迟</SettingsHelpLabel>
       </el-col>
       <el-col :span="10" class="settings-control-field flex-end translation-delay-field">
         <el-input-number
@@ -429,11 +360,7 @@
         <!-- 缓存开关 -->
         <el-row class="settings-control-row">
           <el-col :span="20" class="settings-control-label lightblue rounded-corner">
-            <el-tooltip class="box-item" effect="dark" content="开启缓存可以提高翻译速度，减少重复请求，但可能导致翻译结果不是最新的" placement="top-start" :show-after="500">
-        <span class="popup-text popup-vertical-left">缓存翻译结果<el-icon class="icon-margin">
-            <InfoFilled />
-          </el-icon></span>
-            </el-tooltip>
+            <SettingsHelpLabel content="开启缓存可以提高翻译速度，减少重复请求，但可能导致翻译结果不是最新的">缓存翻译结果</SettingsHelpLabel>
           </el-col>
 
           <el-col :span="4" class="settings-control-field flex-end">
@@ -444,13 +371,7 @@
         <!-- AI 智能上下文 -->
         <el-row class="settings-control-row">
           <el-col :span="20" class="settings-control-label ai-context-label lightblue rounded-corner">
-            <el-tooltip class="box-item" effect="dark"
-                        content="开启后，AI 翻译会参考当前网页的标题、描述和相关正文片段；仅对大模型翻译服务生效。"
-                        placement="top-start" :show-after="500">
-              <span class="popup-text popup-vertical-left">AI 智能上下文<el-icon class="icon-margin">
-                  <InfoFilled />
-                </el-icon></span>
-            </el-tooltip>
+            <SettingsHelpLabel content="开启后，AI 翻译会参考当前网页的标题、描述和相关正文片段；仅对大模型翻译服务生效。">AI 智能上下文</SettingsHelpLabel>
             <small class="settings-control-hint">提升术语和歧义表达的语境准确度；首次请求还会额外生成摘要并增加一次调用。</small>
           </el-col>
 
@@ -462,14 +383,7 @@
         <!-- 悬浮球开关 -->
       <el-row v-if="config.on" class="settings-control-row">
         <el-col :span="20" class="settings-control-label lightblue rounded-corner">
-          <el-tooltip class="box-item" effect="dark" content="（测试版）控制是否显示屏幕边缘的即时翻译悬浮球，用于对整个网页进行翻译" placement="top-start" :show-after="500">
-          <span class="popup-text popup-vertical-left">
-            全文翻译悬浮球
-            <el-icon class="icon-margin">
-              <InfoFilled />
-            </el-icon>
-          </span>
-          </el-tooltip>
+          <SettingsHelpLabel content="（测试版）控制是否显示屏幕边缘的即时翻译悬浮球，用于对整个网页进行翻译">全文翻译悬浮球</SettingsHelpLabel>
         </el-col>
 
         <el-col :span="4" class="settings-control-field flex-end">
@@ -480,18 +394,7 @@
         <!-- 翻译进度面板 -->
         <el-row class="settings-control-row">
           <el-col :span="20" class="settings-control-label lightblue rounded-corner">
-            <el-tooltip
-              class="box-item"
-              effect="dark"
-              content="全文翻译时，在网页右下角显示正在翻译和等待中的任务数量；任务结束后自动隐藏。"
-              placement="top-start"
-              :show-after="500"
-            >
-              <span class="popup-text popup-vertical-left">
-                显示翻译进度面板
-                <el-icon class="icon-margin"><InfoFilled /></el-icon>
-              </span>
-            </el-tooltip>
+            <SettingsHelpLabel content="全文翻译时，在网页右下角显示正在翻译和等待中的任务数量；任务结束后自动隐藏。">显示翻译进度面板</SettingsHelpLabel>
           </el-col>
           <el-col :span="4" class="settings-control-field flex-end">
             <el-switch
@@ -506,13 +409,7 @@
         <!-- 禁用动画设置 -->
         <el-row class="settings-control-row">
           <el-col :span="20" class="settings-control-label lightblue rounded-corner">
-            <el-tooltip class="box-item" effect="dark"
-                        content="动画效果（默认开）：禁用后将关闭加载/悬浮等动画，以节省GPU资源和电量。适合低配置设备或希望节省资源的用户。"
-                        placement="top-start" :show-after="500">
-              <span class="popup-text popup-vertical-left">动画效果<el-icon class="icon-margin">
-                  <InfoFilled />
-                </el-icon></span>
-            </el-tooltip>
+            <SettingsHelpLabel content="动画效果（默认开）：禁用后将关闭加载/悬浮等动画，以节省GPU资源和电量。适合低配置设备或希望节省资源的用户。">动画效果</SettingsHelpLabel>
           </el-col>
           <el-col :span="4" class="settings-control-field flex-end">
             <el-switch v-model="config.animations" class="settings-toggle" aria-label="动画效果" />
@@ -522,13 +419,7 @@
         <!-- 输入框翻译功能 -->
         <el-row class="settings-control-row">
           <el-col :span="12" class="settings-control-label lightblue rounded-corner">
-            <el-tooltip class="box-item" effect="dark"
-                        content="输入框翻译：在任何文本输入框中使用指定方式触发翻译当前输入的内容。"
-                        placement="top-start" :show-after="500">
-              <span class="popup-text popup-vertical-left">输入框翻译<el-icon class="icon-margin">
-                  <InfoFilled />
-                </el-icon></span>
-            </el-tooltip>
+            <SettingsHelpLabel content="输入框翻译：在任何文本输入框中使用指定方式触发翻译当前输入的内容。">输入框翻译</SettingsHelpLabel>
           </el-col>
           <el-col :span="12" class="settings-control-field">
             <el-select v-model="config.inputBoxTranslationTrigger" placeholder="请选择触发方式">
@@ -554,12 +445,7 @@
         <!-- 翻译并发数 -->
         <el-row class="settings-control-row">
           <el-col :span="12" class="settings-control-label lightblue rounded-corner">
-            <el-tooltip class="box-item" effect="dark" content="控制同时进行的最大翻译任务数，数值越高翻译速度越快，但可能占用更多系统资源" placement="top-start"
-                        :show-after="500">
-          <span class="popup-text popup-vertical-left">翻译并发数<el-icon class="icon-margin">
-              <InfoFilled />
-            </el-icon></span>
-            </el-tooltip>
+            <SettingsHelpLabel content="控制同时进行的最大翻译任务数，数值越高翻译速度越快，但可能占用更多系统资源">翻译并发数</SettingsHelpLabel>
           </el-col>
           <el-col :span="12" class="settings-control-field">
             <el-input-number
@@ -577,12 +463,7 @@
         <!-- 使用代理转发 -->
         <el-row v-show="compute.showProxy && !compute.showCustom" class="settings-control-row">
           <el-col :span="8" class="settings-control-label lightblue rounded-corner">
-            <el-tooltip class="box-item" effect="dark" content="使用代理可以解决网络无法访问的问题，如不熟悉代理设置请留空！" placement="top-start"
-                        :show-after="500">
-              <span class="popup-text popup-vertical-left">代理地址<el-icon class="icon-margin">
-                  <InfoFilled />
-                </el-icon></span>
-            </el-tooltip>
+            <SettingsHelpLabel content="使用代理可以解决网络无法访问的问题，如不熟悉代理设置请留空！">代理地址</SettingsHelpLabel>
           </el-col>
           <el-col :span="16" class="settings-control-field">
             <el-input v-model="config.proxy[config.service]" placeholder="默认不使用代理" />
@@ -592,12 +473,7 @@
         <!-- 角色和模板 -->
         <el-row v-show="compute.showAI && !compute.showCustom" class="settings-control-row">
           <el-col :span="8" class="settings-control-label lightblue rounded-corner">
-            <el-tooltip class="box-item" effect="dark" content="以系统身份 system 发送的对话，常用于指定 AI 要扮演的角色"
-              placement="top-start" :show-after="500">
-              <span class="popup-text popup-vertical-left">system<el-icon class="icon-margin">
-                  <InfoFilled />
-                </el-icon></span>
-            </el-tooltip>
+            <SettingsHelpLabel content="以系统身份 system 发送的对话，常用于指定 AI 要扮演的角色">system</SettingsHelpLabel>
           </el-col>
           <el-col :span="16" class="settings-control-field">
             <el-input type="textarea" v-model="config.system_role[config.service]" maxlength="8192"
@@ -606,13 +482,7 @@
         </el-row>
         <el-row v-show="compute.showAI && !compute.showCustom" class="settings-control-row">
           <el-col :span="8" class="settings-control-label lightblue rounded-corner">
-            <el-tooltip class="box-item" effect="dark"
-              content="以用户身份 user 发送的对话，其中{{to}}表示目标语言，{{origin}}表示待翻译的文本内容，两者不可缺少。"
-              placement="top-start" :show-after="500">
-              <span class="popup-text popup-vertical-left">user<el-icon class="icon-margin">
-                  <InfoFilled />
-                </el-icon></span>
-            </el-tooltip>
+            <SettingsHelpLabel content="以用户身份 user 发送的对话，其中{{to}}表示目标语言，{{origin}}表示待翻译的文本内容，两者不可缺少。">user</SettingsHelpLabel>
           </el-col>
           <el-col :span="16" class="settings-control-field">
             <el-input type="textarea" v-model="config.user_role[config.service]" maxlength="8192"
@@ -780,7 +650,6 @@ import {
   normalizeSelectionTranslatorDelay,
 } from '@/src/core/config/model';
 import {
-  CircleHelp as InfoFilled,
   Download,
   History,
   Pencil as Edit,
@@ -797,6 +666,7 @@ import { defineAsyncComponent } from 'vue';
 const CustomHotkeyInput = defineAsyncComponent(() => import('@/src/ui/components/CustomHotkeyInput.vue'));
 import ServiceCatalog from './services/ServiceCatalog.vue';
 import ServiceConfiguration from './services/ServiceConfiguration.vue';
+import SettingsHelpLabel from './SettingsHelpLabel.vue';
 import {TranslationCenter} from '@/src/features/translation-center/public';
 import AlwaysTranslateSites from './AlwaysTranslateSites.vue';
 import { parseHotkey } from '@/src/core/hotkey';

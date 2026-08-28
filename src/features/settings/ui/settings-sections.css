@@ -185,10 +185,6 @@
   opacity: 0.9;
 }
 
-.icon-margin {
-  margin-left: 0.25em;
-}
-
 /* 添加自适应样式 */
 :deep(.el-select) {
   width: 100%;

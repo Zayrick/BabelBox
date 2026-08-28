@@ -49,7 +49,7 @@
       <div class="api-key-policy-copy">
         <div class="api-key-policy-title">
           <strong>API Key 鉴权</strong>
-          <el-tooltip class="box-item" effect="dark" content="关闭后，当前模型可在没有 API Key 时发起请求。" placement="top-start" :show-after="500">
+          <el-tooltip class="box-item" effect="dark" content="关闭后，当前模型可在没有 API Key 时发起请求。" placement="top" :show-after="500">
             <el-icon aria-label="API Key 鉴权说明"><InfoFilled /></el-icon>
           </el-tooltip>
           <span class="api-key-policy-status" :class="{ 'is-off': !compute.requireApiKey }">
@@ -63,9 +63,7 @@
 
     <el-row v-show="compute.showToken" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner">
-        <el-tooltip class="box-item" effect="dark" content="API 访问令牌默认仅保存在当前浏览器会话。只有在配置管理中明确开启后，才会以明文写入扩展本地存储并跨重启保留。获取方式请参考对应服务的官方文档；翻译服务为 ollama 时，token 可为任意值" placement="top-start" :show-after="500">
-          <span class="popup-text popup-vertical-left">访问令牌<el-icon class="icon-margin"><InfoFilled /></el-icon></span>
-        </el-tooltip>
+        <SettingsHelpLabel content="API 访问令牌默认仅保存在当前浏览器会话。只有在配置管理中明确开启后，才会以明文写入扩展本地存储并跨重启保留。获取方式请参考对应服务的官方文档；翻译服务为 ollama 时，token 可为任意值">访问令牌</SettingsHelpLabel>
       </el-col>
       <el-col :span="12"><el-input v-model="config.token[service]" type="password" show-password placeholder="请输入API访问令牌" /></el-col>
     </el-row>
@@ -75,9 +73,7 @@
 
     <el-row v-show="compute.showMiniMaxRegion" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner">
-        <el-tooltip class="box-item" effect="dark" content="按量付费和 Token Plan 使用不同的账户权益；请按控制台中 Key 的来源选择。" placement="top-start" :show-after="500">
-          <span class="popup-text popup-vertical-left">MiniMax 计费方式<el-icon class="icon-margin"><InfoFilled /></el-icon></span>
-        </el-tooltip>
+        <SettingsHelpLabel content="按量付费和 Token Plan 使用不同的账户权益；请按控制台中 Key 的来源选择。">MiniMax 计费方式</SettingsHelpLabel>
       </el-col>
       <el-col :span="12">
         <el-select v-model="config.minimaxBillingPlan" aria-label="MiniMax 计费方式" placeholder="请选择 MiniMax 计费方式">
@@ -88,9 +84,7 @@
 
     <el-row v-show="compute.showMiniMaxRegion" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner">
-        <el-tooltip class="box-item" effect="dark" content="选择与 MiniMax Key 来源一致的 API 区域。Token Plan Key（sk-cp-）和按量付费 Key 不能互换。" placement="top-start" :show-after="500">
-          <span class="popup-text popup-vertical-left">MiniMax 区域<el-icon class="icon-margin"><InfoFilled /></el-icon></span>
-        </el-tooltip>
+        <SettingsHelpLabel content="选择与 MiniMax Key 来源一致的 API 区域。Token Plan Key（sk-cp-）和按量付费 Key 不能互换。">MiniMax 区域</SettingsHelpLabel>
       </el-col>
       <el-col :span="12">
         <el-select v-model="config.minimaxRegion" aria-label="MiniMax API 区域" placeholder="请选择 MiniMax API 区域">
@@ -110,9 +104,7 @@
 
     <el-row v-show="compute.showMiMoRegion" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner">
-        <el-tooltip class="box-item" effect="dark" content="按量付费和 Token Plan 使用不同的账户权益；请按小米 MiMo 控制台中 Key 的来源选择。" placement="top-start" :show-after="500">
-          <span class="popup-text popup-vertical-left">小米 MiMo 计费方式<el-icon class="icon-margin"><InfoFilled /></el-icon></span>
-        </el-tooltip>
+        <SettingsHelpLabel content="按量付费和 Token Plan 使用不同的账户权益；请按小米 MiMo 控制台中 Key 的来源选择。">小米 MiMo 计费方式</SettingsHelpLabel>
       </el-col>
       <el-col :span="12">
         <el-select v-model="config.mimoBillingPlan" aria-label="小米 MiMo 计费方式" placeholder="请选择小米 MiMo 计费方式">
@@ -123,9 +115,7 @@
 
     <el-row v-show="compute.showMiMoRegion" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner">
-        <el-tooltip class="box-item" effect="dark" content="Token Plan 必须使用购买页面提供的集群地址；中国、新加坡和欧洲集群的 tp- Key 不能混用。按量付费统一使用 api.xiaomimimo.com。" placement="top-start" :show-after="500">
-          <span class="popup-text popup-vertical-left">MiMo API 集群<el-icon class="icon-margin"><InfoFilled /></el-icon></span>
-        </el-tooltip>
+        <SettingsHelpLabel content="Token Plan 必须使用购买页面提供的集群地址；中国、新加坡和欧洲集群的 tp- Key 不能混用。按量付费统一使用 api.xiaomimimo.com。">MiMo API 集群</SettingsHelpLabel>
       </el-col>
       <el-col :span="12">
         <el-select v-model="config.mimoRegion" aria-label="小米 MiMo API 集群" placeholder="请选择小米 MiMo API 集群">
@@ -141,9 +131,7 @@
 
     <el-row v-show="compute.showAzureOpenaiEndpoint" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner">
-        <el-tooltip class="box-item" effect="dark" content="Azure OpenAI 服务端点地址，必须包含完整的部署信息。" placement="top-start" :show-after="500">
-          <span class="popup-text popup-vertical-left">Azure 端点<el-icon class="icon-margin"><InfoFilled /></el-icon></span>
-        </el-tooltip>
+        <SettingsHelpLabel content="Azure OpenAI 服务端点地址，必须包含完整的部署信息。">Azure 端点</SettingsHelpLabel>
       </el-col>
       <el-col :span="12">
         <el-input v-model="config.azureOpenaiEndpoint" placeholder="https://your-resource.openai.azure.com/openai/deployments/your-model/chat/completions?api-version=2024-02-15-preview" :class="{ 'input-error': config.azureOpenaiEndpoint && !isValidAzureEndpoint(config.azureOpenaiEndpoint) }" />
@@ -159,53 +147,53 @@
     </el-row>
 
     <el-row v-show="compute.showAkSk" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><el-tooltip effect="dark" content="服务商提供的访问密钥。" placement="top-start" :show-after="300"><span class="popup-text popup-vertical-left">API Key<el-icon class="icon-margin"><InfoFilled /></el-icon></span></el-tooltip></el-col>
+      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="服务商提供的访问密钥。" :show-after="300">API Key</SettingsHelpLabel></el-col>
       <el-col :span="12"><el-input v-model="config.ak" placeholder="请输入Access Key" /></el-col>
     </el-row>
     <el-row v-show="compute.showAkSk" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><el-tooltip effect="dark" content="服务商提供的私密密钥，请妥善保管。" placement="top-start" :show-after="300"><span class="popup-text popup-vertical-left">Secret Key<el-icon class="icon-margin"><InfoFilled /></el-icon></span></el-tooltip></el-col>
+      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="服务商提供的私密密钥，请妥善保管。" :show-after="300">Secret Key</SettingsHelpLabel></el-col>
       <el-col :span="12"><el-input v-model="config.sk" type="password" placeholder="请输入Secret Key" /></el-col>
     </el-row>
 
     <el-row v-show="compute.showYoudao" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><el-tooltip effect="dark" content="有道翻译服务提供的 App Key。" placement="top-start" :show-after="300"><span class="popup-text popup-vertical-left">App Key<el-icon class="icon-margin"><InfoFilled /></el-icon></span></el-tooltip></el-col>
+      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="有道翻译服务提供的 App Key。" :show-after="300">App Key</SettingsHelpLabel></el-col>
       <el-col :span="12"><el-input v-model="config.youdaoAppKey" placeholder="有道 AppKey" /></el-col>
     </el-row>
     <el-row v-show="compute.showYoudao" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><el-tooltip effect="dark" content="有道翻译服务提供的 App Secret。" placement="top-start" :show-after="300"><span class="popup-text popup-vertical-left">App Secret<el-icon class="icon-margin"><InfoFilled /></el-icon></span></el-tooltip></el-col>
+      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="有道翻译服务提供的 App Secret。" :show-after="300">App Secret</SettingsHelpLabel></el-col>
       <el-col :span="12"><el-input v-model="config.youdaoAppSecret" type="password" show-password placeholder="有道 AppSecret" /></el-col>
     </el-row>
 
     <el-row v-show="compute.showTencent" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><el-tooltip effect="dark" content="腾讯云翻译服务提供的 SecretId。" placement="top-start" :show-after="300"><span class="popup-text popup-vertical-left">Secret ID<el-icon class="icon-margin"><InfoFilled /></el-icon></span></el-tooltip></el-col>
+      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="腾讯云翻译服务提供的 SecretId。" :show-after="300">Secret ID</SettingsHelpLabel></el-col>
       <el-col :span="12"><el-input v-model="config.tencentSecretId" placeholder="腾讯云 SecretId" /></el-col>
     </el-row>
     <el-row v-show="compute.showTencent" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><el-tooltip effect="dark" content="腾讯云翻译服务提供的 SecretKey。" placement="top-start" :show-after="300"><span class="popup-text popup-vertical-left">Secret Key<el-icon class="icon-margin"><InfoFilled /></el-icon></span></el-tooltip></el-col>
+      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="腾讯云翻译服务提供的 SecretKey。" :show-after="300">Secret Key</SettingsHelpLabel></el-col>
       <el-col :span="12"><el-input v-model="config.tencentSecretKey" type="password" show-password placeholder="腾讯云 SecretKey" /></el-col>
     </el-row>
 
     <el-row v-show="compute.showRobotId" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><el-tooltip effect="dark" content="填写对应 Coze 机器人的 ID。" placement="top-start" :show-after="300"><span class="popup-text popup-vertical-left">机器人ID<el-icon class="icon-margin"><InfoFilled /></el-icon></span></el-tooltip></el-col>
+      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="填写对应 Coze 机器人的 ID。" :show-after="300">机器人ID</SettingsHelpLabel></el-col>
       <el-col :span="12"><el-input v-model="config.robot_id[service]" placeholder="请输入Coze机器人ID" /></el-col>
     </el-row>
 
     <el-row v-show="compute.showCustom" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><el-tooltip effect="dark" content="填写兼容翻译请求的自定义接口地址。" placement="top-start" :show-after="300"><span class="popup-text popup-vertical-left">自定义接口<el-icon class="icon-margin"><InfoFilled /></el-icon></span></el-tooltip></el-col>
+      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="填写兼容翻译请求的自定义接口地址。" :show-after="300">自定义接口</SettingsHelpLabel></el-col>
       <el-col :span="12"><el-input v-model="config.custom" placeholder="请输入自定义接口地址" /></el-col>
     </el-row>
 
     <el-row v-show="compute.showCustom" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><el-tooltip effect="dark" content="可选的代理地址；填写后，自定义接口请求会优先发送到这里。" placement="top-start" :show-after="300"><span class="popup-text popup-vertical-left">代理地址<el-icon class="icon-margin"><InfoFilled /></el-icon></span></el-tooltip></el-col>
+      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="可选的代理地址；填写后，自定义接口请求会优先发送到这里。" :show-after="300">代理地址</SettingsHelpLabel></el-col>
       <el-col :span="12"><el-input v-model="config.proxy[service]" placeholder="默认直连自定义接口" /></el-col>
     </el-row>
     <el-row v-show="compute.showNewAPI" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><el-tooltip effect="dark" content="填写 New API 服务的接口地址。" placement="top-start" :show-after="300"><span class="popup-text popup-vertical-left">NewAPI接口<el-icon class="icon-margin"><InfoFilled /></el-icon></span></el-tooltip></el-col>
+      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="填写 New API 服务的接口地址。" :show-after="300">NewAPI接口</SettingsHelpLabel></el-col>
       <el-col :span="12"><el-input v-model="config.newApiUrl" placeholder="请输入您的New API接口地址" /></el-col>
     </el-row>
 
     <el-row v-show="compute.showCustomModel" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><el-tooltip effect="dark" content="填写服务商支持的模型标识；选择自定义模型后，网页翻译会使用这里的值。" placement="top-start" :show-after="300"><span class="popup-text popup-vertical-left">{{ service === 'doubao' ? '接入点' : '自定义模型' }}<el-icon class="icon-margin"><InfoFilled /></el-icon></span></el-tooltip></el-col>
+      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="填写服务商支持的模型标识；选择自定义模型后，网页翻译会使用这里的值。" :show-after="300">{{ service === 'doubao' ? '接入点' : '自定义模型' }}</SettingsHelpLabel></el-col>
       <el-col :span="12"><el-input v-model="config.customModel[service]" placeholder="例如：gemma:7b" /></el-col>
     </el-row>
 
@@ -220,9 +208,7 @@
 
       <el-row class="settings-control-row">
         <el-col :span="8" class="settings-control-label lightblue rounded-corner">
-          <el-tooltip effect="dark" content="以 system 身份发送的对话内容。" placement="top-start" :show-after="300">
-            <span class="popup-text popup-vertical-left">system<el-icon class="icon-margin"><InfoFilled /></el-icon></span>
-          </el-tooltip>
+          <SettingsHelpLabel content="以 system 身份发送的对话内容。" :show-after="300">system</SettingsHelpLabel>
         </el-col>
         <el-col :span="16" class="settings-control-field">
           <el-input v-model="config.system_role[service]" type="textarea" maxlength="8192" placeholder="system message" />
@@ -231,9 +217,7 @@
 
       <el-row class="settings-control-row">
         <el-col :span="8" class="settings-control-label lightblue rounded-corner">
-          <el-tooltip effect="dark" content="以 user 身份发送的对话模板；{{to}} 表示目标语言，{{origin}} 表示待翻译文本。" placement="top-start" :show-after="300">
-            <span class="popup-text popup-vertical-left">user<el-icon class="icon-margin"><InfoFilled /></el-icon></span>
-          </el-tooltip>
+          <SettingsHelpLabel content="以 user 身份发送的对话模板；{{to}} 表示目标语言，{{origin}} 表示待翻译文本。" :show-after="300">user</SettingsHelpLabel>
         </el-col>
         <el-col :span="16" class="settings-control-field">
           <el-input v-model="config.user_role[service]" type="textarea" maxlength="8192" placeholder="user message template" />
@@ -242,16 +226,16 @@
     </template>
 
     <el-row v-show="compute.showDeepseekApiType" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><el-tooltip effect="dark" content="选择 DeepSeek 接口使用的 API 格式。" placement="top-start" :show-after="300"><span class="popup-text popup-vertical-left">API 格式<el-icon class="icon-margin"><InfoFilled /></el-icon></span></el-tooltip></el-col>
+      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="选择 DeepSeek 接口使用的 API 格式。" :show-after="300">API 格式</SettingsHelpLabel></el-col>
       <el-col :span="12"><el-select v-model="config.deepseekApiType" placeholder="请选择 API 格式"><el-option class="select-left" v-for="item in options.deepseekApiType" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-col>
     </el-row>
     <el-row v-show="compute.showDeepseekThinkingMode" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><el-tooltip effect="dark" content="控制 DeepSeek 是否启用思考过程。" placement="top-start" :show-after="300"><span class="popup-text popup-vertical-left">思考模式<el-icon class="icon-margin"><InfoFilled /></el-icon></span></el-tooltip></el-col>
+      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="控制 DeepSeek 是否启用思考过程。" :show-after="300">思考模式</SettingsHelpLabel></el-col>
       <el-col :span="12"><el-select v-model="config.deepseekThinkingMode" placeholder="请选择思考模式"><el-option class="select-left" v-for="item in options.deepseekThinkingMode" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-col>
     </el-row>
 
     <el-row v-show="compute.showCustomBody" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><el-tooltip effect="dark" content="填写要合并到翻译请求中的 JSON 参数对象。" placement="top-start" :show-after="300"><span class="popup-text popup-vertical-left">自定义请求体<el-icon class="icon-margin"><InfoFilled /></el-icon></span></el-tooltip></el-col>
+      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="填写要合并到翻译请求中的 JSON 参数对象。" :show-after="300">自定义请求体</SettingsHelpLabel></el-col>
       <el-col :span="12">
         <el-input v-model="config.customBody[service]" :class="{ 'input-error': !isValidCustomBody(config.customBody[service]) }" placeholder='例如：{"thinking": {"type": "disabled"}}' />
         <div v-if="!isValidCustomBody(config.customBody[service])" class="error-text">请输入合法的 JSON 对象，否则该配置将被忽略</div>
@@ -278,6 +262,7 @@ import {browser} from 'wxt/browser'
 import { requestConfigSave } from '@/src/services/config/store'
 import { CONNECTION_TEST_MESSAGE, getMimoEndpoint, MINIMAX_ENDPOINTS } from '@/src/core/config/constants'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import SettingsHelpLabel from '../SettingsHelpLabel.vue'
 
 const props = defineProps<{
   config: Config
