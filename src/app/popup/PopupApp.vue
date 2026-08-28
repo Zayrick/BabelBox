@@ -149,13 +149,12 @@
           class="ai-context-toggle"
           type="button"
           :aria-pressed="config.enableAIContext"
-          :aria-label="config.enableAIContext ? '关闭 AI精翻' : '开启 AI精翻'"
-          :title="config.enableAIContext ? '关闭 AI精翻' : '开启 AI精翻'"
+          :aria-label="config.enableAIContext ? '关闭上下文' : '开启上下文'"
+          :title="config.enableAIContext ? '关闭上下文' : '开启上下文'"
           :disabled="!config.on || translationActionPending"
           @click="toggleAIContext"
         >
-          <span class="ai-context-copy">AI精翻</span>
-          <span class="ai-context-indicator" aria-hidden="true" />
+          <span class="ai-context-copy">上下文</span>
         </button>
       </div>
 

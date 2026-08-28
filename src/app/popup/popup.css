@@ -377,7 +377,6 @@ h2 {
 }
 .translate-hotkey.disabled { opacity: .72; }
 .ai-context-toggle {
-  position: relative;
   display: flex;
   height: 40px;
   flex: 0 0 64px;
@@ -410,16 +409,6 @@ h2 {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.ai-context-indicator {
-  position: absolute;
-  top: 7px;
-  right: 7px;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #b8bec9;
-}
-.ai-context-toggle[aria-pressed="true"] .ai-context-indicator { background: #24b47e; }
 
 .site-rule-row {
   display: grid;
