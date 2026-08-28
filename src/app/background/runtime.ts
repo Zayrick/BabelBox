@@ -1,7 +1,17 @@
+import {browser} from 'wxt/browser';
 import {installTranslationCacheCleanup} from './cacheCleanup';
+import {
+    installConfigAutoBackupRuntime,
+    type ConfigAutoBackupAlarmApi,
+} from './configAutoBackupRuntime';
 import {installBackgroundContextMenus} from './contextMenuRuntime';
 import {installBackgroundMessageRuntime} from './messageRuntime';
 import {TabTranslationStateStore} from './tabTranslationState';
+import {
+    captureConfigAutoBackup,
+    configAutoBackupsReady,
+    getConfigAutoBackupsSnapshot,
+} from '@/src/services/config/autoBackupStore';
 
 // MV3 后台休眠后会重新从 content script 读取真值；这里只保存当前 worker 的瞬时缓存。
 const tabTranslationStates = new TabTranslationStateStore();
@@ -17,6 +27,13 @@ export function startBackgroundApp(): void {
             if (contextMenus.isSupported) void contextMenus.update(tabId);
         },
     });
-    // 最后注册独立的缓存维护任务，不阻塞 worker 启动。
+    void installConfigAutoBackupRuntime({
+        alarms: browser.alarms as unknown as ConfigAutoBackupAlarmApi,
+        ready: configAutoBackupsReady,
+        getSnapshot: getConfigAutoBackupsSnapshot,
+        capture: captureConfigAutoBackup,
+        now: () => Date.now(),
+        warn: (message, error) => console.warn(message, error),
+    });
     installTranslationCacheCleanup();
 }

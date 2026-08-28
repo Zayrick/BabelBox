@@ -6,13 +6,7 @@ import {
     runTranslationServiceConnectionTest,
     translateMicrosoftTexts,
 } from './providerRuntime';
-import {
-    applyConfigHistoryAction,
-    config,
-    configReady,
-    prepareConfigSaveRequest,
-    saveConfig,
-} from '@/src/services/config/store';
+import {config, configReady} from '@/src/services/config/store';
 import {synthesizeEdgeTts} from '@/src/features/selection-translation/services/edgeTts';
 import {lookupWord} from '@/src/features/selection-translation/services/wordDictionary';
 import {vocabularyBook} from '@/src/features/vocabulary/repository';
@@ -23,9 +17,8 @@ import {
     createAreaTranslationBackgroundHandlers,
     type AreaTranslationBackgroundContext,
 } from './handlers/areaTranslation';
-import {createConfigHistoryHandler} from './handlers/configHistory';
 import {createTranslationCacheHandler} from './handlers/translationCache';
-import {createConfigPersistenceHandler, type ConfigPersistenceContext} from './handlers/configPersistence';
+import type {ConfigPersistenceContext} from './handlers/configPersistence';
 import {createConnectionTestHandler} from './handlers/connectionTest';
 import {createTranslationModelCatalogHandler} from './handlers/modelCatalog';
 import {
@@ -53,6 +46,7 @@ import {areaTranslationOffscreenAdapter} from '@/src/features/area-translation/b
 import {imageTranslationOffscreenAdapter} from '@/src/features/image-translation/background/offscreenAdapter';
 import {selectionTtsOffscreenAdapter} from '@/src/features/selection-translation/background/offscreenAdapter';
 import {createCapabilityGatedBackgroundHandlers, createCapabilityGatedSelectionTtsTransport} from './capabilityRegistry';
+import {createConfigBackgroundHandlers} from './configMessageHandlers';
 
 type BackgroundRuntimeContext = ConfigPersistenceContext
     & VocabularyBackgroundContext
@@ -79,14 +73,7 @@ export function installBackgroundMessageRuntime(options: BackgroundMessageRuntim
             serializeError: serializeTranslationError,
         }),
         createTranslationCacheHandler(clearTranslationCache),
-        createConfigHistoryHandler(applyConfigHistoryAction),
-        createConfigPersistenceHandler({
-            ready: configReady,
-            getCurrentConfig: () => config,
-            prepareConfigSaveRequest,
-            saveConfig,
-            isExtensionUrl: (url) => url.startsWith(browser.runtime.getURL('/')),
-        }),
+        ...createConfigBackgroundHandlers<BackgroundRuntimeContext>(),
         createConnectionTestHandler({
             ready: configReady,
             runConnectionTest: runTranslationServiceConnectionTest,

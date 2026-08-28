@@ -13,7 +13,6 @@ import {
     sanitizeConfigCredentials,
     sanitizeConfigHistoryCredentials,
     type ConfigCredentials,
-    type PublicConfig,
 } from '@/src/core/config/credentials';
 import {isTrustedCredentialStorageContext} from '@/src/platform/storage/credentialContext';
 import {
@@ -25,8 +24,11 @@ import {
     resolveConfigHistoryTargetIndex,
     serializeConfigHistory,
     toPublicConfig,
+    toRestorableConfig,
+    restoreRestorableConfig,
     type ConfigHistoryAction,
     type ConfigHistoryState,
+    type RestorableConfig,
 } from './history';
 import {
     CONFIG_REVISION_FIELD,
@@ -35,6 +37,10 @@ import {
     parseStoredConfig,
     serializeConfig,
 } from './schema';
+import {
+    CONFIG_COUNT_INCREMENT_MESSAGE,
+    parseConfigCountIncrement,
+} from './count';
 
 export {CONFIG_HISTORY_LIMIT, parseStoredConfig, serializeConfig};
 export type {ConfigHistoryAction, ConfigHistoryEntry, ConfigHistoryState} from './history';
@@ -66,7 +72,7 @@ let historyLastSerialized = '';
 let historyPendingSerialized = '';
 let historyWriteRevision = 0;
 let historyWriteQueue: Promise<void> = Promise.resolve();
-let pendingHistorySnapshot: PublicConfig | null = null;
+let pendingHistorySnapshot: RestorableConfig | null = null;
 let pendingHistoryTimer: ReturnType<typeof setTimeout> | undefined;
 let historyFlushPromise: Promise<void> | null = null;
 
@@ -152,7 +158,7 @@ async function appendHistorySnapshotNow(value: unknown): Promise<void> {
     await queueHistoryWrite(nextHistory);
 }
 
-function takePendingHistorySnapshot(): PublicConfig | null {
+function takePendingHistorySnapshot(): RestorableConfig | null {
     if (pendingHistoryTimer) clearTimeout(pendingHistoryTimer);
     pendingHistoryTimer = undefined;
     const snapshot = pendingHistorySnapshot;
@@ -160,7 +166,7 @@ function takePendingHistorySnapshot(): PublicConfig | null {
     return snapshot;
 }
 
-function flushHistorySnapshot(snapshot: PublicConfig): Promise<void> {
+function flushHistorySnapshot(snapshot: RestorableConfig): Promise<void> {
     // 每次追加都等待前一个追加完成，确保它读取到已提交的游标与 nextVersion。
     const previous = historyFlushPromise;
     const current = (previous ? previous.catch(() => undefined) : Promise.resolve())
@@ -177,7 +183,7 @@ function flushHistorySnapshot(snapshot: PublicConfig): Promise<void> {
 }
 
 function scheduleHistorySnapshot(value: unknown): void {
-    pendingHistorySnapshot = toPublicConfig(value);
+    pendingHistorySnapshot = toRestorableConfig(value);
     if (pendingHistoryTimer) clearTimeout(pendingHistoryTimer);
     pendingHistoryTimer = setTimeout(() => {
         const snapshot = takePendingHistorySnapshot();
@@ -489,6 +495,43 @@ export function subscribeConfig(listener: ConfigListener): () => void {
     return () => listeners.delete(listener);
 }
 
+/** 翻译计数只做后台原子增量，不提交可能过期的整份页面配置。 */
+export async function incrementConfigCount(delta: number): Promise<number> {
+    const normalizedDelta = parseConfigCountIncrement(delta);
+    if (normalizedDelta === null) throw new TypeError('无效的翻译计数增量');
+    await configReady;
+
+    const nextConfig = normalizeConfig({...config, count: config.count + normalizedDelta});
+    await storage.setItem(CONFIG_STORAGE_KEY, {
+        ...toPublicConfig(nextConfig),
+        [CONFIG_REVISION_FIELD]: persistedConfigRevision,
+    });
+    writeRevision += 1;
+    lastPersistedSerialized = serializeConfig(nextConfig);
+    applyConfig(nextConfig);
+    return nextConfig.count;
+}
+
+type ConfigCountMessageResponse = {success?: boolean; error?: string; count?: number} | undefined;
+type ConfigCountMessageSender = (message: {
+    type: typeof CONFIG_COUNT_INCREMENT_MESSAGE;
+    delta: number;
+}) => Promise<ConfigCountMessageResponse>;
+
+export async function requestConfigCountIncrement(
+    delta: number,
+    sendMessage?: ConfigCountMessageSender,
+): Promise<number> {
+    const normalizedDelta = parseConfigCountIncrement(delta);
+    if (normalizedDelta === null) throw new TypeError('无效的翻译计数增量');
+    if (!sendMessage) return incrementConfigCount(normalizedDelta);
+
+    const response = await sendMessage({type: CONFIG_COUNT_INCREMENT_MESSAGE, delta: normalizedDelta});
+    if (response?.success === false) throw new Error(response.error || '翻译计数保存失败');
+    if (typeof response?.count !== 'number') throw new Error('翻译计数保存没有返回结果');
+    return response.count;
+}
+
 /**
  * 网页/content 发来的保存请求只能修改公开配置；凭据与持久化偏好必须由
  * popup/options 等扩展 origin 明确更新，避免无凭据的 content 快照清空后台 session。
@@ -498,12 +541,21 @@ export function prepareConfigSaveRequest(
     currentValue: unknown = config,
     allowCredentialUpdates = false,
 ): Config {
-    if (allowCredentialUpdates) return normalizeConfig(value);
-
     const currentConfig = normalizeConfig(currentValue);
+    const incomingConfig = normalizeConfig(value);
+    if (allowCredentialUpdates) {
+        return normalizeConfig({
+            ...incomingConfig,
+            count: currentConfig.count,
+            videoServiceDefaultMigrated: currentConfig.videoServiceDefaultMigrated,
+        });
+    }
+
     const targetConfig = normalizeConfig({
-        ...sanitizeConfigCredentials(normalizeConfig(value)),
+        ...sanitizeConfigCredentials(incomingConfig),
+        count: currentConfig.count,
         persistCredentials: currentConfig.persistCredentials,
+        videoServiceDefaultMigrated: currentConfig.videoServiceDefaultMigrated,
     });
     const credentials = filterConfigCredentialsForDestination(
         extractConfigCredentials(currentConfig),
@@ -544,7 +596,7 @@ export async function saveConfig(value: unknown = config, options: SaveConfigOpt
     if (options.recordHistory) {
         if (options.immediateHistory) {
             await flushConfigHistory();
-            await flushHistorySnapshot(toPublicConfig(normalized));
+            await flushHistorySnapshot(toRestorableConfig(normalized));
         } else {
             scheduleHistorySnapshot(normalized);
         }
@@ -597,20 +649,19 @@ export async function applyConfigHistoryAction(action: ConfigHistoryAction, vers
 
     if (targetIndex === historyState.cursor) return getConfigHistorySnapshot();
     const target = historyState.entries[targetIndex];
-    const currentCredentials = extractConfigCredentials(config);
-    const targetConfig = normalizeConfig({
-        ...target.config,
-        // 凭据持久化是显式安全选择，不随普通配置历史静默回滚。
-        persistCredentials: config.persistCredentials,
-    });
-    const safeCredentials = filterConfigCredentialsForDestination(
-        currentCredentials,
-        config,
-        targetConfig,
-    );
-    const normalized = normalizeConfig(mergeConfigCredentials(targetConfig, safeCredentials));
+    const normalized = restoreRestorableConfig(target.config, config);
     await persistNormalizedConfig(normalized);
     if (serializeConfig(config) !== serializeConfig(normalized)) applyConfig(normalized);
+
+    if (action === 'restore') {
+        const historyWithLatestCursor = {
+            ...historyState,
+            cursor: historyState.entries.length - 1,
+        };
+        const restoredHistory = appendConfigHistorySnapshot(historyWithLatestCursor, normalized);
+        await queueHistoryWrite(restoredHistory || historyWithLatestCursor);
+        return getConfigHistorySnapshot();
+    }
 
     await queueHistoryWrite({
         ...historyState,

@@ -7,7 +7,7 @@ import {
 } from '@/src/core/config/translationServices';
 import {getMissingCredentialMessage} from '@/src/core/config/validation';
 import {isTrustedCredentialStorageContext} from '@/src/platform/storage/credentialContext';
-import {config, requestConfigSave} from '@/src/services/config/store';
+import {config, requestConfigCountIncrement} from '@/src/services/config/store';
 import {getTranslationLanguages} from '@/src/services/translation/languages';
 import {getPageTranslationContext} from '@/src/services/translation/context';
 import {
@@ -26,9 +26,11 @@ const VIDEO_COUNT_SAVE_INTERVAL = 10_000;
 const TRANSLATION_COUNT_SAVE_INTERVAL = 500;
 let videoCountSaveTimer: ReturnType<typeof setTimeout> | undefined;
 let translationCountSaveTimer: ReturnType<typeof setTimeout> | undefined;
+let pendingVideoCount = 0;
+let pendingTranslationCount = 0;
 
-function persistContentConfig(): Promise<void> {
-  return requestConfigSave(config, browser.runtime.sendMessage.bind(browser.runtime));
+function persistCountIncrement(delta: number): Promise<number> {
+  return requestConfigCountIncrement(delta, browser.runtime.sendMessage.bind(browser.runtime));
 }
 
 function createAbortError(): Error {
@@ -112,10 +114,13 @@ function waitForRequest<T>(
 
 function scheduleTranslationCountSave(): void {
   config.count++;
+  pendingTranslationCount++;
   if (translationCountSaveTimer) return;
   translationCountSaveTimer = setTimeout(() => {
     translationCountSaveTimer = undefined;
-    void persistContentConfig().catch((error) => console.error('[FluentRead] 保存翻译计数失败:', error));
+    const delta = pendingTranslationCount;
+    pendingTranslationCount = 0;
+    void persistCountIncrement(delta).catch((error) => console.error('[FluentRead] 保存翻译计数失败:', error));
   }, TRANSLATION_COUNT_SAVE_INTERVAL);
 }
 
@@ -123,16 +128,21 @@ function flushTranslationCountSave(): void {
   if (!translationCountSaveTimer) return;
   clearTimeout(translationCountSaveTimer);
   translationCountSaveTimer = undefined;
-  void persistContentConfig().catch((error) => console.error('[FluentRead] 保存翻译计数失败:', error));
+  const delta = pendingTranslationCount;
+  pendingTranslationCount = 0;
+  void persistCountIncrement(delta).catch((error) => console.error('[FluentRead] 保存翻译计数失败:', error));
 }
 
 function scheduleVideoCountSave(): void {
   config.count++;
+  pendingVideoCount++;
   if (videoCountSaveTimer) return;
 
   videoCountSaveTimer = setTimeout(() => {
     videoCountSaveTimer = undefined;
-    void persistContentConfig().catch((error) => console.error('[FluentRead] 保存视频翻译计数失败:', error));
+    const delta = pendingVideoCount;
+    pendingVideoCount = 0;
+    void persistCountIncrement(delta).catch((error) => console.error('[FluentRead] 保存视频翻译计数失败:', error));
   }, VIDEO_COUNT_SAVE_INTERVAL);
 }
 

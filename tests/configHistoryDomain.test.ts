@@ -90,7 +90,7 @@ describe('配置 schema 与历史纯状态机', () => {
         expect(fallback.entries[0]?.savedAt).toEqual(expect.any(String));
     });
 
-    it('历史解析过滤损坏条目、限制五条，并修正游标与 nextVersion', () => {
+    it('历史解析过滤损坏条目、限制十条，并修正游标与 nextVersion', () => {
         expect(parseConfigHistory(null)).toBeNull();
         expect(parseConfigHistory({entries: 'bad'})).toBeNull();
         expect(parseConfigHistory({schemaVersion: 2, entries: [entry(1)]})).toBeNull();
@@ -101,14 +101,14 @@ describe('配置 schema 与历史纯状态机', () => {
         expect(parseConfigHistory({entries: [{version: 1, savedAt: 'x', config: {on: true}}]})).toBeNull();
 
         const parsed = parseConfigHistory({
-            entries: Array.from({length: 7}, (_, index) => entry(index + 1, `lang-${index}`)),
+            entries: Array.from({length: 12}, (_, index) => entry(index + 1, `lang-${index}`)),
             cursor: -5,
             nextVersion: 2,
         });
         expect(parsed?.entries).toHaveLength(CONFIG_HISTORY_LIMIT);
         expect(parsed?.entries[0]?.version).toBe(3);
         expect(parsed?.cursor).toBe(0);
-        expect(parsed?.nextVersion).toBe(8);
+        expect(parsed?.nextVersion).toBe(13);
 
         const defaults = parseConfigHistory({entries: [entry(9)]});
         expect(defaults).toMatchObject({cursor: 0, nextVersion: 10});
@@ -116,11 +116,11 @@ describe('配置 schema 与历史纯状态机', () => {
         expect(upperBound).toMatchObject({cursor: 0, nextVersion: 20});
 
         const retainedCursor = parseConfigHistory({
-            entries: Array.from({length: 7}, (_, index) => entry(index + 1)),
+            entries: Array.from({length: 12}, (_, index) => entry(index + 1)),
             cursor: 3,
             nextVersion: -2,
         });
-        expect(retainedCursor).toMatchObject({cursor: 1, nextVersion: 8});
+        expect(retainedCursor).toMatchObject({cursor: 1, nextVersion: 13});
 
         const cursorAfterCorruptEntry = parseConfigHistory({
             entries: [entry(1), {version: 'bad'}, entry(2), entry(3)],
@@ -143,7 +143,7 @@ describe('配置 schema 与历史纯状态机', () => {
         expect(branched?.entries[1]).toMatchObject({version: 3, savedAt: 'branch-time'});
 
         let bounded = createBaselineConfigHistory(baseConfig, 1, 'baseline');
-        for (let index = 0; index < 7; index += 1) {
+        for (let index = 0; index < 12; index += 1) {
             bounded = appendConfigHistorySnapshot(
                 bounded,
                 {...baseConfig, to: `target-${index}`},
@@ -151,7 +151,7 @@ describe('配置 schema 与历史纯状态机', () => {
             )!;
         }
         expect(bounded.entries).toHaveLength(CONFIG_HISTORY_LIMIT);
-        expect(bounded.entries.at(-1)?.config.to).toBe('target-6');
+        expect(bounded.entries.at(-1)?.config.to).toBe('target-11');
     });
 
     it('撤销、重做和版本恢复在边界处保持稳定游标', () => {

@@ -8,6 +8,7 @@ import {
 } from './credentials'
 import { normalizeConfig, type Config } from './model'
 import { defaultOption } from './catalog'
+import { getTranslationServiceInstance } from './translationServices'
 
 type ConfigRecord = Record<string, any>
 
@@ -20,7 +21,12 @@ function isRecord(value: unknown): value is ConfigRecord {
 export function isConfigImportValid(value: unknown): value is ConfigRecord {
   if (!isRecord(value)) return false
   if (!requiredConfigFields.every((field) => field in value)) return false
-  if (typeof value.service !== 'string') return false
+  if (typeof value.on !== 'boolean') return false
+  if (value.display !== 0 && value.display !== 1) return false
+  if (typeof value.from !== 'string' || !value.from.trim()) return false
+  if (typeof value.to !== 'string' || !value.to.trim()) return false
+  if (typeof value.service !== 'string' || !value.service.trim()) return false
+  if (!getTranslationServiceInstance(normalizeConfig(value), value.service)) return false
   return !('customBody' in value) || isCustomBodyMapping(value.customBody)
 }
 
@@ -53,6 +59,8 @@ export function sanitizeConfigForExport(value: unknown): ConfigRecord {
     JSON.parse(JSON.stringify(value)),
   ) as ConfigRecord
   delete sanitized.__fluentConfigRevision
+  delete sanitized.count
+  delete sanitized.persistCredentials
   removeDefaultEntries(sanitized, 'system_role', defaultOption.system_role)
   removeDefaultEntries(sanitized, 'user_role', defaultOption.user_role)
   removeEmptyCustomBodies(sanitized)
@@ -67,8 +75,6 @@ export function prepareConfigForImport(value: unknown, current: unknown): Config
   const currentConfig = normalizeConfig(current)
   const importedConfig = normalizeConfig(value)
   const credentials = hasCredentialFields(value)
-    // Normalization can split legacy webpage/document models into two service
-    // instances and copy the explicitly imported credential to the new ID.
     ? extractConfigCredentials(importedConfig)
     : filterConfigCredentialsForDestination(
       extractConfigCredentials(currentConfig),
@@ -78,6 +84,8 @@ export function prepareConfigForImport(value: unknown, current: unknown): Config
 
   return normalizeConfig(mergeConfigCredentials({
     ...sanitizeConfigCredentials(importedConfig),
+    count: currentConfig.count,
     persistCredentials: currentConfig.persistCredentials,
+    videoServiceDefaultMigrated: currentConfig.videoServiceDefaultMigrated,
   }, credentials))
 }

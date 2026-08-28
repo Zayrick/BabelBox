@@ -1,6 +1,6 @@
 import {browser} from 'wxt/browser';
 import { selectChangedTranslations, type OcrLine } from '@/src/features/image-translation/core';
-import { areaRectToImageCrop, type AreaTranslationSelection } from '@/src/features/area-translation/public';
+import { areaRectToImageCrop, type AreaTranslationSelection } from '@/src/features/area-translation/protocol';
 import { inpaintTextRegions } from './inpainting';
 import { recognizeImage } from './ocrRuntime';
 import { getImageTextBackgroundColor, getImageTextColor } from './rendering';

@@ -8,6 +8,10 @@ import {
     CONFIG_PERSIST_MESSAGE,
     saveConfig,
 } from '@/src/services/config/store';
+import {
+    CONFIG_COUNT_INCREMENT_MESSAGE,
+    parseConfigCountIncrement,
+} from '@/src/services/config/count';
 import {CONNECTION_TEST_MESSAGE} from '@/src/core/config/constants';
 import {
     TRANSLATION_MODEL_CATALOG_MESSAGE,
@@ -40,6 +44,14 @@ export function createPlatformMessageHandler(openSettings: () => void) {
         if (message.type === CONFIG_PERSIST_MESSAGE) {
             await saveConfig(message.config, {recordHistory: true});
             return {success: true};
+        }
+
+        if (message.type === CONFIG_COUNT_INCREMENT_MESSAGE) {
+            if (parseConfigCountIncrement(message.delta) === null) {
+                return {success: false, error: '无效的翻译计数增量'};
+            }
+            await saveConfig(config);
+            return {success: true, count: config.count};
         }
 
         if (message.type === CONFIG_HISTORY_MESSAGE) {

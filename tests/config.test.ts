@@ -565,6 +565,7 @@ describe('统一配置存储', () => {
         const secret = 'restore-secret-sentinel';
         await configStore.saveConfig({
             ...configStore.config,
+            count: 37,
             token: {openai: secret},
             persistCredentials: true,
             to: 'ja',
@@ -573,6 +574,7 @@ describe('统一配置存储', () => {
         await configStore.applyConfigHistoryAction('restore', baselineVersion);
 
         expect(configStore.config.to).toBe('zh-Hans');
+        expect(configStore.config.count).toBe(37);
         expect(configStore.config.token.openai).toBe(secret);
         expect(configStore.config.persistCredentials).toBe(true);
         expect(JSON.stringify(configStore.getConfigHistorySnapshot())).not.toContain(secret);
@@ -712,21 +714,21 @@ describe('统一配置存储', () => {
         expect(configStore.config.to).toBe('ja');
     });
 
-    it('记录配置版本、时间，并限制为最近五条快照', async () => {
+    it('记录配置版本、时间，并限制为最近十条快照', async () => {
         const configStore = await loadConfigModule(storedConfig);
         await Promise.all([configStore.configReady, configStore.configHistoryReady]);
 
-        for (const to of ['en', 'ja', 'ko', 'fr', 'ru', 'de']) {
+        for (const to of ['en', 'ja', 'ko', 'fr', 'ru', 'de', 'es', 'it', 'pt', 'ar', 'th']) {
             await configStore.saveConfig({ ...configStore.config, to }, {recordHistory: true, immediateHistory: true});
         }
 
         const history = configStore.getConfigHistorySnapshot();
-        expect(history.entries).toHaveLength(5);
-        expect(history.cursor).toBe(4);
+        expect(history.entries).toHaveLength(10);
+        expect(history.cursor).toBe(9);
         expect(history.entries.at(-1)).toMatchObject({
             version: expect.any(Number),
             savedAt: expect.any(String),
-            config: expect.objectContaining({to: 'de'}),
+            config: expect.objectContaining({to: 'th'}),
         });
         expect(history.entries.map((entry) => entry.version)).toEqual(
             [...history.entries].sort((left, right) => left.version - right.version).map((entry) => entry.version),
@@ -751,7 +753,11 @@ describe('统一配置存储', () => {
         const baselineVersion = beforeUndo.entries[0].version;
         const restored = await configStore.applyConfigHistoryAction('restore', baselineVersion);
         expect(configStore.config.to).toBe('zh-Hans');
-        expect(restored.entries[restored.cursor].version).toBe(baselineVersion);
+        expect(restored.cursor).toBe(restored.entries.length - 1);
+        expect(restored.entries.at(-1)).toMatchObject({
+            version: beforeUndo.nextVersion,
+            config: expect.objectContaining({to: 'zh-Hans'}),
+        });
     });
 
     it('在配置历史中保存规范化域名，并能恢复旧配置的空名单', async () => {

@@ -159,6 +159,28 @@
       </el-row>
 
       <el-row class="settings-control-row">
+        <el-col :span="20" class="settings-control-label lightblue rounded-corner">
+          <SettingsHelpLabel content="暂时隐藏 FluentRead 字幕层，不改变字幕翻译总开关和其他显示偏好。">显示 FluentRead 字幕</SettingsHelpLabel>
+        </el-col>
+        <el-col :span="4" class="settings-control-field flex-end">
+          <el-switch v-model="config.videoSubtitleVisible" aria-label="显示 FluentRead 视频字幕" :disabled="!config.videoTranslationEnabled" />
+        </el-col>
+      </el-row>
+
+      <el-row class="settings-control-row">
+        <el-col :span="12" class="settings-control-label lightblue rounded-corner">
+          <SettingsHelpLabel content="选择播放器中展示原文、译文或双语字幕。">字幕显示模式</SettingsHelpLabel>
+        </el-col>
+        <el-col :span="12" class="settings-control-field">
+          <el-select v-model="config.videoSubtitleDisplayMode" aria-label="视频字幕显示模式" :disabled="!config.videoTranslationEnabled || !config.videoSubtitleVisible">
+            <el-option label="双语显示" value="bilingual" />
+            <el-option label="只显示译文" value="translation-only" />
+            <el-option label="只显示原文" value="original-only" />
+          </el-select>
+        </el-col>
+      </el-row>
+
+      <el-row class="settings-control-row">
         <el-col :span="12" class="settings-control-label lightblue rounded-corner">
           <SettingsHelpLabel content="只调整 FluentRead 在播放器中显示的原文和译文字号，不改变 YouTube 原生字幕设置。">字幕字号</SettingsHelpLabel>
         </el-col>
@@ -522,7 +544,7 @@
         <section class="config-history-panel" aria-label="最近配置">
           <div class="config-history-heading">
             <div>
-              <h3>最近 5 次配置</h3>
+              <h3>最近 10 次配置</h3>
               <p>修改会自动保存，保留最近的稳定快照，可随时恢复。</p>
             </div>
             <div class="config-history-actions">
@@ -564,6 +586,37 @@
             </article>
           </div>
           <div v-else class="config-history-empty">还没有可恢复的配置版本。</div>
+        </section>
+
+        <section class="config-history-panel" aria-label="定时配置备份">
+          <div class="config-history-heading">
+            <div>
+              <h3>定时备份</h3>
+              <p>后台每 6 小时备份一次，保留最近 10 份。</p>
+            </div>
+          </div>
+          <div v-if="backupEntries.length" class="config-history-list">
+            <article
+              v-for="entry in backupEntries"
+              :key="entry.version"
+              class="config-history-entry"
+            >
+              <div class="config-history-version"><b>b{{ entry.version }}</b></div>
+              <div class="config-history-detail">
+                <strong>{{ backupSummary(entry) }}</strong>
+                <small>{{ formatHistoryTime(entry.savedAt) }}</small>
+              </div>
+              <el-button
+                size="small"
+                text
+                type="primary"
+                :disabled="backupBusy"
+                :aria-label="`恢复定时备份 b${entry.version}`"
+                @click="restoreBackup(entry.version)"
+              ><el-icon><History /></el-icon>恢复</el-button>
+            </article>
+          </div>
+          <div v-else class="config-history-empty">后台启动后会建立第一份备份。</div>
         </section>
 
         <el-row class="config-transfer-actions">
@@ -695,6 +748,13 @@ import {
   type ConfigHistoryEntry,
   type ConfigHistoryState,
 } from '@/src/services/config/store';
+import {
+  configAutoBackupsReady,
+  getConfigAutoBackupsSnapshot,
+  requestConfigAutoBackupRestore,
+  subscribeConfigAutoBackups,
+} from '@/src/services/config/autoBackupStore';
+import type {ConfigAutoBackupEntry, ConfigAutoBackupState} from '@/src/services/config/autoBackup';
 import {
   getSelectableTranslationServices,
   getTranslationServiceUnavailableMessage,
@@ -957,6 +1017,7 @@ onUnmounted(() => {
   darkModeMediaQuery.onchange = null;
   unsubscribeConfig();
   unsubscribeHistory();
+  unsubscribeBackups();
 });
 
 // 计算样式分组
@@ -1304,8 +1365,11 @@ const setCredentialPersistence = async (value: string | number | boolean) => {
 };
 
 const configHistory = ref<ConfigHistoryState>(getConfigHistorySnapshot());
+const configBackups = ref<ConfigAutoBackupState>(getConfigAutoBackupsSnapshot());
 const historyBusy = ref(false);
+const backupBusy = ref(false);
 const historyEntries = computed(() => [...configHistory.value.entries].reverse());
+const backupEntries = computed(() => [...configBackups.value.entries].reverse());
 const currentHistoryVersion = computed(() => configHistory.value.entries[configHistory.value.cursor]?.version ?? null);
 const canUndo = computed(() => configHistory.value.cursor > 0);
 const canRedo = computed(() => configHistory.value.cursor >= 0 && configHistory.value.cursor < configHistory.value.entries.length - 1);
@@ -1330,11 +1394,19 @@ const historySummary = (entry: ConfigHistoryEntry): string => {
   return `${target} · ${service} · 始终翻译 ${siteCount} 个网站 · 禁用扩展 ${disabledSiteCount} 个网站`;
 };
 
+const backupSummary = (entry: ConfigAutoBackupEntry): string => historySummary(entry);
+
 void configHistoryReady.then(() => {
   configHistory.value = getConfigHistorySnapshot();
 });
+void configAutoBackupsReady.then(() => {
+  configBackups.value = getConfigAutoBackupsSnapshot();
+});
 const unsubscribeHistory = subscribeConfigHistory((nextHistory) => {
   configHistory.value = nextHistory;
+});
+const unsubscribeBackups = subscribeConfigAutoBackups((nextBackups) => {
+  configBackups.value = nextBackups;
 });
 
 const runHistoryAction = async (action: ConfigHistoryAction, version?: number) => {
@@ -1359,6 +1431,31 @@ const runHistoryAction = async (action: ConfigHistoryAction, version?: number) =
     });
   } finally {
     historyBusy.value = false;
+  }
+};
+
+const restoreBackup = async (version: number) => {
+  if (backupBusy.value) return;
+  try {
+    await ElMessageBox.confirm(`确定恢复定时备份 b${version} 吗？`, '恢复配置', {
+      confirmButtonText: '恢复', cancelButtonText: '取消', type: 'warning',
+    });
+  } catch {
+    return;
+  }
+  backupBusy.value = true;
+  try {
+    const result = await requestConfigAutoBackupRestore(
+      version,
+      browser.runtime.sendMessage.bind(browser.runtime),
+    );
+    configBackups.value = result.backups;
+    configHistory.value = result.history;
+    ElMessage.success(`已恢复定时备份 b${version}`);
+  } catch (error) {
+    ElMessage.error(`恢复失败：${error instanceof Error ? error.message : '请稍后重试'}`);
+  } finally {
+    backupBusy.value = false;
   }
 };
 

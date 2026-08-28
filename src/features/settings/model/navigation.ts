@@ -88,7 +88,7 @@ export const navigationGroups: NavigationGroup[] = [
       },
       {
         id: 'settings-data', icon: 'data', label: '配置管理', group: '系统与数据', title: '配置管理',
-        searchDescription: '备份、迁移、导出与导入 JSON 配置',
+        searchDescription: '最近修改、定时备份、恢复、迁移、导出与导入 JSON 配置',
       },
     ],
   },

@@ -1,5 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {createOffscreenMessageListener} from '@/src/app/offscreen/messageRouter';
+import {OFFSCREEN_READY_MESSAGE_TYPE} from '@/src/platform/offscreen/client';
 
 const mocks = {
     downloadOcrLanguages: vi.fn(async () => undefined),
@@ -41,6 +42,11 @@ describe('Offscreen 消息静态路由', () => {
         mocks.translateImage.mockResolvedValue({image: 'translated', lines: []});
         mocks.translateArea.mockResolvedValue({image: 'area', lines: []});
         mocks.downloadOcrLanguages.mockResolvedValue(undefined);
+    });
+
+    it('确认 offscreen 接收端已就绪', async () => {
+        await expect(dispatch({type: OFFSCREEN_READY_MESSAGE_TYPE}))
+            .resolves.toEqual({handled: true, response: {success: true, ready: true}});
     });
 
     it('null、数组、无 type 与未知消息保持未处理', async () => {

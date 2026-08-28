@@ -1,16 +1,31 @@
-import {normalizeConfig} from '@/src/core/config/model';
-import {sanitizeConfigCredentials, type PublicConfig} from '@/src/core/config/credentials';
+import {normalizeConfig, type Config} from '@/src/core/config/model';
+import {
+    extractConfigCredentials,
+    filterConfigCredentialsForDestination,
+    mergeConfigCredentials,
+    sanitizeConfigCredentials,
+    type PublicConfig,
+} from '@/src/core/config/credentials';
 import {isConfigRecord, parseStoredConfig, serializeConfig} from './schema';
 
-export const CONFIG_HISTORY_LIMIT = 5 as const;
+export const CONFIG_HISTORY_LIMIT = 10 as const;
 export const CONFIG_HISTORY_SCHEMA_VERSION = 1 as const;
+
+export const CONFIG_NON_RESTORABLE_FIELDS = [
+    'count',
+    'persistCredentials',
+    'videoServiceDefaultMigrated',
+] as const;
+
+export type ConfigNonRestorableField = typeof CONFIG_NON_RESTORABLE_FIELDS[number];
+export type RestorableConfig = Omit<PublicConfig, ConfigNonRestorableField>;
 
 export type ConfigHistoryAction = 'undo' | 'redo' | 'restore';
 
 export interface ConfigHistoryEntry {
     version: number;
     savedAt: string;
-    config: PublicConfig;
+    config: RestorableConfig;
 }
 
 export interface ConfigHistoryState {
@@ -24,6 +39,33 @@ export function toPublicConfig(value: unknown): PublicConfig {
     return sanitizeConfigCredentials(normalizeConfig(value)) as PublicConfig;
 }
 
+/** 历史和自动备份只保存真正可恢复的用户配置。 */
+export function toRestorableConfig(value: unknown): RestorableConfig {
+    const snapshotSource = isConfigRecord(value)
+        ? {...value, videoServiceDefaultMigrated: true}
+        : value;
+    const restorable = {...toPublicConfig(snapshotSource)} as Record<string, unknown>;
+    for (const field of CONFIG_NON_RESTORABLE_FIELDS) delete restorable[field];
+    return restorable as RestorableConfig;
+}
+
+/** 恢复快照时保留当前凭据、统计与显式安全选择。 */
+export function restoreRestorableConfig(value: unknown, currentValue: unknown): Config {
+    const current = normalizeConfig(currentValue);
+    const target = normalizeConfig({
+        ...toRestorableConfig(value),
+        count: current.count,
+        persistCredentials: current.persistCredentials,
+        videoServiceDefaultMigrated: current.videoServiceDefaultMigrated,
+    });
+    const credentials = filterConfigCredentialsForDestination(
+        extractConfigCredentials(current),
+        current,
+        target,
+    );
+    return normalizeConfig(mergeConfigCredentials(target, credentials));
+}
+
 export function serializeConfigHistory(value: ConfigHistoryState): string {
     return JSON.stringify(value);
 }
@@ -34,7 +76,7 @@ export function cloneConfigHistory(value: ConfigHistoryState): ConfigHistoryStat
         entries: value.entries.map((entry) => ({
             version: entry.version,
             savedAt: entry.savedAt,
-            config: toPublicConfig(entry.config),
+            config: toRestorableConfig(entry.config),
         })),
         cursor: value.cursor,
         nextVersion: value.nextVersion,
@@ -49,7 +91,7 @@ export function createBaselineConfigHistory(
     const version = Math.max(1, persistedRevision || 1);
     return {
         schemaVersion: CONFIG_HISTORY_SCHEMA_VERSION,
-        entries: [{version, savedAt, config: toPublicConfig(value)}],
+        entries: [{version, savedAt, config: toRestorableConfig(value)}],
         cursor: 0,
         nextVersion: version + 1,
     };
@@ -73,7 +115,7 @@ export function parseConfigHistory(value: unknown): ConfigHistoryState | null {
                 entry: {
                     version: entry.version,
                     savedAt: entry.savedAt,
-                    config: toPublicConfig(parsedConfig),
+                    config: toRestorableConfig(parsedConfig),
                 } satisfies ConfigHistoryEntry,
             };
         })
@@ -110,8 +152,11 @@ export function appendConfigHistorySnapshot(
     value: unknown,
     savedAt = new Date().toISOString(),
 ): ConfigHistoryState | null {
-    const normalized = toPublicConfig(value);
-    const currentEntries = state.entries.slice(0, state.cursor + 1);
+    const normalized = toRestorableConfig(value);
+    const currentEntries = state.entries.slice(0, state.cursor + 1).map((entry) => ({
+        ...entry,
+        config: toRestorableConfig(entry.config),
+    }));
     const current = currentEntries[currentEntries.length - 1];
     if (current && serializeConfig(current.config) === serializeConfig(normalized)) return null;
 

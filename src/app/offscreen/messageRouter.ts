@@ -1,4 +1,5 @@
-import type {AreaTranslationSelection} from '@/src/features/area-translation/public';
+import type {AreaTranslationSelection} from '@/src/features/area-translation/protocol';
+import {OFFSCREEN_READY_MESSAGE_TYPE} from '@/src/platform/offscreen/client';
 import {
     IMAGE_OCR_LANGUAGE_PACKS,
     normalizeImageOcrLanguageCodes,
@@ -109,6 +110,9 @@ export function createOffscreenMessageListener(dependencies: OffscreenMessageDep
         if (message.target !== 'offscreen') return false;
 
         switch (message.type) {
+            case OFFSCREEN_READY_MESSAGE_TYPE:
+                sendResponse({success: true, ready: true});
+                return true;
             case 'PLAY_SELECTION_TTS':
                 respondWith(() => dependencies.ttsPlayer.play(message), sendResponse, () => ({success: true}));
                 return true;

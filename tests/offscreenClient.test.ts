@@ -10,6 +10,7 @@ vi.mock('wxt/browser', () => ({browser: wxtBrowser}));
 import {
     chromeOffscreenClient,
     createOffscreenClient,
+    OFFSCREEN_READY_MESSAGE_TYPE,
     type OffscreenDocumentApi,
     type OffscreenRuntimeApi,
 } from '@/src/platform/offscreen/client';
@@ -31,8 +32,10 @@ function createRuntime(options: {
 } = {}) {
     let runtimeError = options.runtimeError;
     const getContexts = vi.fn(async () => options.contexts ?? []);
-    const sendMessage = vi.fn((_message: unknown, callback: (response: unknown) => void) => {
-        callback(options.response);
+    const sendMessage = vi.fn((message: unknown, callback: (response: unknown) => void) => {
+        callback((message as {type?: unknown})?.type === OFFSCREEN_READY_MESSAGE_TYPE
+            ? {success: true, ready: true}
+            : options.response);
     });
     const runtime: OffscreenRuntimeApi = {
         get lastError() {
@@ -153,6 +156,42 @@ describe('Offscreen platform client', () => {
         });
         creation.resolve();
         await expect(Promise.all([first, second])).resolves.toEqual([undefined, undefined]);
+    });
+
+    it('rebuilds a stale existing context after the ready handshake loses its receiver', async () => {
+        let runtimeError: {message?: string} | undefined;
+        let readyAttempts = 0;
+        const sendMessage = vi.fn((message: unknown, callback: (response: unknown) => void) => {
+            if ((message as {type?: unknown})?.type === OFFSCREEN_READY_MESSAGE_TYPE) {
+                readyAttempts += 1;
+                if (readyAttempts === 1) {
+                    runtimeError = {message: 'Could not establish connection. Receiving end does not exist.'};
+                    callback(undefined);
+                    runtimeError = undefined;
+                    return;
+                }
+                callback({success: true, ready: true});
+                return;
+            }
+            callback({success: true, value: 7});
+        });
+        const runtime: OffscreenRuntimeApi = {
+            get lastError() { return runtimeError; },
+            getContexts: vi.fn(async () => [{}]),
+            sendMessage,
+        };
+        const closeDocument = vi.fn(async () => undefined);
+        const createDocument = vi.fn(async () => undefined);
+        const client = createOffscreenClient({
+            getRuntime: () => runtime,
+            getOffscreen: () => ({createDocument, closeDocument}),
+        });
+
+        await expect(client.send<{success: boolean; value: number}>({type: 'PING'}))
+            .resolves.toEqual({success: true, value: 7});
+        expect(closeDocument).toHaveBeenCalledOnce();
+        expect(createDocument).toHaveBeenCalledOnce();
+        expect(readyAttempts).toBe(2);
     });
 
     it('clears a failed creation promise so a later default-url attempt can retry', async () => {
