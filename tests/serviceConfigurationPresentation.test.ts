@@ -34,7 +34,6 @@ describe('service configuration presentation', () => {
     const microsoft = createServiceConfigurationPresentation(services.microsoft)
     expect(microsoft.mode).toBe('ready')
     expect(microsoft.showConnectionConfiguration).toBe(false)
-    expect(microsoft.showCredentialNotice).toBe(false)
     expect(microsoft.showConnectionTest).toBe(true)
     expect(microsoft.readyState.title).toBe('无需额外配置')
   })

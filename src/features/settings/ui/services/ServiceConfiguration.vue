@@ -25,10 +25,7 @@
     :data-custom-service-configuration="presentation.fields.customService ? 'true' : 'false'"
   >
     <div class="subsection-heading">
-      <div>
-        <strong>连接参数</strong>
-        <small v-if="presentation.showCredentialNotice" class="connection-test-hint">API 凭据默认仅保留在当前浏览器会话；检查连接会发送一条短测试请求，可能产生少量用量。</small>
-      </div>
+      <strong>连接参数</strong>
     </div>
 
     <template v-if="isAIInstance">
@@ -645,19 +642,6 @@ onBeforeUnmount(() => {
   gap: 12px;
 }
 
-.subsection-heading > div:first-child {
-  display: flex;
-  min-width: 0;
-  align-items: baseline;
-  gap: 7px;
-}
-
-.connection-test-hint {
-  color: #9098a8;
-  font-size: 11px;
-  font-weight: 400;
-}
-
 .custom-template-heading {
   display: flex;
   align-items: flex-start;
@@ -796,12 +780,6 @@ onBeforeUnmount(() => {
   .subsection-heading {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .subsection-heading > div:first-child {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 3px;
   }
 
   .connection-test-button {

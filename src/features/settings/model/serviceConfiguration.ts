@@ -33,7 +33,6 @@ export interface ServiceConfigurationPresentation {
   mode: ServiceConfigurationMode
   showModelConfiguration: boolean
   showConnectionConfiguration: boolean
-  showCredentialNotice: boolean
   showReadyState: boolean
   showUnavailableState: boolean
   showConnectionTest: boolean
@@ -90,11 +89,6 @@ export function createServiceConfigurationPresentation(
   }
 
   const showConnectionConfiguration = canConfigure && Object.values(fields).some(Boolean)
-  const showCredentialNotice = canConfigure && (fields.token
-    || fields.akSkCredentials
-    || fields.youdaoCredentials
-    || fields.tencentCredentials)
-
   const mode: ServiceConfigurationMode = !canConfigure
     ? 'unavailable'
     : showModelConfiguration
@@ -105,7 +99,6 @@ export function createServiceConfigurationPresentation(
     mode,
     showModelConfiguration,
     showConnectionConfiguration,
-    showCredentialNotice,
     showReadyState: mode === 'ready',
     showUnavailableState: mode === 'unavailable',
     // Every service currently exposed by the catalog has a registered adapter.

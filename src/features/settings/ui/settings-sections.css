@@ -104,12 +104,6 @@
   font-size: 11px;
 }
 
-.service-connection-section {
-  margin-top: 22px;
-  padding-top: 22px;
-  border-top: 1px solid #e8eaf0;
-}
-
 .subsection-heading {
   display: flex;
   align-items: flex-end;

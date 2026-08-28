@@ -234,8 +234,7 @@ function updateServiceEnabled(item: ServiceCatalogOption, value: boolean | strin
 .service-remove-button:hover { border-color: #d45c70; color: #fff; background: #d45c70; }
 .detail-hero h4 { min-width: 0; margin: 0; overflow: hidden; color: #172033; font-size: 20px; text-overflow: ellipsis; white-space: nowrap; }
 .detail-hero-copy small { overflow: hidden; margin-top: 4px; color: #8991a2; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
-.service-configuration-slot { min-height: 0; margin-top: 16px; padding-top: 16px; border-top: 1px solid #eceef3; overflow-y: auto; flex: 1; }
-.service-catalog[data-presentation-mode="connection-only"] .service-configuration-slot { padding-top: 0; border-top: 0; }
+.service-configuration-slot { min-height: 0; margin-top: 16px; overflow-y: auto; flex: 1; }
 .service-action-host { display: contents; }
 .service-ready-state { display: grid; width: 100%; min-height: 220px; flex: 1; place-items: center; }
 .service-ready-content { display: flex; align-items: center; justify-content: center; gap: 14px; max-width: 460px; padding: 24px; flex-direction: column; text-align: center; }
