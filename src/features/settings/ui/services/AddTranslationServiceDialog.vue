@@ -91,7 +91,8 @@ function addProvider(provider: string): void {
 
 <style scoped>
 .dialog-intro { margin: 0 0 14px; color: #687286; font-size: 12px; line-height: 1.6; }
-.provider-search { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 11px; border: 1px solid #dfe3eb; border-radius: 9px; background: #fafbfc; }
+.provider-search { display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 11px; border: 1px solid #dfe3eb; border-radius: 9px; background: #fafbfc; transition: border-color 140ms ease, box-shadow 140ms ease; }
+.provider-search:focus-within { border-color: #ef4776; box-shadow: 0 0 0 3px rgba(239, 71, 118, .1); }
 .provider-search svg { color: #8991a2; }
 .provider-search input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: #263044; }
 .provider-grid { display: grid; max-height: min(520px, 60vh); margin-top: 14px; overflow-y: auto; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }

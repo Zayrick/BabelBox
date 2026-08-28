@@ -14,8 +14,7 @@ html { height: 100%; scroll-behavior: smooth; }
 body { height: 100%; margin: 0; min-width: 0; overflow: hidden; background: #f5f6fa; }
 button, input, textarea { font: inherit; }
 button:focus-visible,
-input:not(.el-input__inner, .el-select__input):focus-visible,
-textarea:not(.el-textarea__inner):focus-visible {
+input[type="checkbox"]:focus-visible {
   outline: 3px solid rgba(239, 71, 118, .18);
   outline-offset: 2px;
 }
@@ -103,7 +102,9 @@ h1 { margin: 0; font-size: 26px; line-height: 1.25; letter-spacing: -.025em; }
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
+  transition: border-color 140ms ease, box-shadow 140ms ease;
 }
+.search-box:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(239, 71, 118, .1); }
 .search-box > svg { flex: 0 0 auto; color: var(--muted); }
 .search-box input { width: 100%; border: 0; outline: 0; color: var(--ink); background: transparent; font-size: 12px; }
 .search-box input::placeholder { color: #9ca3b2; }

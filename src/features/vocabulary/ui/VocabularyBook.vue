@@ -711,7 +711,8 @@ onBeforeUnmount(() => {
 .start-review strong { font-size: 12px; }
 .refresh-button { display: inline-flex; min-width: 70px; align-items: center; justify-content: center; gap: 5px; border: 1px solid #e1e4ec; border-radius: 8px; color: #dc315f; background: #fff; cursor: pointer; font-size: 10px; font-weight: 750; }
 .toolbar { display: grid; grid-template-columns: minmax(220px, 1fr) 150px 150px; gap: 8px; padding: 0; background: transparent; }
-.search-field { display: flex; height: 40px; align-items: center; gap: 8px; padding: 0 11px; border: 1px solid #e1e4ec; border-radius: 8px; background: #fff; }
+.search-field { display: flex; height: 40px; align-items: center; gap: 8px; padding: 0 11px; border: 1px solid #e1e4ec; border-radius: 8px; background: #fff; transition: border-color 140ms ease, box-shadow 140ms ease; }
+.search-field:focus-within { border-color: #ef4776; box-shadow: 0 0 0 3px rgba(239, 71, 118, .1); }
 .search-field-icon { width: 16px; height: 16px; flex: none; color: #8b93a2; }
 .search-field input { width: 100%; border: 0; outline: 0; color: #172033; background: transparent; font-size: 11px; }
 .toolbar-select { width: 100%; min-width: 0; }

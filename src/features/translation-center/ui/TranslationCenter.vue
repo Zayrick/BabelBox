@@ -787,7 +787,8 @@ onUnmounted(() => {
 .translation-center-layout { display: grid; grid-template-columns: minmax(300px, .88fr) minmax(420px, 1.12fr); gap: 10px; height: auto; min-height: 0; }
 .translation-input-panel,
 .translation-results-panel { min-width: 0; border-radius: 10px; }
-.translation-input-panel { display: flex; min-height: 320px; flex-direction: column; padding: 14px; }
+.translation-input-panel { display: flex; min-height: 320px; flex-direction: column; padding: 14px; transition: border-color 140ms ease; }
+.translation-input-panel:has(> textarea:focus-visible) { border-color: var(--brand); }
 .translation-results-panel { display: flex; min-height: 320px; flex-direction: column; padding: 14px; }
 .translation-panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
 .translation-panel-heading h3 { margin: 0; color: var(--ink); font-size: 17px; letter-spacing: -.02em; }
