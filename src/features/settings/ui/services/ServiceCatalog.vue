@@ -229,7 +229,7 @@ function updateServiceEnabled(item: TranslationServiceOption, value: boolean | s
 .service-meta .default-service-label { flex: none; padding: 1px 4px; border-radius: 999px; color: var(--brand-strong); background: var(--brand-soft); font-size: var(--font-caption); font-weight: var(--weight-semibold); }
 .service-detail { display: flex; min-width: 0; min-height: 0; margin: 0; padding: 18px 20px; background: var(--surface); flex-direction: column; overflow: hidden; }
 .service-detail > .detail-hero,
-.service-detail > .service-configuration-slot { width: min(100%, 1080px); }
+.service-detail > .service-configuration-slot { width: 100%; min-width: 0; }
 .detail-hero { display: flex; align-items: center; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
 .detail-hero-copy { display: flex; min-width: 0; flex-direction: column; }
 .detail-hero-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; flex: 0 0 auto; }

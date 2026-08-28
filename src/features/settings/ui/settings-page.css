@@ -147,7 +147,8 @@ h1 { margin: 0; font-size: var(--font-display); line-height: var(--line-height-t
 
 .settings-card .settings-list-section,
 .settings-card .settings-data-section {
-  width: min(100%, 1040px);
+  width: 100%;
+  min-width: 0;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: var(--radius-panel);
@@ -258,6 +259,22 @@ h1 { margin: 0; font-size: var(--font-display); line-height: var(--line-height-t
   padding: 7px 16px;
   border-bottom: 1px solid var(--line);
 }
+.settings-card .service-connection-section > .el-row:not(.settings-control-row) {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) clamp(200px, 32vw, 340px);
+  gap: 16px;
+}
+.settings-card .service-connection-section > .el-row:not(.settings-control-row) > .el-col {
+  width: auto !important;
+  max-width: none !important;
+  min-width: 0;
+  flex: none !important;
+}
+.settings-card .service-connection-section > .el-row:not(.settings-control-row) > .el-col:last-child {
+  width: 100% !important;
+  max-width: 340px !important;
+  justify-self: end;
+}
 .settings-card .margin-left-2em { margin-right: 0 !important; margin-left: 0 !important; }
 .settings-card .el-collapse { margin: 16px 0 0 !important; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; }
 .settings-card .el-collapse-item__header { height: 52px; padding: 0 16px; border: 0; font-size: var(--font-body); font-weight: var(--weight-medium); }
@@ -265,7 +282,7 @@ h1 { margin: 0; font-size: var(--font-display); line-height: var(--line-height-t
 .settings-card .el-collapse-item__content { padding: 4px 14px 16px; }
 .settings-card .el-divider__text { color: var(--muted); font-size: var(--font-caption); }
 
-.about-page { display: grid; width: min(100%, 680px); gap: 16px; padding: 4px 0; }
+.about-page { display: grid; width: 100%; min-width: 0; gap: 16px; padding: 4px 0; }
 .about-summary { display: flex; align-items: center; gap: 16px; }
 .about-logo { width: 64px; height: 64px; border-radius: 14px; }
 .about-summary h2 { margin: 0 0 4px; color: var(--ink); font-size: var(--font-title); letter-spacing: -.02em; }
@@ -328,7 +345,8 @@ h1 { margin: 0; font-size: var(--font-display); line-height: var(--line-height-t
 @media (max-width: 600px) {
   .settings-card .settings-preference-row,
   .settings-card .settings-control-row,
-  .settings-card .settings-status-row {
+  .settings-card .settings-status-row,
+  .settings-card .service-connection-section > .el-row:not(.settings-control-row) {
     grid-template-columns: minmax(0, 1fr);
     gap: 7px;
     padding: 10px 12px;
@@ -341,6 +359,15 @@ h1 { margin: 0; font-size: var(--font-display); line-height: var(--line-height-t
   .settings-card .settings-control-field > .el-input,
   .settings-card .settings-control-field > .el-input-number,
   .settings-card .settings-control-field > .hotkey-config { max-width: 100% !important; }
+  .settings-card .service-connection-section > .el-row:not(.settings-control-row) > .el-col:last-child {
+    max-width: 100% !important;
+  }
+  .settings-card .service-connection-section > .el-row:not(.settings-control-row) > .el-col:last-child > .el-select,
+  .settings-card .service-connection-section > .el-row:not(.settings-control-row) > .el-col:last-child > .el-input,
+  .settings-card .service-connection-section > .el-row:not(.settings-control-row) > .el-col:last-child > .el-input-number,
+  .settings-card .service-connection-section > .el-row:not(.settings-control-row) > .el-col:last-child > .model-catalog-control {
+    max-width: 100% !important;
+  }
   .settings-card .settings-control-field > .el-switch,
   .settings-card .settings-status-row .el-switch { margin-left: auto; }
   .about-logo { width: 56px; height: 56px; border-radius: 12px; }
