@@ -3,30 +3,20 @@
     <button
       type="button"
       class="connection-test-button"
+      :class="`is-${connectionTestState}`"
       data-connection-test-button
       :disabled="connectionTestBusy"
+      :title="connectionTestMessage || undefined"
+      aria-live="polite"
       @click="testConnection"
     >
-      <LoaderCircle v-if="connectionTestBusy" class="button-icon is-spinning" aria-hidden="true" />
+      <LoaderCircle v-if="connectionTestState === 'testing'" class="button-icon is-spinning" aria-hidden="true" />
+      <CircleCheck v-else-if="connectionTestState === 'success'" class="button-icon" aria-hidden="true" />
+      <CircleX v-else-if="connectionTestState === 'error'" class="button-icon" aria-hidden="true" />
       <PlugZap v-else class="button-icon" aria-hidden="true" />
-      <span>{{ connectionTestBusy ? '检查中…' : '检查连接' }}</span>
+      <span>{{ connectionTestLabel }}</span>
     </button>
   </Teleport>
-
-  <div
-    v-if="connectionTestMessage"
-    class="connection-test-result"
-    :class="[`is-${connectionTestState}`, { 'is-ready-service': presentation.showReadyState }]"
-    data-connection-test-status
-    role="status"
-    aria-live="polite"
-  >
-    <LoaderCircle v-if="connectionTestState === 'testing'" class="status-icon is-spinning" aria-hidden="true" />
-    <CircleCheck v-else-if="connectionTestState === 'success'" class="status-icon" aria-hidden="true" />
-    <CircleX v-else class="status-icon" aria-hidden="true" />
-    <strong>{{ connectionTestState === 'testing' ? '检查中' : connectionTestState === 'success' ? '连接正常' : '连接失败' }}</strong>
-    <span>{{ connectionTestMessage }}</span>
-  </div>
 
   <section
     v-if="presentation.showConnectionConfiguration"
@@ -246,7 +236,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, toRef, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, toRef, watch } from 'vue'
 import {
   CircleCheck,
   CircleHelp as InfoFilled,
@@ -351,15 +341,42 @@ type ConnectionTestState = 'idle' | 'testing' | 'success' | 'error'
 const connectionTestBusy = ref(false)
 const connectionTestState = ref<ConnectionTestState>('idle')
 const connectionTestMessage = ref('')
+let connectionTestResetTimer: ReturnType<typeof setTimeout> | undefined
+let connectionTestMounted = true
+const connectionTestLabel = computed(() => ({
+  idle: '检查连接',
+  testing: '检查中',
+  success: '连接正常',
+  error: '连接失败',
+})[connectionTestState.value])
+
+function clearConnectionTestResetTimer(): void {
+  if (connectionTestResetTimer === undefined) return
+  clearTimeout(connectionTestResetTimer)
+  connectionTestResetTimer = undefined
+}
 
 function resetConnectionTest(): void {
+  clearConnectionTestResetTimer()
   connectionTestState.value = 'idle'
   connectionTestMessage.value = ''
+}
+
+function scheduleConnectionTestReset(): void {
+  clearConnectionTestResetTimer()
+  if (!connectionTestMounted) return
+
+  connectionTestResetTimer = setTimeout(() => {
+    connectionTestResetTimer = undefined
+    connectionTestState.value = 'idle'
+    connectionTestMessage.value = ''
+  }, 2000)
 }
 
 async function testConnection(): Promise<void> {
   if (connectionTestBusy.value) return
 
+  clearConnectionTestResetTimer()
   connectionTestBusy.value = true
   connectionTestState.value = 'testing'
   connectionTestMessage.value = '正在保存当前配置并请求服务…'
@@ -382,6 +399,7 @@ async function testConnection(): Promise<void> {
     connectionTestMessage.value = error instanceof Error ? error.message : String(error)
   } finally {
     connectionTestBusy.value = false
+    scheduleConnectionTestReset()
   }
 }
 
@@ -404,6 +422,10 @@ function resetCustomTemplate(): void {
 }
 
 watch(service, resetConnectionTest)
+onBeforeUnmount(() => {
+  connectionTestMounted = false
+  clearConnectionTestResetTimer()
+})
 </script>
 
 <style scoped>
@@ -488,7 +510,9 @@ watch(service, resetConnectionTest)
 .connection-test-button {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  min-width: 94px;
   flex: 0 0 auto;
   margin-left: auto;
   padding: 7px 12px;
@@ -512,50 +536,28 @@ watch(service, resetConnectionTest)
   opacity: .65;
 }
 
-.connection-test-result {
-  display: flex;
-  min-width: 0;
-  max-height: 120px;
-  align-items: flex-start;
-  gap: 8px;
-  margin: 0 0 12px;
-  padding: 9px 11px;
-  border: 1px solid #dfe3eb;
-  border-radius: 10px;
-  color: #667187;
-  background: #f7f8fa;
-  box-sizing: border-box;
-  font-size: 12px;
-  line-height: 1.5;
-  overflow-y: auto;
-}
-
-.connection-test-result.is-ready-service {
-  margin-top: 16px;
-}
-
-.connection-test-result > span:last-child {
-  min-width: 0;
-  flex: 1;
-  overflow-wrap: anywhere;
-}
-
-.connection-test-result.is-testing {
-  border-color: #c9d9f3;
-  color: #45628c;
-  background: #f2f7ff;
-}
-
-.connection-test-result.is-success {
+.connection-test-button.is-success {
   border-color: #b8e0cb;
   color: #287447;
   background: #effaf3;
 }
 
-.connection-test-result.is-error {
+.connection-test-button.is-success:hover:not(:disabled) {
+  border-color: #28aa79;
+  color: #fff;
+  background: #28aa79;
+}
+
+.connection-test-button.is-error {
   border-color: #f2c0ca;
   color: #a52c48;
   background: #fff1f4;
+}
+
+.connection-test-button.is-error:hover:not(:disabled) {
+  border-color: #d45c70;
+  color: #fff;
+  background: #d45c70;
 }
 
 .minimax-key-note {
