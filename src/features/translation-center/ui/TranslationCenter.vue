@@ -147,48 +147,47 @@
         </div>
 
         <el-scrollbar class="translation-result-list" aria-label="翻译结果列表">
-          <div class="translation-result-list-content">
+          <div ref="cardList" class="translation-result-list-content">
             <article
-              v-for="card in cards"
+              v-for="(card, index) in cards"
               :key="card.service"
               class="translation-result-card"
               :data-service="card.service"
               :data-status="card.status"
-              :class="{ 'is-dragging': draggingService === card.service, 'is-drag-over': dragOverService === card.service }"
             >
               <header class="translation-result-card-header">
-              <div class="translation-result-service-name">
-                <button
-                  class="drag-handle"
-                  type="button"
-                  :aria-label="`拖动${serviceLabel(card.service)}调整顺序`"
-                  title="拖动调整顺序，也可用 Alt+↑/↓"
-                  tabindex="0"
-                  @pointerdown.prevent.stop="startPointerDrag(card.service, $event)"
-                  @keydown.alt.arrow-up.prevent="moveCard(card.service, -1)"
-                  @keydown.alt.arrow-down.prevent="moveCard(card.service, 1)"
-                >
-                  <GripVertical aria-hidden="true" />
-                </button>
-                <ServiceIcon :service="serviceProvider(card.service)" :label="serviceLabel(card.service)" size="medium" />
-                <div>
-                  <strong>{{ serviceLabel(card.service) }}</strong>
+                <div class="translation-result-service-name">
+                  <button
+                    class="drag-handle"
+                    type="button"
+                    :disabled="cards.length < 2"
+                    :aria-label="`拖动${serviceLabel(card.service)}调整顺序，第 ${index + 1} 项，共 ${cards.length} 项`"
+                    aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
+                    title="拖动调整顺序，也可用 Alt+↑/↓"
+                    @keydown.alt.arrow-up.prevent="moveCard(card.service, -1)"
+                    @keydown.alt.arrow-down.prevent="moveCard(card.service, 1)"
+                  >
+                    <GripVertical aria-hidden="true" />
+                  </button>
+                  <ServiceIcon :service="serviceProvider(card.service)" :label="serviceLabel(card.service)" size="medium" />
+                  <div>
+                    <strong>{{ serviceLabel(card.service) }}</strong>
+                  </div>
                 </div>
-              </div>
-              <div class="translation-result-card-actions">
-                <span v-if="card.status === 'success'" class="result-state success">完成</span>
-                <span v-else-if="card.status === 'loading'" class="result-state loading">翻译中</span>
-                <span v-else-if="card.status === 'error'" class="result-state error">失败</span>
-                <button
-                  class="remove-service-button"
-                  type="button"
-                  :aria-label="`移除${serviceLabel(card.service)}`"
-                  :disabled="cards.length <= 1"
-                  @click="removeService(card.service)"
-                >
-                  <X aria-hidden="true" />
-                </button>
-              </div>
+                <div class="translation-result-card-actions">
+                  <span v-if="card.status === 'success'" class="result-state success">完成</span>
+                  <span v-else-if="card.status === 'loading'" class="result-state loading">翻译中</span>
+                  <span v-else-if="card.status === 'error'" class="result-state error">失败</span>
+                  <button
+                    class="remove-service-button"
+                    type="button"
+                    :aria-label="`移除${serviceLabel(card.service)}`"
+                    :disabled="cards.length <= 1"
+                    @click="removeService(card.service)"
+                  >
+                    <X aria-hidden="true" />
+                  </button>
+                </div>
               </header>
 
               <div v-if="card.status === 'idle'" class="translation-result-placeholder">
@@ -218,6 +217,7 @@
             </article>
           </div>
         </el-scrollbar>
+        <p class="translation-card-sort-status" aria-live="polite">{{ sortAnnouncement }}</p>
       </section>
       </div>
     </div>
@@ -225,8 +225,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { ElScrollbar } from 'element-plus'
+import Sortable from 'sortablejs'
 import {
   ArrowLeftRight,
   ChevronDown,
@@ -274,9 +275,10 @@ const servicePickerOpen = ref(false)
 const serviceSearchQuery = ref('')
 const copiedService = ref('')
 const servicePicker = ref<HTMLElement | null>(null)
+const cardList = ref<HTMLElement | null>(null)
 const cards = ref<TranslationCard[]>([])
 const draggingService = ref('')
-const dragOverService = ref('')
+const sortAnnouncement = ref('')
 const configVersion = ref(0)
 let activeController: AbortController | null = null
 let activeRunId = 0
@@ -284,7 +286,9 @@ let copiedTimer: ReturnType<typeof setTimeout> | undefined
 let unsubscribeConfig: (() => void) | undefined
 let configHydrated = false
 let pendingConfigHydration = false
-let pointerDrag: { service: string; pointerId: number } | null = null
+let cardSortable: Sortable | null = null
+let pendingSortUpdate: { service: string; targetIndex: number } | null = null
+let componentUnmounted = false
 
 const enabledServiceOptions = computed(() => {
   void configVersion.value
@@ -433,67 +437,100 @@ function swapLanguages(): void {
   persistTranslationCenterConfig()
 }
 
-function reorderCards(fromService: string, targetService: string): void {
+function reorderCard(fromService: string, targetIndex: number): void {
   const fromIndex = cards.value.findIndex(card => card.service === fromService)
-  const targetIndex = cards.value.findIndex(card => card.service === targetService)
-  if (fromIndex < 0 || targetIndex < 0 || fromIndex === targetIndex) return
+  if (fromIndex < 0 || targetIndex < 0 || targetIndex >= cards.value.length || fromIndex === targetIndex) return
 
   const nextCards = [...cards.value]
   const [movedCard] = nextCards.splice(fromIndex, 1)
+  if (!movedCard) return
   nextCards.splice(targetIndex, 0, movedCard)
   cards.value = nextCards
+  sortAnnouncement.value = `${serviceLabel(movedCard.service)} 已移到第 ${targetIndex + 1} 项。`
   persistTranslationCenterConfig()
 }
 
-function startPointerDrag(service: string, event: PointerEvent): void {
-  if (event.button !== 0) return
-  pointerDrag = { service, pointerId: event.pointerId }
-  draggingService.value = service
-  dragOverService.value = ''
-  document.body.style.userSelect = 'none'
-  document.addEventListener('pointermove', handlePointerMove)
-  document.addEventListener('pointerup', finishPointerDrag)
-  document.addEventListener('pointercancel', finishPointerDrag)
+function restoreSortableCard(event: Sortable.SortableEvent): void {
+  if (event.oldIndex === undefined) return
+  event.item.remove()
+  event.from.insertBefore(event.item, event.from.children[event.oldIndex] ?? null)
 }
 
-function handlePointerMove(event: PointerEvent): void {
-  if (!pointerDrag || event.pointerId !== pointerDrag.pointerId) return
-  const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('.translation-result-card')
-  const service = target?.dataset.service || ''
-  dragOverService.value = service && service !== pointerDrag.service ? service : ''
+function handleCardSortStart(event: Sortable.SortableEvent): void {
+  draggingService.value = event.item.dataset.service ?? ''
 }
 
-function finishPointerDrag(event: PointerEvent): void {
-  if (!pointerDrag || event.pointerId !== pointerDrag.pointerId) return
-  const targetService = dragOverService.value
-  if (targetService) reorderCards(pointerDrag.service, targetService)
-  endCardDrag()
+function handleCardSortUpdate(event: Sortable.SortableEvent): void {
+  const {oldIndex, newIndex} = event
+  const service = event.item.dataset.service ?? ''
+  if (oldIndex === undefined || newIndex === undefined || !service) return
+
+  pendingSortUpdate = {service, targetIndex: newIndex}
+  // Sortable 先移动真实 DOM；恢复原顺序后再交给 Vue 更新，避免虚拟 DOM 与页面状态失配。
+  restoreSortableCard(event)
+}
+
+function handleCardSortEnd(): void {
+  const update = pendingSortUpdate
+  pendingSortUpdate = null
+  // 等 Sortable 清理拖拽副本与 class 后再更新 Vue 列表。
+  void nextTick(() => {
+    if (componentUnmounted) return
+    if (update) reorderCard(update.service, update.targetIndex)
+    endCardDrag()
+  })
 }
 
 function moveCard(service: string, offset: number): void {
   const fromIndex = cards.value.findIndex(card => card.service === service)
   const targetIndex = fromIndex + offset
-  if (fromIndex < 0 || targetIndex < 0 || targetIndex >= cards.value.length) return
-  const nextCards = [...cards.value]
-  const [movedCard] = nextCards.splice(fromIndex, 1)
-  nextCards.splice(targetIndex, 0, movedCard)
-  cards.value = nextCards
-  persistTranslationCenterConfig()
+  reorderCard(service, targetIndex)
+}
+
+function createCardSortable(element: HTMLElement): void {
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+  cardSortable = Sortable.create(element, {
+    animation: reduceMotion ? 0 : 180,
+    chosenClass: 'translation-card-sort-chosen',
+    direction: 'vertical',
+    disabled: cards.value.length < 2,
+    dragClass: 'translation-card-sort-drag',
+    draggable: '.translation-result-card',
+    easing: 'cubic-bezier(.2, .8, .2, 1)',
+    fallbackClass: 'translation-card-sort-fallback',
+    fallbackOnBody: true,
+    fallbackTolerance: 4,
+    forceFallback: true,
+    ghostClass: 'translation-card-sort-ghost',
+    handle: '.drag-handle',
+    swapThreshold: 0.65,
+    onStart: handleCardSortStart,
+    onUpdate: handleCardSortUpdate,
+    onEnd: handleCardSortEnd,
+  })
+}
+
+function destroyCardSortable(): void {
+  cardSortable?.destroy()
+  cardSortable = null
 }
 
 function endCardDrag(): void {
-  pointerDrag = null
-  document.removeEventListener('pointermove', handlePointerMove)
-  document.removeEventListener('pointerup', finishPointerDrag)
-  document.removeEventListener('pointercancel', finishPointerDrag)
-  document.body.style.userSelect = ''
   draggingService.value = ''
-  dragOverService.value = ''
   if (pendingConfigHydration) {
     pendingConfigHydration = false
     hydrateTranslationCenterConfig()
   }
 }
+
+watch(cardList, element => {
+  destroyCardSortable()
+  if (element) createCardSortable(element)
+}, {flush: 'post'})
+
+watch(() => cards.value.length, cardCount => {
+  cardSortable?.option('disabled', cardCount < 2)
+})
 
 function formatError(error: unknown): string {
   if (error instanceof Error && error.name === 'AbortError') return '本轮请求已取消'
@@ -626,7 +663,10 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  componentUnmounted = true
   activeController?.abort()
+  destroyCardSortable()
+  pendingSortUpdate = null
   endCardDrag()
   unsubscribeConfig?.()
   document.removeEventListener('pointerdown', closeServicePicker)
@@ -809,17 +849,21 @@ onUnmounted(() => {
 .copy-all-button:disabled { cursor: not-allowed; color: var(--muted); }
 .translation-result-list { height: auto; min-height: 0; flex: 1 1 auto; }
 .translation-result-list-content { display: grid; gap: 0; padding: 0 7px 0 0; }
-.translation-result-card { padding: 12px 0; border-bottom: 1px solid var(--line); background: transparent; cursor: grab; transition: border-color .16s ease, opacity .16s ease, transform .16s ease; }
-.translation-result-card:active { cursor: grabbing; }
-.translation-result-card.is-dragging { opacity: .5; transform: scale(.985); }
-.translation-result-card.is-drag-over { border-color: var(--el-color-primary-light-3); box-shadow: 0 -4px 0 -2px var(--brand); }
+.translation-result-card { box-sizing: border-box; padding: 12px 0; border-bottom: 1px solid var(--line); background: transparent; transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease, opacity 140ms ease; }
+.translation-result-card.translation-card-sort-chosen { background: var(--brand-soft); }
+.translation-result-card.translation-card-sort-ghost { opacity: .28; background: var(--brand-soft); box-shadow: inset 0 0 0 1px var(--el-color-primary-light-5); }
+.translation-result-card.translation-card-sort-drag { cursor: grabbing; }
+.translation-result-card.translation-card-sort-fallback { z-index: 10000; padding: 12px; opacity: .97 !important; border: 1px solid var(--el-color-primary-light-5); border-radius: var(--radius-control); background: var(--surface); box-shadow: 0 16px 34px rgba(31, 41, 55, .2), 0 4px 10px rgba(31, 41, 55, .1); cursor: grabbing; pointer-events: none; }
+.translation-result-card.translation-card-sort-fallback .translation-result-card-actions { opacity: .56; }
 .translation-result-card[data-status='success'] { border-color: var(--el-color-primary-light-8); }
 .translation-result-card-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .translation-result-service-name { display: flex; align-items: center; min-width: 0; gap: 10px; }
-.drag-handle { display: grid; place-items: center; width: 18px; height: 28px; flex: none; padding: 0; border: 0; border-radius: 6px; color: var(--muted); background: transparent; cursor: grab; }
+.drag-handle { display: grid; place-items: center; width: 18px; height: 28px; flex: none; padding: 0; border: 0; border-radius: 6px; color: var(--muted); background: transparent; cursor: grab; touch-action: none; }
 .drag-handle svg { width: 16px; height: 16px; }
-.drag-handle:hover, .drag-handle:focus-visible { color: var(--brand-strong); background: var(--brand-soft); outline: none; }
+.drag-handle:hover:not(:disabled), .drag-handle:focus-visible { color: var(--brand-strong); background: var(--brand-soft); outline: none; }
 .drag-handle:active { cursor: grabbing; }
+.drag-handle:disabled { cursor: default; opacity: .34; }
+.translation-card-sort-status { position: absolute; width: 1px; height: 1px; overflow: hidden; margin: -1px; padding: 0; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .translation-result-service-name > div { min-width: 0; }
 .translation-result-service-name strong { overflow: hidden; color: var(--ink); font-size: var(--font-body); text-overflow: ellipsis; white-space: nowrap; }
 .translation-result-card-actions { display: flex; align-items: center; flex: none; gap: 7px; }
