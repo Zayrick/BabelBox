@@ -19,6 +19,7 @@ vi.mock('@/src/features/page-notice/public', () => ({sendErrorMessage: mocks.sen
 import {
   insertFailedTip,
   insertLoadingSpinner,
+  removeLoadingSpinner,
 } from '@/src/features/full-page-translation/ui/translationIndicators';
 
 const originalDocument = globalThis.document;
@@ -75,5 +76,15 @@ describe('全文翻译节点状态指示', () => {
     expect(staticSpinner.style.getPropertyValue('border-top')).not.toBe('3px solid green');
     expect(staticSpinner.dataset.animationMode).toBe('static');
     expect(staticSpinner.classList.contains('static')).toBe(true);
+
+    mocks.config.animationMode = 'shimmer';
+    const shimmer = insertLoadingSpinner(target, false, 'Source');
+    await Promise.resolve();
+    expect(shimmer.dataset.animationMode).toBe('shimmer');
+    expect(target.getAttribute('data-fr-translation-shimmer')).toBe('true');
+
+    removeLoadingSpinner(target, shimmer);
+    expect(shimmer.isConnected).toBe(false);
+    expect(target.hasAttribute('data-fr-translation-shimmer')).toBe(false);
   });
 });

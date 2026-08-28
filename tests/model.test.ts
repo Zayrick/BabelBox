@@ -195,9 +195,14 @@ describe('翻译进度面板配置', () => {
 
 describe('动画模式配置', () => {
     it('默认使用旋转动画，并保留静态模式', () => {
-        expect(options.animationModes.map(({value}) => value)).toEqual(['default', 'static']);
+        expect(options.animationModes).toEqual([
+            {value: 'default', label: '旋转'},
+            {value: 'shimmer', label: '文字流光'},
+            {value: 'static', label: '静态'},
+        ]);
         expect(new Config().animationMode).toBe('default');
         expect(normalizeConfig({}).animationMode).toBe('default');
+        expect(normalizeConfig({animationMode: 'shimmer'}).animationMode).toBe('shimmer');
         expect(normalizeConfig({animationMode: 'static'}).animationMode).toBe('static');
         expect(normalizeConfig({animationMode: 'invalid'}).animationMode).toBe('default');
     });

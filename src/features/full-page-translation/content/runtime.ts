@@ -4,7 +4,11 @@ import {
     getTranslationServiceConfigurationKey,
     getTranslationServiceProvider,
 } from '@/src/core/config/translationServices';
-import {insertFailedTip, insertLoadingSpinner} from '@/src/features/full-page-translation/ui/translationIndicators';
+import {
+    insertFailedTip,
+    insertLoadingSpinner,
+    removeLoadingSpinner,
+} from '@/src/features/full-page-translation/ui/translationIndicators';
 import { styles } from "@/src/core/config/constants";
 import {
     extractTranslationText,
@@ -599,7 +603,7 @@ function markFailedTranslation(
     spinner: HTMLElement | undefined,
     error: unknown,
 ): TranslationTargetOutcome {
-    spinner?.remove();
+    removeLoadingSpinner(node, spinner);
     if (!node.isConnected ||
         !attemptSourceIsCurrent(node, attempt.state) ||
         !markTranslationError(node, attempt.state, attempt.generation, false)) {
@@ -636,7 +640,7 @@ async function renderTranslation(
 
     try {
         const result = await request;
-        spinner?.remove();
+        removeLoadingSpinner(node, spinner);
 
         // A target can keep identical text while class/role/visibility changes
         // move ownership to a different semantic block. Revalidate the original
@@ -1079,7 +1083,7 @@ async function translateTarget(
     )
         .finally(() => signal.removeEventListener('abort', cancelQueuedRequest));
     if (synthetic) node.setAttribute('data-fr-translation-segment', 'true');
-    const spinner = insertLoadingSpinner(node);
+    const spinner = insertLoadingSpinner(node, false, attempt.state.sourceText);
     setSpinner(node, spinner);
     registerSessionStatefulTarget(statefulSession, candidate.element, node);
     const outcome = await renderTranslation(node, candidate, attempt, request);

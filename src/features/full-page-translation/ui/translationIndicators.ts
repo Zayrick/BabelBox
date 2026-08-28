@@ -6,6 +6,10 @@ import {getTranslationErrorMessage} from '@/src/features/full-page-translation/c
 import {CircleAlert, RotateCcw, type IconNode} from 'lucide';
 import {createLucideIconElement} from '@/src/ui/icons/lucideDom';
 import {usesAnimatedEffects} from '@/src/core/config/animation';
+import {
+  applyTranslationShimmer,
+  clearTranslationLoadingAnimation,
+} from './loadingAnimation';
 
 // 插入失败提示并处理错误
 export function insertFailedTip(
@@ -88,18 +92,31 @@ function createIconElement(icon: IconNode): HTMLElement {
 // 插入加载动画
 export function insertLoadingSpinner(
   node: HTMLElement,
-  isCache: boolean = false
+  isCache: boolean = false,
+  sourceText: string = node.textContent ?? '',
 ): HTMLElement {
   const spinner = document.createElement("span");
   spinner.className = "fluent-read-loading";
   spinner.setAttribute("data-fr-translation-owned", "true");
-  spinner.dataset.animationMode = config.animationMode;
+  const animationMode = config.animationMode === 'shimmer' && sourceText.trim() === ''
+    ? 'default'
+    : config.animationMode;
+  spinner.dataset.animationMode = animationMode;
+  if (animationMode === 'shimmer') applyTranslationShimmer(node);
   if (isCache) spinner.style.borderTop = "3px solid green"; // 存在缓存时改为绿色
   
   void Promise.resolve().then(() => {
-    if (!usesAnimatedEffects(config.animationMode)) spinner.classList.add('static');
+    if (!usesAnimatedEffects(animationMode)) spinner.classList.add('static');
   });
   
   node.appendChild(spinner);
   return spinner;
+}
+
+export function removeLoadingSpinner(
+  node: HTMLElement,
+  spinner: HTMLElement | undefined,
+): void {
+  clearTranslationLoadingAnimation(node);
+  spinner?.remove();
 }

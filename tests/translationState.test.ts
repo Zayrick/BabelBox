@@ -397,6 +397,7 @@ describe("指定节点翻译状态机", () => {
         const target = document.querySelector("#target") as HTMLElement;
         const attempt = beginTranslation(target, "bilingual")!;
         const spinner = document.createElement("span");
+        target.setAttribute("data-fr-translation-shimmer", "true");
         target.appendChild(spinner);
         setSpinner(target, spinner);
         spinner.remove();
@@ -404,6 +405,7 @@ describe("指定节点翻译状态机", () => {
         expect(markTranslationComplete(target, attempt.state, attempt.generation)).toBe(true);
         expect(getTranslationOwnersForRemovedNode(spinner)).toEqual([]);
         expect(restoreTranslation(target)).toBe(true);
+        expect(target.hasAttribute("data-fr-translation-shimmer")).toBe(false);
     });
 
     it("新一代 begin 会移除旧 artifact 的 ownership", () => {

@@ -47,6 +47,10 @@ vi.mock('@/src/features/full-page-translation/ui/translationIndicators', () => (
         node.appendChild(spinner);
         return spinner;
     },
+    removeLoadingSpinner: (node: HTMLElement, spinner?: HTMLElement) => {
+        node.removeAttribute('data-fr-translation-shimmer');
+        spinner?.remove();
+    },
     insertFailedTip: (node: HTMLElement, _message: string, onRetry: () => void) => {
         runtime.retryCallbacks.push(onRetry);
         return node.ownerDocument.createElement("span");

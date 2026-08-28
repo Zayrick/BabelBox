@@ -13,6 +13,42 @@
     display: inline-block;
 }
 
+:root {
+    --fluent-read-shimmer-duration: 2000ms;
+    --fluent-read-shimmer-base-opacity: 0.42;
+    --fluent-read-shimmer-band: 400%;
+    --fluent-read-shimmer-easing: linear;
+    --fluent-read-shimmer-mask: linear-gradient(
+        90deg,
+        rgba(0, 0, 0, var(--fluent-read-shimmer-base-opacity)) 0%,
+        rgba(0, 0, 0, var(--fluent-read-shimmer-base-opacity)) 40%,
+        #000 50%,
+        rgba(0, 0, 0, var(--fluent-read-shimmer-base-opacity)) 60%,
+        rgba(0, 0, 0, var(--fluent-read-shimmer-base-opacity)) 100%
+    );
+}
+
+/* 文字流光只改变现有像素的透明度，不覆盖宿主页面的文字颜色。 */
+[data-fr-translation-shimmer="true"] {
+    mask-image: var(--fluent-read-shimmer-mask);
+    mask-repeat: no-repeat;
+    mask-size: var(--fluent-read-shimmer-band) 100%;
+    -webkit-mask-image: var(--fluent-read-shimmer-mask);
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: var(--fluent-read-shimmer-band) 100%;
+    animation: fluent-read-translation-shimmer var(--fluent-read-shimmer-duration) var(--fluent-read-shimmer-easing) infinite;
+}
+
+.fluent-read-loading[data-animation-mode="shimmer"] {
+    display: none;
+    animation: none;
+}
+
+@keyframes fluent-read-translation-shimmer {
+    0% { mask-position: 100% 0; -webkit-mask-position: 100% 0; }
+    100% { mask-position: 0% 0; -webkit-mask-position: 0% 0; }
+}
+
 /* 静态加载样式（禁用动画时） */
 .fluent-read-loading.static {
     animation: none;
@@ -33,6 +69,14 @@
     background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, transparent 50%, rgba(0,0,0,0.1) 100%);
     border-radius: 50%;
     pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-fr-translation-shimmer="true"] {
+        animation: none !important;
+        mask-image: none;
+        -webkit-mask-image: none;
+    }
 }
 
 .fluent-read-retry-wrapper {

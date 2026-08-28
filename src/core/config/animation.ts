@@ -1,6 +1,7 @@
 export const animationModeOptions = [
-    {value: 'default', label: '默认动画（旋转）'},
-    {value: 'static', label: '静态效果'},
+    {value: 'default', label: '旋转'},
+    {value: 'shimmer', label: '文字流光'},
+    {value: 'static', label: '静态'},
 ] as const;
 
 export type AnimationMode = typeof animationModeOptions[number]['value'];

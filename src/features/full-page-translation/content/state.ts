@@ -3,6 +3,7 @@ import {
     hasActiveTranslationLineClamp,
     translationTruncationStyleOverrides,
 } from "@/src/core/translation/public";
+import {clearTranslationLoadingAnimation} from '@/src/features/full-page-translation/ui/loadingAnimation';
 
 /**
  * 指定节点翻译的生命周期状态。
@@ -774,6 +775,7 @@ function teardownAttempt(
 ): void {
     state.generation += 1;
     state.controller.abort();
+    clearTranslationLoadingAnimation(node);
     removeExtensionNode(state.spinner);
     removeExtensionNode(state.bilingualContent);
     removeRetryArtifacts(node);
