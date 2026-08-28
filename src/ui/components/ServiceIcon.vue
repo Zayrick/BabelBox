@@ -65,7 +65,7 @@ const fallbackIcon = computed(() => fallbackIcons[resolveServiceFallbackIconKey(
   place-items: center;
   box-sizing: border-box;
   flex: none;
-  border: 1px solid rgba(31, 41, 55, 0.1);
+  border: 1px solid var(--line);
   border-radius: 11px;
   overflow: hidden;
   background: var(--on-brand);
