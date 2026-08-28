@@ -1,7 +1,7 @@
 import {
+    evaluateHardGuard,
     getComposedParent,
     isDocumentSurface,
-    isProtectedTextElement,
     maxComposedAncestorDepth,
 } from './dom';
 import {
@@ -11,6 +11,15 @@ import type {TranslationTextProtectionCache} from './text';
 
 const maxDirectRunNodes = 2048;
 const maxBlockChildrenToProbe = 128;
+
+function shouldKeepElementOriginal(
+    element: Element,
+    shouldStayOriginal?: (element: Element) => boolean,
+): boolean {
+    return shouldStayOriginal
+        ? shouldStayOriginal(element)
+        : evaluateHardGuard(element).prune;
+}
 
 const semanticBlockTags = new Set([
     'address', 'article', 'aside', 'blockquote', 'dd', 'div', 'dl', 'dt',
@@ -192,7 +201,7 @@ export function getDirectInlineRuns(
 ): ChildNode[][] {
     if (isDocumentSurface(element) || isStructuralContainer(element) ||
         (!skipStructuralAncestorCheck && hasStructuralAncestor(element))) return [];
-    if (shouldStayOriginal?.(element) || isProtectedTextElement(element) || !isBlockBoundary(element)) return [];
+    if (shouldKeepElementOriginal(element, shouldStayOriginal) || !isBlockBoundary(element)) return [];
     if (element.childNodes.length > maxDirectRunNodes) return [];
     if (!hasDirectReadableText(element, shouldStayOriginal, protectionCache)) return [];
     const hasBlockBarrier = hasReadableBlockChild(element, shouldStayOriginal, protectionCache);
@@ -242,7 +251,7 @@ export function classifyGenericCandidate(
         (!skipStructuralAncestorCheck && hasStructuralAncestor(element) && !semanticHeading)) {
         return null;
     }
-    if (shouldStayOriginal?.(element) || isProtectedTextElement(element)) return null;
+    if (shouldKeepElementOriginal(element, shouldStayOriginal)) return null;
 
     if (isTranslationControlElement(element)) {
         if (!hasMeaningfulTranslationTextInNodes([element], shouldStayOriginal, protectionCache)) return null;

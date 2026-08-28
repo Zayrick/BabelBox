@@ -96,6 +96,7 @@
     </el-row>
     <AlwaysTranslateSites v-model="config.alwaysTranslateDomains" />
     <AlwaysTranslateSites v-model="config.disabledExtensionDomains" variant="disable-extension" />
+    <TranslationFilterSettings v-model="config.translationFilter" />
   </section>
   <div v-if="!config.on && !['settings-general', 'settings-image-translation', 'settings-translation-center', 'settings-sites'].includes(props.activeSection)" class="disabled-section">
     <strong>插件当前已关闭</strong>
@@ -736,6 +737,7 @@ import type {AddTranslationServicePayload} from '@/src/features/settings/model/a
 import SettingsHelpLabel from './SettingsHelpLabel.vue';
 import {TranslationCenter} from '@/src/features/translation-center/public';
 import AlwaysTranslateSites from './AlwaysTranslateSites.vue';
+import TranslationFilterSettings from './TranslationFilterSettings.vue';
 import { parseHotkey } from '@/src/core/hotkey';
 import { isConfigImportValid, prepareConfigForImport, sanitizeConfigForExport } from '@/src/core/config/transfer';
 import {clearTranslationServiceCredentials} from '@/src/core/config/credentials';

@@ -1,3 +1,8 @@
+import {
+    defaultTranslationFilterPolicy,
+    type TranslationFilterPolicy,
+} from './filters';
+
 const extensionSelector = [
     '#fluent-read-floating-ball-container',
     '#fluent-read-selection-translator-container',
@@ -10,17 +15,6 @@ const extensionSelector = [
     '[data-fr-translation-segment="true"]',
     '[data-fr-translation-owned="true"]',
 ].join(',');
-
-const hardPruneTags = new Set([
-    'head', 'script', 'style', 'noscript', 'iframe', 'input', 'textarea',
-    'select', 'option', 'math', 'svg', 'canvas', 'audio', 'video', 'object',
-    'template', 'xmp',
-]);
-
-const protectedTextTags = new Set([
-    ...hardPruneTags,
-    'pre', 'code', 'kbd', 'samp', 'var',
-]);
 
 /**
  * Host pages can construct adversarially deep trees. Ancestor-dependent safety
@@ -52,56 +46,6 @@ export function isExtensionElementSelf(element: Element): boolean {
     return element.matches(extensionSelector);
 }
 
-export function isHardPruneTag(element: Element): boolean {
-    return hardPruneTags.has(element.tagName.toLowerCase());
-}
-
-export function isProtectedTextElement(element: Element): boolean {
-    return protectedTextTags.has(element.tagName.toLowerCase());
-}
-
-export function hasNoTranslateMarker(element: Element): boolean {
-    return element.classList.contains('notranslate') ||
-        element.getAttribute('translate')?.toLowerCase() === 'no' ||
-        element.getAttribute('data-notranslate') === 'true';
-}
-
-export function hasHiddenMarker(element: Element): boolean {
-    const htmlElement = element as HTMLElement;
-    if (htmlElement.hidden || htmlElement.inert || element.hasAttribute('inert')) return true;
-    if (element.getAttribute('aria-hidden') === 'true') return true;
-    if (element.classList.contains('sr-only') || element.classList.contains('visually-hidden')) return true;
-
-    try {
-        const style = element.ownerDocument?.defaultView?.getComputedStyle(element);
-        if (!style) return false;
-        return style.display === 'none' || style.visibility === 'hidden' || style.visibility === 'collapse';
-    } catch {
-        return false;
-    }
-}
-
-function hasContentEditableMarker(element: Element): boolean {
-    const attribute = element.getAttribute('contenteditable');
-    return (attribute !== null && attribute.toLowerCase() !== 'false') ||
-        (element as HTMLElement).isContentEditable;
-}
-
-/**
- * MathJax v2/v3 and KaTeX render formulas into ordinary spans/divs rather than
- * native MathML. Their generated trees must remain atomic host-owned content:
- * translating or materializing an inner span can make restore remove the
- * visible formula while leaving only the hidden TeX source script behind.
- */
-export function isMathRendererElement(element: Element): boolean {
-    const tagName = element.tagName.toLowerCase();
-    return tagName === 'mjx-container' ||
-        element.classList.contains('MathJax_Display') ||
-        element.classList.contains('MathJax') ||
-        element.classList.contains('MathJax_Preview') ||
-        element.classList.contains('katex');
-}
-
 /**
  * Descendant text guards are intentionally local. A protected inline child
  * must stay out of provider payloads without rejecting the readable paragraph
@@ -110,13 +54,10 @@ export function isMathRendererElement(element: Element): boolean {
 export function isProtectedDescendantElement(
     element: Element,
     ignoreExtensionSelf = false,
+    filterPolicy: TranslationFilterPolicy = defaultTranslationFilterPolicy,
 ): boolean {
     return (!ignoreExtensionSelf && isExtensionElementSelf(element)) ||
-        isProtectedTextElement(element) ||
-        isMathRendererElement(element) ||
-        hasNoTranslateMarker(element) ||
-        hasContentEditableMarker(element) ||
-        hasHiddenMarker(element);
+        filterPolicy.isExcludedSelf(element);
 }
 
 export interface HardGuardResult {
@@ -124,28 +65,32 @@ export interface HardGuardResult {
     reason?: string;
 }
 
-export function evaluateElementHardGuard(element: Element): HardGuardResult {
+export function evaluateElementHardGuard(
+    element: Element,
+    filterPolicy: TranslationFilterPolicy = defaultTranslationFilterPolicy,
+): HardGuardResult {
     if (isExtensionElementSelf(element)) return {prune: true, reason: 'fluentread-owned'};
-    if (isHardPruneTag(element)) return {prune: true, reason: `protected-tag:${element.tagName.toLowerCase()}`};
-    if (isMathRendererElement(element)) return {prune: true, reason: 'math-renderer'};
-    if (hasNoTranslateMarker(element)) return {prune: true, reason: 'inherited-no-translate'};
-    if (hasContentEditableMarker(element)) return {prune: true, reason: 'contenteditable'};
-    if (hasHiddenMarker(element)) return {prune: true, reason: 'hidden'};
+    const decision = filterPolicy.evaluateElement(element);
+    if (decision.action === 'exclude') return {prune: true, reason: decision.reason};
     return {prune: false};
 }
 
 /**
- * Hard guards are shared by initial discovery, hover resolution, mutations and
- * open Shadow DOM. Site adapters cannot override these safety boundaries.
+ * Guards are shared by initial discovery, hover resolution, mutations and open
+ * Shadow DOM. A site rule may override a global decision on the same element,
+ * while FluentRead-owned DOM and the depth limit remain immutable boundaries.
  */
-export function evaluateHardGuard(element: Element): HardGuardResult {
+export function evaluateHardGuard(
+    element: Element,
+    filterPolicy: TranslationFilterPolicy = defaultTranslationFilterPolicy,
+): HardGuardResult {
     let depth = 0;
     for (const current of composedAncestors(element)) {
         depth += 1;
         if (depth > maxComposedAncestorDepth) {
             return {prune: true, reason: 'ancestor-depth-limit'};
         }
-        const guard = evaluateElementHardGuard(current);
+        const guard = evaluateElementHardGuard(current, filterPolicy);
         if (guard.prune) return guard;
     }
     return {prune: false};

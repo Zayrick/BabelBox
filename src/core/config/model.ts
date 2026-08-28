@@ -12,6 +12,11 @@ import {
     normalizeDisabledExtensionDomains,
 } from "@/src/core/site-rules/domain";
 import {
+    createDefaultTranslationFilterConfig,
+    normalizeTranslationFilterConfig,
+    type TranslationFilterConfig,
+} from '@/src/core/translation/filters';
+import {
     createDefaultTranslationServices,
     DEFAULT_NEW_API_URL,
     getDefaultTranslationServiceName,
@@ -88,6 +93,7 @@ export class Config {
     autoTranslate: boolean; // 是否即时翻译
     alwaysTranslateDomains: string[]; // 始终自动翻译的可注册域名（eTLD+1）
     disabledExtensionDomains: string[]; // 禁用扩展的可注册域名（eTLD+1）
+    translationFilter: TranslationFilterConfig; // 全局与网站级网页内容过滤规则
     from: string;
     to: string;
     hotkey: string;
@@ -170,6 +176,7 @@ export class Config {
         this.autoTranslate = false;
         this.alwaysTranslateDomains = [];
         this.disabledExtensionDomains = [];
+        this.translationFilter = createDefaultTranslationFilterConfig();
         this.from = defaultOption.from;
         this.to = defaultOption.to;
         this.style = defaultOption.style;
@@ -450,6 +457,7 @@ export function normalizeConfig(value: unknown): Config {
     );
     normalized.alwaysTranslateDomains = normalizeAlwaysTranslateDomains(source.alwaysTranslateDomains);
     normalized.disabledExtensionDomains = normalizeDisabledExtensionDomains(source.disabledExtensionDomains);
+    normalized.translationFilter = normalizeTranslationFilterConfig(source.translationFilter);
 
     if (!['disabled', 'bilingual', 'translation-only'].includes(normalized.selectionTranslatorMode)) {
         normalized.selectionTranslatorMode = 'disabled';

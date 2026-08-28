@@ -1,6 +1,7 @@
 import {
     composedAncestors,
     getComposedParent,
+    isExtensionElementSelf,
     isProtectedDescendantElement,
     maxComposedAncestorDepth,
 } from './dom';
@@ -39,12 +40,14 @@ export function isTranslationTextNodeProtected(
 ): boolean {
     const parent = node.parentElement;
     if (!parent) return true;
+    if (shouldStayOriginal?.(parent)) return true;
     let depth = 0;
     for (const ancestor of composedAncestors(parent)) {
         depth += 1;
         if (depth > maxComposedAncestorDepth) return true;
-        if (isProtectedDescendantElement(ancestor, ancestor === ignoredExtensionElement)) return true;
-        if (shouldStayOriginal?.(ancestor)) return true;
+        if (isExtensionElementSelf(ancestor) && ancestor !== ignoredExtensionElement) return true;
+        if (!shouldStayOriginal &&
+            isProtectedDescendantElement(ancestor, ancestor === ignoredExtensionElement)) return true;
     }
     return false;
 }
@@ -133,8 +136,10 @@ export function isTranslationTextElementProtected(
         depth += 1;
         protectedByAncestor = protectedByAncestor ||
             depth > maxComposedAncestorDepth ||
-            isProtectedDescendantElement(item) ||
-            shouldStayOriginal?.(item) === true;
+            isExtensionElementSelf(item) ||
+            (shouldStayOriginal
+                ? shouldStayOriginal(item) === true
+                : isProtectedDescendantElement(item));
         protectionCache.set(item, {depth, protected: protectedByAncestor});
     }
     return protectionCache.get(element)?.protected === true;

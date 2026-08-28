@@ -120,6 +120,25 @@
           <label><span>主题</span><el-select v-model="draft.theme" class="fr-userscript-select" aria-label="主题" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.theme" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
         </fieldset>
 
+        <fieldset class="filter-fieldset">
+          <legend>内容过滤</legend>
+          <p class="hint">默认规则可以编辑或删除。网站规则优先于同一元素命中的全局规则。</p>
+          <label class="toggle"><span>跳过隐藏内容</span><el-switch v-model="draft.translationFilter.global.excludeHidden" class="fr-userscript-switch" aria-label="跳过隐藏内容" /></label>
+          <label class="toggle"><span>跳过可编辑内容</span><el-switch v-model="draft.translationFilter.global.excludeEditable" class="fr-userscript-switch" aria-label="跳过可编辑内容" /></label>
+          <TranslationFilterRulesEditor v-model="draft.translationFilter.global.rules" />
+          <div v-if="currentSiteDomain" class="userscript-site-filter-heading">
+            <span><strong>当前网站</strong><small>{{ currentSiteDomain }} · 对所有子域生效</small></span>
+            <button v-if="currentSiteHasFilter" type="button" @click="removeCurrentSiteFilter">移除网站规则</button>
+          </div>
+          <TranslationFilterRulesEditor
+            v-if="currentSiteDomain"
+            compact
+            :model-value="currentSiteFilterRules"
+            empty-description="添加规则后，会优先处理当前网站中命中的内容。"
+            @update:model-value="setCurrentSiteFilterRules"
+          />
+        </fieldset>
+
         <details v-if="selectedInstance?.kind === 'ai'">
           <summary>高级 AI 请求设置</summary>
           <label><span>自定义请求体（JSON）</span><textarea v-model="selectedInstance.customBody" rows="4" placeholder="可选：合并到请求体顶层" /></label>
@@ -166,6 +185,14 @@ import {
 } from '@/src/core/config/translationServices';
 import {getSelectableTranslationServices} from '@/src/services/translation/capabilities';
 import {resolvesToDarkTheme} from '@/src/ui/theme/theme';
+import {getSiteBaseDomain} from '@/src/core/site-rules/domain';
+import {
+  getTranslationFilterSite,
+  removeTranslationFilterSite,
+  upsertTranslationFilterSite,
+  type TranslationFilterRule,
+} from '@/src/core/translation/filters';
+import TranslationFilterRulesEditor from '@/src/features/settings/ui/TranslationFilterRulesEditor.vue';
 import {
   hasDynamicTranslationModelCatalog,
   TRANSLATION_MODEL_CATALOG_MESSAGE,
@@ -196,6 +223,12 @@ const aiProviderOptions = options.services.filter(item => (
 ));
 const styleOptions = options.styles.filter(item => !item.disabled && typeof item.value === 'number');
 const hoverOptions = options.keys.filter(item => !item.disabled);
+const currentSiteDomain = getSiteBaseDomain(globalThis.location?.href ?? '') ?? '';
+const currentSiteFilter = computed(() => currentSiteDomain
+  ? getTranslationFilterSite(draft.value.translationFilter, currentSiteDomain)
+  : null);
+const currentSiteFilterRules = computed(() => currentSiteFilter.value?.rules ?? []);
+const currentSiteHasFilter = computed(() => currentSiteFilter.value !== null);
 const selectedInstance = computed(() => getTranslationServiceInstance(
   draft.value,
   managedServiceId.value || draft.value.service,
@@ -468,6 +501,21 @@ function restoreDefaults(): void {
   status.value = '已载入 userscript 默认设置，点击“保存设置”后生效。';
 }
 
+function setCurrentSiteFilterRules(rules: TranslationFilterRule[]): void {
+  if (!currentSiteDomain) return;
+  draft.value.translationFilter = rules.length > 0
+    ? upsertTranslationFilterSite(draft.value.translationFilter, {domain: currentSiteDomain, rules})
+    : removeTranslationFilterSite(draft.value.translationFilter, currentSiteDomain);
+}
+
+function removeCurrentSiteFilter(): void {
+  if (!currentSiteDomain) return;
+  draft.value.translationFilter = removeTranslationFilterSite(
+    draft.value.translationFilter,
+    currentSiteDomain,
+  );
+}
+
 async function togglePageTranslation(): Promise<void> {
   await browser.tabs.sendMessage(1, {type: 'userscriptTogglePageTranslation'});
   close();
@@ -519,6 +567,7 @@ button:focus-visible { outline: 3px solid var(--brand-soft); outline-offset: 2px
 .settings-grid { display: grid; overflow: auto; padding: 16px 18px 20px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 fieldset, details { min-width: 0; margin: 0; padding: 15px; border: 1px solid var(--line); border-radius: var(--radius-overlay); background: var(--surface); }
 fieldset:nth-of-type(3), details { grid-column: 1 / -1; }
+.filter-fieldset { grid-column: 1 / -1; }
 legend, summary { color: var(--brand-strong); font-size: var(--font-small); font-weight: var(--weight-bold); }
 summary { cursor: pointer; }
 .service-heading { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; color: var(--muted); font-size: var(--font-small); font-weight: var(--weight-semibold); }
@@ -563,6 +612,12 @@ textarea { resize: vertical; line-height: var(--line-height-body); }
 .fr-userscript-switch { --el-switch-on-color: var(--brand); --el-switch-off-color: var(--el-border-color); --el-switch-border-color: var(--el-border-color); justify-self: end; }
 .hint, .warning { margin: 8px 0 0; padding: 8px 10px; border-radius: var(--radius-control); font-size: var(--font-caption); line-height: var(--line-height-body); }
 .hint { color: var(--muted); background: var(--surface-soft); }
+.userscript-site-filter-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+.userscript-site-filter-heading > span { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
+.userscript-site-filter-heading strong { color: var(--ink); font-size: var(--font-small); }
+.userscript-site-filter-heading small { color: var(--muted); font-size: var(--font-caption); }
+.userscript-site-filter-heading button { flex: none; padding: 5px 7px; border-radius: 7px; color: var(--danger); background: transparent; font-size: var(--font-caption); }
+.userscript-site-filter-heading button:hover { background: var(--danger-soft); }
 .warning { color: var(--warning); background: var(--warning-soft); }
 footer > div { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 footer button { padding: 9px 13px; border-radius: var(--radius-control); font-size: var(--font-small); font-weight: var(--weight-semibold); }

@@ -6,24 +6,32 @@ outside the directory import `public.ts`; WXT treats a directory-level
 
 ## Pipeline
 
-1. `dom.ts` applies non-overridable safety guards and composed-tree helpers.
-2. `registry.ts` selects typed site adapters for the current URL.
-3. `engine.ts` resolves adapter decisions and generic layout boundaries.
-4. `text.ts` extracts readable source text and rejects identifiers/target text.
-5. `serialization.ts` prepares safe rich-text input for providers.
-6. `src/features/full-page-translation/content/runtime.ts` is the runtime port
+1. `filters.ts` normalizes editable global/site rules and resolves the current URL policy.
+2. `dom.ts` applies the policy plus non-overridable FluentRead ownership/depth guards.
+3. `registry.ts` selects runtime-only site adapters for the current URL.
+4. `engine.ts` resolves configured include rules, adapter decisions and generic layout boundaries.
+5. `text.ts` extracts readable source text and rejects identifiers/target text.
+6. `serialization.ts` prepares safe rich-text input for providers.
+7. `src/features/full-page-translation/content/runtime.ts` is the runtime port
    for scheduling, provider requests and rendering. Hover and full-page
    translation both enter through the same
    `TranslationCandidateCore` and the same `translateTarget` function.
 
 ## Decision model
 
-Adapters can return `pass`, `skip-self`, `prune-subtree` or `force-target`.
-Safety guards (extension-owned DOM, scripts/styles, form inputs, editable or
-hidden trees, `translate=no`, SVG/math and similar non-prose content) run before
-adapter targets and cannot be reopened. Adapters are sorted by priority, while
-registration order is stable for ties. Invalid selectors only invalidate that
-match and never abort the page scan.
+Global and site filters use ordered CSS rules with `exclude` or `include`
+actions. A matching site rule wins on the same element, then the global rule
+list and hidden/editable switches apply. A child include cannot reopen an
+excluded ancestor. Scripts/styles, form inputs, code, `translate=no`, SVG/math,
+and the supported-site selectors are stored as editable defaults rather than
+engine constants. Only FluentRead-owned DOM and the composed-ancestor depth cap
+remain non-overridable safety guards.
+
+Runtime adapters can still return `pass`, `skip-self`, `prune-subtree` or
+`force-target`, but default translation filtering does not live in adapters.
+Adapters are sorted by priority, while registration order is stable for ties.
+Invalid configured or adapter selectors only invalidate that match and never
+abort the page scan.
 
 Every accepted candidate includes a reason and optional adapter id. This keeps
 hover/full equality and adapter precedence directly testable without starting a

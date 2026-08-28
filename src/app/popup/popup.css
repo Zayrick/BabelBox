@@ -469,6 +469,26 @@ h2 {
   background: var(--surface-soft);
 }
 .site-disable-rule-button.enabled > i { background: var(--ink); }
+.site-filter-rule-button {
+  display: grid;
+  min-height: var(--control-height-small);
+  grid-column: 1 / -1;
+  grid-template-columns: 16px minmax(0, 1fr) 14px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+  background: var(--surface);
+  font-size: var(--font-caption);
+  font-weight: var(--weight-medium);
+  text-align: left;
+  cursor: pointer;
+}
+.site-filter-rule-button:hover { color: var(--brand-strong); border-color: var(--el-color-primary-light-5); background: var(--brand-soft); }
+.site-filter-rule-button svg { width: 15px; height: 15px; }
+.site-filter-rule-button svg:last-child { width: 13px; height: 13px; justify-self: end; }
 
 .spinner {
   width: 16px;
@@ -793,6 +813,32 @@ footer button:hover { color: var(--brand-strong); }
 .drawer-header > button svg { width: 18px; height: 18px; }
 .drawer-header > button:hover { color: var(--brand-strong); background: var(--brand-soft); }
 .drawer-content { margin-top: 12px; }
+.site-filter-drawer-intro {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+.site-filter-drawer-intro > span { display: flex; min-width: 0; flex-direction: column; gap: 4px; }
+.site-filter-drawer-intro strong { overflow: hidden; color: var(--ink); font-size: var(--font-small); text-overflow: ellipsis; white-space: nowrap; }
+.site-filter-drawer-intro small { color: var(--muted); font-size: var(--font-caption); line-height: var(--line-height-tight); }
+.site-filter-drawer-intro em { flex: none; color: var(--brand-strong); font-size: var(--font-caption); font-style: normal; font-weight: var(--weight-semibold); }
+.remove-site-filter-button {
+  width: 100%;
+  min-height: var(--control-height);
+  margin-top: 10px;
+  border: 1px solid var(--danger-border);
+  border-radius: 8px;
+  color: var(--danger);
+  background: var(--surface);
+  font-size: var(--font-caption);
+  cursor: pointer;
+}
+.remove-site-filter-button:hover { background: var(--danger-soft); }
 .selection-mode-tabs {
   display: flex;
   gap: 4px;

@@ -35,9 +35,23 @@ export type {
 } from './serialization';
 export {createDeclarativeAdapter} from './adapters/declarative';
 export {
+    configureCurrentTranslationFilters,
     createTranslationCore,
+    getCurrentTranslationFilterConfig,
     getCurrentTranslationCore,
     resolveTranslationCandidate,
     resolveTranslationCandidateAtPoint,
 } from './current';
+export {
+    createDefaultTranslationFilterConfig,
+    createTranslationFilterPolicy,
+    createTranslationFilterSite,
+    getTranslationFilterSite,
+    normalizeTranslationFilterConfig,
+    normalizeTranslationFilterRules,
+    removeTranslationFilterSite,
+    translationFilterConfigSignature,
+    upsertTranslationFilterSite,
+} from './filters';
+export type * from './filters';
 export type * from './types';

@@ -224,6 +224,17 @@
             </Transition>
             <i aria-hidden="true" />
           </button>
+          <button
+            v-if="currentSiteSupported"
+            class="site-filter-rule-button"
+            type="button"
+            :aria-label="`配置 ${currentSiteDomain} 的内容过滤规则`"
+            @click="openDrawer('filter')"
+          >
+            <ListFilter aria-hidden="true" />
+            <span>{{ currentSiteFilterRuleCount ? `内容过滤 · ${currentSiteFilterRuleCount} 条` : '内容过滤规则' }}</span>
+            <ChevronRight aria-hidden="true" />
+          </button>
         </div>
       </div>
 
@@ -489,7 +500,26 @@
         </label>
       </div>
 
-      <div v-else class="drawer-content">
+      <div v-else-if="activeDrawer === 'filter'" class="drawer-content site-filter-drawer">
+        <div class="site-filter-drawer-intro">
+          <span><strong>{{ currentSiteDomain }}</strong><small>网站规则优先于全局规则，并对所有子域生效。</small></span>
+          <em>{{ currentSiteFilterRuleCount }} 条</em>
+        </div>
+        <TranslationFilterRulesEditor
+          compact
+          :model-value="currentSiteFilterRules"
+          empty-description="添加规则后，会优先处理当前网站中命中的内容。"
+          @update:model-value="setCurrentSiteFilterRules"
+        />
+        <button
+          v-if="hasCurrentSiteFilter"
+          class="remove-site-filter-button"
+          type="button"
+          @click="removeCurrentSiteFilter"
+        >移除此网站的全部内容过滤规则</button>
+      </div>
+
+      <div v-else-if="activeDrawer === 'appearance'" class="drawer-content">
         <div class="choice-block">
           <label>翻译模式</label>
           <div class="chips two">
@@ -543,6 +573,7 @@ import {
   FileText,
   Image as ImageIcon,
   Languages,
+  ListFilter,
   MousePointer,
   Settings,
   Star,
@@ -577,8 +608,15 @@ import {
   getSelectableTranslationServices,
   getTranslationServiceUnavailableMessage,
 } from '@/src/services/translation/capabilities';
+import TranslationFilterRulesEditor from '@/src/features/settings/ui/TranslationFilterRulesEditor.vue';
+import {
+  getTranslationFilterSite,
+  removeTranslationFilterSite,
+  upsertTranslationFilterSite,
+  type TranslationFilterRule,
+} from '@/src/core/translation/filters';
 
-type DrawerName = 'hover' | 'selection' | 'appearance' | 'image' | 'video';
+type DrawerName = 'hover' | 'selection' | 'appearance' | 'image' | 'video' | 'filter';
 type SettingsSection = 'settings-general' | 'settings-image-translation' | 'settings-shortcuts' | 'settings-services' | 'settings-sites' | 'settings-video' | 'settings-vocabulary';
 const CustomHotkeyInput = defineAsyncComponent(() => import('@/src/ui/components/CustomHotkeyInput.vue'));
 const config = ref(new Config());
@@ -619,6 +657,7 @@ const drawerSettingsSection: Record<DrawerName, SettingsSection> = {
   appearance: 'settings-general',
   image: 'settings-image-translation',
   video: 'settings-video',
+  filter: 'settings-sites',
 };
 const persistConfig = (value: unknown) => requestConfigSave(value, browser.runtime.sendMessage.bind(browser.runtime));
 
@@ -659,6 +698,12 @@ const currentSiteAlwaysTranslated = computed(() => currentSiteSupported.value
   && (config.value.autoTranslate || currentSiteRuleEnabled.value));
 const currentSiteExtensionDisabled = computed(() => currentSiteSupported.value
   && (config.value.disabledExtensionDomains ?? []).includes(currentSiteDomain.value));
+const currentSiteFilter = computed(() => currentSiteDomain.value
+  ? getTranslationFilterSite(config.value.translationFilter, currentSiteDomain.value)
+  : null);
+const currentSiteFilterRules = computed(() => currentSiteFilter.value?.rules ?? []);
+const currentSiteFilterRuleCount = computed(() => currentSiteFilterRules.value.length);
+const hasCurrentSiteFilter = computed(() => currentSiteFilter.value !== null);
 const currentSiteSwitchLabel = computed(() => currentSiteSupported.value
   ? currentSiteExtensionDisabled.value
     ? `${currentSiteDomain.value} 已禁用扩展，无法开启始终翻译`
@@ -717,7 +762,7 @@ const imageTranslationSummary = computed(() => !browserCapabilities.imageTransla
   ? '当前浏览器不可用'
   : config.value.disableImageTranslator ? '已关闭' : '悬停图片');
 const videoSummary = computed(() => config.value.videoTranslationEnabled ? `${videoServiceLabel.value} · YouTube` : '点击开启 · YouTube');
-const drawerTitle = computed(() => ({ hover: '鼠标悬停翻译设置', selection: '划词翻译设置', appearance: '译文显示设置', image: '图片翻译设置', video: '视频字幕设置' }[activeDrawer.value]));
+const drawerTitle = computed(() => ({ hover: '鼠标悬停翻译设置', selection: '划词翻译设置', appearance: '译文显示设置', image: '图片翻译设置', video: '视频字幕设置', filter: '当前网站内容过滤' }[activeDrawer.value]));
 const hoverChoices = [
   { value: 'Control', label: 'Ctrl' },
   { value: 'Alt', label: 'Alt / Option' },
@@ -950,6 +995,22 @@ function setPluginEnabled(enabled: boolean) {
 }
 
 function openDrawer(name: DrawerName) { activeDrawer.value = name; drawerVisible.value = true; }
+function setCurrentSiteFilterRules(rules: TranslationFilterRule[]) {
+  if (!currentSiteDomain.value) return;
+  config.value.translationFilter = rules.length > 0
+    ? upsertTranslationFilterSite(config.value.translationFilter, {
+      domain: currentSiteDomain.value,
+      rules,
+    })
+    : removeTranslationFilterSite(config.value.translationFilter, currentSiteDomain.value);
+}
+function removeCurrentSiteFilter() {
+  if (!currentSiteDomain.value) return;
+  config.value.translationFilter = removeTranslationFilterSite(
+    config.value.translationFilter,
+    currentSiteDomain.value,
+  );
+}
 async function openOptions(section?: SettingsSection) {
   if (section) {
     await browser.tabs.create({ url: `${browser.runtime.getURL('/options.html')}#${section}` });

@@ -38,4 +38,5 @@ export interface TranslationCandidate {
 export interface TranslationCoreOptions {
     url?: URL;
     adapters?: readonly TranslationSiteAdapter[];
+    filterConfig?: import('./filters').TranslationFilterConfig;
 }

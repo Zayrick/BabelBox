@@ -38,6 +38,7 @@ import {
 import pageStyles from './page.css?inline';
 import {browserCapabilities, type BrowserCapabilities} from '@/src/platform/browser/capabilities';
 import {setMainWorldBridgesEnabled} from './mainWorldBridgeLifecycle';
+import {configureCurrentTranslationFilters} from '@/src/core/translation/public';
 function shouldAutomaticallyTranslateCurrentPage(nextConfig: typeof config): boolean {
     return shouldAutoTranslatePage(window.location.href, {
         on: nextConfig.on,
@@ -64,6 +65,7 @@ function installPageStyles(ctx: ContentScriptContext): () => void {
 export async function startContentApp(ctx: ContentScriptContext,
     capabilities: BrowserCapabilities = browserCapabilities): Promise<void> {
     await configReady;
+    configureCurrentTranslationFilters(config.translationFilter);
     let currentPageSiteDisabled = isExtensionDisabledOnSite(
         window.location.href,
         config.disabledExtensionDomains,
@@ -237,6 +239,13 @@ export async function startContentApp(ctx: ContentScriptContext,
     }
 
     unsubscribeContentConfig = subscribeConfig((nextConfig) => {
+        const filterConfigChanged = configureCurrentTranslationFilters(nextConfig.translationFilter);
+        const wasFullPageTranslationActive = filterConfigChanged && isFullPageTranslationActive();
+        if (filterConfigChanged) {
+            cancelPendingHoverTranslation();
+            restoreOriginalContent();
+            cancelAllTranslations();
+        }
         const nextInputBoxConfigKey = inputBoxTranslationConfigKey(nextConfig);
         if (nextInputBoxConfigKey !== previousInputBoxConfigKey) {
             previousInputBoxConfigKey = nextInputBoxConfigKey;
@@ -258,6 +267,8 @@ export async function startContentApp(ctx: ContentScriptContext,
         }
         if (nextConfig.translationProgressPanelEnabled === true) void mountTranslationProgressPanel(ctx);
         else unmountTranslationProgressPanel();
+
+        if (wasFullPageTranslationActive) autoTranslateEnglishPage();
 
         const nextShouldAutomaticallyTranslate = shouldAutomaticallyTranslateCurrentPage(nextConfig);
         const shouldStartNow = !shouldAutomaticallyTranslate && nextShouldAutomaticallyTranslate;

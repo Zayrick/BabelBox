@@ -111,8 +111,11 @@ describe('offline whole-document translation corpus', () => {
         for (const id of expected.filter((value) => value !== 'pr-title')) {
             expect(
                 candidates.find((candidate) => fixtureId(candidate.element) === id),
-                `GitHub PR body region ${id} must be owned by the GitHub markdown adapter`,
-            ).toMatchObject({adapterId: 'github', reason: 'github-markdown-prose'});
+                `GitHub PR body region ${id} must be owned by the editable GitHub site filter`,
+            ).toMatchObject({
+                adapterId: 'translation-filter',
+                reason: 'site-filter:GitHub Markdown 正文',
+            });
         }
 
         const summary = document.querySelector('[data-testid="change-summary"]')!;

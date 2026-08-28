@@ -11,6 +11,10 @@ import {
 } from './dom';
 import type {HardGuardResult} from './dom';
 import {
+    createTranslationFilterPolicy,
+    type TranslationFilterPolicy,
+} from './filters';
+import {
     classifyGenericCandidate,
     getDirectInlineRuns,
     hasStructuralAncestor,
@@ -139,11 +143,13 @@ export function selectPreferredTranslationCandidate(
 export class TranslationCandidateCore {
     readonly url: URL;
     readonly adapters: readonly TranslationSiteAdapter[];
+    readonly filterPolicy: TranslationFilterPolicy;
     private readonly context: AdapterContext;
     private readonly discoveredCandidateChildBarriers = new WeakMap<Element, ReadonlySet<Element>>();
 
     constructor(options: TranslationCoreOptions = {}) {
         this.url = options.url ?? currentURL();
+        this.filterPolicy = createTranslationFilterPolicy(options.filterConfig, this.url);
         this.adapters = (options.adapters ?? [])
             .map((adapter, index) => ({adapter, index}))
             .filter(({adapter}) => {
@@ -166,6 +172,20 @@ export class TranslationCandidateCore {
         const cached = evaluationContext?.adapterDecisions.get(element);
         if (cached) return cached;
 
+        const filterDecision = this.filterPolicy.evaluateElement(element);
+        if (filterDecision.action === 'include') {
+            const result: AdapterDecisionResult = {
+                decision: {
+                    kind: 'force-target',
+                    reason: filterDecision.reason,
+                    atomic: true,
+                },
+                adapterId: 'translation-filter',
+            };
+            evaluationContext?.adapterDecisions.set(element, result);
+            return result;
+        }
+
         for (const adapter of this.adapters) {
             try {
                 const decision = adapter.decide(element, this.context);
@@ -183,21 +203,29 @@ export class TranslationCandidateCore {
         return result;
     }
 
-    shouldStayOriginal = (element: Element): boolean => this.adapters.some((adapter) => {
-        try {
-            return adapter.shouldStayOriginal?.(element, this.context) === true;
-        } catch {
-            return false;
+    shouldStayOriginal = (element: Element): boolean => {
+        let depth = 0;
+        for (const ancestor of composedAncestors(element)) {
+            depth += 1;
+            if (depth > maxComposedAncestorDepth || this.filterPolicy.isExcludedSelf(ancestor)) return true;
         }
-    });
+        return this.adapters.some((adapter) => {
+            try {
+                return adapter.shouldStayOriginal?.(element, this.context) === true;
+            } catch {
+                return false;
+            }
+        });
+    };
 
-    shouldIgnoreMutation = (element: Element): boolean => this.adapters.some((adapter) => {
-        try {
-            return adapter.shouldIgnoreMutation?.(element, this.context) === true;
-        } catch {
-            return false;
-        }
-    });
+    shouldIgnoreMutation = (element: Element): boolean =>
+        this.shouldStayOriginal(element) || this.adapters.some((adapter) => {
+            try {
+                return adapter.shouldIgnoreMutation?.(element, this.context) === true;
+            } catch {
+                return false;
+            }
+        });
 
     private hasAdapterPrunedAncestor(
         element: Element,
@@ -237,7 +265,7 @@ export class TranslationCandidateCore {
         // than evaluating or persisting a partial prefix.
         if (current) return;
 
-        const ownGuards = chain.map((item) => evaluateElementHardGuard(item));
+        const ownGuards = chain.map((item) => evaluateElementHardGuard(item, this.filterPolicy));
         let inheritedGuard: HardGuardResult = {prune: false};
         for (let index = chain.length - 1; index >= 0; index -= 1) {
             const item = chain[index]!;
@@ -258,9 +286,9 @@ export class TranslationCandidateCore {
         element: Element,
         evaluationContext?: ResolutionEvaluationContext,
     ): HardGuardResult {
-        if (!evaluationContext) return evaluateHardGuard(element);
+        if (!evaluationContext) return evaluateHardGuard(element, this.filterPolicy);
         this.primeResolutionAncestry(element, evaluationContext);
-        return evaluationContext.hardGuards.get(element) ?? evaluateHardGuard(element);
+        return evaluationContext.hardGuards.get(element) ?? evaluateHardGuard(element, this.filterPolicy);
     }
 
     private isExtensionElementForResolution(
@@ -631,8 +659,8 @@ export class TranslationCandidateCore {
                         textProtectionCache,
                     );
                     const hardGuard = frame.checkAncestors
-                        ? evaluateHardGuard(frame.element)
-                        : evaluateElementHardGuard(frame.element);
+                        ? evaluateHardGuard(frame.element, this.filterPolicy)
+                        : evaluateElementHardGuard(frame.element, this.filterPolicy);
                     const ownAdapter = this.adapterDecision(frame.element);
                     frame.ownAdapter = ownAdapter;
                     frame.shadowRoot = frame.element.shadowRoot;

@@ -1504,16 +1504,17 @@ function flushMutationRescans(session: FullPageSession): void {
 function observeFullPageRoot(session: FullPageSession, root: Node): void {
     if (session.roots.has(root)) return;
     session.roots.add(root);
+    const observedAttributes = getCurrentTranslationCore().filterPolicy?.observedAttributes ?? [
+        "style", "class", "id", "role", "hidden", "inert", "contenteditable",
+        "aria-hidden", "translate", "data-notranslate",
+    ];
     session.mutationObserver.observe(root, {
         childList: true,
         subtree: true,
         characterData: true,
         characterDataOldValue: true,
         attributes: true,
-        attributeFilter: [
-            "style", "class", "role", "hidden", "inert", "contenteditable",
-            "aria-hidden", "translate", "data-notranslate",
-        ],
+        attributeFilter: [...observedAttributes],
     });
 }
 
@@ -1545,11 +1546,12 @@ function isCoreProtectedDescendantMutation(
     if (!element || isTranslationArtifact(element)) return false;
     const statefulTarget = resolveStatefulMutationTarget(element);
     if (statefulTarget === element) return false;
-    if (evaluateHardGuard(element).reason === 'ancestor-depth-limit') return true;
+    if (evaluateHardGuard(element, core.filterPolicy).reason === 'ancestor-depth-limit') return true;
 
     let current: Element | null = includeSelf ? element : getComposedParent(element);
     while (current && current !== statefulTarget) {
-        if (isProtectedDescendantElement(current) || core.shouldStayOriginal(current)) return true;
+        if (isProtectedDescendantElement(current, false, core.filterPolicy) ||
+            core.shouldStayOriginal(current)) return true;
         current = getComposedParent(current);
     }
     return false;

@@ -604,10 +604,10 @@ describe('translation candidate core', () => {
         expect(full?.nodes).toBeUndefined();
         expect(candidates.filter((candidate) => protectedNodes.includes(candidate.element))).toEqual([]);
         expect(core.resolve(document.querySelector('#glyph'))?.element).toBe(prose);
-        expect(evaluateHardGuard(document.querySelector('#glyph')!).reason).toBe('math-renderer');
-        expect(evaluateHardGuard(document.querySelector('#mathjax-v3 span')!).reason).toBe('math-renderer');
-        expect(evaluateHardGuard(document.querySelector('#katex span')!).reason).toBe('math-renderer');
-        expect(evaluateHardGuard(document.querySelector('#tex-source')!).reason).toBe('protected-tag:script');
+        expect(evaluateHardGuard(document.querySelector('#glyph')!).reason).toBe('global-filter:数学公式渲染结果');
+        expect(evaluateHardGuard(document.querySelector('#mathjax-v3 span')!).reason).toBe('global-filter:数学公式渲染结果');
+        expect(evaluateHardGuard(document.querySelector('#katex span')!).reason).toBe('global-filter:数学公式渲染结果');
+        expect(evaluateHardGuard(document.querySelector('#tex-source')!).reason).toBe('global-filter:脚本、表单与媒体');
 
         const readable = extractTranslationText(prose, core.shouldStayOriginal).replace(/\s+/gu, ' ').trim();
         const liveSlots = collectLiveTranslationTextSlots(prose, core.shouldStayOriginal);
@@ -839,7 +839,10 @@ describe('translation candidate core', () => {
         const title = document.querySelector('#pr-title')!;
         const candidate = core.discover(document).find((item) => item.element === title);
 
-        expect(candidate).toMatchObject({adapterId: 'github', reason: 'github-markdown-title'});
+        expect(candidate).toMatchObject({
+            adapterId: 'translation-filter',
+            reason: 'site-filter:GitHub Markdown 标题',
+        });
         expect(core.resolve(title)?.element).toBe(title);
     });
 
@@ -862,7 +865,7 @@ describe('translation candidate core', () => {
 
         expect(core.discover(document).map((candidate) => candidate.element.id)).toEqual(['tweet-text']);
         expect(core.discover(document).find((candidate) => candidate.element === tweetText))
-            .toMatchObject({adapterId: 'x', reason: 'x-post-text'});
+            .toMatchObject({adapterId: 'translation-filter', reason: 'site-filter:X 帖子正文'});
         expect(core.resolve(userName.querySelector('span')?.firstChild)).toBeNull();
         expect(core.resolve(tweetText.firstChild)?.element).toBe(tweetText);
     });
@@ -876,7 +879,7 @@ describe('translation candidate core', () => {
         `, 'https://github.com/immersive-translate/immersive-translate/pulls');
         const candidates = [...core.discoverSteps(document)]
             .flatMap((step) => step.candidate ? [step.candidate] : []);
-        const explicit = candidates.find((candidate) => candidate.adapterId === 'github')!;
+        const explicit = candidates.find((candidate) => candidate.adapterId === 'translation-filter')!;
         const generic = candidates.find((candidate) =>
             candidate.nodes?.includes(document.querySelector('#pr-title') as ChildNode));
         const genericEquivalent = {...explicit, adapterId: undefined, reason: 'generic-inline-run'};
@@ -886,7 +889,10 @@ describe('translation candidate core', () => {
         expect(selectPreferredTranslationCandidate(explicit, genericEquivalent)).toBe(explicit);
         expect(selectPreferredTranslationCandidate(genericEquivalent, explicit)).toBe(explicit);
         expect(core.discover(document).find((candidate) => candidate.element.id === 'pr-title'))
-            .toMatchObject({adapterId: 'github', reason: 'github-markdown-title'});
+            .toMatchObject({
+                adapterId: 'translation-filter',
+                reason: 'site-filter:GitHub Markdown 标题',
+            });
     });
 
     it('keeps ordinary inline siblings when an atomic target is the only barrier', () => {
@@ -903,7 +909,10 @@ describe('translation candidate core', () => {
         const inlineRuns = candidates.filter((candidate) => candidate.reason === 'generic-inline-run');
 
         expect(candidates.find((candidate) => candidate.element === title))
-            .toMatchObject({adapterId: 'github', reason: 'github-markdown-title'});
+            .toMatchObject({
+                adapterId: 'translation-filter',
+                reason: 'site-filter:GitHub Markdown 标题',
+            });
         expect(inlineRuns.map((candidate) => candidate.nodes)).toEqual([[before], [after]]);
         expect(core.resolve(before)?.nodes).toEqual([before]);
         expect(core.resolve(title)?.element).toBe(title);
@@ -962,7 +971,7 @@ describe('translation candidate core', () => {
         const candidates = core.discover(document);
         const ids = candidates.map((item) => item.element.id);
         expect(ids).toEqual(expect.arrayContaining(['change-heading', 'change-item', 'change-reason']));
-        expect(candidates.filter((item) => item.adapterId === 'github')).toHaveLength(3);
+        expect(candidates.filter((item) => item.adapterId === 'translation-filter')).toHaveLength(3);
         expect(core.shouldStayOriginal(document.querySelector('#change-heading')!)).toBe(false);
         expect(core.shouldIgnoreMutation(document.querySelector('#change-heading')!)).toBe(false);
     });

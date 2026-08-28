@@ -1,20 +1,22 @@
 import type {TranslationSiteAdapter} from './types';
-import {githubAdapter} from './adapters/github';
-import {xAdapter} from './adapters/x';
-import {redditAdapter} from './adapters/reddit';
-import {hackerNewsAdapter} from './adapters/hackernews';
-import {youtubeAdapter} from './adapters/youtube';
-import {gnuManualAdapter} from './adapters/gnu';
-import {learnOpenGLAdapter} from './adapters/learnopengl';
+import {createDeclarativeAdapter} from './adapters/declarative';
 
 const declaredAdapters = [
-    githubAdapter,
-    xAdapter,
-    redditAdapter,
-    hackerNewsAdapter,
-    youtubeAdapter,
-    gnuManualAdapter,
-    learnOpenGLAdapter,
+    // Reddit updates these live regions at high frequency. This adapter only
+    // controls mutation scheduling; all translate/exclude selectors live in
+    // the user-editable default filter configuration.
+    createDeclarativeAdapter({
+        id: 'reddit-runtime',
+        priority: 390,
+        hosts: [
+            {hostname: 'reddit.com', includeSubdomains: true},
+            {hostname: 'redd.it', includeSubdomains: true},
+        ],
+        mutationExclude: [{
+            selector: ['shreddit-status', '[aria-live]'],
+            reason: 'reddit-controlled-mutation',
+        }],
+    }),
 ] as const satisfies readonly TranslationSiteAdapter[];
 
 export const defaultTranslationAdapters: readonly TranslationSiteAdapter[] =
