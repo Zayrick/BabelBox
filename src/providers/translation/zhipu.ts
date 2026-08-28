@@ -2,7 +2,6 @@ import {method, urls} from "@/src/core/config/constants";
 import {services} from "@/src/core/config/catalog";
 import {commonMsgTemplate} from '@/src/services/translation/templates';
 import {config} from "@/src/services/config/store";
-import {isApiKeyRequired} from "@/src/core/config/validation";
 import {createHttpStatusError, readJsonResponse} from '@/src/platform/http/errors';
 import {runtimeFetch} from '@/src/platform/http/runtime';
 import {getTranslationProviderConfig} from '@/src/services/translation/requestSnapshot';
@@ -22,7 +21,7 @@ async function zhipu(message: any) {
     let secret = cached?.apiKey === token && cached.expiration > Date.now()
         ? cached.secret
         : undefined;
-    if (!token?.trim() && !isApiKeyRequired(service, current)) {
+    if (!token?.trim()) {
         secret = undefined;
         jwtCache.delete(service);
     } else if (!secret) {

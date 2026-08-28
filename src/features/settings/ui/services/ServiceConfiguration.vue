@@ -24,11 +24,6 @@
     :data-service-configuration-service="instanceId"
     :data-custom-service-configuration="presentation.fields.customService ? 'true' : 'false'"
   >
-    <div v-if="credentialWarning" class="credential-warning" role="alert">
-      <TriangleAlert class="status-icon" aria-hidden="true" />
-      <strong>配置提醒</strong>
-      <span>{{ credentialWarning }}</span>
-    </div>
     <div class="subsection-heading">
       <div>
         <strong>连接参数</strong>
@@ -57,27 +52,11 @@
       </el-row>
     </template>
 
-    <div v-if="presentation.fields.apiKeyPolicy" class="api-key-policy">
-      <div class="api-key-policy-copy">
-        <div class="api-key-policy-title">
-          <strong>API Key 鉴权</strong>
-          <el-tooltip class="box-item" effect="dark" content="关闭后，当前模型可在没有 API Key 时发起请求。" placement="top" :show-after="500">
-            <el-icon aria-label="API Key 鉴权说明"><InfoFilled /></el-icon>
-          </el-tooltip>
-          <span class="api-key-policy-status" :class="{ 'is-off': !requireApiKey }">
-            {{ requireApiKey ? '需要' : '免 Key' }}
-          </span>
-        </div>
-        <small class="api-key-policy-model">{{ configuredModelId || '未选择' }}</small>
-      </div>
-      <el-switch v-model="requireApiKey" aria-label="当前模型是否需要 API Key" size="small" />
-    </div>
-
     <el-row v-if="presentation.fields.token" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner">
-        <SettingsHelpLabel content="API 访问令牌默认仅保存在当前浏览器会话。只有在配置管理中明确开启后，才会以明文写入扩展本地存储并跨重启保留。获取方式请参考对应服务的官方文档；翻译服务为 ollama 时，token 可为任意值">访问令牌</SettingsHelpLabel>
+        <SettingsHelpLabel content="可选。留空时不发送鉴权信息；填写后默认仅保存在当前浏览器会话。只有在配置管理中明确开启后，才会以明文写入扩展本地存储并跨重启保留。">访问令牌</SettingsHelpLabel>
       </el-col>
-      <el-col :span="12"><el-input v-model="apiKey" type="password" show-password placeholder="请输入API访问令牌" /></el-col>
+      <el-col :span="12"><el-input v-model="apiKey" type="password" show-password placeholder="可选；留空时不发送鉴权信息" /></el-col>
     </el-row>
     <p v-if="presentation.fields.minimaxRegion && minimaxKeyMismatch" class="minimax-key-note is-warning">
       {{ minimaxKeyMismatch }}
@@ -160,29 +139,47 @@
 
     <el-row v-if="presentation.fields.akSkCredentials" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="服务商提供的访问密钥。" :show-after="300">API Key</SettingsHelpLabel></el-col>
-      <el-col :span="12"><el-input v-model="config.ak" placeholder="请输入Access Key" /></el-col>
+      <el-col :span="12">
+        <el-input v-model="config.ak" :class="{ 'input-error': !config.ak.trim() }" placeholder="请输入 Access Key" />
+        <div v-if="!config.ak.trim()" class="error-text">Access Key 为必填项</div>
+      </el-col>
     </el-row>
     <el-row v-if="presentation.fields.akSkCredentials" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="服务商提供的私密密钥，请妥善保管。" :show-after="300">Secret Key</SettingsHelpLabel></el-col>
-      <el-col :span="12"><el-input v-model="config.sk" type="password" placeholder="请输入Secret Key" /></el-col>
+      <el-col :span="12">
+        <el-input v-model="config.sk" :class="{ 'input-error': !config.sk.trim() }" type="password" placeholder="请输入 Secret Key" />
+        <div v-if="!config.sk.trim()" class="error-text">Secret Key 为必填项</div>
+      </el-col>
     </el-row>
 
     <el-row v-if="presentation.fields.youdaoCredentials" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="有道翻译服务提供的 App Key。" :show-after="300">App Key</SettingsHelpLabel></el-col>
-      <el-col :span="12"><el-input v-model="appKey" placeholder="有道 AppKey" /></el-col>
+      <el-col :span="12">
+        <el-input v-model="appKey" :class="{ 'input-error': !appKey.trim() }" placeholder="有道 App Key" />
+        <div v-if="!appKey.trim()" class="error-text">App Key 为必填项</div>
+      </el-col>
     </el-row>
     <el-row v-if="presentation.fields.youdaoCredentials" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="有道翻译服务提供的 App Secret。" :show-after="300">App Secret</SettingsHelpLabel></el-col>
-      <el-col :span="12"><el-input v-model="appSecret" type="password" show-password placeholder="有道 AppSecret" /></el-col>
+      <el-col :span="12">
+        <el-input v-model="appSecret" :class="{ 'input-error': !appSecret.trim() }" type="password" show-password placeholder="有道 App Secret" />
+        <div v-if="!appSecret.trim()" class="error-text">App Secret 为必填项</div>
+      </el-col>
     </el-row>
 
     <el-row v-if="presentation.fields.tencentCredentials" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="腾讯云翻译服务提供的 SecretId。" :show-after="300">Secret ID</SettingsHelpLabel></el-col>
-      <el-col :span="12"><el-input v-model="secretId" placeholder="腾讯云 SecretId" /></el-col>
+      <el-col :span="12">
+        <el-input v-model="secretId" :class="{ 'input-error': !secretId.trim() }" placeholder="腾讯云 SecretId" />
+        <div v-if="!secretId.trim()" class="error-text">Secret ID 为必填项</div>
+      </el-col>
     </el-row>
     <el-row v-if="presentation.fields.tencentCredentials" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="腾讯云翻译服务提供的 SecretKey。" :show-after="300">Secret Key</SettingsHelpLabel></el-col>
-      <el-col :span="12"><el-input v-model="secretKey" type="password" show-password placeholder="腾讯云 SecretKey" /></el-col>
+      <el-col :span="12">
+        <el-input v-model="secretKey" :class="{ 'input-error': !secretKey.trim() }" type="password" show-password placeholder="腾讯云 SecretKey" />
+        <div v-if="!secretKey.trim()" class="error-text">Secret Key 为必填项</div>
+      </el-col>
     </el-row>
 
     <el-row v-if="presentation.fields.robotId" class="margin-bottom margin-left-2em">
@@ -260,22 +257,15 @@
 import { computed, onBeforeUnmount, ref, toRef, watch } from 'vue'
 import {
   CircleCheck,
-  CircleHelp as InfoFilled,
   CircleX,
   LoaderCircle,
   PlugZap,
   RotateCcw,
-  TriangleAlert,
 } from '@lucide/vue'
 import type { Config, TranslationServiceCredential } from '@/src/core/config/model'
 import type { TranslationServiceInstance } from '@/src/core/config/translationServices'
 import { defaultOption, options as optionConfig, servicesType } from '@/src/core/config/catalog'
 import { isValidCustomBody } from '@/src/core/config/customBody'
-import {
-  getApiKeyRequirementKey,
-  getMissingCredentialMessage,
-  isApiKeyRequired,
-} from '@/src/core/config/validation'
 import type {ServiceConfigurationPresentation} from '@/src/features/settings/model/serviceConfiguration'
 import {browser} from 'wxt/browser'
 import { requestConfigSave } from '@/src/services/config/store'
@@ -349,7 +339,6 @@ const instanceModelId = computed({
     else config.value.model[service.value] = value
   },
 })
-const configuredModelId = computed(() => instanceModelId.value)
 const instanceEndpoint = computed({
   get: () => {
     const selected = instance.value
@@ -478,17 +467,6 @@ const deepseekThinkingMode = computed({
     else config.value.deepseekThinkingMode = value
   },
 })
-
-const requireApiKey = computed({
-  get: () => instance.value?.requireApiKey ?? isApiKeyRequired(instanceId.value, config.value),
-  set: (value: boolean) => {
-    if (instance.value) instance.value.requireApiKey = value
-    else config.value.requireApiKey[getApiKeyRequirementKey(instanceId.value, config.value)] = value
-  },
-})
-const credentialWarning = computed(
-  () => getMissingCredentialMessage(instanceId.value, config.value),
-)
 
 const minimaxKeyKind = computed(() => {
   const token = apiKey.value.trim()
@@ -634,21 +612,17 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.credential-warning {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin: 0 0 12px;
-  padding: 10px 12px;
-  border: 1px solid #f3d19e;
-  border-radius: 10px;
-  color: #8a5a00;
-  background: #fdf6ec;
-  font-size: 12px;
-  line-height: 1.5;
+.input-error :deep(.el-input__wrapper) {
+  box-shadow: 0 0 0 1px var(--el-color-danger) inset;
 }
 
-.status-icon,
+.error-text {
+  margin-top: 4px;
+  color: var(--el-color-danger);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .button-icon {
   width: 16px;
   height: 16px;
@@ -841,85 +815,4 @@ onBeforeUnmount(() => {
   }
 }
 
-.credential-warning strong {
-  flex: 0 0 auto;
-  font-weight: 750;
-}
-
-.api-key-policy {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin: 0 0 8px;
-  padding: 10px 12px;
-  border: 1px solid #edf0f5;
-  border-radius: 10px;
-  background: #fbfcfe;
-  transition: border-color 160ms ease, background 160ms ease;
-}
-
-.api-key-policy:hover {
-  border-color: #e5b4c2;
-  background: #fff;
-}
-
-.api-key-policy-copy {
-  min-width: 0;
-}
-
-.api-key-policy-title {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  min-width: 0;
-  color: #172033;
-  font-size: 13px;
-}
-
-.api-key-policy-title strong {
-  font-weight: 650;
-}
-
-.api-key-policy-title .el-icon {
-  color: #8b93a4;
-  font-size: 13px;
-}
-
-.api-key-policy-status {
-  display: inline-flex;
-  align-items: center;
-  margin-left: 3px;
-  padding: 2px 7px;
-  border: 1px solid #f4c5d2;
-  border-radius: 6px;
-  color: #c52f58;
-  background: #fff2f5;
-  font-size: 10px;
-  font-weight: 750;
-  line-height: 1.3;
-}
-
-.api-key-policy-status.is-off {
-  border-color: #dfe3eb;
-  color: #687286;
-  background: #f5f6f8;
-}
-
-.api-key-policy-model {
-  display: block;
-  max-width: 100%;
-  margin-top: 4px;
-  overflow: hidden;
-  color: #909399;
-  font-size: 11px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.api-key-policy :deep(.el-switch) {
-  flex: 0 0 auto;
-  --el-switch-on-color: #ef4776;
-  --el-switch-off-color: #cfd5df;
-}
 </style>

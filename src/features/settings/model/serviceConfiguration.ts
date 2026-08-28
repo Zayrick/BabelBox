@@ -12,7 +12,6 @@ export type ServiceConfigurationMode =
   | 'unavailable'
 
 export interface ServiceConfigurationFieldVisibility {
-  apiKeyPolicy: boolean
   token: boolean
   minimaxRegion: boolean
   mimoRegion: boolean
@@ -72,7 +71,6 @@ export function createServiceConfigurationPresentation(
   const isAI = servicesType.isAI(service)
 
   const fields: ServiceConfigurationFieldVisibility = {
-    apiKeyPolicy: isAI && showToken,
     token: showToken,
     minimaxRegion: service === services.minimax,
     mimoRegion: service === services.mimo,

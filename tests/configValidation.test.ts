@@ -1,39 +1,27 @@
 import { describe, expect, it } from 'vitest';
 
-import {getApiKeyRequirementKey, getMissingCredentialMessage} from '@/src/core/config/validation';
+import {getMissingCredentialMessage} from '@/src/core/config/validation';
 import {services} from '@/src/core/config/catalog';
 
 describe('翻译服务凭据校验', () => {
-    it('提示需要 API Key 的服务填写访问令牌', () => {
-        expect(getMissingCredentialMessage(services.openai, { token: {} })).toContain('API Key');
-        expect(getMissingCredentialMessage(services.openai, { token: { [services.openai]: '  ' } })).toContain('API Key');
+    it('API Key 为空时不阻止请求，由服务端连接测试给出结果', () => {
+        expect(getMissingCredentialMessage(services.openai, { token: {} })).toBeNull();
+        expect(getMissingCredentialMessage(services.openai, { token: { [services.openai]: '  ' } })).toBeNull();
         expect(getMissingCredentialMessage(services.openai, { token: { [services.openai]: 'configured' } })).toBeNull();
     });
 
-    it('明确指出 DeepSeek 缺少 API Key', () => {
-        expect(getMissingCredentialMessage(services.deepseek, { token: {} })).toBe(
-            'DeepSeek 需要 API Key（访问令牌），当前尚未配置；请先在设置中填写，再开始翻译。',
-        );
+    it('DeepSeek API Key 为空时同样允许发起无鉴权请求', () => {
+        expect(getMissingCredentialMessage(services.deepseek, { token: {} })).toBeNull();
         expect(getMissingCredentialMessage(services.deepseek, { token: { [services.deepseek]: 'configured' } })).toBeNull();
     });
 
-    it('允许按当前模型关闭 API Key 校验', () => {
-        const config = {
-            model: { [services.deepseek]: 'deepseek-v4-flash' },
-            requireApiKey: { [`${services.deepseek}:deepseek-v4-flash`]: false },
-            token: {},
-        };
-        expect(getApiKeyRequirementKey(services.deepseek, config)).toBe('deepseek:deepseek-v4-flash');
-        expect(getMissingCredentialMessage(services.deepseek, config)).toBeNull();
-    });
-
-    it('切换模型后不会复用另一个模型的免 Key设置', () => {
+    it('旧版 API Key 校验配置不再改变请求前校验', () => {
         const config = {
             model: { [services.deepseek]: 'deepseek-v4-pro' },
             requireApiKey: { [`${services.deepseek}:deepseek-v4-flash`]: false },
             token: {},
         };
-        expect(getMissingCredentialMessage(services.deepseek, config)).toContain('API Key');
+        expect(getMissingCredentialMessage(services.deepseek, config)).toBeNull();
     });
 
     it('保留 DeepLX 可选令牌的行为', () => {

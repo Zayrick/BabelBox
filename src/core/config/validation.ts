@@ -53,16 +53,6 @@ export function getMissingCredentialMessage(
     const serviceLabel = getServiceLabel(service, config);
     const credential = config.serviceCredentials?.[service];
     const legacyProviderConfig = provider === service;
-    const apiKey = credential?.apiKey
-        ?? config.token?.[service]
-        ?? (legacyProviderConfig ? config.token?.[provider] : undefined);
-
-    if (servicesType.isUseToken(provider) && provider !== services.deeplx && isApiKeyRequired(service, config)) {
-        if (!apiKey?.trim()) {
-            return `${serviceLabel} 需要 API Key（访问令牌），当前尚未配置；请先在设置中填写，再开始翻译。`;
-        }
-    }
-
     const appKey = credential?.appKey || (legacyProviderConfig ? config.youdaoAppKey : '');
     const appSecret = credential?.appSecret || (legacyProviderConfig ? config.youdaoAppSecret : '');
     if (provider === services.youdao && (!appKey?.trim() || !appSecret?.trim())) {

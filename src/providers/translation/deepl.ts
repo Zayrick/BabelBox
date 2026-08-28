@@ -5,6 +5,7 @@ import {getTranslationLanguages} from '@/src/services/translation/languages';
 import {createHttpStatusError, readJsonResponse} from '@/src/platform/http/errors';
 import {runtimeFetch} from '@/src/platform/http/runtime';
 import {getTranslationProviderConfig} from '@/src/services/translation/requestSnapshot';
+import {appendOptionalHeader} from './auth';
 
 async function deepl(message: any) {
     const current = getTranslationProviderConfig(message, config);
@@ -16,12 +17,14 @@ async function deepl(message: any) {
     // 判断是否使用代理
     let url: string = current.proxy[service] ? current.proxy[service] : urls[services.deepL]
 
+    const headers = new Headers({'Content-Type': 'application/json'});
+    appendOptionalHeader(headers, 'Authorization', current.token[service]
+        ? `DeepL-Auth-Key ${current.token[service]}`
+        : undefined);
+
     const resp = await runtimeFetch(url, {
         method: method.POST,
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'DeepL-Auth-Key ' + current.token[service]
-        },
+        headers,
         body: JSON.stringify({
             text: [message.origin],
             target_lang: targetLang,

@@ -62,25 +62,21 @@
           <small>默认使用“模型 ID - 服务商”，也可以自定义。</small>
         </label>
 
-        <div v-if="usesToken" class="api-key-row">
-          <label class="form-field">
-            <span>API Key / 访问令牌</span>
-            <el-input v-model="draft.credential.apiKey" type="password" show-password autocomplete="off" placeholder="输入此服务实例使用的凭据" />
-          </label>
-          <label class="key-policy">
-            <span>需要 API Key</span>
-            <el-switch v-model="draft.requireApiKey" size="small" />
-          </label>
-        </div>
+        <label v-if="usesToken" class="form-field">
+          <span>API Key / 访问令牌（可选）</span>
+          <el-input v-model="draft.credential.apiKey" type="password" show-password autocomplete="off" placeholder="留空时不发送鉴权信息" />
+        </label>
 
         <template v-if="usesTencentCredentials">
           <label class="form-field">
             <span>Secret ID</span>
-            <el-input v-model="draft.credential.secretId" autocomplete="off" />
+            <el-input v-model="draft.credential.secretId" :class="{ 'input-error': !draft.credential.secretId.trim() }" autocomplete="off" />
+            <small v-if="!draft.credential.secretId.trim()" class="error-text">Secret ID 为必填项</small>
           </label>
           <label class="form-field">
             <span>Secret Key</span>
-            <el-input v-model="draft.credential.secretKey" type="password" show-password autocomplete="off" />
+            <el-input v-model="draft.credential.secretKey" :class="{ 'input-error': !draft.credential.secretKey.trim() }" type="password" show-password autocomplete="off" />
+            <small v-if="!draft.credential.secretKey.trim()" class="error-text">Secret Key 为必填项</small>
           </label>
         </template>
 
@@ -171,7 +167,6 @@ const draft = reactive({
   endpoint: '',
   customBody: '',
   robotId: '',
-  requireApiKey: true,
   credential: emptyCredential(),
 })
 const providerQuery = ref('')
@@ -212,7 +207,6 @@ function resetDraft(): void {
   draft.endpoint = ''
   draft.customBody = ''
   draft.robotId = ''
-  draft.requireApiKey = true
   Object.assign(draft.credential, emptyCredential())
   providerQuery.value = ''
 }
@@ -225,7 +219,6 @@ function selectProvider(provider: string): void {
   draft.endpoint = provider === services.custom ? defaultOption.custom : ''
   draft.customBody = ''
   draft.robotId = ''
-  draft.requireApiKey = true
   Object.assign(draft.credential, emptyCredential())
 }
 
@@ -249,7 +242,7 @@ function submit(): void {
     endpoint: draft.endpoint.trim(),
     customBody: draft.customBody,
     robotId: draft.robotId.trim(),
-    requireApiKey: draft.requireApiKey,
+    requireApiKey: false,
   })
   emit('add', {instance, credential: {...draft.credential}})
   open.value = false
@@ -273,8 +266,8 @@ function submit(): void {
 .add-service-form header strong { color: #172033; font-size: 18px; }
 .add-service-form header small, .form-field small { margin-top: 3px; color: #8891a2; font-size: 11px; line-height: 1.5; }
 .form-field { display: grid; gap: 6px; color: #4d586d; font-size: 12px; font-weight: 650; }
-.api-key-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 12px; }
-.key-policy { display: flex; align-items: center; gap: 8px; min-height: 32px; color: #657086; font-size: 11px; }
+.input-error :deep(.el-input__wrapper) { box-shadow: 0 0 0 1px var(--el-color-danger) inset; }
+.form-field .error-text { margin-top: 0; color: var(--el-color-danger); }
 details { padding-top: 4px; border-top: 1px solid #eceef3; }
 summary { padding: 10px 0; color: #b62b52; font-size: 12px; font-weight: 750; cursor: pointer; }
 .provider-empty { display: grid; color: #9199a9; place-content: center; justify-items: center; gap: 7px; }
@@ -284,6 +277,5 @@ summary { padding: 10px 0; color: #b62b52; font-size: 12px; font-weight: 750; cu
   .add-service-layout { grid-template-columns: 1fr; }
   .provider-picker { border-right: 0; border-bottom: 1px solid #e5e8ef; }
   .provider-list { max-height: 180px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .api-key-row { grid-template-columns: 1fr; }
 }
 </style>
