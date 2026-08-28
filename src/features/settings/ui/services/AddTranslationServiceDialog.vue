@@ -38,6 +38,17 @@
           </div>
         </header>
 
+        <label class="form-field">
+          <span>服务名称</span>
+          <el-input
+            :model-value="draft.name"
+            maxlength="80"
+            placeholder="用于服务列表和下拉菜单"
+            @update:model-value="setCustomName"
+          />
+          <small>默认使用“模型 ID - 服务商”，也可以自定义。</small>
+        </label>
+
         <label v-if="usesModel" class="form-field">
           <span>模型 ID</span>
           <el-select
@@ -49,17 +60,6 @@
           >
             <el-option v-for="model in modelSuggestions" :key="model" :label="model" :value="model" />
           </el-select>
-        </label>
-
-        <label class="form-field">
-          <span>服务名称</span>
-          <el-input
-            :model-value="draft.name"
-            maxlength="80"
-            placeholder="用于服务列表和下拉菜单"
-            @update:model-value="setCustomName"
-          />
-          <small>默认使用“模型 ID - 服务商”，也可以自定义。</small>
         </label>
 
         <label v-if="usesToken" class="form-field">
@@ -91,13 +91,7 @@
           <el-input v-model.trim="draft.robotId" autocomplete="off" placeholder="输入 Coze Bot ID" />
         </label>
 
-        <details>
-          <summary>高级请求参数</summary>
-          <label class="form-field">
-            <span>自定义请求体</span>
-            <el-input v-model="draft.customBody" type="textarea" :rows="3" placeholder='可选 JSON 对象，例如 {"temperature":0}' />
-          </label>
-        </details>
+        <AdvancedRequestParameters v-model="draft.customBody" />
       </section>
 
       <div v-else class="provider-empty">
@@ -118,6 +112,7 @@
 import {computed, reactive, ref, watch} from 'vue'
 import {Check, Plus, Search} from '@lucide/vue'
 import ServiceIcon from '@/src/ui/components/ServiceIcon.vue'
+import AdvancedRequestParameters from './AdvancedRequestParameters.vue'
 import {
   customModelString,
   defaultModels,
@@ -268,8 +263,6 @@ function submit(): void {
 .form-field { display: grid; gap: 6px; color: #4d586d; font-size: 12px; font-weight: 650; }
 .input-error :deep(.el-input__wrapper) { box-shadow: 0 0 0 1px var(--el-color-danger) inset; }
 .form-field .error-text { margin-top: 0; color: var(--el-color-danger); }
-details { padding-top: 4px; border-top: 1px solid #eceef3; }
-summary { padding: 10px 0; color: #b62b52; font-size: 12px; font-weight: 750; cursor: pointer; }
 .provider-empty { display: grid; color: #9199a9; place-content: center; justify-items: center; gap: 7px; }
 .provider-empty strong { color: #536075; font-size: 15px; }
 .provider-empty span { font-size: 11px; }

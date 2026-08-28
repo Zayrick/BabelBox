@@ -240,13 +240,12 @@
       <el-col :span="12"><el-select v-model="deepseekThinkingMode" placeholder="请选择思考模式"><el-option class="select-left" v-for="item in options.deepseekThinkingMode" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-col>
     </el-row>
 
-    <el-row v-if="presentation.fields.customBody" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="填写要合并到翻译请求中的 JSON 参数对象。" :show-after="300">自定义请求体</SettingsHelpLabel></el-col>
-      <el-col :span="12">
-        <el-input v-model="customBody" :class="{ 'input-error': !isValidCustomBody(customBody) }" placeholder='例如：{"thinking": {"type": "disabled"}}' />
-        <div v-if="!isValidCustomBody(customBody)" class="error-text">请输入合法的 JSON 对象，否则该配置将被忽略</div>
-      </el-col>
-    </el-row>
+    <AdvancedRequestParameters
+      v-if="presentation.fields.customBody"
+      v-model="customBody"
+      :invalid="!isValidCustomBody(customBody)"
+      invalid-message="请输入合法的 JSON 对象，否则该配置将被忽略"
+    />
   </section>
 </template>
 
@@ -269,6 +268,7 @@ import { requestConfigSave } from '@/src/services/config/store'
 import { CONNECTION_TEST_MESSAGE, getMimoEndpoint, MINIMAX_ENDPOINTS } from '@/src/core/config/constants'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import SettingsHelpLabel from '../SettingsHelpLabel.vue'
+import AdvancedRequestParameters from './AdvancedRequestParameters.vue'
 
 const props = defineProps<{
   config: Config
