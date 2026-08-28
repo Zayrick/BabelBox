@@ -84,6 +84,8 @@ export interface TranslationState {
     retryWrapper?: HTMLElement;
     /** 双语 wrapper 最后一次由插件写入的 HTML，用于区分宿主重绘和插件自身 mutation。 */
     bilingualHTML?: string;
+    /** This generation's exact owner DOM after the translation commit finished. */
+    committedHTML?: string;
     /** Candidate/ancestor nodes whose clipping styles are leased by this translation. */
     layoutOverrideElements?: Set<HTMLElement>;
     /** Bounded composed ancestors watched for newly activated line clamps or reparenting. */
@@ -300,7 +302,10 @@ export function setSpinner(node: HTMLElement, spinner: HTMLElement): void {
 export function setBilingualContent(node: HTMLElement, content: HTMLElement): void {
     setArtifact(node, "bilingualContent", content);
     const state = states.get(node);
-    if (state) state.bilingualHTML = content.innerHTML;
+    if (state) {
+        state.bilingualHTML = content.innerHTML;
+        state.committedHTML = node.innerHTML;
+    }
 }
 
 export function setRetryWrapper(node: HTMLElement, wrapper: HTMLElement): void {
@@ -806,6 +811,7 @@ export function setTextSlotsApplied(
         state.translatedTextValues = new WeakMap(
             state.originalTextValues.map(({node: textNode}) => [textNode, textNode.nodeValue ?? ""]),
         );
+        state.committedHTML = node.innerHTML;
     }
 }
 

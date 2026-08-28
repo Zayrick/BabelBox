@@ -295,6 +295,15 @@ function statefulSourceAndTextSlotsAreCurrent(
         normalizeComparableText(state.sourceText);
 }
 
+function committedTranslationDOMIsCurrent(
+    node: HTMLElement,
+    state: TranslationState,
+): boolean {
+    return state.committedHTML !== undefined &&
+        node.innerHTML === state.committedHTML &&
+        statefulSourceAndTextSlotsAreCurrent(node, state);
+}
+
 function mutationTouchesCurrentTranslationArtifact(
     mutation: MutationRecord,
     state: TranslationState,
@@ -1587,6 +1596,7 @@ function isIntactLoadingSyntheticChildList(
 function isOwnMutation(
     mutation: MutationRecord,
     loadingSyntheticChecks: WeakMap<TranslationState, boolean>,
+    committedDOMChecks: WeakMap<TranslationState, boolean>,
 ): boolean {
     const exactMutationElement = mutationTargetElement(mutation.target);
     if (mutation.type === "attributes" && mutation.attributeName === "style" &&
@@ -1643,6 +1653,19 @@ function isOwnMutation(
         return false;
     }
     if (state.phase !== "translated") return false;
+    // MutationObserver records describe earlier operations but are inspected
+    // against the callback's final DOM. A cache hit can finish the translation
+    // before records for source materialization and spinner removal are delivered.
+    // Ignore that transaction only while the exact committed owner DOM and Text
+    // identities still match this generation; a real host edit breaks the snapshot.
+    if (mutation.type === "childList") {
+        let committedDOMIsCurrent = committedDOMChecks.get(state);
+        if (committedDOMIsCurrent === undefined) {
+            committedDOMIsCurrent = committedTranslationDOMIsCurrent(target, state);
+            committedDOMChecks.set(state, committedDOMIsCurrent);
+        }
+        if (committedDOMIsCurrent) return true;
+    }
     if ((state.kind === "control" || state.mode === "single") && mutation.type === "characterData") {
         const textNode = mutation.target as Text;
         return state.textSlotsApplied === true &&
@@ -1897,8 +1920,9 @@ function createFullPageMutationObserver(
         // stateful source/slot snapshot once instead of walking a long P for
         // every Preview <-> staging-span record.
         const statefulChildListChecks = new WeakMap<TranslationState, boolean>();
+        const committedDOMChecks = new WeakMap<TranslationState, boolean>();
         for (const mutation of mutations) {
-            if (isOwnMutation(mutation, loadingSyntheticChecks)) continue;
+            if (isOwnMutation(mutation, loadingSyntheticChecks, committedDOMChecks)) continue;
             const mutationElement = mutationTargetElement(mutation.target);
             if (isCoreProtectedDescendantMutation(mutation.target, core, mutation.type !== "attributes")) continue;
             const removedOwners = mutation.type === "childList"
