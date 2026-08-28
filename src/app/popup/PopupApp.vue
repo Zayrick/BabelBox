@@ -191,13 +191,22 @@
         </button>
       </div>
 
-      <div v-if="currentSiteSupported" class="site-rule-row">
+      <div class="site-rule-row">
         <div class="site-rule-copy">
           <span>当前网站</span>
-          <strong :title="currentSiteDomain">{{ currentSiteDomain }}</strong>
+          <strong :title="currentSiteLabel">{{ currentSiteLabel }}</strong>
         </div>
         <div class="site-rule-actions">
+          <div
+            v-if="!currentSiteSupported"
+            class="site-rule-unavailable"
+            role="status"
+            aria-disabled="true"
+          >
+            当前页面不支持网页翻译与网站规则
+          </div>
           <button
+            v-else
             class="site-rule-button"
             :class="{
               enabled: currentSiteAlwaysTranslated,
@@ -221,6 +230,7 @@
             <i aria-hidden="true" />
           </button>
           <button
+            v-if="currentSiteSupported"
             class="site-rule-button site-disable-rule-button"
             :class="{
               enabled: currentSiteExtensionDisabled,
@@ -574,9 +584,9 @@ import { options, resolveConfiguredModel, servicesType } from '@/src/core/config
 import { getMissingCredentialMessage } from '@/src/core/config/validation';
 import { getSelectedModelLabel } from '@/src/ui/view-model/serviceCatalog';
 import { SELECTION_TTS_VOICE_OPTIONS } from '@/src/core/config/selectionTts';
-import { getSiteBaseDomain } from '@/src/core/site-rules/domain';
 import { requestTranslationCacheClear } from './cache';
 import { useActionFeedback } from './actionFeedback';
+import {resolvePopupCurrentSite} from './currentSite';
 import {isBrowserTabId} from '@/src/platform/browser/ids';
 import ServiceIcon from '@/src/ui/components/ServiceIcon.vue';
 import {browserCapabilities} from '@/src/platform/browser/capabilities';
@@ -597,6 +607,7 @@ const pagePendingVisible = ref(false);
 const pageTranslated = ref(false);
 const currentTabId = ref<number | null>(null);
 const currentSiteDomain = ref('');
+const currentSiteLabel = ref('无法读取当前页面');
 const clearingCache = ref(false);
 const donationVisible = ref(false);
 const notice = ref('');
@@ -843,11 +854,14 @@ function showNotice(message: string, type: 'success' | 'error' = 'success') {
 async function hydrateCurrentSite() {
   currentTabId.value = null;
   currentSiteDomain.value = '';
+  currentSiteLabel.value = '无法读取当前页面';
   try {
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
     if (typeof tab?.id !== 'number') return;
     currentTabId.value = tab.id;
-    currentSiteDomain.value = getSiteBaseDomain(tab.pendingUrl || tab.url || '') || '';
+    const currentSite = resolvePopupCurrentSite(tab.pendingUrl || tab.url || '');
+    currentSiteDomain.value = currentSite.domain;
+    currentSiteLabel.value = currentSite.label;
     if (!currentSiteDomain.value) return;
 
     try {
