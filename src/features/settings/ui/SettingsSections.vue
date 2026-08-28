@@ -113,12 +113,13 @@
       </div>
       <ServiceCatalog
         :service="selectedConfigurationService"
+        :selected-service-option="configurationServiceOption"
         :default-service="config.service"
         :selected-model="config.model[selectedConfigurationService]"
-        :services="configurationCompute.filteredServices"
-        :model-options="configurationCompute.model"
+        :services="filteredServices"
+        :model-options="configurationModelOptions"
         :custom-models="config.customModel"
-        :show-model="configurationCompute.showModel"
+        :presentation="configurationPresentation"
         @update:service="setConfigurationService"
         @update:model="config.model[selectedConfigurationService] = $event"
       >
@@ -126,7 +127,7 @@
           <ServiceConfiguration
             :config="config"
             :service="selectedConfigurationService"
-            :compute="configurationCompute"
+            :presentation="configurationPresentation"
             :options="options"
             :is-valid-azure-endpoint="isValidAzureEndpoint"
           />
@@ -461,7 +462,7 @@
         </el-row>
 
         <!-- 使用代理转发 -->
-        <el-row v-show="compute.showProxy && !compute.showCustom" class="settings-control-row">
+        <el-row v-show="showAdvancedProxy && !showAdvancedCustom" class="settings-control-row">
           <el-col :span="8" class="settings-control-label lightblue rounded-corner">
             <SettingsHelpLabel content="使用代理可以解决网络无法访问的问题，如不熟悉代理设置请留空！">代理地址</SettingsHelpLabel>
           </el-col>
@@ -471,7 +472,7 @@
         </el-row>
 
         <!-- 角色和模板 -->
-        <el-row v-show="compute.showAI && !compute.showCustom" class="settings-control-row">
+        <el-row v-show="showAdvancedAI && !showAdvancedCustom" class="settings-control-row">
           <el-col :span="8" class="settings-control-label lightblue rounded-corner">
             <SettingsHelpLabel content="以系统身份 system 发送的对话，常用于指定 AI 要扮演的角色">system</SettingsHelpLabel>
           </el-col>
@@ -480,7 +481,7 @@
               placeholder="system message " />
           </el-col>
         </el-row>
-        <el-row v-show="compute.showAI && !compute.showCustom" class="settings-control-row">
+        <el-row v-show="showAdvancedAI && !showAdvancedCustom" class="settings-control-row">
           <el-col :span="8" class="settings-control-label lightblue rounded-corner">
             <SettingsHelpLabel content="以用户身份 user 发送的对话，其中{{to}}表示目标语言，{{origin}}表示待翻译的文本内容，两者不可缺少。">user</SettingsHelpLabel>
           </el-col>
@@ -490,7 +491,7 @@
           </el-col>
         </el-row>
         <!-- 恢夏默认模板按钮 -->
-        <el-row v-show="compute.showAI && !compute.showCustom" class="margin-bottom margin-left-2em">
+        <el-row v-show="showAdvancedAI && !showAdvancedCustom" class="margin-bottom margin-left-2em">
           <el-col :span="24" style="text-align: right;">
             <el-button type="primary" link @click="resetTemplate">
               <el-icon>
@@ -635,7 +636,7 @@
 
 // Main 处理配置信息
 import { computed, ref, watch, onUnmounted } from 'vue'
-import { customModelString, models, options, resolveConfiguredModel, services, servicesType, defaultOption } from '@/src/core/config/catalog';
+import { models, options, resolveConfiguredModel, servicesType, defaultOption } from '@/src/core/config/catalog';
 import {
   Config,
   MOUSE_HOVER_TRANSLATION_DELAY_MAX,
@@ -666,12 +667,12 @@ import { defineAsyncComponent } from 'vue';
 const CustomHotkeyInput = defineAsyncComponent(() => import('@/src/ui/components/CustomHotkeyInput.vue'));
 import ServiceCatalog from './services/ServiceCatalog.vue';
 import ServiceConfiguration from './services/ServiceConfiguration.vue';
+import {createServiceConfigurationPresentation} from '@/src/features/settings/model/serviceConfiguration';
 import SettingsHelpLabel from './SettingsHelpLabel.vue';
 import {TranslationCenter} from '@/src/features/translation-center/public';
 import AlwaysTranslateSites from './AlwaysTranslateSites.vue';
 import { parseHotkey } from '@/src/core/hotkey';
 import { isConfigImportValid, prepareConfigForImport, sanitizeConfigForExport } from '@/src/core/config/transfer';
-import { getApiKeyRequirementKey, getMissingCredentialMessage, isApiKeyRequired } from '@/src/core/config/validation';
 import {ImageOcrSettings} from '@/src/features/image-translation/public';
 import {
   config as runtimeConfig,
@@ -776,8 +777,6 @@ const setConfigurationService = (value: string) => {
   configurationService.value = value;
 };
 
-type ServiceSource = { value: string };
-
 const actualService = computed(() => config.value.service);
 const aiContextModel = computed(() => resolveConfiguredModel(
   config.value.model[config.value.service],
@@ -794,49 +793,30 @@ const filteredServices = computed(() =>
     !([item.google].includes(item.value) && config.value.display !== 1),
   ),
 );
+const configurationModelOptions = computed(
+  () => models.get(selectedConfigurationService.value) || [],
+);
+const configurationServiceOption = computed(() => options.services.find(
+  (item) => !item.disabled && item.value === selectedConfigurationService.value,
+));
+const configurationServiceUnavailableMessage = computed(
+  () => getTranslationServiceUnavailableMessage(selectedConfigurationService.value),
+);
+const configurationPresentation = computed(() => createServiceConfigurationPresentation(
+  selectedConfigurationService.value,
+  {
+    selectedModel: config.value.model[selectedConfigurationService.value],
+    deepseekApiType: config.value.deepseekApiType,
+    available: Boolean(configurationServiceOption.value)
+      && !configurationServiceUnavailableMessage.value,
+    unavailableMessage: configurationServiceUnavailableMessage.value || undefined,
+  },
+));
 
-// 两个页面都需要相同的服务能力判断，但数据源不同：实际翻译使用默认服务，
-// 设置页右侧表单使用正在配置的服务。统一从这里生成，避免两套逻辑继续漂移。
-const createServiceCompute = (serviceSource: ServiceSource) => ({
-  showAI: computed(() => servicesType.isAI(serviceSource.value)),
-  showMachine: computed(() => servicesType.isMachine(serviceSource.value)),
-  showProxy: computed(() => servicesType.isUseProxy(serviceSource.value)),
-  showModel: computed(() => servicesType.isUseModel(serviceSource.value)),
-  showCustomBody: computed(() => servicesType.isUseCustomBody(serviceSource.value)),
-  showToken: computed(() => servicesType.isUseToken(serviceSource.value)),
-  requireApiKey: computed({
-    get: () => isApiKeyRequired(serviceSource.value, config.value),
-    set: (value: boolean) => {
-      config.value.requireApiKey[getApiKeyRequirementKey(serviceSource.value, config.value)] = value;
-    },
-  }),
-  credentialWarning: computed(() => getMissingCredentialMessage(serviceSource.value, config.value)),
-  showAkSk: computed(() => servicesType.isUseAkSk(serviceSource.value)),
-  showYoudao: computed(() => servicesType.isYoudao(serviceSource.value)),
-  showTencent: computed(() => servicesType.isTencent(serviceSource.value)),
-  model: computed(() => models.get(serviceSource.value) || []),
-  showCustom: computed(() => servicesType.isCustom(serviceSource.value)),
-  showDeepLX: computed(() => serviceSource.value === 'deeplx'),
-  showMiniMaxRegion: computed(() => serviceSource.value === services.minimax),
-  showMiMoRegion: computed(() => serviceSource.value === services.mimo),
-  showCustomModel: computed(
-    () =>
-      servicesType.isAI(serviceSource.value) &&
-      config.value.model[serviceSource.value] === customModelString,
-  ),
-  filteredServices,
-  showRobotId: computed(() => servicesType.isCoze(serviceSource.value)),
-  showNewAPI: computed(() => servicesType.isNewApi(serviceSource.value)),
-  showAzureOpenaiEndpoint: computed(() => servicesType.isAzureOpenai(serviceSource.value)),
-  showDeepseekApiType: computed(() => serviceSource.value === 'deepseek'),
-  showDeepseekThinkingMode: computed(
-    () => serviceSource.value === 'deepseek' && config.value.deepseekApiType !== 'responses',
-  ),
-});
-
-const compute = ref(createServiceCompute(actualService));
-// config.service 仍表示实际默认翻译服务；这里仅用于设置页正在编辑的服务。
-const configurationCompute = ref(createServiceCompute(selectedConfigurationService));
+// 高级设置只跟随实际默认服务；服务目录的展示状态由上面的 presentation 独立管理。
+const showAdvancedAI = computed(() => servicesType.isAI(actualService.value));
+const showAdvancedProxy = computed(() => servicesType.isUseProxy(actualService.value));
+const showAdvancedCustom = computed(() => servicesType.isCustom(actualService.value));
 
 // 监听主题变化
 watch(() => config.value.theme, (newTheme) => {

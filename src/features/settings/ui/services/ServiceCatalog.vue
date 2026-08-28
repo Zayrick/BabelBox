@@ -4,6 +4,7 @@
     aria-label="翻译服务配置"
     :data-default-service="defaultService"
     :data-editing-service="service"
+    :data-presentation-mode="presentation.mode"
   >
     <div class="catalog-layout">
       <aside class="service-rail" aria-label="翻译服务列表">
@@ -58,7 +59,7 @@
           </div>
         </div>
 
-        <div v-if="showModel" class="model-section">
+        <div v-if="presentation.showModelConfiguration" class="model-section">
           <div class="model-heading">
             <div>
               <span>模型列表</span>
@@ -119,13 +120,42 @@
           <p v-else class="catalog-empty">没有匹配的模型</p>
         </div>
 
-        <div v-else class="no-model-panel">
-          <span aria-hidden="true"><CircleCheck :size="15" :stroke-width="2.2" focusable="false" /></span>
-          <div><strong>此服务无需模型配置</strong><p>机器翻译直接使用自身引擎。</p></div>
+        <div
+          v-if="presentation.showConnectionConfiguration"
+          class="service-configuration-slot"
+          aria-label="当前服务配置"
+        >
+          <slot name="configuration" />
+        </div>
+        <div v-else class="service-action-host">
+          <slot name="configuration" />
         </div>
 
-        <div class="service-configuration-slot" aria-label="当前服务配置">
-          <slot name="configuration" />
+        <div v-if="presentation.showReadyState" class="service-ready-state" role="status">
+          <div class="service-ready-content">
+            <span class="service-ready-icon" aria-hidden="true">
+              <CircleCheck :size="30" :stroke-width="2" focusable="false" />
+            </span>
+            <div>
+              <strong>{{ presentation.readyState.title }}</strong>
+              <p>{{ presentation.readyState.description }}</p>
+            </div>
+          </div>
+        </div>
+        <div
+          v-if="presentation.showUnavailableState"
+          class="service-ready-state is-unavailable"
+          role="status"
+        >
+          <div class="service-ready-content">
+            <span class="service-ready-icon" aria-hidden="true">
+              <CircleX :size="30" :stroke-width="2" focusable="false" />
+            </span>
+            <div>
+              <strong>{{ presentation.unavailableState.title }}</strong>
+              <p>{{ presentation.unavailableState.description }}</p>
+            </div>
+          </div>
         </div>
 
       </section>
@@ -135,7 +165,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { Check, ChevronDown, CircleCheck, Search } from '@lucide/vue'
+import { Check, ChevronDown, CircleCheck, CircleX, Search } from '@lucide/vue'
 import ServiceIcon from '@/src/ui/components/ServiceIcon.vue'
 import { customModelString } from '@/src/core/config/catalog'
 import {
@@ -146,15 +176,17 @@ import {
   splitModelOptions,
   type ServiceOption,
 } from '@/src/ui/view-model/serviceCatalog'
+import type {ServiceConfigurationPresentation} from '@/src/features/settings/model/serviceConfiguration'
 
 const props = defineProps<{
   service: string
+  selectedServiceOption?: ServiceOption
   defaultService: string
   selectedModel?: string
   services: ServiceOption[]
   modelOptions: string[]
   customModels: Record<string, string>
-  showModel: boolean
+  presentation: ServiceConfigurationPresentation
 }>()
 
 defineEmits<{
@@ -181,7 +213,9 @@ const selectedModelLabel = computed(() => getSelectedModelLabel(
 const displayedModels = computed(() => modelQuery.value
   ? filteredModels.value
   : moreModelsOpen.value ? [...modelGroups.value.common, ...moreModels.value] : modelGroups.value.common)
-const selectedService = computed(() => groups.value.flatMap((group) => group.items).find((item) => item.value === props.service))
+const selectedService = computed(() => groups.value
+  .flatMap((group) => group.items)
+  .find((item) => item.value === props.service) || props.selectedServiceOption)
 
 watch(() => props.service, () => {
   modelQuery.value = ''
@@ -216,7 +250,6 @@ watch(modelQuery, () => {
 .service-detail { display: flex; min-width: 0; min-height: 0; margin: 0; padding: 18px 20px; background: #fff; flex-direction: column; overflow: hidden; }
 .service-detail > .detail-hero,
 .service-detail > .model-section,
-.service-detail > .no-model-panel,
 .service-detail > .service-configuration-slot { width: min(100%, 1080px); }
 .detail-hero { display: flex; align-items: flex-start; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid #eceef3; }
 .detail-hero > div:last-child { min-width: 0; }
@@ -251,11 +284,17 @@ watch(modelQuery, () => {
 .more-models-toggle b { display: inline-flex; align-items: center; gap: 3px; color: #c72a56; font-size: 9px; font-weight: 750; white-space: nowrap; }
 .more-models-toggle b svg { transition: transform 150ms ease; }
 .more-models-toggle[aria-expanded="true"] b svg { transform: rotate(180deg); }
-.no-model-panel { display: flex; align-items: center; gap: 10px; margin-top: 16px; padding: 14px 0; border-bottom: 1px solid #d9eee5; background: transparent; }
-.no-model-panel > span { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; color: #fff; background: #28aa79; font-size: 12px; }
-.no-model-panel strong { color: #185d46; font-size: 15px; }
-.no-model-panel p { margin: 4px 0 0; color: #628074; font-size: 12px; }
 .service-configuration-slot { min-height: 0; margin-top: 16px; padding-top: 16px; border-top: 1px solid #eceef3; overflow-y: auto; flex: 1; }
+.service-catalog[data-presentation-mode="connection-only"] .service-configuration-slot { padding-top: 0; border-top: 0; }
+.service-action-host { display: contents; }
+.service-ready-state { display: grid; width: 100%; min-height: 220px; flex: 1; place-items: center; }
+.service-ready-content { display: flex; align-items: center; justify-content: center; gap: 14px; max-width: 460px; padding: 24px; flex-direction: column; text-align: center; }
+.service-ready-icon { display: grid; width: 52px; height: 52px; border-radius: 50%; color: #fff; background: #28aa79; flex: 0 0 auto; place-items: center; }
+.service-ready-content strong { color: #185d46; font-size: 16px; }
+.service-ready-content p { margin: 5px 0 0; color: #628074; font-size: 12px; line-height: 1.6; }
+.service-ready-state.is-unavailable .service-ready-icon { background: #d45c70; }
+.service-ready-state.is-unavailable .service-ready-content strong { color: #8e2c42; }
+.service-ready-state.is-unavailable .service-ready-content p { color: #805d66; }
 .catalog-empty { margin: 20px 8px; color: #9299a8; font-size: 10px; text-align: center; }
 @media (max-width: 900px) {
   .catalog-layout { grid-template-columns: 220px minmax(0, 1fr); }
@@ -273,5 +312,6 @@ watch(modelQuery, () => {
   .detail-hero { flex-wrap: wrap; }
   .model-grid { max-height: 400px; }
   .service-configuration-slot { max-height: none; overflow: visible; }
+  .service-ready-state { min-height: 0; }
 }
 </style>
