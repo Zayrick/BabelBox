@@ -50,6 +50,7 @@ export {
     normalizeTranslationFilterConfig,
     normalizeTranslationFilterRules,
     removeTranslationFilterSite,
+    reorderTranslationFilterRules,
     translationFilterConfigSignature,
     upsertTranslationFilterSite,
 } from './filters';

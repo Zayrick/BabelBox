@@ -316,6 +316,24 @@ export function normalizeTranslationFilterRules(
     return rules;
 }
 
+export function reorderTranslationFilterRules(
+    value: readonly TranslationFilterRule[],
+    fromIndex: number,
+    targetIndex: number,
+): TranslationFilterRule[] {
+    const rules = normalizeTranslationFilterRules(value);
+    if (!Number.isInteger(fromIndex) || !Number.isInteger(targetIndex) ||
+        fromIndex < 0 || targetIndex < 0 ||
+        fromIndex >= rules.length || targetIndex >= rules.length ||
+        fromIndex === targetIndex) {
+        return rules;
+    }
+
+    const [movedRule] = rules.splice(fromIndex, 1);
+    if (movedRule) rules.splice(targetIndex, 0, movedRule);
+    return rules;
+}
+
 export function createDefaultTranslationFilterConfig(): TranslationFilterConfig {
     return {
         global: {

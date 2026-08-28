@@ -3,21 +3,34 @@
     <div class="translation-filter-rule-heading">
       <div>
         <strong>CSS 过滤规则</strong>
-        <small>网站规则优先；同一范围内越靠后的规则优先。</small>
+        <small>拖动调整顺序；网站规则优先，同一范围内越靠后的规则优先。</small>
       </div>
       <button class="filter-rule-add-trigger" type="button" @click="startAdding">
         <Plus aria-hidden="true" />添加规则
       </button>
     </div>
 
-    <div v-if="rules.length" class="translation-filter-rule-list" role="list">
+    <div v-if="rules.length" ref="ruleList" class="translation-filter-rule-list" role="list">
       <article
         v-for="(rule, index) in rules"
-        :key="`${rule.selector}-${index}`"
+        :key="rule.selector"
         class="translation-filter-rule-item"
+        :data-rule-selector="rule.selector"
         role="listitem"
       >
         <template v-if="editingIndex !== index">
+          <button
+            class="filter-rule-drag-handle"
+            type="button"
+            :disabled="rules.length < 2 || editingIndex !== null"
+            :aria-label="`拖动 ${rule.label || rule.selector} 调整顺序，第 ${index + 1} 项，共 ${rules.length} 项`"
+            aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
+            title="拖动调整优先级，也可用 Alt+↑/↓"
+            @keydown.alt.arrow-up.prevent="moveRule(rule.selector, -1)"
+            @keydown.alt.arrow-down.prevent="moveRule(rule.selector, 1)"
+          >
+            <GripVertical aria-hidden="true" />
+          </button>
           <span class="filter-rule-action" :class="rule.action">
             {{ rule.action === 'exclude' ? '不翻译' : '强制翻译' }}
           </span>
@@ -55,6 +68,8 @@
       <span><strong>当前没有额外规则</strong><small>{{ props.emptyDescription }}</small></span>
     </div>
 
+    <p class="filter-rule-sort-status" aria-live="polite">{{ sortAnnouncement }}</p>
+
     <div v-if="editingIndex === -1" class="translation-filter-rule-new">
       <RuleForm
         :action="draftAction"
@@ -73,12 +88,15 @@
 </template>
 
 <script lang="ts" setup>
-import {computed, defineComponent, h, ref, type PropType} from 'vue';
-import {ListFilter, Pencil, Plus, Trash2} from '@lucide/vue';
+import {computed, defineComponent, h, nextTick, onUnmounted, ref, watch, type PropType} from 'vue';
+import {GripVertical, ListFilter, Pencil, Plus, Trash2} from '@lucide/vue';
+import {ElOption, ElSelect} from 'element-plus';
+import Sortable from 'sortablejs';
 import {
   MAX_TRANSLATION_FILTER_LABEL_LENGTH,
   MAX_TRANSLATION_FILTER_SELECTOR_LENGTH,
   normalizeTranslationFilterRules,
+  reorderTranslationFilterRules,
   type TranslationFilterRule,
   type TranslationFilterRuleAction,
 } from '@/src/core/translation/filters';
@@ -101,11 +119,14 @@ const rules = computed({
   get: () => props.modelValue ?? [],
   set: (value: TranslationFilterRule[]) => emit('update:modelValue', value),
 });
+const ruleList = ref<HTMLElement | null>(null);
 const editingIndex = ref<number | null>(null);
 const draftAction = ref<TranslationFilterRuleAction>('exclude');
 const draftSelector = ref('');
 const draftLabel = ref('');
 const errorMessage = ref('');
+const sortAnnouncement = ref('');
+let sortable: Sortable | null = null;
 
 function resetDraft() {
   draftAction.value = 'exclude';
@@ -181,6 +202,76 @@ function removeRule(index: number) {
   if (editingIndex.value === index) cancelDraft();
 }
 
+function reorderRule(fromSelector: string, targetIndex: number) {
+  const fromIndex = rules.value.findIndex((rule) => rule.selector === fromSelector);
+  if (fromIndex < 0 || targetIndex < 0 || targetIndex >= rules.value.length || fromIndex === targetIndex) return;
+  const movedRule = rules.value[fromIndex];
+  if (!movedRule) return;
+  rules.value = reorderTranslationFilterRules(rules.value, fromIndex, targetIndex);
+  sortAnnouncement.value = `${movedRule.label || movedRule.selector} 已移到第 ${targetIndex + 1} 项，越靠后的规则优先。`;
+}
+
+function moveRule(selector: string, offset: number) {
+  if (editingIndex.value !== null) return;
+  const fromIndex = rules.value.findIndex((rule) => rule.selector === selector);
+  reorderRule(selector, fromIndex + offset);
+}
+
+function restoreSortableItem(event: Sortable.SortableEvent) {
+  if (event.oldIndex === undefined) return;
+  event.item.remove();
+  event.from.insertBefore(event.item, event.from.children[event.oldIndex] ?? null);
+}
+
+function handleSortUpdate(event: Sortable.SortableEvent) {
+  const {oldIndex, newIndex} = event;
+  const selector = event.item.dataset.ruleSelector ?? '';
+  if (oldIndex === undefined || newIndex === undefined || !selector) return;
+
+  // Sortable 先移动真实 DOM；恢复原顺序后再交给 Vue 更新，避免虚拟 DOM 与页面状态失配。
+  restoreSortableItem(event);
+  void nextTick(() => reorderRule(selector, newIndex));
+}
+
+function createSortable(element: HTMLElement) {
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  sortable = Sortable.create(element, {
+    animation: reduceMotion ? 0 : 180,
+    chosenClass: 'filter-rule-sort-chosen',
+    direction: 'vertical',
+    disabled: rules.value.length < 2 || editingIndex.value !== null,
+    dragClass: 'filter-rule-sort-drag',
+    draggable: '.translation-filter-rule-item',
+    easing: 'cubic-bezier(.2, .8, .2, 1)',
+    fallbackClass: 'filter-rule-sort-fallback',
+    fallbackOnBody: true,
+    fallbackTolerance: 4,
+    forceFallback: true,
+    ghostClass: 'filter-rule-sort-ghost',
+    handle: '.filter-rule-drag-handle',
+    swapThreshold: 0.65,
+    onUpdate: handleSortUpdate,
+  });
+}
+
+function destroySortable() {
+  sortable?.destroy();
+  sortable = null;
+}
+
+watch(ruleList, (element) => {
+  destroySortable();
+  if (element) {
+    createSortable(element);
+  }
+}, {flush: 'post'});
+
+watch([() => rules.value.length, editingIndex], ([ruleCount, activeEditor]) => {
+  sortable?.option('disabled', ruleCount < 2 || activeEditor !== null);
+});
+
+onUnmounted(destroySortable);
+
 const RuleForm = defineComponent({
   name: 'TranslationFilterRuleForm',
   props: {
@@ -200,18 +291,22 @@ const RuleForm = defineComponent({
       },
     }, [
       h('div', {class: 'filter-rule-form-main'}, [
-        h('select', {
-          value: formProps.action,
+        h(ElSelect, {
+          class: 'filter-rule-action-select',
+          modelValue: formProps.action,
           'aria-label': '规则操作',
-          onChange: (event: Event) => formEmit(
+          'onUpdate:modelValue': (value: string) => formEmit(
             'update:action',
-            (event.target as HTMLSelectElement).value as TranslationFilterRuleAction,
+            value as TranslationFilterRuleAction,
           ),
-        }, [
-          h('option', {value: 'exclude'}, '不翻译'),
-          h('option', {value: 'include'}, '强制翻译'),
-        ]),
+        }, {
+          default: () => [
+            h(ElOption, {label: '不翻译', value: 'exclude'}),
+            h(ElOption, {label: '强制翻译', value: 'include'}),
+          ],
+        }),
         h('input', {
+          class: 'filter-rule-text-input',
           value: formProps.selector,
           maxlength: MAX_TRANSLATION_FILTER_SELECTOR_LENGTH,
           autocomplete: 'off',
@@ -223,7 +318,7 @@ const RuleForm = defineComponent({
         }),
       ]),
       h('input', {
-        class: 'filter-rule-label-input',
+        class: 'filter-rule-label-input filter-rule-text-input',
         value: formProps.label,
         maxlength: MAX_TRANSLATION_FILTER_LABEL_LENGTH,
         autocomplete: 'off',
@@ -251,8 +346,18 @@ const RuleForm = defineComponent({
 .filter-rule-add-trigger:hover { border-color: var(--el-color-primary-light-5); background: var(--brand-soft); }
 .filter-rule-add-trigger svg { width: 14px; height: 14px; }
 .translation-filter-rule-list { margin-top: 10px; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; }
-.translation-filter-rule-item { display: grid; min-height: 54px; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 9px 10px; border-bottom: 1px solid var(--line); background: var(--surface); }
+.translation-filter-rule-item { display: grid; box-sizing: border-box; min-height: 54px; grid-template-columns: auto auto minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 9px 10px; border-bottom: 1px solid var(--line); background: var(--surface); transition: background 140ms ease, box-shadow 140ms ease, opacity 140ms ease; }
 .translation-filter-rule-item:last-child { border-bottom: 0; }
+.translation-filter-rule-item.filter-rule-sort-chosen { background: var(--brand-soft); }
+.translation-filter-rule-item.filter-rule-sort-ghost { opacity: .28; background: var(--brand-soft); box-shadow: inset 0 0 0 1px var(--el-color-primary-light-5); }
+.translation-filter-rule-item.filter-rule-sort-drag { cursor: grabbing; }
+.translation-filter-rule-item.filter-rule-sort-fallback { z-index: 10000; opacity: .97 !important; border: 1px solid var(--el-color-primary-light-5); border-radius: 9px; background: var(--surface); box-shadow: 0 16px 34px rgba(31, 41, 55, .2), 0 4px 10px rgba(31, 41, 55, .1); cursor: grabbing; pointer-events: none; }
+.translation-filter-rule-item.filter-rule-sort-fallback .filter-rule-actions { opacity: .56; }
+.filter-rule-drag-handle { display: grid; width: 24px; height: 30px; padding: 0; place-items: center; border: 0; border-radius: 6px; outline: 0; color: var(--muted); background: transparent; cursor: grab; touch-action: none; }
+.filter-rule-drag-handle:hover:not(:disabled), .filter-rule-drag-handle:focus-visible { color: var(--brand-strong); background: var(--brand-soft); }
+.filter-rule-drag-handle:active { cursor: grabbing; }
+.filter-rule-drag-handle:disabled { cursor: default; opacity: .34; }
+.filter-rule-drag-handle svg { width: 15px; height: 15px; }
 .filter-rule-action { display: inline-flex; min-width: 54px; min-height: 24px; align-items: center; justify-content: center; padding: 0 6px; border-radius: 6px; font-size: var(--font-caption); font-weight: var(--weight-semibold); }
 .filter-rule-action.exclude { color: var(--muted); background: var(--surface-soft); }
 .filter-rule-action.include { color: var(--brand-strong); background: var(--brand-soft); }
@@ -264,6 +369,7 @@ const RuleForm = defineComponent({
 .filter-rule-actions button:hover { color: var(--brand-strong); background: var(--brand-soft); }
 .filter-rule-actions button.danger:hover { color: var(--danger); background: var(--danger-soft); }
 .filter-rule-actions svg { width: 14px; height: 14px; }
+.filter-rule-sort-status { position: absolute; width: 1px; height: 1px; overflow: hidden; margin: -1px; padding: 0; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .translation-filter-rule-empty { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 12px; border: 1px dashed var(--line); border-radius: 9px; color: var(--muted); }
 .translation-filter-rule-empty > span { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
 .translation-filter-rule-empty strong { color: var(--ink); font-size: var(--font-small); }
@@ -271,17 +377,26 @@ const RuleForm = defineComponent({
 .translation-filter-rule-new { margin-top: 10px; padding: 10px; border: 1px solid var(--el-color-primary-light-7); border-radius: 9px; background: var(--brand-soft); }
 :deep(.filter-rule-form) { display: grid; width: 100%; grid-column: 1 / -1; gap: 8px; }
 :deep(.filter-rule-form-main) { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 8px; }
-:deep(.filter-rule-form input), :deep(.filter-rule-form select) { box-sizing: border-box; width: 100%; min-height: 34px; padding: 0 9px; border: 1px solid var(--line); border-radius: 7px; outline: 0; color: var(--ink); background: var(--surface); font-size: var(--font-small); }
+:deep(.filter-rule-text-input) { box-sizing: border-box; width: 100%; min-height: 34px; padding: 0 9px; border: 1px solid var(--line); border-radius: 7px; outline: 0; color: var(--ink); background: var(--surface); font-size: var(--font-small); }
+:deep(.filter-rule-action-select) { width: 100%; }
+:deep(.filter-rule-action-select .el-select__wrapper) { min-height: 34px; padding: 0 9px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); box-shadow: none; transition: border-color 140ms ease, box-shadow 140ms ease; }
+:deep(.filter-rule-action-select .el-select__wrapper:hover) { border-color: var(--el-color-primary-light-3); }
+:deep(.filter-rule-action-select .el-select__wrapper.is-focused) { border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand-soft); }
+:deep(.filter-rule-action-select .el-select__selected-item) { color: var(--ink); font-size: var(--font-small); }
+:deep(.filter-rule-action-select .el-select__caret) { color: var(--muted); }
 :deep(.filter-rule-form input[aria-label="CSS 选择器"]) { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-:deep(.filter-rule-form input:focus), :deep(.filter-rule-form select:focus) { border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand-soft); }
+:deep(.filter-rule-text-input:focus) { border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand-soft); }
 :deep(.filter-rule-form input[aria-invalid="true"]) { border-color: var(--danger); }
 :deep(.filter-rule-error) { margin: 0; color: var(--danger); font-size: var(--font-caption); }
 :deep(.filter-rule-form-actions) { display: flex; justify-content: flex-end; gap: 7px; }
 :deep(.filter-rule-form-actions button) { min-height: 30px; padding: 0 12px; border: 1px solid var(--line); border-radius: 7px; color: var(--muted); background: var(--surface); font-size: var(--font-caption); font-weight: var(--weight-semibold); cursor: pointer; }
 :deep(.filter-rule-form-actions button.primary) { border-color: var(--brand); color: #fff; background: var(--brand); }
 .compact .translation-filter-rule-heading small { max-width: 255px; }
-.compact .translation-filter-rule-item { grid-template-columns: auto minmax(0, 1fr) auto; padding-inline: 8px; }
+.compact .translation-filter-rule-item { grid-template-columns: auto auto minmax(0, 1fr) auto; padding-inline: 7px; }
 .compact .filter-rule-copy strong { font-size: var(--font-caption); }
+@media (prefers-reduced-motion: reduce) {
+  .translation-filter-rule-item { transition: none; }
+}
 @media (max-width: 430px) {
   :deep(.filter-rule-form-main) { grid-template-columns: 1fr; }
   .filter-rule-action { min-width: 48px; }

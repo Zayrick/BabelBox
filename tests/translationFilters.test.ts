@@ -12,6 +12,7 @@ import {
     normalizeTranslationFilterConfig,
     normalizeTranslationFilterRules,
     removeTranslationFilterSite,
+    reorderTranslationFilterRules,
     type TranslationFilterConfig,
 } from '@/src/core/translation/public';
 
@@ -123,6 +124,29 @@ describe('translation filter configuration', () => {
 });
 
 describe('translation filter policy', () => {
+    it('persists reordered rules and gives the later matching rule priority', () => {
+        const document = documentWith('<button class="target">Channel category</button>');
+        const rules = [
+            {action: 'exclude' as const, selector: '.target', label: 'Exclude target'},
+            {action: 'include' as const, selector: 'button', label: 'Include buttons'},
+        ];
+        const target = document.querySelector('.target')!;
+
+        expect(createTranslationFilterPolicy({
+            ...emptyFilters(),
+            global: {...emptyFilters().global, rules},
+        }).evaluateElement(target).action).toBe('include');
+
+        const reordered = reorderTranslationFilterRules(rules, 1, 0);
+        const restored = normalizeTranslationFilterConfig(JSON.parse(JSON.stringify({
+            ...emptyFilters(),
+            global: {...emptyFilters().global, rules: reordered},
+        })));
+
+        expect(reordered.map((rule) => rule.label)).toEqual(['Include buttons', 'Exclude target']);
+        expect(createTranslationFilterPolicy(restored).evaluateElement(target).action).toBe('exclude');
+    });
+
     it('invalidates the shared URL core when runtime filter configuration changes', () => {
         const initial = getCurrentTranslationCore();
         const custom = {
