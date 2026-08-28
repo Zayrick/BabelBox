@@ -2,17 +2,16 @@
   <div id="settings-vocabulary" class="vocabulary-book">
     <section class="beta-panel" :class="{ enabled: betaEnabled }">
       <div class="beta-copy">
-        <span class="beta-mark">Beta</span>
         <div>
-          <h3>{{ betaEnabled ? '单词本收藏入口已开启' : '先开启本地单词本' }}</h3>
-          <p>只在你主动点击星标时保存；关闭功能不会删除已经积累的词条和复习记录。</p>
+          <h3>{{ betaEnabled ? '单词本已开启' : '开启单词本' }}</h3>
+          <p>划词后点击星标即可收藏。关闭后，已有单词仍会保留。</p>
         </div>
       </div>
       <button
         class="beta-switch"
         type="button"
         role="switch"
-        aria-label="启用或关闭本地单词本 Beta"
+        aria-label="开启或关闭单词本"
         :aria-checked="betaEnabled"
         :disabled="configBusy"
         @click="setBetaEnabled(!betaEnabled)"
@@ -20,13 +19,13 @@
     </section>
 
     <div v-if="betaEnabled && !selectionTranslatorEnabled" class="selection-reminder" role="note">
-      <span>单词收藏入口位于划词翻译卡中；当前划词翻译仍是关闭状态。</span>
-      <button type="button" @click="emit('navigate', 'settings-shortcuts')">前往开启<ArrowRight class="button-icon" aria-hidden="true" /></button>
+      <span>划词翻译未开启，暂时无法收藏单词。</span>
+      <button type="button" @click="emit('navigate', 'settings-shortcuts')">去开启<ArrowRight class="button-icon" aria-hidden="true" /></button>
     </div>
 
     <section class="privacy-note" aria-label="本地存储说明">
       <span class="privacy-note-icon" aria-hidden="true"><HardDrive /></span>
-      <div><strong>学习数据仅保存在当前浏览器</strong><small>不建账号、不上传复习记录；卸载扩展前请导出备份。无痕窗口不提供持久收藏。</small></div>
+      <div><strong>数据只保存在当前浏览器</strong><small>无需账号，不会上传。卸载扩展前请先导出；无痕窗口不保存单词。</small></div>
     </section>
 
     <div v-if="loadError" class="error-state" role="alert">
@@ -105,7 +104,7 @@
 
         <section v-if="loading && entries.length === 0" class="empty-state"><span class="loading-ring" /><p>正在读取本地单词本…</p></section>
         <section v-else-if="entries.length === 0" class="empty-state">
-          <BookOpen class="empty-state-icon" aria-hidden="true" /><h3>还没有收藏单词</h3><p>开启 Beta 后，在网页中划选一个英文单词，再点击学习卡标题栏的星标。</p>
+          <BookOpen class="empty-state-icon" aria-hidden="true" /><h3>还没有收藏单词</h3><p>开启单词本后，划选一个英文单词，点击学习卡上的星标即可收藏。</p>
         </section>
         <section v-else-if="filteredEntries.length === 0" class="empty-state"><Search class="empty-state-icon" aria-hidden="true" /><h3>没有匹配的词条</h3><p>试试清空搜索内容或切换掌握状态。</p></section>
 
@@ -381,7 +380,7 @@ async function setBetaEnabled(enabled: boolean): Promise<void> {
   betaEnabled.value = enabled;
   try {
     await requestConfigSave(runtimeConfig, browser.runtime.sendMessage.bind(browser.runtime));
-    showToast(enabled ? '单词本 Beta 已开启' : '收藏入口已关闭，学习数据仍保留');
+    showToast(enabled ? '单词本已开启' : '单词本已关闭，已有单词仍会保留');
   } catch (cause) {
     runtimeConfig.vocabularyBookEnabled = previous;
     betaEnabled.value = previous;
@@ -686,7 +685,6 @@ onBeforeUnmount(() => {
 .beta-copy { display: flex; min-width: 0; align-items: flex-start; gap: 10px; }
 .beta-copy h3, .data-heading h3 { margin: 0; font-size: 15px; }
 .beta-copy p, .data-heading p { margin: 5px 0 0; color: #737c8f; font-size: 11px; line-height: 1.55; }
-.beta-mark { flex: none; padding: 4px 7px; border-radius: 7px; color: #d72f61; background: #ffe8ef; font-size: 9px; font-weight: 800; letter-spacing: .06em; }
 .beta-switch { position: relative; flex: none; width: 48px; height: 28px; padding: 3px; border: 0; border-radius: 999px; background: #cfd3dc; cursor: pointer; }
 .beta-switch i { display: block; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,.16); transition: transform 180ms ease; }
 .beta-switch[aria-checked="true"] { background: #ef4776; }
