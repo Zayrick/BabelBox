@@ -1,5 +1,5 @@
 <template>
-  <Teleport v-if="presentation.showConnectionTest" defer to=".detail-hero">
+  <Teleport v-if="presentation.showConnectionTest" defer to=".detail-hero-actions">
     <button
       type="button"
       class="connection-test-button"
@@ -719,7 +719,6 @@ onBeforeUnmount(() => {
   gap: 6px;
   min-width: 94px;
   flex: 0 0 auto;
-  margin-left: auto;
   padding: 7px 12px;
   border: 1px solid #ef4776;
   border-radius: 9px;

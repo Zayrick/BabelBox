@@ -57,16 +57,6 @@
                 </span>
               </button>
               <span class="service-row-actions">
-                <button
-                  v-if="serviceRemovable(item)"
-                  type="button"
-                  class="service-remove-button"
-                  :aria-label="`删除${item.label}`"
-                  :title="`删除${item.label}`"
-                  @click.stop="$emit('remove', item.value)"
-                >
-                  <Trash2 :size="15" aria-hidden="true" focusable="false" />
-                </button>
                 <el-switch
                   class="service-enabled-switch"
                   size="small"
@@ -90,6 +80,18 @@
             <small v-if="selectedService && serviceModelId(selectedService)" :title="serviceModelId(selectedService)">
               {{ serviceModelId(selectedService) }}
             </small>
+          </div>
+          <div class="detail-hero-actions">
+            <button
+              v-if="selectedService && serviceRemovable(selectedService)"
+              type="button"
+              class="service-remove-button"
+              :aria-label="`删除${selectedService.label}`"
+              :title="`删除${selectedService.label}`"
+              @click="$emit('remove', selectedService.value)"
+            >
+              <Trash2 :size="16" aria-hidden="true" focusable="false" />
+            </button>
           </div>
         </div>
 
@@ -204,7 +206,7 @@ function updateServiceEnabled(item: ServiceCatalogOption, value: boolean | strin
 .catalog-search:focus-within { border-color: #ef4776; box-shadow: 0 0 0 3px rgba(239, 71, 118, .1); }
 .catalog-add-button { display: grid; width: 36px; height: 36px; padding: 0; place-items: center; border: 1px solid #efadc0; border-radius: 8px; color: #c72a56; background: #fff4f7; cursor: pointer; }
 .catalog-add-button:hover { border-color: #ef4776; color: #fff; background: #ef4776; }
-.catalog-add-button:focus-visible, .service-select:focus-visible { outline: 2px solid #ef4776; outline-offset: 1px; }
+.catalog-add-button:focus-visible, .service-select:focus-visible, .service-remove-button:focus-visible { outline: 2px solid #ef4776; outline-offset: 1px; }
 .service-groups { display: grid; gap: 12px; margin-top: 12px; }
 .group-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; padding: 7px 6px 5px; border-bottom: 1px solid #e5e8ef; color: #667187; background: transparent; }
 .group-heading strong { color: #46526a; font-size: 12px; letter-spacing: .05em; }
@@ -217,8 +219,6 @@ function updateServiceEnabled(item: ServiceCatalogOption, value: boolean | strin
 .service-item.is-disabled .service-select { opacity: .54; }
 .service-enabled-switch { flex: none; }
 .service-row-actions { display: inline-flex; align-items: center; gap: 5px; }
-.service-remove-button { display: grid; width: 26px; height: 26px; padding: 0; place-items: center; border: 0; border-radius: 7px; color: #9aa2b1; background: transparent; cursor: pointer; }
-.service-remove-button:hover { color: #c52f58; background: #ffe9ef; }
 .service-copy { display: flex; min-width: 0; flex-direction: column; }
 .service-copy strong { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
 .service-meta { display: flex; min-width: 0; align-items: center; gap: 5px; margin-top: 3px; }
@@ -229,6 +229,9 @@ function updateServiceEnabled(item: ServiceCatalogOption, value: boolean | strin
 .service-detail > .service-configuration-slot { width: min(100%, 1080px); }
 .detail-hero { display: flex; align-items: center; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid #eceef3; }
 .detail-hero-copy { display: flex; min-width: 0; flex-direction: column; }
+.detail-hero-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; flex: 0 0 auto; }
+.service-remove-button { display: grid; width: 34px; height: 34px; padding: 0; place-items: center; border: 1px solid #e4c3cc; border-radius: 9px; color: #a63a57; background: #fff; cursor: pointer; transition: 160ms ease; }
+.service-remove-button:hover { border-color: #d45c70; color: #fff; background: #d45c70; }
 .detail-hero h4 { min-width: 0; margin: 0; overflow: hidden; color: #172033; font-size: 20px; text-overflow: ellipsis; white-space: nowrap; }
 .detail-hero-copy small { overflow: hidden; margin-top: 4px; color: #8991a2; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .service-configuration-slot { min-height: 0; margin-top: 16px; padding-top: 16px; border-top: 1px solid #eceef3; overflow-y: auto; flex: 1; }
