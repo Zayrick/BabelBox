@@ -1,28 +1,14 @@
 <template>
-  <section id="settings-image-translation" class="settings-section image-ocr-section">
+  <section id="settings-image-translation" class="settings-section settings-list-section image-ocr-section">
     <div v-if="!browserCapabilities.imageOcr" class="image-ocr-unavailable" role="status">
       <strong>当前浏览器暂不支持图片翻译与 OCR</strong>
       <p>原有图片翻译偏好和语言包记录会保留；请在 Chrome 中使用及管理此功能。</p>
     </div>
     <template v-else>
-      <div class="image-ocr-heading">
-        <div>
-          <h2>图片翻译需要 OCR 语言包</h2>
-          <p>语言包会在运行时按需下载并缓存在浏览器本地，不会随扩展安装包一起下载。</p>
-        </div>
-        <span class="image-ocr-runtime-badge">按需下载</span>
-      </div>
-      <div class="image-ocr-recommendation">
-        <div>
-          <strong>推荐先下载中文和 English</strong>
-          <p>自动检测默认使用这两种语言。识别日文图片前，再下载日本語语言包即可。</p>
-        </div>
-        <button type="button" class="image-ocr-primary-action"
-          :disabled="recommendedReady || recommendedDownloading"
-          @click="downloadLanguages(recommendedCodes)">
-          {{ recommendedReady ? '推荐语言已就绪' : recommendedDownloading ? '下载中…' : '下载推荐语言' }}
-        </button>
-      </div>
+      <header class="image-ocr-list-heading">
+        <h2>语言列表</h2>
+        <p>下载对应语言包后，才能识别该语言的图片文字。</p>
+      </header>
       <div class="image-ocr-pack-list">
         <article v-for="pack in languagePacks" :key="pack.code" class="image-ocr-pack-card">
           <div class="image-ocr-pack-icon">{{ pack.code === 'chi_sim' ? '中' : pack.code === 'eng' ? 'A' : '日' }}</div>
@@ -51,24 +37,20 @@
 </template>
 
 <script setup lang="ts">
-import {computed, onMounted, ref} from 'vue';
+import {onMounted, ref} from 'vue';
 import {browser} from 'wxt/browser';
 import {browserCapabilities} from '@/src/platform/browser/capabilities';
 import {
   IMAGE_OCR_LANGUAGE_PACKS,
   IMAGE_OCR_LANGUAGE_STATE_KEY,
-  IMAGE_OCR_RECOMMENDED_LANGUAGES,
   normalizeImageOcrLanguageCodes,
   type ImageOcrLanguageCode,
 } from '../ocrLanguages';
 
 const languagePacks = IMAGE_OCR_LANGUAGE_PACKS;
-const recommendedCodes = IMAGE_OCR_RECOMMENDED_LANGUAGES;
 const downloadedCodes = ref<ImageOcrLanguageCode[]>([]);
 const downloadingCodes = ref<ImageOcrLanguageCode[]>([]);
 const downloadError = ref('');
-const recommendedReady = computed(() => recommendedCodes.every(code => downloadedCodes.value.includes(code)));
-const recommendedDownloading = computed(() => recommendedCodes.some(code => downloadingCodes.value.includes(code)));
 
 async function refreshLanguageState() {
   const stored = await browser.storage.local.get(IMAGE_OCR_LANGUAGE_STATE_KEY);

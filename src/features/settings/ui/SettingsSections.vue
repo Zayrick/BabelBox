@@ -544,8 +544,8 @@
         <section class="config-history-panel" aria-label="最近配置">
           <div class="config-history-heading">
             <div>
-              <h3>最近 10 次配置</h3>
-              <p>修改会自动保存，保留最近的稳定快照，可随时恢复。</p>
+              <h3>配置历史</h3>
+              <p>自动保留最近 10 次修改，可随时恢复。</p>
             </div>
             <div class="config-history-actions">
               <el-button
@@ -569,17 +569,22 @@
               :key="entry.version"
               class="config-history-entry"
               :class="{ current: entry.version === currentHistoryVersion }"
+              :aria-current="entry.version === currentHistoryVersion ? 'true' : undefined"
             >
-              <div class="config-history-version"><b>v{{ entry.version }}</b><span v-if="entry.version === currentHistoryVersion">当前</span></div>
+              <div class="config-history-version">
+                <b>v{{ entry.version }}</b>
+                <span v-if="entry.version === currentHistoryVersion">当前</span>
+              </div>
               <div class="config-history-detail">
                 <strong>{{ historySummary(entry) }}</strong>
-                <small>{{ formatHistoryTime(entry.savedAt) }}</small>
+                <time :datetime="entry.savedAt">{{ formatHistoryTime(entry.savedAt) }}</time>
               </div>
               <el-button
+                v-if="entry.version !== currentHistoryVersion"
                 size="small"
                 text
                 type="primary"
-                :disabled="historyBusy || entry.version === currentHistoryVersion"
+                :disabled="historyBusy"
                 :aria-label="`恢复配置 v${entry.version}`"
                 @click="runHistoryAction('restore', entry.version)"
               ><el-icon><History /></el-icon>恢复</el-button>
@@ -604,7 +609,7 @@
               <div class="config-history-version"><b>b{{ entry.version }}</b></div>
               <div class="config-history-detail">
                 <strong>{{ backupSummary(entry) }}</strong>
-                <small>{{ formatHistoryTime(entry.savedAt) }}</small>
+                <time :datetime="entry.savedAt">{{ formatHistoryTime(entry.savedAt) }}</time>
               </div>
               <el-button
                 size="small"
@@ -1391,7 +1396,11 @@ const historySummary = (entry: ConfigHistoryEntry): string => {
   const service = getTranslationServiceLabel(entry.config, entry.config.service);
   const siteCount = entry.config.alwaysTranslateDomains?.length ?? 0;
   const disabledSiteCount = entry.config.disabledExtensionDomains?.length ?? 0;
-  return `${target} · ${service} · 始终翻译 ${siteCount} 个网站 · 禁用扩展 ${disabledSiteCount} 个网站`;
+  const siteRules = [
+    siteCount > 0 ? `始终翻译 ${siteCount} 个网站` : '',
+    disabledSiteCount > 0 ? `禁用扩展 ${disabledSiteCount} 个网站` : '',
+  ].filter(Boolean);
+  return [target, service, ...siteRules].join(' · ');
 };
 
 const backupSummary = (entry: ConfigAutoBackupEntry): string => historySummary(entry);
