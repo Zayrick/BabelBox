@@ -245,17 +245,17 @@ function submit(): void {
 </script>
 
 <style scoped>
-.add-service-layout { display: grid; min-height: 480px; grid-template-columns: 260px minmax(0, 1fr); border: 1px solid #e5e8ef; border-radius: 12px; overflow: hidden; }
-.provider-picker { min-height: 0; padding: 12px; border-right: 1px solid #e5e8ef; background: #fafbfc; }
+.add-service-layout { display: grid; height: 480px; min-height: 0; grid-template-columns: 260px minmax(0, 1fr); border: 1px solid #e5e8ef; border-radius: 12px; overflow: hidden; }
+.provider-picker { display: flex; min-height: 0; padding: 12px; border-right: 1px solid #e5e8ef; background: #fafbfc; flex-direction: column; overflow: hidden; }
 .provider-search { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px; border: 1px solid #dfe3eb; border-radius: 8px; background: #fff; }
 .provider-search svg { color: #8991a2; }
 .provider-search input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; }
-.provider-list { display: grid; max-height: 430px; margin-top: 10px; gap: 3px; overflow-y: auto; }
+.provider-list { display: grid; min-height: 0; margin-top: 10px; gap: 3px; overflow-y: auto; align-content: start; flex: 1; }
 .provider-list button { display: grid; min-width: 0; grid-template-columns: 28px minmax(0, 1fr) 16px; align-items: center; gap: 9px; padding: 7px; border: 1px solid transparent; border-radius: 8px; color: #263044; background: transparent; text-align: left; cursor: pointer; }
 .provider-list button:hover { border-color: #e0e4ec; background: #fff; }
 .provider-list button.active { border-color: #efb2c3; color: #bd2c55; background: #fff2f6; }
 .provider-list button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.add-service-form { display: flex; min-width: 0; padding: 20px 22px; gap: 14px; flex-direction: column; overflow-y: auto; }
+.add-service-form { display: flex; min-width: 0; min-height: 0; padding: 20px 22px; gap: 14px; flex-direction: column; overflow-y: auto; }
 .add-service-form header { display: flex; align-items: center; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid #eceef3; }
 .add-service-form header > div { display: flex; min-width: 0; flex-direction: column; }
 .add-service-form header strong { color: #172033; font-size: 18px; }
