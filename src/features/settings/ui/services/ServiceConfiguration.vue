@@ -490,7 +490,6 @@ watch(service, resetConnectionTest)
   align-items: center;
   gap: 6px;
   flex: 0 0 auto;
-  align-self: flex-start;
   margin-left: auto;
   padding: 7px 12px;
   border: 1px solid #ef4776;

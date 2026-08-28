@@ -32,14 +32,7 @@
               <ServiceIcon :service="item.value" :label="item.label" />
               <span class="service-copy">
                 <strong>{{ item.label }}</strong>
-              </span>
-              <span
-                v-if="defaultService === item.value"
-                class="current-service-status"
-                title="默认翻译服务"
-              >
-                <CircleCheck :size="15" :stroke-width="2" aria-hidden="true" focusable="false" />
-                <span class="service-status-label">默认翻译服务</span>
+                <small v-if="defaultService === item.value">默认翻译服务</small>
               </span>
             </button>
           </section>
@@ -50,13 +43,7 @@
       <section class="service-detail" aria-label="当前翻译服务详情">
         <div class="detail-hero">
           <ServiceIcon :service="service" :label="selectedService?.label" size="large" />
-          <div>
-            <div class="detail-title-row">
-              <h4>{{ selectedService?.label || '尚未配置服务' }}</h4>
-              <span class="active-badge">{{ service === defaultService ? '当前默认' : '正在配置' }}</span>
-            </div>
-            <p v-if="selectedService?.description">{{ selectedService.description }}</p>
-          </div>
+          <h4>{{ selectedService?.label || '尚未配置服务' }}</h4>
         </div>
 
         <div v-if="presentation.showModelConfiguration" class="model-section">
@@ -240,23 +227,18 @@ watch(modelQuery, () => {
 .group-heading strong { color: #46526a; font-size: 12px; letter-spacing: .05em; }
 .group-heading span { font-size: 10px; }
 .service-group { min-width: 0; }
-.service-item { display: grid; grid-template-columns: 40px minmax(0, 1fr) 16px; align-items: center; gap: 9px; width: 100%; padding: 8px; border: 1px solid transparent; border-radius: 8px; color: #172033; background: transparent; text-align: left; cursor: pointer; transition: background 150ms ease, border-color 150ms ease; }
+.service-item { display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: center; gap: 9px; width: 100%; padding: 8px; border: 1px solid transparent; border-radius: 8px; color: #172033; background: transparent; text-align: left; cursor: pointer; transition: background 150ms ease, border-color 150ms ease; }
 .service-item:hover { border-color: #e2e5ec; background: #fff; }
 .service-item.active { border-color: #f3c4d1; background: #fff0f4; }
 .service-copy { display: flex; min-width: 0; flex-direction: column; }
 .service-copy strong { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
-.current-service-status { display: grid; place-items: center; color: #da315f; }
-.service-status-label { position: absolute; width: 1px; height: 1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.service-copy small { margin-top: 3px; color: #9299a8; font-size: 10px; line-height: 1.3; }
 .service-detail { display: flex; min-width: 0; min-height: 0; margin: 0; padding: 18px 20px; background: #fff; flex-direction: column; overflow: hidden; }
 .service-detail > .detail-hero,
 .service-detail > .model-section,
 .service-detail > .service-configuration-slot { width: min(100%, 1080px); }
-.detail-hero { display: flex; align-items: flex-start; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid #eceef3; }
-.detail-hero > div:last-child { min-width: 0; }
-.detail-title-row { display: flex; align-items: center; gap: 9px; }
-.detail-title-row h4 { margin: 1px 0 4px; color: #172033; font-size: 20px; }
-.active-badge { padding: 3px 6px; border-radius: 6px; color: #bd2853; background: #ffe9ef; font-size: 9px; font-weight: 800; }
-.detail-hero p { margin: 0; color: #737c8f; font-size: 13px; line-height: 1.6; }
+.detail-hero { display: flex; align-items: center; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid #eceef3; }
+.detail-hero h4 { min-width: 0; margin: 0; overflow: hidden; color: #172033; font-size: 20px; text-overflow: ellipsis; white-space: nowrap; }
 .model-section { display: flex; min-height: 0; margin-top: 16px; flex: 0 0 auto; flex-direction: column; }
 .model-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 15px; margin-bottom: 12px; }
 .model-heading > div { display: flex; min-width: 0; flex-direction: column; }
