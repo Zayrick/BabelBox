@@ -50,7 +50,6 @@
           >
             <Plus class="add-service-icon" aria-hidden="true" />
             更多服务
-            <b>{{ cards.length }}</b>
             <ChevronDown class="add-service-chevron" aria-hidden="true" />
           </button>
           <div v-if="servicePickerOpen" class="service-picker-popover" role="dialog" aria-label="添加更多翻译服务">
@@ -70,7 +69,6 @@
               <section v-for="group in filteredServiceGroups" :key="group.key" class="service-picker-group">
                 <div class="service-picker-group-heading">
                   <strong>{{ group.label }}</strong>
-                  <span>{{ group.items.length }}</span>
                 </div>
                 <button
                   v-for="item in group.items"
@@ -90,10 +88,6 @@
               <p v-if="filteredServiceGroups.length === 0">没有找到可添加的翻译服务</p>
             </div>
           </div>
-        </div>
-        <div class="translation-center-run-status" :class="{ active: isRunning }" aria-live="polite">
-          <i />
-          <span>{{ isRunning ? '正在翻译' : runCount ? `已翻译 ${runCount} 次` : '等待输入' }}</span>
         </div>
       </div>
     </div>
@@ -641,7 +635,6 @@ onUnmounted(() => {
   gap: 12px;
   height: 100%;
   min-height: 0;
-  padding: 16px 18px;
   color: var(--ink);
   background: transparent;
   grid-template-rows: auto minmax(0, 1fr);
@@ -654,23 +647,6 @@ onUnmounted(() => {
   border: 1px solid var(--line);
   background: var(--surface);
 }
-
-.translation-center-run-status {
-  display: inline-flex;
-  align-items: center;
-  flex: none;
-  gap: 6px;
-  padding: 0;
-  border: 0;
-  color: var(--muted);
-  background: transparent;
-  font-size: 10px;
-  font-weight: 700;
-}
-
-.translation-center-run-status i { width: 7px; height: 7px; border-radius: 50%; background: #b8becb; }
-.translation-center-run-status.active { color: var(--brand-strong); }
-.translation-center-run-status.active i { background: var(--brand); }
 
 .translation-center-toolbar {
   display: flex;
@@ -743,7 +719,6 @@ onUnmounted(() => {
 }
 .add-service-button:hover { border-color: #ef9ab1; color: var(--brand-strong); background: var(--brand-soft); }
 .add-service-icon { width: 16px; height: 16px; flex: none; color: var(--brand); }
-.add-service-button b { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; color: #fff; background: var(--ink); font-size: 10px; }
 .add-service-chevron { width: 15px; height: 15px; flex: none; color: var(--muted); }
 .service-picker-popover {
   position: absolute;
@@ -773,9 +748,8 @@ onUnmounted(() => {
 .service-picker-search input::placeholder { color: #a2a8b5; }
 .service-picker-groups { min-height: 0; flex: 1 1 auto; overflow-y: auto; padding: 0 7px 8px; }
 .service-picker-group + .service-picker-group { margin-top: 8px; }
-.service-picker-group-heading { display: flex; align-items: center; justify-content: space-between; padding: 7px 7px 5px; color: var(--muted); font-size: 10px; }
+.service-picker-group-heading { padding: 7px 7px 5px; }
 .service-picker-group-heading strong { color: var(--ink); font-size: 10px; }
-.service-picker-group-heading span { display: inline-grid; min-width: 18px; height: 18px; place-items: center; border-radius: 999px; background: var(--surface-soft); font-size: 9px; }
 .service-picker-option { display: flex; align-items: center; width: 100%; min-height: 45px; gap: 9px; padding: 6px; border: 0; border-radius: 7px; color: var(--ink); background: transparent; cursor: pointer; text-align: left; }
 .service-picker-option:hover { background: var(--surface-soft); }
 .service-picker-option-copy { display: grid; min-width: 0; flex: 1; gap: 3px; }
@@ -866,12 +840,11 @@ onUnmounted(() => {
 .translation-result-error button:disabled { cursor: not-allowed; opacity: .45; }
 
 @media (max-width: 1050px) {
-  .translation-center { padding: 14px 16px; }
   .translation-center-layout { grid-template-columns: minmax(270px, .8fr) minmax(360px, 1.2fr); }
 }
 
 @media (max-width: 900px) {
-  .translation-center { height: auto; max-height: 100%; padding: 12px 8px; grid-template-rows: none; overflow-y: auto; }
+  .translation-center { height: auto; max-height: 100%; grid-template-rows: none; overflow-y: auto; }
   .translation-center-layout { grid-template-columns: 1fr; height: auto; }
   .translation-input-panel { min-height: 300px; }
   .translation-results-panel { min-height: 320px; }
