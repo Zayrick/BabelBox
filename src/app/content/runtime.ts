@@ -1,11 +1,11 @@
 import type {ContentScriptContext} from 'wxt/utils/content-script-context';
 import {createShadowRootUi} from 'wxt/utils/content-script-ui/shadow-root';
+import {browser} from 'wxt/browser';
 import {constants} from '@/src/core/config/constants';
-import {isExtensionDisabledOnSite, shouldAutoTranslatePage} from '@/src/features/site-rules/domain';
+import {isExtensionDisabledOnSite, shouldAutoTranslatePage} from '@/src/core/site-rules/domain';
 import {config, configReady, subscribeConfig} from '@/src/services/config/store';
 import {cancelAllTranslations} from '@/src/services/translation/client';
 import {resetPageTranslationContextCache} from '@/src/services/translation/context';
-import {clearLegacyPageTranslationCache} from '@/src/services/translation/legacyPageCache';
 import {getCenterPoint} from '@/src/shared/geometry/touch';
 import {createContentFeatureRegistry, type ContentFeatureRegistry} from './featureRegistry';
 import {createContentHotkeyRuntime} from './hotkeyRuntime';
@@ -64,7 +64,6 @@ function installPageStyles(ctx: ContentScriptContext): () => void {
 export async function startContentApp(ctx: ContentScriptContext,
     capabilities: BrowserCapabilities = browserCapabilities): Promise<void> {
     await configReady;
-    clearLegacyPageTranslationCache();
     let currentPageSiteDisabled = isExtensionDisabledOnSite(
         window.location.href,
         config.disabledExtensionDomains,

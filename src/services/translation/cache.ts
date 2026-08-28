@@ -51,7 +51,7 @@ export function canonicalize(value: unknown): string {
 
 /**
  * 从结构化请求身份生成带版本的不可读 key。
- * 版本号允许未来修改缓存协议，而不会误用旧协议留下的数据。
+ * 版本号防止读取与当前协议不兼容的记录。
  */
 export function buildTranslationCacheKey(identity: TranslationCacheIdentity): string {
   const payload = canonicalize({

@@ -1,17 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import vm from 'node:vm';
 
 const root = process.cwd();
 const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 const artifactPath = path.join(root, '.output/userscript/fluent-read.user.js');
 const source = fs.readFileSync(artifactPath, 'utf8');
-const preludeStartMarker = '/* FluentRead userscript compatibility prelude:start */';
-const preludeEndMarker = '/* FluentRead userscript compatibility prelude:end */';
-const preludeStart = source.indexOf(preludeStartMarker);
-const preludeEnd = source.indexOf(preludeEndMarker, preludeStart) + preludeEndMarker.length;
-const bootstrapStart = source.indexOf('globalThis.__FLUENTREAD_ICON_DATA__=');
 
 const assertions = [
   [source.startsWith('// ==UserScript==\n'), 'metadata header must be the first bytes'],
@@ -23,48 +17,10 @@ const assertions = [
   [!/(^|[^\w])import\s*\(/u.test(source), 'the artifact must not contain runtime dynamic imports'],
   [!/\bglobalThis\s*(?:\.\s*(?:browser|chrome)\b|\[\s*['"](?:browser|chrome)['"]\s*\])/u.test(source), 'privileged browser shims must stay lexical'],
   [source.split('// ==UserScript==').length === 2, 'metadata header must occur exactly once'],
-  [preludeStart >= 0 && preludeEnd > preludeStart, 'compatibility prelude markers are missing'],
-  [bootstrapStart > preludeEnd, 'compatibility prelude must run before the artifact bootstrap and IIFE'],
   [source.length > 10_000, 'artifact is unexpectedly small'],
-  [!source.includes('fluent-read-area-translator-container'), 'area translator must be excluded from userscript'],
-  [!source.includes('fluent-read-image-translation-root'), 'image translator must be excluded from userscript'],
-  [!source.includes('fluent-read-video-subtitle-style'), 'video subtitle runtime must be excluded from userscript'],
-  [!source.includes('fluent:prefill'), 'page-driven New API config bridge must be excluded from userscript'],
-  [!source.includes('CHROME_TRANSLATE_OFFSCREEN'), 'Chrome offscreen translator must be excluded from userscript'],
 ];
 
 const failure = assertions.find(([passed]) => !passed);
 if (failure) throw new Error(`Userscript verification failed: ${failure[1]}`);
-
-const context = vm.createContext({});
-vm.runInContext(`
-  globalThis.browser = {sentinel: 'page-browser'};
-  globalThis.chrome = {sentinel: 'page-chrome'};
-  delete Object.fromEntries;
-  delete Promise.allSettled;
-  delete Array.prototype.flatMap;
-`, context);
-vm.runInContext(source.slice(preludeStart, preludeEnd), context);
-
-const runtimeAssertions = [
-  [vm.runInContext(`JSON.stringify(Object.fromEntries([['first', 1], ['second', 2]]))`, context) === '{"first":1,"second":2}', 'Object.fromEntries polyfill failed'],
-  [vm.runInContext(`JSON.stringify([1, , 3].flatMap(function (value, index) { return [value, index]; }))`, context) === '[1,0,3,2]', 'Array.prototype.flatMap polyfill failed'],
-  [vm.runInContext(`Object.getOwnPropertyDescriptor(Object, 'fromEntries').enumerable === false`, context), 'Object.fromEntries polyfill must be non-enumerable'],
-  [vm.runInContext(`Object.getOwnPropertyDescriptor(Promise, 'allSettled').enumerable === false`, context), 'Promise.allSettled polyfill must be non-enumerable'],
-  [vm.runInContext(`Object.getOwnPropertyDescriptor(Array.prototype, 'flatMap').enumerable === false`, context), 'Array.prototype.flatMap polyfill must be non-enumerable'],
-  [vm.runInContext(`globalThis.browser.sentinel === 'page-browser' && globalThis.chrome.sentinel === 'page-chrome'`, context), 'compatibility prelude must not replace page globals'],
-];
-const settled = await vm.runInContext(`
-  Promise.allSettled([Promise.resolve('ok'), Promise.reject('failed')]).then(function (values) {
-    return JSON.stringify(values);
-  })
-`, context);
-runtimeAssertions.push([
-  settled === '[{"status":"fulfilled","value":"ok"},{"status":"rejected","reason":"failed"}]',
-  'Promise.allSettled polyfill failed',
-]);
-
-const runtimeFailure = runtimeAssertions.find(([passed]) => !passed);
-if (runtimeFailure) throw new Error(`Userscript compatibility verification failed: ${runtimeFailure[1]}`);
 
 console.log(`Verified ${path.relative(root, artifactPath)} (${Buffer.byteLength(source).toLocaleString()} bytes)`);

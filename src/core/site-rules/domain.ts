@@ -140,8 +140,7 @@ export function shouldAutoTranslatePage(
 ): boolean {
     if (config.on !== true) return false;
     if (isExtensionDisabledOnSite(input, config.disabledExtensionDomains)) return false;
-    // 保留旧的全局自动翻译语义：只要内容脚本能在该页面运行，全局开关
-    // 就应生效。HTTP(S) 与可注册域名限制只属于新增的网站名单。
+    // 全局开关对所有可注入页面生效；HTTP(S) 与可注册域名限制只用于网站名单。
     if (config.autoTranslate === true) return true;
     return isAlwaysTranslateSite(input, config.alwaysTranslateDomains);
 }

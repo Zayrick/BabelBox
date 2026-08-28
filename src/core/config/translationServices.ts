@@ -1,5 +1,4 @@
 import {
-  customModelString,
   defaultModels,
   defaultOption,
   options,
@@ -102,7 +101,7 @@ export const aiTranslationProviders = Object.freeze(
 
 const knownProviders = new Set([...machineTranslationProviders, ...aiTranslationProviders])
 const reservedProviderServiceIds = new Set(knownProviders)
-const LEGACY_DEFAULT_NEW_API_URL = 'http://localhost:3000'
+export const DEFAULT_NEW_API_URL = 'http://localhost:3000'
 
 function stringValue(value: unknown): string {
   return typeof value === 'string' ? value.trim() : ''
@@ -284,7 +283,7 @@ function legacyProviderHasConfiguration(config: TranslationServiceConfigLike, pr
     && stringValue(config.custom) !== defaultOption.custom) return true
   if (provider === services.newapi
     && stringValue(config.newApiUrl)
-    && stringValue(config.newApiUrl) !== LEGACY_DEFAULT_NEW_API_URL) return true
+    && stringValue(config.newApiUrl) !== DEFAULT_NEW_API_URL) return true
   if (provider === services.azureOpenai && stringValue(config.azureOpenaiEndpoint)) return true
   return Object.keys(config.requireApiKey || {}).some((key) => key.startsWith(`${provider}:`))
 }
@@ -466,7 +465,6 @@ export function getTranslationServiceLabel(
 }
 
 function configuredInstanceValue(
-  config: TranslationServiceConfigLike,
   serviceId: string,
   provider: string,
   mapping: Record<string, string | undefined> | undefined,
@@ -484,7 +482,7 @@ export function getTranslationServiceConfigurationKey(
   const provider = instance?.provider || serviceId
   const endpoint = instance?.proxy
     || instance?.endpoint
-    || configuredInstanceValue(config, serviceId, provider, config.proxy)
+    || configuredInstanceValue(serviceId, provider, config.proxy)
     || (provider === services.custom ? stringValue(config.custom) : '')
     || (provider === services.newapi ? stringValue(config.newApiUrl) : '')
     || (provider === services.azureOpenai ? stringValue(config.azureOpenaiEndpoint) : '')
@@ -495,13 +493,13 @@ export function getTranslationServiceConfigurationKey(
     model: getTranslationServiceModel(config, serviceId),
     endpoint,
     customBody: instance?.customBody
-      || configuredInstanceValue(config, serviceId, provider, config.customBody),
+      || configuredInstanceValue(serviceId, provider, config.customBody),
     systemRole: instance?.systemRole
-      || configuredInstanceValue(config, serviceId, provider, config.system_role),
+      || configuredInstanceValue(serviceId, provider, config.system_role),
     userRole: instance?.userRole
-      || configuredInstanceValue(config, serviceId, provider, config.user_role),
+      || configuredInstanceValue(serviceId, provider, config.user_role),
     robotId: instance?.robotId
-      || configuredInstanceValue(config, serviceId, provider, config.robot_id),
+      || configuredInstanceValue(serviceId, provider, config.robot_id),
     deepseekApiType: instance?.deepseekApiType || config.deepseekApiType || '',
     deepseekThinkingMode: instance?.deepseekThinkingMode || config.deepseekThinkingMode || '',
     minimaxBillingPlan: instance?.minimaxBillingPlan || config.minimaxBillingPlan || '',
@@ -509,13 +507,6 @@ export function getTranslationServiceConfigurationKey(
     mimoBillingPlan: instance?.mimoBillingPlan || config.mimoBillingPlan || '',
     mimoRegion: instance?.mimoRegion || config.mimoRegion || '',
   })
-}
-
-export function isTranslationServiceEnabled(
-  config: TranslationServiceConfigLike,
-  serviceId: string,
-): boolean {
-  return getTranslationServiceInstance(config, serviceId)?.enabled === true
 }
 
 export function getTranslationServiceOptions(
@@ -560,8 +551,8 @@ export function reconcileTranslationServiceReferences<T extends TranslationServi
   return config
 }
 
-/** Clear provider-keyed compatibility fields after deleting a migrated AI instance. */
-export function clearLegacyTranslationServiceConfiguration(
+/** Clear provider-keyed fields when deleting a default-ID AI instance. */
+export function clearTranslationServiceConfiguration(
   config: TranslationServiceConfigLike,
   instance: Pick<TranslationServiceInstance, 'id' | 'provider' | 'kind'>,
 ): void {
@@ -586,7 +577,7 @@ export function clearLegacyTranslationServiceConfiguration(
     }
   }
   if (provider === services.custom) config.custom = defaultOption.custom
-  if (provider === services.newapi) config.newApiUrl = LEGACY_DEFAULT_NEW_API_URL
+  if (provider === services.newapi) config.newApiUrl = DEFAULT_NEW_API_URL
   if (provider === services.azureOpenai) config.azureOpenaiEndpoint = ''
   if (provider === services.deepseek) {
     config.deepseekApiType = 'auto'
@@ -600,8 +591,4 @@ export function clearLegacyTranslationServiceConfiguration(
     config.mimoBillingPlan = 'payg'
     config.mimoRegion = 'cn'
   }
-}
-
-export function isCustomModelValue(value: string): boolean {
-  return value === customModelString
 }

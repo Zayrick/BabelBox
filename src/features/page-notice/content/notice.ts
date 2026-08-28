@@ -1,3 +1,4 @@
+import {browser} from 'wxt/browser';
 import {throttle} from '@/src/shared/function/throttle';
 import {X} from 'lucide';
 import {createLucideIconElement} from '@/src/ui/icons/lucideDom';
@@ -17,22 +18,10 @@ let noticeStack: HTMLElement | null = null;
 
 function getMissingCredentialNotice(message: string): MissingCredentialNotice | null {
     const match = message.match(/^(.+?)\s+需要\s+(.+?)，当前尚未(?:完整)?配置(?:[；。]|$)/u);
-    if (match) {
-        const [, service, credentialLabel] = match;
-        if (/(?:API Key|访问令牌|App Key|App Secret|SecretId|SecretKey)/iu.test(credentialLabel)) {
-            return {service, credentialLabel};
-        }
-    }
-
-    // Retain a settings action for legacy adapters that only return a generic
-    // “not configured” sentence, while never treating invalid/expired keys as
-    // missing credentials.
-    if (!/(?:尚未(?:完整)?配置|还没有配置|未配置|请先配置)/u.test(message)) return null;
-    const credentialLabel = message.match(
-        /API Key(?:（访问令牌）)?|App Key(?:\s*和\s*App Secret)?|SecretId(?:\s*和\s*SecretKey)?/iu,
-    )?.[0];
-    return credentialLabel
-        ? {service: '当前翻译服务', credentialLabel}
+    if (!match) return null;
+    const [, service, credentialLabel] = match;
+    return /(?:API Key|访问令牌|App Key|App Secret|SecretId|SecretKey)/iu.test(credentialLabel)
+        ? {service, credentialLabel}
         : null;
 }
 
@@ -126,10 +115,7 @@ function removeNotice(notice: HTMLElement): void {
     }, NOTICE_EXIT_DURATION);
 }
 
-/**
- * 在隔离的 Shadow Root 中显示页面通知。返回通知节点便于浏览器回归断言；
- * 调用方不应依赖其内部结构。
- */
+/** 在隔离的 Shadow Root 中显示页面通知。 */
 export function showPageNotice(message: string, type: NoticeType): HTMLElement {
     const missingCredential = getMissingCredentialNotice(message);
     const credential = missingCredential !== null;

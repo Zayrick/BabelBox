@@ -15,9 +15,10 @@ vi.mock("@/src/services/config/store", () => ({config: mockConfig}));
 
 import deeplx, {
     getDeepLXRequestLanguages,
-    normalizeDeepLXLanguage,
 } from "@/src/providers/translation/deeplx";
-import {DEFAULT_DEEPLX_ENDPOINT, DEEPLX_ENDPOINT_PRESETS, getDeepLXEndpoints} from '@/src/core/config/deeplx';
+import {DEFAULT_DEEPLX_ENDPOINT, getDeepLXEndpoints} from '@/src/core/config/deeplx';
+
+const TOKEN_ENDPOINT = 'https://freeapi.fanyimao.cn/translate?token={{apiKey}}';
 
 const fetchMock = vi.fn<typeof fetch>();
 
@@ -59,9 +60,9 @@ describe("DeepLX endpoint configuration", () => {
     });
 
     it("resolves token placeholders without returning a secret in the configured URL", () => {
-        expect(getDeepLXEndpoints(DEEPLX_ENDPOINT_PRESETS[1].url, "", "site-token"))
+        expect(getDeepLXEndpoints(TOKEN_ENDPOINT, "", "site-token"))
             .toEqual(["https://freeapi.fanyimao.cn/translate?token=site-token"]);
-        expect(getDeepLXEndpoints(DEEPLX_ENDPOINT_PRESETS[2].url, "", ""))
+        expect(getDeepLXEndpoints('https://api.deeplx.org/{{apiKey}}/translate', "", ""))
             .toEqual([DEFAULT_DEEPLX_ENDPOINT]);
     });
 });
@@ -123,7 +124,7 @@ describe("DeepLX adapter", () => {
     });
 
     it("supports a token placeholder in a preset endpoint", async () => {
-        mockConfig.deeplx = DEEPLX_ENDPOINT_PRESETS[1].url;
+        mockConfig.deeplx = TOKEN_ENDPOINT;
         mockConfig.token = {deeplx: "site-token"};
         fetchMock.mockResolvedValue(mockResponse({code: 200, data: "你好"}));
 
@@ -133,11 +134,13 @@ describe("DeepLX adapter", () => {
     });
 
     it("normalizes Chinese language variants", () => {
-        expect(normalizeDeepLXLanguage("zh-Hans")).toBe("ZH");
-        expect(normalizeDeepLXLanguage("zh-TW")).toBe("ZH-HANT");
         expect(getDeepLXRequestLanguages("auto", "zh-Hans")).toEqual({
             sourceLang: "AUTO",
             targetLang: "ZH",
+        });
+        expect(getDeepLXRequestLanguages("zh-TW", "en")).toEqual({
+            sourceLang: "ZH-HANT",
+            targetLang: "EN",
         });
     });
 });

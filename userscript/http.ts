@@ -75,7 +75,7 @@ function shouldUseNativeFetch(url: string): boolean {
     }
 }
 
-/** Fetch-compatible transport backed by the legacy GM API supported by Via. */
+/** Fetch-compatible transport backed by Via's callback-based GM request API. */
 export const userscriptFetch: RuntimeFetch = async (input, init) => {
     const request = await resolveRequest(input, init);
     const gmRequest = globalThis.GM_xmlhttpRequest;

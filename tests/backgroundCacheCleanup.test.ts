@@ -1,32 +1,35 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 
-const mocks = vi.hoisted(() => ({cleanupTranslationCache: vi.fn()}));
+const mocks = vi.hoisted(() => ({
+    cleanupTranslationCache: vi.fn(),
+    alarmListeners: [] as Array<(alarm: {name: string}) => void>,
+    getAlarm: vi.fn(),
+    createAlarm: vi.fn(async () => undefined),
+}));
 
 vi.mock('@/src/app/translation/runtime', () => ({
     cleanupTranslationCache: mocks.cleanupTranslationCache,
 }));
-
-interface AlarmListener {
-    (alarm: {name: string}): void;
-}
+vi.mock('wxt/browser', () => ({
+    browser: {
+        alarms: {
+            onAlarm: {addListener: (listener: (alarm: {name: string}) => void) => mocks.alarmListeners.push(listener)},
+            get: mocks.getAlarm,
+            create: mocks.createAlarm,
+        },
+    },
+}));
 
 function browserFixture(existingAlarm?: {name: string}) {
-    const listeners: AlarmListener[] = [];
-    const create = vi.fn(async () => undefined);
-    vi.stubGlobal('browser', {
-        alarms: {
-            onAlarm: {addListener: (listener: AlarmListener) => listeners.push(listener)},
-            get: vi.fn(async () => existingAlarm),
-            create,
-        },
-    });
-    return {listeners, create};
+    mocks.getAlarm.mockResolvedValue(existingAlarm);
+    return {listeners: mocks.alarmListeners, create: mocks.createAlarm};
 }
 
 beforeEach(() => {
-    vi.resetModules();
-    vi.unstubAllGlobals();
     mocks.cleanupTranslationCache.mockReset().mockResolvedValue(undefined);
+    mocks.alarmListeners.length = 0;
+    mocks.getAlarm.mockReset();
+    mocks.createAlarm.mockClear();
 });
 
 describe('后台翻译缓存维护调度', () => {

@@ -1,3 +1,4 @@
+import {browser} from 'wxt/browser';
 import {cleanupTranslationCache} from '@/src/app/translation/runtime';
 
 export const TRANSLATION_CACHE_CLEANUP_ALARM = 'fluentread-translation-cache-cleanup';
@@ -6,12 +7,7 @@ interface BrowserAlarm {
     name: string;
 }
 
-/**
- * 注册翻译缓存维护任务。
- *
- * Step 1: worker 每次启动都先做一次轻量清理。
- * Step 2: 复用已有 alarm；仅在缺失时创建每日任务，兼容 MV2 与 MV3 重启。
- */
+/** worker 启动时清理一次，并确保每日清理 alarm 已注册。 */
 export function installTranslationCacheCleanup(): void {
     void cleanupTranslationCache();
     browser.alarms.onAlarm.addListener((alarm: BrowserAlarm) => {

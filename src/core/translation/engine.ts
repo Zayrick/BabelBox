@@ -274,8 +274,7 @@ export class TranslationCandidateCore {
         let current: Element | null = element;
         while (current && !evaluationContext.extensionElements.has(current)) {
             chain.push(current);
-            // Element.closest(), used by the previous implementation, does not
-            // cross a ShadowRoot. Keep that exact ownership boundary here.
+            // parentElement 不跨越 ShadowRoot，与扩展 UI 的所有权边界一致。
             current = current.parentElement;
         }
         let inherited = inheritCachedFlag(current, evaluationContext.extensionElements);

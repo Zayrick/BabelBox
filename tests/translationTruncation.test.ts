@@ -19,7 +19,6 @@ import {
     acquireTranslationLayoutOverride,
     beginTranslation,
     getTranslationState,
-    hasTranslationLayoutOverride,
     isTranslationLayoutOverrideMutation,
     reconcileTranslationLayoutOverrides,
     restoreTranslation,
@@ -229,8 +228,6 @@ describe('translation truncation layout', () => {
             expect(wrapper.parentElement).toBe(first);
             expect(wrapper.textContent).toBe('模型介绍已翻译。');
             expect(wrapper.getAttribute('translate')).toBe('no');
-            expect(hasTranslationLayoutOverride(first)).toBe(true);
-            expect(hasTranslationLayoutOverride(clamp)).toBe(true);
             expect(clamp.style.getPropertyValue('-webkit-line-clamp')).toBe('unset');
             expect(priorityTracking.calls).toContainEqual({
                 property: '-webkit-line-clamp',
@@ -240,7 +237,6 @@ describe('translation truncation layout', () => {
 
             expect(restoreTranslation(first)).toBe(true);
             expect(wrapper.isConnected).toBe(false);
-            expect(hasTranslationLayoutOverride(clamp)).toBe(false);
             expect(clamp.getAttribute('style')).toBe(originalClampStyle);
         });
     });
@@ -357,12 +353,9 @@ describe('translation truncation layout', () => {
             clamp,
             translationTruncationStyleOverrides,
         )).toBe(true);
-        expect(hasTranslationLayoutOverride(clamp)).toBe(true);
-
         firstAttempt.state.phase = 'translated';
         expect(restoreTranslation(first)).toBe(true);
         expect(clamp.style.getPropertyValue('-webkit-line-clamp')).toBe('unset');
-        expect(hasTranslationLayoutOverride(clamp)).toBe(true);
 
         clamp.style.setProperty('background-color', 'blue');
         secondAttempt.state.phase = 'translated';
@@ -372,7 +365,6 @@ describe('translation truncation layout', () => {
         expect(clamp.style.getPropertyValue('color')).toBe('red');
         expect(clamp.style.getPropertyValue('background-color')).toBe('blue');
         expect(clamp.style.getPropertyValue('line-clamp') ?? '').toBe('');
-        expect(hasTranslationLayoutOverride(clamp)).toBe(false);
     });
 
     it('preserves a host clamp rewrite instead of restoring the stale pre-translation value', () => {
@@ -416,7 +408,6 @@ describe('translation truncation layout', () => {
             try {
                 expect(getTranslationState(first)).toBeUndefined();
                 expect(clamp.style.getPropertyValue('-webkit-line-clamp')).toBe('2');
-                expect(hasTranslationLayoutOverride(clamp)).toBe(false);
             } finally {
                 if (getTranslationState(first)) restoreTranslation(first);
             }

@@ -1,4 +1,12 @@
 import {afterEach, describe, expect, it, vi} from 'vitest';
+
+const wxtBrowser = vi.hoisted(() => ({
+    runtime: undefined as unknown,
+    offscreen: undefined as unknown,
+}));
+
+vi.mock('wxt/browser', () => ({browser: wxtBrowser}));
+
 import {
     chromeOffscreenClient,
     createOffscreenClient,
@@ -23,7 +31,7 @@ function createRuntime(options: {
 } = {}) {
     let runtimeError = options.runtimeError;
     const getContexts = vi.fn(async () => options.contexts ?? []);
-    const sendMessage = vi.fn((message: unknown, callback: (response: unknown) => void) => {
+    const sendMessage = vi.fn((_message: unknown, callback: (response: unknown) => void) => {
         callback(options.response);
     });
     const runtime: OffscreenRuntimeApi = {
@@ -44,7 +52,8 @@ function createRuntime(options: {
 }
 
 afterEach(() => {
-    vi.unstubAllGlobals();
+    wxtBrowser.runtime = undefined;
+    wxtBrowser.offscreen = undefined;
 });
 
 describe('Offscreen platform client', () => {
@@ -207,12 +216,10 @@ describe('Offscreen platform client', () => {
         await expect(presentClient.sendIfPresent({type: 'STOP'})).rejects.toThrow('send failed');
     });
 
-    it('binds the production singleton lazily to the Chrome globals', async () => {
+    it('binds the production singleton lazily to the WXT browser adapter', async () => {
         const runtime = createRuntime();
-        vi.stubGlobal('chrome', {
-            runtime: runtime.runtime,
-            offscreen: {createDocument: vi.fn(async () => undefined)},
-        });
+        wxtBrowser.runtime = runtime.runtime;
+        wxtBrowser.offscreen = {createDocument: vi.fn(async () => undefined)};
 
         await expect(chromeOffscreenClient.hasDocument()).resolves.toBe(false);
         expect(runtime.getContexts).toHaveBeenCalledWith({contextTypes: ['OFFSCREEN_DOCUMENT']});

@@ -1,6 +1,6 @@
 import {TranslationCandidateCore} from './engine';
 import {defaultTranslationAdapters} from './registry';
-import type {TranslationCandidate} from './types';
+import type {TranslationCandidate, TranslationCoreOptions} from './types';
 
 let cachedHref = '';
 let cachedCore: TranslationCandidateCore | null = null;
@@ -14,12 +14,19 @@ function currentHref(): string {
     }
 }
 
+export function createTranslationCore(options: TranslationCoreOptions = {}): TranslationCandidateCore {
+    return new TranslationCandidateCore({
+        ...options,
+        adapters: options.adapters ?? defaultTranslationAdapters,
+    });
+}
+
 /** Return the URL-scoped core used by all content-script entry paths. */
 export function getCurrentTranslationCore(): TranslationCandidateCore {
     const href = currentHref();
     if (!cachedCore || cachedHref !== href) {
         cachedHref = href;
-        cachedCore = new TranslationCandidateCore({url: new URL(href), adapters: defaultTranslationAdapters});
+        cachedCore = createTranslationCore({url: new URL(href)});
     }
     return cachedCore;
 }

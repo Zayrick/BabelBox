@@ -1,14 +1,3 @@
-import {TranslationCandidateCore} from './engine';
-import {defaultTranslationAdapters} from './registry';
-import type {TranslationCoreOptions} from './types';
-
-export function createTranslationCore(options: TranslationCoreOptions = {}): TranslationCandidateCore {
-    return new TranslationCandidateCore({
-        ...options,
-        adapters: options.adapters ?? defaultTranslationAdapters,
-    });
-}
-
 export {
     getTranslationCandidateKey,
     selectPreferredTranslationCandidate,
@@ -46,6 +35,7 @@ export type {
 } from './serialization';
 export {createDeclarativeAdapter} from './adapters/declarative';
 export {
+    createTranslationCore,
     getCurrentTranslationCore,
     resolveTranslationCandidate,
     resolveTranslationCandidateAtPoint,

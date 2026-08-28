@@ -457,7 +457,7 @@ async function main() {
       isolatedProfile: profileDir,
       artifact,
       fixtureUrl: fixture.url,
-      transport: 'legacy GM_xmlhttpRequest deterministic browser shim',
+      transport: 'GM_xmlhttpRequest deterministic browser shim',
       hoverCounts,
       fullPageCounts,
       finalState,

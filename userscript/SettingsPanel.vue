@@ -154,7 +154,7 @@ import {getMissingCredentialMessage} from '@/src/core/config/validation';
 import {clearTranslationServiceCredentials} from '@/src/core/config/credentials';
 import {
   aiTranslationProviders,
-  clearLegacyTranslationServiceConfiguration,
+  clearTranslationServiceConfiguration,
   createAITranslationService,
   createTranslationServiceId,
   getTranslationProviderDescription,
@@ -237,13 +237,13 @@ function ensureSelectedCredential(): TranslationServiceCredential | null {
   if (!instance) return null;
   const existing = draft.value.serviceCredentials[instance.id];
   if (existing) return existing;
-  const legacy = instance.id === instance.provider;
+  const usesProviderId = instance.id === instance.provider;
   const credential: TranslationServiceCredential = {
-    apiKey: legacy ? draft.value.token[instance.provider] || '' : '',
-    appKey: legacy ? draft.value.youdaoAppKey || '' : '',
-    appSecret: legacy ? draft.value.youdaoAppSecret || '' : '',
-    secretId: legacy ? draft.value.tencentSecretId || '' : '',
-    secretKey: legacy ? draft.value.tencentSecretKey || '' : '',
+    apiKey: usesProviderId ? draft.value.token[instance.provider] || '' : '',
+    appKey: usesProviderId ? draft.value.youdaoAppKey || '' : '',
+    appSecret: usesProviderId ? draft.value.youdaoAppSecret || '' : '',
+    secretId: usesProviderId ? draft.value.tencentSecretId || '' : '',
+    secretKey: usesProviderId ? draft.value.tencentSecretKey || '' : '',
   };
   draft.value.serviceCredentials[instance.id] = credential;
   return credential;
@@ -379,7 +379,7 @@ function removeAIService(instance: TranslationServiceInstance): void {
 
   draft.value.translationServices = draft.value.translationServices
     .filter(item => item.id !== instance.id);
-  clearLegacyTranslationServiceConfiguration(draft.value, instance);
+  clearTranslationServiceConfiguration(draft.value, instance);
   clearTranslationServiceCredentials(draft.value, instance.id);
   draft.value.translationCenterServices = draft.value.translationCenterServices
     .filter(serviceId => serviceId !== instance.id);

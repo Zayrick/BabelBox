@@ -265,14 +265,6 @@ function toggleTranslation() {
 
 defineExpose({ toggleTranslation });
 
-function handleTranslationStarted() {
-  isTranslating.value = true;
-}
-
-function handleTranslationEnded() {
-  isTranslating.value = false;
-}
-
 function handleSettingsClick(event: MouseEvent) {
   props.onSettingsClick(event);
 }

@@ -113,7 +113,6 @@
       </div>
       <ServiceCatalog
         :service="selectedConfigurationService"
-        :selected-service-option="configurationServiceOption"
         :default-service="config.service"
         :services="serviceInventoryOptions"
         :presentation="configurationPresentation"
@@ -701,7 +700,7 @@ import {
   getTranslationServiceUnavailableMessage,
 } from '@/src/services/translation/capabilities';
 import {
-  clearLegacyTranslationServiceConfiguration,
+  clearTranslationServiceConfiguration,
   getTranslationServiceInstance,
   getTranslationServiceLabel,
   getTranslationServiceModel,
@@ -850,27 +849,27 @@ const configurationPresentation = computed(() => createServiceConfigurationPrese
 const showAdvancedAI = computed(() => servicesType.isAI(actualService.value));
 const showAdvancedProxy = computed(() => servicesType.isUseProxy(actualService.value));
 const showAdvancedCustom = computed(() => servicesType.isCustom(actualService.value));
-function legacyDefaultMappingValue(mapping: Record<string, string>): string {
+function providerDefaultMappingValue(mapping: Record<string, string>): string {
   const selected = selectedDefaultInstance.value;
   if (selected && selected.id !== selected.provider) return '';
   return mapping[actualService.value] || '';
 }
 const advancedProxy = computed({
-  get: () => selectedDefaultInstance.value?.proxy || legacyDefaultMappingValue(config.value.proxy),
+  get: () => selectedDefaultInstance.value?.proxy || providerDefaultMappingValue(config.value.proxy),
   set: (value: string) => {
     if (selectedDefaultInstance.value) selectedDefaultInstance.value.proxy = value.trim();
     else config.value.proxy[actualService.value] = value;
   },
 });
 const advancedSystemRole = computed({
-  get: () => selectedDefaultInstance.value?.systemRole || legacyDefaultMappingValue(config.value.system_role),
+  get: () => selectedDefaultInstance.value?.systemRole || providerDefaultMappingValue(config.value.system_role),
   set: (value: string) => {
     if (selectedDefaultInstance.value) selectedDefaultInstance.value.systemRole = value;
     else config.value.system_role[actualService.value] = value;
   },
 });
 const advancedUserRole = computed({
-  get: () => selectedDefaultInstance.value?.userRole || legacyDefaultMappingValue(config.value.user_role),
+  get: () => selectedDefaultInstance.value?.userRole || providerDefaultMappingValue(config.value.user_role),
   set: (value: string) => {
     if (selectedDefaultInstance.value) selectedDefaultInstance.value.userRole = value;
     else config.value.user_role[actualService.value] = value;
@@ -926,7 +925,7 @@ async function removeTranslationService(id: string): Promise<void> {
   }
 
   config.value.translationServices = config.value.translationServices.filter((item) => item.id !== id);
-  clearLegacyTranslationServiceConfiguration(config.value, instance);
+  clearTranslationServiceConfiguration(config.value, instance);
   clearTranslationServiceCredentials(config.value, id);
   config.value.translationCenterServices = config.value.translationCenterServices.filter((item) => item !== id);
   reconcileTranslationServiceReferences(config.value);

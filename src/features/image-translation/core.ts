@@ -27,21 +27,6 @@ export function getOcrLanguages(sourceLanguage: string): ImageOcrLanguageCode[] 
     return getRequiredImageOcrLanguages(sourceLanguage);
 }
 
-export function scaleOcrBox(
-    bbox: OcrLine['bbox'],
-    imageWidth: number,
-    imageHeight: number,
-    renderedWidth: number,
-    renderedHeight: number,
-) {
-    return {
-        left: Math.max(0, (bbox.x0 / imageWidth) * renderedWidth),
-        top: Math.max(0, (bbox.y0 / imageHeight) * renderedHeight),
-        width: Math.max(1, ((bbox.x1 - bbox.x0) / imageWidth) * renderedWidth),
-        height: Math.max(1, ((bbox.y1 - bbox.y0) / imageHeight) * renderedHeight),
-    };
-}
-
 export function normalizeOcrLines(
     blocks: Array<{
         paragraphs?: Array<{

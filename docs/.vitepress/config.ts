@@ -69,7 +69,6 @@ export default defineConfig({
           items: [
             { text: '自定义快捷键', link: '/guide/custom-hotkey' },
             { text: '常见问题', link: '/guide/faq' },
-            { text: '历史隐私政策归档', link: '/guide/privacy-policy' },
           ],
         },
       ],

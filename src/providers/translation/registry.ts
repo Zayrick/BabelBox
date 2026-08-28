@@ -22,7 +22,7 @@ import hunyuanTranslation from "./hunyuan-translation";
 export type TranslationProvider = (message: any) => Promise<any>;
 export type TranslationProviderRegistry = Record<string, TranslationProvider>;
 
-const legacyServices: TranslationProviderRegistry = {
+const directProviders: TranslationProviderRegistry = {
     // 机器翻译
     [services.microsoft]: microsoft,
     [services.freeTranslation]: freeTranslation,
@@ -50,7 +50,7 @@ const aiSdkServices: TranslationProviderRegistry = Object.fromEntries(
 );
 
 export const translationProviderRegistry: TranslationProviderRegistry = {
-    ...legacyServices,
+    ...directProviders,
     ...aiSdkServices,
     // Azure keeps its endpoint/key validation before entering the shared transport.
     [services.azureOpenai]: azureOpenai,

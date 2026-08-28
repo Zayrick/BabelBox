@@ -1,3 +1,4 @@
+import {browser} from 'wxt/browser';
 import {checkConfig} from './configCheck';
 import { services } from "@/src/core/config/catalog";
 import {
@@ -212,7 +213,6 @@ function notifyFullPageTranslationState(isTranslated: boolean): void {
             ));
         }
     }
-    if (typeof browser === "undefined" || !browser.runtime?.sendMessage) return;
     void browser.runtime.sendMessage({
         type: "fullPageTranslationState",
         isTranslated,
@@ -1267,9 +1267,8 @@ function drainFullPage(session: FullPageSession): void {
             .then(
                 (outcome) => finalizeFullPageCandidate(session, candidate, outcome),
                 () => {
-                    // Unexpected runtime failures retain the historical terminal
-                    // behavior; provider failures are represented explicitly by
-                    // translateTarget and render their retry UI before this point.
+                    // Provider failures are represented by translateTarget and
+                    // render retry UI; unexpected runtime failures end this candidate.
                     forgetCandidate(session, candidate);
                 },
             )
@@ -1928,13 +1927,10 @@ function createFullPageMutationObserver(
                 const changedTarget = mutationElement ? resolveStatefulMutationTarget(mutationElement) : false;
                 const changedState = changedTarget ? getTranslationState(changedTarget) : undefined;
 
-                // A direct host childList may be only a protected renderer
-                // transaction. Preserve loading/error/translated ownership when
-                // the translatable source and exact Text slots are unchanged;
-                // the old behavior removed a committed wrapper after MathJax v2
-                // swapped a detached, classless staging span at the parent P.
-                // Mutations inside or removing our current artifact remain
-                // authoritative host tampering and restart immediately.
+                // A protected renderer can replace staging children without
+                // changing the translatable source or its exact Text slots.
+                // Mutations inside or removing the current translation artifact
+                // remain authoritative host changes and restart immediately.
                 if (changedTarget && changedState) {
                     const touchesArtifact = isTranslationArtifact(mutation.target) ||
                         mutationTouchesCurrentTranslationArtifact(mutation, changedState);
@@ -2089,29 +2085,6 @@ export function restoreOriginalContent(): void {
     cancelPendingHoverTranslation();
     stopFullPageSession();
     restoreAllTranslations();
-
-    // 兼容升级前遗留的 wrapper/属性；新状态机不会依赖这些标记，但旧页面
-    // 不应在扩展热更新后留下半截译文。
-    const roots: Node[] = [document.documentElement, ...getOpenShadowRoots(document.documentElement)];
-    for (const root of roots) {
-        const queryRoot = root as Node & ParentNode;
-        if (typeof queryRoot.querySelectorAll !== 'function') continue;
-        const orphanOwners = new Set<Element>();
-        queryRoot.querySelectorAll('[data-fr-translation-owned="true"]').forEach((element) => {
-            const owner = element.parentElement;
-            const htmlOwner = asHTMLElement(owner);
-            if (htmlOwner && getTranslationState(htmlOwner)) return;
-            if (owner) orphanOwners.add(owner);
-            element.remove();
-        });
-        orphanOwners.forEach((owner) => {
-            owner.classList.remove("fluent-read-bilingual", "fluent-read-failure");
-        });
-        queryRoot.querySelectorAll('[data-fr-translation-segment="true"]').forEach((segment) => {
-            if (!segment.parentNode || getTranslationState(asHTMLElement(segment) as HTMLElement)) return;
-            segment.replaceWith(...Array.from(segment.childNodes));
-        });
-    }
     notifyFullPageTranslationState(false);
 }
 
@@ -2164,8 +2137,4 @@ export function handleTranslation(mouseX: number, mouseY: number, delayTime = 0)
         if (!candidate) return;
         void translateTarget(candidate, currentTranslationDisplayMode(), delayTime > 0);
     }, delayTime);
-}
-
-export function handleBilingualTranslation(node: unknown, slide: boolean): void {
-    translateNode(node, "bilingual", slide);
 }

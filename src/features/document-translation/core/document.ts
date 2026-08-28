@@ -552,7 +552,6 @@ function parseJsonDocument(content: string): Pick<ParsedDocument, 'segments' | '
     try {
         jsonValue = JSON.parse(content);
     } catch (error) {
-        // JSON.parse 按规范只会抛 SyntaxError；统一字符串化后移除类型前缀，避免不可达的错误类型分支。
         const message = String(error).replace(/^SyntaxError:\s*/u, '');
         throw new Error(`JSON 文件格式无效：${message}`);
     }

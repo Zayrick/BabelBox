@@ -8,7 +8,7 @@ describe('userscript GM storage adapter', () => {
         globalThis.GM_deleteValue = undefined;
     });
 
-    it('serializes objects for legacy GM implementations', async () => {
+    it('serializes objects for string-only GM storage implementations', async () => {
         const values = new Map<string, unknown>();
         globalThis.GM_getValue = ((key, fallback) => values.has(key) ? values.get(key) : fallback) as NonNullable<typeof globalThis.GM_getValue>;
         globalThis.GM_setValue = (key, value) => { values.set(key, value); };
@@ -22,7 +22,7 @@ describe('userscript GM storage adapter', () => {
         await expect(getStoredValue('local:config')).resolves.toBeNull();
     });
 
-    it('reads plain strings left by the 2024 userscript', async () => {
+    it('reads plain string values without treating them as JSON', async () => {
         globalThis.GM_getValue = ((key, fallback) => key === 'model' ? 'microsoft' : fallback) as NonNullable<typeof globalThis.GM_getValue>;
         await expect(getStoredValue('model')).resolves.toBe('microsoft');
     });

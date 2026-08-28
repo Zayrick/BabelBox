@@ -33,8 +33,8 @@ async function bootstrap(): Promise<void> {
     const [platformModule, settingsModule, contentModule, translationModule, configModule] = await Promise.all([
         import('./platform'),
         import('./settings'),
-        import('@/entrypoints/content'),
-        import('@/src/app/content/features'),
+        import('@/src/app/content/runtime'),
+        import('@/src/features/full-page-translation/public'),
         import('@/src/services/config/store'),
     ]);
     const ctx = createUserscriptContentContext();
@@ -77,7 +77,7 @@ async function bootstrap(): Promise<void> {
     });
 
     await waitForDocumentEnd();
-    await contentModule.default.main(ctx as never);
+    await contentModule.startContentApp(ctx as never);
     void browser.runtime.sendMessage({type: 'userscriptCacheMaintenance'}).catch(() => undefined);
 
     window.addEventListener('beforeunload', () => {

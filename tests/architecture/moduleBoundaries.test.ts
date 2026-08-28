@@ -76,8 +76,11 @@ describe('module boundaries', () => {
         expect(violations).toEqual([]);
     });
 
-    it('src does not depend on WXT entrypoint implementations', () => {
-        expect(forbiddenImports('src', /^@\/entrypoints\//u)).toEqual([]);
+    it('internal modules do not depend on WXT entrypoint implementations', () => {
+        expect([
+            ...forbiddenImports('src', /^@\/entrypoints\//u),
+            ...forbiddenImports('userscript', /^@\/entrypoints\//u),
+        ]).toEqual([]);
     });
 
     it('the src dependency graph has no cross-file cycles', () => {

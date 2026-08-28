@@ -1,5 +1,6 @@
+import {browser} from 'wxt/browser';
 import {CONTEXT_MENU_IDS} from '@/src/core/config/constants';
-import {getFullPageContextMenuPresentation} from '@/src/features/site-rules/domain';
+import {getFullPageContextMenuPresentation} from '@/src/core/site-rules/domain';
 import {config, configReady, subscribeConfig} from '@/src/services/config/store';
 import {isBrowserTabId, type TabTranslationState, TabTranslationStateStore} from './tabTranslationState';
 

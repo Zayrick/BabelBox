@@ -1,6 +1,5 @@
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {detectlang} from '@/src/core/language/detect';
-import {findMatchingElement} from '@/src/shared/dom/findMatchingElement';
 import {throttle} from '@/src/shared/function/throttle';
 import {getCenterPoint} from '@/src/shared/geometry/touch';
 
@@ -58,14 +57,5 @@ describe('语义化公共工具', () => {
         expect(getCenterPoint(touches, 2)).toEqual({x: 20, y: 40});
         expect(getCenterPoint(touches, 3)).toBeUndefined();
         expect(getCenterPoint({length: 0, item: () => null}, 0)).toBeUndefined();
-    });
-
-    it('DOM 匹配优先返回自身，再向父级查找，找不到返回 false', () => {
-        const parent = {matches: vi.fn((selector) => selector === '.parent'), parentElement: null} as unknown as Element;
-        const child = {matches: vi.fn((selector) => selector === '.child'), parentElement: parent} as unknown as Element;
-
-        expect(findMatchingElement(child, '.child')).toBe(child);
-        expect(findMatchingElement(child, '.parent')).toBe(parent);
-        expect(findMatchingElement(child, '.missing')).toBe(false);
     });
 });

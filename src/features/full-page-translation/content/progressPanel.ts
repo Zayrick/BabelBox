@@ -23,7 +23,7 @@ export function mountTranslationProgressPanel(ctx?: ContentScriptContext) {
   let retryAfterStaleMount = false;
   mountingPromise = createVueShadowUi(contentScriptContext, {
     name: 'fluent-read-translation-progress-ui',
-    // 保留旧版 host id，继续兼容既有 DOM 排除规则和自动化定位。
+    // host id 同时属于全文翻译的扩展 DOM 排除规则。
     hostId: 'fluent-read-translation-status-container',
     component: TranslationProgressPanel,
     zIndex: 2_147_483_645,
@@ -41,8 +41,8 @@ export function mountTranslationProgressPanel(ctx?: ContentScriptContext) {
     return null;
   }).finally(() => {
     mountingPromise = null;
-    // 设置页可能在 Shadow UI 首次挂载完成前快速关闭再开启。旧请求会按
-    // requestId 自行移除，这里补发用户最后一次明确保留的挂载请求。
+    // 挂载期间再次开启时，requestId 会废弃已在进行的挂载，
+    // 这里执行最后一次保留请求。
     if (retryAfterStaleMount && mountRequested && !progressPanelInstance) {
       void mountTranslationProgressPanel();
     }

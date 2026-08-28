@@ -145,16 +145,14 @@ import ServiceIcon from '@/src/ui/components/ServiceIcon.vue'
 import {
   buildServiceGroups,
   filterServiceGroups,
-  isServiceInstanceOption,
-  type ServiceCatalogOption,
 } from '@/src/ui/view-model/serviceCatalog'
+import type {TranslationServiceOption} from '@/src/core/config/translationServices'
 import type {ServiceConfigurationPresentation} from '@/src/features/settings/model/serviceConfiguration'
 
 const props = defineProps<{
   service: string
-  selectedServiceOption?: ServiceCatalogOption
   defaultService: string
-  services: ServiceCatalogOption[]
+  services: TranslationServiceOption[]
   presentation: ServiceConfigurationPresentation
 }>()
 
@@ -171,25 +169,25 @@ const groups = computed(() => buildServiceGroups(props.services))
 const filteredGroups = computed(() => filterServiceGroups(groups.value, serviceQuery.value))
 const selectedService = computed(() => groups.value
   .flatMap((group) => group.items)
-  .find((item) => item.value === props.service) || props.selectedServiceOption)
+  .find((item) => item.value === props.service))
 
-function serviceProvider(item: ServiceCatalogOption): string {
-  return isServiceInstanceOption(item) ? item.provider : item.value
+function serviceProvider(item: TranslationServiceOption): string {
+  return item.provider
 }
 
-function serviceEnabled(item: ServiceCatalogOption): boolean {
-  return isServiceInstanceOption(item) ? item.enabled : true
+function serviceEnabled(item: TranslationServiceOption): boolean {
+  return item.enabled
 }
 
-function serviceModelId(item: ServiceCatalogOption): string {
-  return isServiceInstanceOption(item) ? item.modelId || '' : ''
+function serviceModelId(item: TranslationServiceOption): string {
+  return item.modelId || ''
 }
 
-function serviceRemovable(item: ServiceCatalogOption): boolean {
-  return isServiceInstanceOption(item) && item.kind === 'ai'
+function serviceRemovable(item: TranslationServiceOption): boolean {
+  return item.kind === 'ai'
 }
 
-function updateServiceEnabled(item: ServiceCatalogOption, value: boolean | string | number): void {
+function updateServiceEnabled(item: TranslationServiceOption, value: boolean | string | number): void {
   emit('update:enabled', item.value, Boolean(value))
 }
 

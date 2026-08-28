@@ -13,10 +13,6 @@ export function mountImageTranslator(): void {}
 
 export function unmountImageTranslator(): void {}
 
-export function mountNewApiComponent(): void {}
-
-export function unmountNewApiComponent(): void {}
-
 export function mountVideoSubtitleTranslation(): () => void {
     return () => undefined;
 }

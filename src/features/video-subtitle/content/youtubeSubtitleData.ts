@@ -378,15 +378,6 @@ export function cuesToSrt(cues: VideoSubtitleCue[]): string {
   }).join('\n');
 }
 
-export function getYoutubeVideoId(locationLike: Pick<Location, 'hostname' | 'pathname' | 'search'> = window.location): string {
-  try {
-    const url = new URL(locationLike.pathname + locationLike.search, `https://${locationLike.hostname}`);
-    return url.searchParams.get('v') || url.pathname.split('/').filter(Boolean).pop() || '';
-  } catch {
-    return '';
-  }
-}
-
 export function sanitizeSubtitleFilename(value: string): string {
   return value.replace(/[\\/:*?"<>|]+/g, '_').replace(/\s+/g, ' ').trim().slice(0, 80) || 'youtube-subtitles';
 }

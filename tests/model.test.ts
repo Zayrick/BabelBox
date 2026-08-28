@@ -516,8 +516,7 @@ describe('OpenAI 兼容服务端点', () => {
         expect(getMimoEndpoint('token-plan', 'invalid')).toBe('https://token-plan-cn.xiaomimimo.com/v1/chat/completions');
     });
 
-    it('文心一言使用 Bearer Token，不再要求旧 AK/SK', () => {
+    it('文心一言使用 Bearer Token', () => {
         expect(servicesType.isUseToken(services.yiyan)).toBe(true);
-        expect(servicesType.isUseAkSk(services.yiyan)).toBe(false);
     });
 });

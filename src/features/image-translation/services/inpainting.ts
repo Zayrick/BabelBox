@@ -58,11 +58,8 @@ function getNeighbours(x: number, y: number, width: number, height: number): Pix
 }
 
 /**
- * 使用局部边界扩散修复 OCR 区域。
- *
- * 这不是 AI inpainting，而是一个无依赖、可在 MV3 CSP 下运行的轻量兜底：
- * 每一层未知像素从周围已知像素插值，能保留纯色和渐变背景，避免整块纯色
- * 矩形直接盖在原图上。复杂纹理仍应交给可选的 ONNX/服务端修复器。
+ * 使用局部边界扩散修复 OCR 区域。每层未知像素从周围已知像素插值，
+ * 适合纯色和渐变背景，复杂纹理中可能出现模糊。
  */
 export function inpaintTextRegions(
     source: Uint8ClampedArray,

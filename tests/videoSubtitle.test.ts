@@ -15,7 +15,6 @@ import {
     getVideoServiceLabel,
     getVideoPretranslationWindowMs,
     isYouTubeVideoPage,
-    isIncrementalVideoCaption,
     normalizeVideoSubtitleDisplayMode,
     normalizeVideoCaptionText,
     readVisibleCaptionText,
@@ -103,12 +102,6 @@ describe('YouTube 视频字幕识别', () => {
         expect(revealVideoSubtitleTranslation(fullTranslation, 'understand from [music] the axioms and', fullSource)).toBe('从音乐中理解公理和基');
         expect(revealVideoSubtitleTranslation(fullTranslation, fullSource, fullSource)).toBe(fullTranslation);
         expect(revealVideoSubtitleTranslation(fullTranslation, 'unrelated subtitle', fullSource)).toBe(fullTranslation);
-    });
-
-    it('识别逐词前缀并允许播放器改用完整原文 cue', () => {
-        expect(isIncrementalVideoCaption('understand from', 'understand from [music] the axioms and the basics.')).toBe(true);
-        expect(isIncrementalVideoCaption('understand from [music] the axioms and the basics.', 'understand from [music] the axioms and the basics.')).toBe(false);
-        expect(isIncrementalVideoCaption('unrelated subtitle', 'understand from [music] the axioms and the basics.')).toBe(false);
     });
 
     it('把原文字幕下载失败转换为用户可操作的提示', () => {

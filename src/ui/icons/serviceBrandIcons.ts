@@ -96,7 +96,7 @@ export const serviceBrandIcons: Readonly<Record<string, ServiceBrandIcon>> = Obj
 
 export type ServiceFallbackIconKey = 'languages' | 'server' | 'custom' | 'unknown'
 
-/** TheSVG 3.3.1 中没有准确品牌资源的服务使用语义图标，不再回退为文字缩写。 */
+/** TheSVG 3.3.1 中没有准确品牌资源的服务使用语义图标。 */
 export const serviceFallbackIconKeys: Readonly<Record<string, ServiceFallbackIconKey>> = Object.freeze({
   freeTranslation: 'languages',
   xiaoniu: 'languages',

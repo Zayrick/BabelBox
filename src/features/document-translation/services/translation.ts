@@ -13,7 +13,6 @@ export interface DocumentTranslationOptions {
     sourceLanguage?: string;
     targetLanguage?: string;
     signal?: AbortSignal;
-    maxRetries?: number;
     onProgress?: (progress: DocumentTranslationProgress) => void;
 }
 
@@ -24,7 +23,6 @@ export interface DocumentTranslationRequestOptions {
     modelOverride?: string;
     sourceLanguage?: string;
     targetLanguage?: string;
-    maxRetries?: number;
 }
 
 /**
@@ -130,7 +128,6 @@ export function createDocumentSegmentTranslator(
                             modelOverride: options.modelOverride,
                             sourceLanguage,
                             targetLanguage,
-                            maxRetries: options.maxRetries,
                         },
                     );
                     result.forEach((translation, index) => {
@@ -157,7 +154,6 @@ export function createDocumentSegmentTranslator(
                     modelOverride: options.modelOverride,
                     sourceLanguage,
                     targetLanguage,
-                    maxRetries: options.maxRetries,
                 });
                 // Promise.all 会在首个任务失败时立即 reject；其余在途请求仍会稍后结束。
                 // 失败后不再上报过期进度。

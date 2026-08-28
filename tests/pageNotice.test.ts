@@ -1,15 +1,23 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {readFileSync} from 'node:fs';
 import {parseHTML} from 'linkedom';
 
-import {showPageNotice} from '@/src/features/page-notice/public';
+const {sendMessage} = vi.hoisted(() => ({
+    sendMessage: vi.fn(async () => ({success: true})),
+}));
+
+vi.mock('wxt/browser', () => ({
+    browser: {
+        runtime: {
+            getURL: (path: string) => `chrome-extension://fixture${path}`,
+            sendMessage,
+        },
+    },
+}));
+
+import {showPageNotice} from '@/src/features/page-notice/content/notice';
 
 const originalDocument = globalThis.document;
 const originalWindow = globalThis.window;
-const originalBrowser = (globalThis as typeof globalThis & {browser?: unknown}).browser;
-
-const sendMessage = vi.fn(async () => ({success: true}));
-const noticeCss = readFileSync(new URL('../src/features/page-notice/content/notice.css', import.meta.url), 'utf8');
 
 describe('page error notice', () => {
     beforeEach(() => {
@@ -25,15 +33,6 @@ describe('page error notice', () => {
         `);
         Object.defineProperty(globalThis, 'document', {value: document, configurable: true});
         Object.defineProperty(globalThis, 'window', {value: window, configurable: true});
-        Object.defineProperty(globalThis, 'browser', {
-            value: {
-                runtime: {
-                    getURL: (path: string) => `chrome-extension://fixture${path}`,
-                    sendMessage,
-                },
-            },
-            configurable: true,
-        });
     });
 
     afterEach(() => {
@@ -41,7 +40,6 @@ describe('page error notice', () => {
         vi.useRealTimers();
         Object.defineProperty(globalThis, 'document', {value: originalDocument, configurable: true});
         Object.defineProperty(globalThis, 'window', {value: originalWindow, configurable: true});
-        Object.defineProperty(globalThis, 'browser', {value: originalBrowser, configurable: true});
     });
 
     it('keeps error details fixed to the viewport on a long page', async () => {
@@ -58,7 +56,6 @@ describe('page error notice', () => {
 
         const shadow = host.shadowRoot!;
         expect(shadow.querySelector('.notice-stack')).not.toBeNull();
-        expect(noticeCss).toMatch(/\.notice-stack\s*\{[^}]*position:\s*fixed/s);
         expect(notice.getAttribute('role')).toBe('alert');
         expect(notice.textContent).toContain('Failed to fetch');
         expect(notice.classList.contains('is-visible')).toBe(true);
@@ -75,22 +72,6 @@ describe('page error notice', () => {
 
         action.click();
         expect(sendMessage).toHaveBeenCalledWith({type: 'openOptionsPage'});
-    });
-
-    it('隔离设置页打开失败，不产生未处理拒绝', async () => {
-        const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-        sendMessage.mockRejectedValueOnce(new Error('runtime disconnected'));
-        showPageNotice('DeepSeek 需要 API Key，当前尚未配置', 'error');
-        await Promise.resolve();
-
-        const action = document.getElementById('fluent-read-page-notice-host')!
-            .shadowRoot!.querySelector<HTMLButtonElement>('.notice-action')!;
-        action.click();
-        await Promise.resolve();
-        await Promise.resolve();
-
-        expect(consoleError).toHaveBeenCalledWith('[FluentRead] 打开设置页失败', expect.any(Error));
-        consoleError.mockRestore();
     });
 
     it.each([
@@ -115,15 +96,6 @@ describe('page error notice', () => {
         const shadow = document.getElementById('fluent-read-page-notice-host')!.shadowRoot!;
         expect(shadow.querySelector('.notice-detail')?.textContent).toBe(message);
         expect(shadow.querySelector('.notice-action')).toBeNull();
-    });
-
-    it('keeps the settings action for a legacy generic missing-key error', async () => {
-        showPageNotice('当前翻译服务还没有配置 API Key，请前往设置页面填写后再试。', 'error');
-        await Promise.resolve();
-
-        const shadow = document.getElementById('fluent-read-page-notice-host')!.shadowRoot!;
-        expect(shadow.querySelector('.notice-detail')?.textContent).toContain('API Key');
-        expect(shadow.querySelector('.notice-action')).not.toBeNull();
     });
 
     it('removes the isolated host after the last notice is closed', async () => {

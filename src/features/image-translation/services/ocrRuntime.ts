@@ -1,10 +1,11 @@
+import {browser} from 'wxt/browser';
 import { createWorker, PSM, type Worker } from 'tesseract.js';
 import { getOcrLanguages, normalizeOcrLines, type OcrLine } from '@/src/features/image-translation/core';
 import type { ImageOcrLanguageCode } from '@/src/features/image-translation/ocrLanguages';
 import { createOcrWorkerRuntime, type OcrWorkerPort } from './ocrWorkerRuntime';
 
 function extensionAsset(path: string): string {
-    const getRuntimeUrl = chrome.runtime.getURL as (assetPath: string) => string;
+    const getRuntimeUrl = browser.runtime.getURL as (assetPath: string) => string;
     return getRuntimeUrl(`/fluent-read-ocr/${path}`);
 }
 
@@ -16,9 +17,8 @@ const ocrWorkerRuntime = createOcrWorkerRuntime<TesseractRecognitionResult>({
         workerPath: extensionAsset('worker/worker.min.js'),
         corePath: extensionAsset('core'),
         cachePath: 'fluent-read-image-ocr',
-        // 不再把 traineddata 打进扩展；Tesseract.js 会从 jsDelivr 按需下载，
-        // 并将解压后的语言包缓存到 Offscreen Document 的 IndexedDB。
-        // Offscreen 页面拥有扩展源，直接加载本地 worker 可避免 Blob Worker 的 CSP/源限制。
+        // 语言包按需下载并缓存到 Offscreen Document 的 IndexedDB。
+        // 直接加载扩展内 worker，避免 Blob Worker 的 CSP/源限制。
         workerBlobURL: false,
     }) as unknown as Promise<OcrWorkerPort<TesseractRecognitionResult>>,
 });

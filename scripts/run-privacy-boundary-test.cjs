@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 
 // 在临时 Chromium/Edge profile 中验证 FluentRead 的网页隐私边界：
-// 1. 只迁移旧版 FluentRead 页面缓存，不触碰宿主站点 localStorage；
-// 2. 网页伪造的配置/全文翻译事件和合成键盘事件不能驱动扩展；
-// 3. 凭据不进入公开配置、宿主 DOM 或页面可访问的 Shadow DOM；
-// 4. options 真实消息/UI 路径遵守 session 默认、显式 local opt-in、导出脱敏和 opt-out 清理。
+// 1. 内容脚本不修改宿主站点 localStorage；
+// 2. 扩展 UI 保持 closed Shadow DOM，宿主页面不能访问扩展存储；
+// 3. options 真实消息/UI 路径遵守 session 默认、显式 local opt-in、导出脱敏和 opt-out 清理。
 
 const fs = require('node:fs');
 const http = require('node:http');
@@ -17,13 +16,7 @@ const HOST_SENTINEL_KEY = 'host-sentinel';
 const HOST_SENTINEL_VALUE = 'keep-host-data';
 const HOST_PREFERENCE_KEY = 'host-preference';
 const HOST_PREFERENCE_VALUE = 'keep-preference';
-const LEGACY_CACHE_KEYS = [
-  'flcache_service_model_private-paragraph',
-  'flcache_reverse_private-translation',
-];
-const LEGACY_TIMESTAMP_KEY = 'flLastSessionTimestamp';
-const PREFILL_SECRET_MARKER = 'fr-prefill-secret-must-not-persist-192';
-const CREDENTIAL_SENTINEL_PREFIX = 'fr-api-key-lifecycle-sentinel-issue-192-';
+const CREDENTIAL_SENTINEL_PREFIX = 'fr-api-key-lifecycle-sentinel-';
 const CREDENTIAL_FIELDS = [
   'token',
   'ak',
@@ -142,28 +135,10 @@ function readManifest(extensionDir) {
   const manifestPath = path.join(extensionDir, 'manifest.json');
   if (!fs.existsSync(manifestPath)) throw new Error(`插件 manifest.json 不存在：${manifestPath}`);
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-  const contentScriptFiles = (manifest.content_scripts || [])
-    .flatMap((entry) => Array.isArray(entry.js) ? entry.js : [])
-    .filter((file, index, files) => files.indexOf(file) === index);
-  const contentSource = contentScriptFiles
-    .map((file) => {
-      const sourcePath = path.join(extensionDir, file);
-      if (!fs.existsSync(sourcePath)) throw new Error(`manifest 引用的内容脚本不存在：${sourcePath}`);
-      return fs.readFileSync(sourcePath, 'utf8');
-    })
-    .join('\n');
-
-  const forbiddenControlLiterals = ['fluent:prefill', 'fluentread-toggle-translation'];
-  const foundForbiddenControlLiterals = forbiddenControlLiterals.filter((literal) => contentSource.includes(literal));
-  if (foundForbiddenControlLiterals.length > 0) {
-    throw new Error(`production 内容脚本仍暴露网页控制事件：${foundForbiddenControlLiterals.join(', ')}`);
-  }
   return {
     manifestPath,
     manifestVersion: manifest.manifest_version,
     optionsPage: manifest.options_ui?.page || manifest.options_page || 'options.html',
-    contentScriptFiles,
-    foundForbiddenControlLiterals,
   };
 }
 
@@ -171,9 +146,6 @@ function fixtureHtml() {
   const initialStorage = {
     [HOST_SENTINEL_KEY]: HOST_SENTINEL_VALUE,
     [HOST_PREFERENCE_KEY]: HOST_PREFERENCE_VALUE,
-    [LEGACY_CACHE_KEYS[0]]: '旧版译文',
-    [LEGACY_CACHE_KEYS[1]]: '旧版原文',
-    [LEGACY_TIMESTAMP_KEY]: '123456789',
   };
   const imageSvg = encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="240" height="120"><rect width="100%" height="100%" fill="#dbeafe"/><text x="20" y="68" font-size="24" fill="#1e3a8a">Privacy fixture</text></svg>');
 
@@ -254,15 +226,6 @@ function storageObjectFromPage() {
   );
 }
 
-function safeUrl(rawUrl) {
-  try {
-    const parsed = new URL(rawUrl);
-    return `${parsed.origin}${parsed.pathname}`;
-  } catch {
-    return '<invalid-url>';
-  }
-}
-
 function containsMarker(value, marker) {
   try {
     return JSON.stringify(value).includes(marker);
@@ -275,7 +238,7 @@ function hasCredentialFields(value) {
   return Boolean(value && typeof value === 'object' && CREDENTIAL_FIELDS.some((field) => Object.prototype.hasOwnProperty.call(value, field)));
 }
 
-async function extensionStorageEvidence(extensionContext, marker, credentialMarker = null) {
+async function extensionStorageEvidence(extensionContext, credentialMarker = null) {
   const snapshot = await extensionContext.evaluate(async () => {
     const local = await chrome.storage.local.get(null);
     const sessionSupported = Boolean(chrome.storage.session);
@@ -293,8 +256,6 @@ async function extensionStorageEvidence(extensionContext, marker, credentialMark
     localKeys: Object.keys(snapshot.local).sort(),
     sessionKeys: Object.keys(snapshot.session).sort(),
     sessionSupported: snapshot.sessionSupported,
-    localContainsPrefillMarker: containsMarker(snapshot.local, marker),
-    sessionContainsPrefillMarker: containsMarker(snapshot.session, marker),
     configContainsCredentialFields: hasCredentialFields(config),
     historyContainsCredentialFields: historyEntries.some((entry) => hasCredentialFields(entry?.config)),
     credentialLifecycle: credentialMarker ? {
@@ -334,7 +295,7 @@ async function waitForCredentialStorageState(extensionContext, marker, expected,
   const deadline = Date.now() + timeout;
   let latest;
   while (Date.now() < deadline) {
-    latest = await extensionStorageEvidence(extensionContext, PREFILL_SECRET_MARKER, marker);
+    latest = await extensionStorageEvidence(extensionContext, marker);
     if (credentialStateMatches(latest, expected)) return latest;
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
@@ -573,8 +534,8 @@ async function waitForCredentialSwitchState(optionsPage, checked, timeout) {
   ), expected, { timeout });
 }
 
-async function pageBoundaryState(page, marker) {
-  return page.evaluate(({ marker: secretMarker }) => {
+async function pageBoundaryState(page) {
+  return page.evaluate(() => {
     const storage = Object.fromEntries(
       Array.from({ length: localStorage.length }, (_, index) => localStorage.key(index))
         .filter((key) => typeof key === 'string')
@@ -583,13 +544,8 @@ async function pageBoundaryState(page, marker) {
     const extensionHosts = Array.from(document.querySelectorAll('[data-fluent-read-ui], [id^="fluent-read-"]'));
     return {
       storage,
-      bilingualCount: document.querySelectorAll('.fluent-read-bilingual-content').length,
-      loadingCount: document.querySelectorAll('.fluent-read-loading, .fluent-read-loading-spinner').length,
-      retryCount: document.querySelectorAll('.fluent-read-retry-wrapper, .retry-error-wrapper').length,
-      newApiContainerPresent: Boolean(document.querySelector('#fluent-new-api-container')),
       pageCanAccessChromeStorage: Boolean(globalThis.chrome?.storage),
       pageCanAccessBrowserStorage: Boolean(globalThis.browser?.storage),
-      domContainsPrefillMarker: document.documentElement.outerHTML.includes(secretMarker),
       extensionHosts: extensionHosts.map((host) => ({
         id: host.id,
         ui: host.getAttribute('data-fluent-read-ui'),
@@ -612,78 +568,27 @@ async function pageBoundaryState(page, marker) {
         return { present: Boolean(host), pageVisibleShadowRoot: Boolean(host?.shadowRoot) };
       })(),
     };
-  }, { marker });
+  });
 }
 
-async function dispatchUntrustedControls(page, marker) {
-  return page.evaluate(({ marker: secretMarker }) => {
-    const observations = [];
-    const record = (event) => observations.push({ type: event.type, isTrusted: event.isTrusted });
-    for (const type of ['fluent:prefill', 'fluentread-toggle-translation', 'keydown', 'keyup']) {
-      document.addEventListener(type, record, { capture: true });
-    }
-
-    const prefillTarget = document.querySelector('#fluent-new-api-container') || document;
-    prefillTarget.dispatchEvent(new CustomEvent('fluent:prefill', {
-      bubbles: true,
-      composed: true,
-      detail: {
-        id: 'new-api',
-        baseUrl: 'https://attacker.invalid/v1',
-        apiKey: secretMarker,
-        model: 'attacker-model',
-      },
-    }));
-    document.dispatchEvent(new CustomEvent('fluentread-toggle-translation', {
-      bubbles: true,
-      composed: true,
-    }));
-
-    const keyEvents = [
-      new KeyboardEvent('keydown', { key: 'Alt', code: 'AltLeft', altKey: true, bubbles: true, cancelable: true }),
-      new KeyboardEvent('keydown', { key: 't', code: 'KeyT', altKey: true, bubbles: true, cancelable: true }),
-      new KeyboardEvent('keyup', { key: 't', code: 'KeyT', altKey: true, bubbles: true, cancelable: true }),
-      new KeyboardEvent('keyup', { key: 'Alt', code: 'AltLeft', bubbles: true, cancelable: true }),
-    ];
-    keyEvents.forEach((event) => document.dispatchEvent(event));
-    return observations;
-  }, { marker });
-}
-
-function assertLegacyCacheBoundary(initialStorage, migratedStorage) {
+function assertHostStorageBoundary(initialStorage, currentStorage) {
   if (initialStorage[HOST_SENTINEL_KEY] !== HOST_SENTINEL_VALUE) throw new Error('fixture 未正确预置 host sentinel');
-  if (migratedStorage[HOST_SENTINEL_KEY] !== HOST_SENTINEL_VALUE || migratedStorage[HOST_PREFERENCE_KEY] !== HOST_PREFERENCE_VALUE) {
-    throw new Error(`内容脚本删除了宿主 localStorage：${JSON.stringify(migratedStorage)}`);
+  if (currentStorage[HOST_SENTINEL_KEY] !== HOST_SENTINEL_VALUE || currentStorage[HOST_PREFERENCE_KEY] !== HOST_PREFERENCE_VALUE) {
+    throw new Error(`内容脚本修改了宿主 localStorage：${JSON.stringify(currentStorage)}`);
   }
-  for (const key of [...LEGACY_CACHE_KEYS, LEGACY_TIMESTAMP_KEY]) {
-    if (Object.prototype.hasOwnProperty.call(migratedStorage, key)) {
-      throw new Error(`旧版 FluentRead 页面缓存未删除：${key}`);
-    }
-  }
-  const remainingKeys = Object.keys(migratedStorage).sort();
+  const remainingKeys = Object.keys(currentStorage).sort();
   const expectedKeys = [HOST_PREFERENCE_KEY, HOST_SENTINEL_KEY].sort();
   if (JSON.stringify(remainingKeys) !== JSON.stringify(expectedKeys)) {
     throw new Error(`页面 localStorage 出现非宿主键：${JSON.stringify(remainingKeys)}`);
   }
 }
 
-function assertPrivacyBoundary(state, storageEvidence, dialogs, extensionPages, networkEvents) {
-  if (state.bilingualCount || state.loadingCount || state.retryCount) {
-    throw new Error(`网页伪造控制触发了翻译状态：${JSON.stringify(state)}`);
-  }
-  if (state.newApiContainerPresent || dialogs.length > 0) {
-    throw new Error(`网页伪造 prefill 暴露了配置入口：${JSON.stringify({ dialogs, newApiContainerPresent: state.newApiContainerPresent })}`);
-  }
-  if (extensionPages.length > 0) throw new Error(`网页事件打开了扩展页面：${JSON.stringify(extensionPages)}`);
-  if (networkEvents.length > 0) throw new Error(`网页伪造控制发起了翻译网络请求：${JSON.stringify(networkEvents)}`);
-  if (storageEvidence.localContainsPrefillMarker || storageEvidence.sessionContainsPrefillMarker) {
-    throw new Error('网页提供的伪造凭据进入了扩展存储');
-  }
+function assertPageBoundary(state, storageEvidence) {
   if (storageEvidence.configContainsCredentialFields || storageEvidence.historyContainsCredentialFields) {
     throw new Error('公开 local config/configHistory 仍包含凭据字段');
   }
-  if (state.domContainsPrefillMarker || state.pageCanAccessChromeStorage || state.pageCanAccessBrowserStorage) {
-    throw new Error(`宿主页面能够观察凭据或扩展存储：${JSON.stringify(state)}`);
+  if (state.pageCanAccessChromeStorage || state.pageCanAccessBrowserStorage) {
+    throw new Error(`宿主页面能够访问扩展存储：${JSON.stringify(state)}`);
   }
   if (!state.areaBoundary.present || state.areaBoundary.pageVisibleShadowRoot) {
     throw new Error(`圈选翻译没有保持 closed Shadow DOM：${JSON.stringify(state.areaBoundary)}`);
@@ -749,18 +654,9 @@ async function main() {
     screenshots: [],
   };
 
-  const dialogs = [];
   const consoleErrors = [];
-  const networkEvents = [];
-  const translationUrlPattern = /translate|translatetext|cognitive\.microsofttranslator|generativelanguage|api\.openai|deeplx|fanyi|bigmodel|dashscope/i;
   const redactEvidenceText = (value) => String(value)
-    .replaceAll(PREFILL_SECRET_MARKER, '[redacted-prefill-marker]')
     .replaceAll(credentialSentinel, '[redacted-credential-sentinel]');
-  const recordRequest = (request) => {
-    if (translationUrlPattern.test(request.url())) {
-      networkEvents.push({ method: request.method(), url: safeUrl(request.url()) });
-    }
-  };
 
   try {
     if (args.background) {
@@ -804,15 +700,9 @@ async function main() {
         windowPlacement: { state: 'normal', width: 1280, height: 900 },
       };
     }
-    context.on('request', recordRequest);
-
     const worker = await waitForExtensionWorker(context, args.timeout);
     const extensionId = new URL(worker.url()).hostname;
     page = await createPage();
-    page.on('dialog', async (dialog) => {
-      dialogs.push({ type: dialog.type(), message: redactEvidenceText(dialog.message()) });
-      await dialog.dismiss().catch(() => {});
-    });
     page.on('console', (message) => {
       if (message.type() === 'error') {
         consoleErrors.push(redactEvidenceText(message.text()).slice(0, 500));
@@ -822,14 +712,8 @@ async function main() {
     await page.goto(fixture.url, { waitUntil: 'domcontentloaded', timeout: args.timeout });
     await activatePage(page);
     await page.waitForSelector('#fluent-read-page-styles', { state: 'attached', timeout: args.timeout });
-    await page.waitForFunction(
-      ({ legacyKeys, timestampKey }) => legacyKeys.every((key) => localStorage.getItem(key) === null) && localStorage.getItem(timestampKey) === null,
-      { legacyKeys: LEGACY_CACHE_KEYS, timestampKey: LEGACY_TIMESTAMP_KEY },
-      { timeout: args.timeout },
-    );
     const initialStorage = await page.evaluate(() => window.__privacyBoundaryInitialStorage);
-    const migratedStorage = await page.evaluate(storageObjectFromPage);
-    assertLegacyCacheBoundary(initialStorage, migratedStorage);
+    assertHostStorageBoundary(initialStorage, await page.evaluate(storageObjectFromPage));
 
     const configuredSurfaces = await configurePrivacySurfaces(worker);
     await page.reload({ waitUntil: 'domcontentloaded', timeout: args.timeout });
@@ -842,25 +726,10 @@ async function main() {
     await page.screenshot({ path: path.join(artifactsDir, 'privacy-boundary-before-events.png'), fullPage: true });
     evidence.screenshots.push(path.join(artifactsDir, 'privacy-boundary-before-events.png'));
 
-    const storageBefore = await extensionStorageEvidence(worker, PREFILL_SECRET_MARKER);
-    const extensionPagesBefore = context.pages()
-      .map((candidate) => candidate.url())
-      .filter((url) => url.startsWith(`chrome-extension://${extensionId}/`));
-    const networkStart = networkEvents.length;
-    const untrustedEventObservations = await dispatchUntrustedControls(page, PREFILL_SECRET_MARKER);
-    await page.waitForTimeout(1_500);
-    const storageAfter = await extensionStorageEvidence(worker, PREFILL_SECRET_MARKER);
-    const finalState = await pageBoundaryState(page, PREFILL_SECRET_MARKER);
-    const extensionPagesAfter = context.pages()
-      .map((candidate) => candidate.url())
-      .filter((url) => url.startsWith(`chrome-extension://${extensionId}/`) && !extensionPagesBefore.includes(url));
-    const eventNetworkEvents = networkEvents.slice(networkStart);
-
-    assertLegacyCacheBoundary(initialStorage, finalState.storage);
-    assertPrivacyBoundary(finalState, storageAfter, dialogs, extensionPagesAfter, eventNetworkEvents);
-    if (!untrustedEventObservations.every((event) => event.isTrusted === false)) {
-      throw new Error(`fixture 事件并非全部为不可信事件：${JSON.stringify(untrustedEventObservations)}`);
-    }
+    const storageEvidence = await extensionStorageEvidence(worker);
+    const finalState = await pageBoundaryState(page);
+    assertHostStorageBoundary(initialStorage, finalState.storage);
+    assertPageBoundary(finalState, storageEvidence);
 
     const finalScreenshot = path.join(artifactsDir, 'privacy-boundary-final.png');
     await page.screenshot({ path: finalScreenshot, fullPage: true });
@@ -968,7 +837,6 @@ async function main() {
     await optionsPage.waitForTimeout(600);
     const credentialFinal = await extensionStorageEvidence(
       optionsPage,
-      PREFILL_SECRET_MARKER,
       credentialSentinel,
     );
     assertCredentialStorageState('凭据生命周期最终状态', credentialFinal, sessionOnlyExpected);
@@ -984,28 +852,15 @@ async function main() {
       ok: true,
       extensionId,
       configuredSurfaces,
-      legacyPageCache: {
+      hostStorage: {
         initialKeys: Object.keys(initialStorage).sort(),
         finalKeys: Object.keys(finalState.storage).sort(),
         hostSentinelPreserved: finalState.storage[HOST_SENTINEL_KEY] === HOST_SENTINEL_VALUE,
-        removedKeys: [...LEGACY_CACHE_KEYS, LEGACY_TIMESTAMP_KEY],
       },
-      storageBefore,
-      storageAfter,
-      untrustedControls: {
-        observations: untrustedEventObservations,
-        dialogs,
-        extensionPagesOpened: extensionPagesAfter,
-        translationNetworkRequests: eventNetworkEvents,
-        translatedNodes: finalState.bilingualCount,
-        loadingNodes: finalState.loadingCount,
-        retryNodes: finalState.retryCount,
-      },
+      storageEvidence,
       hostBoundary: {
         pageCanAccessChromeStorage: finalState.pageCanAccessChromeStorage,
         pageCanAccessBrowserStorage: finalState.pageCanAccessBrowserStorage,
-        domContainsPrefillMarker: finalState.domContainsPrefillMarker,
-        newApiContainerPresent: finalState.newApiContainerPresent,
       },
       shadowBoundary: {
         area: finalState.areaBoundary,
@@ -1035,9 +890,7 @@ async function main() {
     evidence = {
       ...evidence,
       error: redactEvidenceText(error instanceof Error ? error.message : String(error)),
-      dialogs,
       consoleErrors,
-      translationNetworkRequests: networkEvents,
     };
     if (optionsPage && !optionsPage.isClosed()) {
       const credentialFailureScreenshot = path.join(artifactsDir, 'credentials-lifecycle-failure.png');

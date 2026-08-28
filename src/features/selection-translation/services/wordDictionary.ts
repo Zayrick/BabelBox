@@ -784,8 +784,8 @@ async function lookupDatamuse(normalizedWord: string): Promise<WordCardData | nu
     }, null);
 }
 
-/** 构造默认 provider registry，便于在单测和未来插件中逐个替换网络适配器。 */
-export function createDefaultWordDictionaryProviders(): WordDictionaryProvider[] {
+/** 构造默认词典 provider registry。 */
+function createDefaultWordDictionaryProviders(): WordDictionaryProvider[] {
     return [
         createEcdictProvider(),
         {id: 'youdao-web', lookup: lookupYoudao},
@@ -803,15 +803,14 @@ function finalizeWordCard(card: WordCardData | null): WordCardData | null {
     return card;
 }
 
-export interface WordDictionaryLookupOptions {
+interface WordDictionaryLookupOptions {
     readonly providers?: readonly WordDictionaryProvider[];
     readonly cacheSize?: number;
     readonly warn?: (message: string, error: unknown) => void;
 }
 
-export interface WordDictionaryLookup {
+interface WordDictionaryLookup {
     lookup(value: string): Promise<WordCardData | null>;
-    clearCache(): void;
 }
 
 const DEFAULT_WORD_LOOKUP_CACHE_SIZE = 80;
@@ -820,7 +819,7 @@ const DEFAULT_WORD_LOOKUP_CACHE_SIZE = 80;
  * 创建可注入 provider 的词典查询服务。
  * 结果（包括未命中）会缓存；并发的同词查询共享一个 Promise，避免重复请求公共服务。
  */
-export function createWordDictionaryLookup(options: WordDictionaryLookupOptions = {}): WordDictionaryLookup {
+function createWordDictionaryLookup(options: WordDictionaryLookupOptions = {}): WordDictionaryLookup {
     const providers = options.providers ? [...options.providers] : createDefaultWordDictionaryProviders();
     const cacheSize = options.cacheSize ?? DEFAULT_WORD_LOOKUP_CACHE_SIZE;
     if (!Number.isInteger(cacheSize) || cacheSize <= 0) throw new RangeError('词典缓存容量必须是正整数');
@@ -873,9 +872,6 @@ export function createWordDictionaryLookup(options: WordDictionaryLookupOptions 
                 inFlight.delete(normalizedWord);
             }
         },
-        clearCache() {
-            resultCache.clear();
-        },
     };
 }
 
@@ -884,9 +880,4 @@ const defaultWordDictionaryLookup = createWordDictionaryLookup();
 /** 使用默认开放数据 provider 查询一个英语单词。 */
 export function lookupWord(value: string): Promise<WordCardData | null> {
     return defaultWordDictionaryLookup.lookup(value);
-}
-
-/** 清理默认查询实例的正/负结果缓存，不会中断已经发出的请求。 */
-export function clearWordDictionaryCache(): void {
-    defaultWordDictionaryLookup.clearCache();
 }

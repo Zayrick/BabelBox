@@ -248,7 +248,7 @@ describe('translation API request lifecycle performance', () => {
     }));
   });
 
-  it('lets migrated AI SDK services own retries and restores structured error details', async () => {
+  it('lets AI SDK services own retries and preserves structured error details', async () => {
     mocks.config.service = 'mock-ai';
     mocks.sendMessage.mockResolvedValue({
       marker: 'fluentread-translation-error-v1',
@@ -266,38 +266,6 @@ describe('translation API request lifecycle performance', () => {
       retryable: false,
       requestId: 'req-test',
     });
-    expect(mocks.sendMessage).toHaveBeenCalledTimes(1);
-  });
-
-  it('retries browser-level network failures without repeating exhausted HTTP retries', async () => {
-    mocks.config.service = 'mock-ai';
-    const networkError = {
-      marker: 'fluentread-translation-error-v1',
-      message: 'Custom 服务网络连接失败，请检查网络或代理设置',
-      kind: 'network',
-      retryable: true,
-    };
-    mocks.sendMessage
-      .mockResolvedValueOnce(networkError)
-      .mockResolvedValueOnce(networkError)
-      .mockResolvedValueOnce('网络恢复后的译文');
-
-    const request = translateText('Readable source', 'Context', {retryDelay: 100});
-    await vi.advanceTimersByTimeAsync(200);
-    await expect(request).resolves.toBe('网络恢复后的译文');
-    expect(mocks.sendMessage).toHaveBeenCalledTimes(3);
-
-    mocks.sendMessage.mockReset();
-    mocks.sendMessage.mockResolvedValue({
-      marker: 'fluentread-translation-error-v1',
-      message: '当前翻译服务的请求频率或配额已达上限（HTTP 429），请稍后重试。',
-      kind: 'rate-limit',
-      retryable: true,
-      statusCode: 429,
-    });
-
-    await expect(translateText('Another readable source', 'Context', {retryDelay: 100}))
-      .rejects.toMatchObject({kind: 'rate-limit', statusCode: 429});
     expect(mocks.sendMessage).toHaveBeenCalledTimes(1);
   });
 

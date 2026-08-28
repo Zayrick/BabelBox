@@ -35,8 +35,7 @@ export function readCachedFlagOr<T extends object>(
 /**
  * 在有界祖先链中查找站点适配器的 prune 决策。
  *
- * 该函数是 engine 的内部纯算法边界：公开解析入口通常会先被 DOM hard guard
- * 截断，但这里仍保留独立深度上限，防止未来调用顺序调整后出现无界祖先遍历。
+ * 该函数自己持有深度上限，不依赖调用方预先截断祖先链。
  */
 export function findAdapterPrunedAncestor<T>(
     ancestors: Iterable<T>,

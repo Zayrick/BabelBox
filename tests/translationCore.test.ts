@@ -27,7 +27,6 @@ import {
     evaluateHardGuard,
     findElementsAtPoint,
     findNodeAtPoint,
-    isExtensionElement,
     maxComposedAncestorDepth,
     safeClosest,
     safeMatches,
@@ -1296,12 +1295,10 @@ describe('translation candidate core', () => {
     it('keeps DOM helper fallbacks bounded and fail-closed', () => {
         const {document} = parseHTML(`
             <html><body><main>
-                <div class="fluent-read-loading"><span id="owned">Owned UI</span></div>
                 <article-card id="host"></article-card>
                 <p id="point">Point target text.</p>
             </main></body></html>
         `);
-        const owned = document.querySelector('#owned')!;
         const host = document.querySelector('#host')!;
         const point = document.querySelector('#point')!;
         const firstShadow = host.attachShadow({mode: 'open'});
@@ -1316,7 +1313,6 @@ describe('translation candidate core', () => {
         });
         document.body.append(duplicateHost);
 
-        expect(isExtensionElement(owned)).toBe(true);
         expect(safeMatches(point, ':not(')).toBe(false);
         expect(safeClosest(point, ':not(')).toBeNull();
         expect(getOpenShadowRoots(document)).toEqual([firstShadow, secondShadow]);

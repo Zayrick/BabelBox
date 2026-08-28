@@ -8,17 +8,8 @@ const CASES = JSON.parse(fs.readFileSync(CASES_PATH, 'utf8'));
 
 const MAX_INTERACTION_CLOSE_ATTEMPTS = 3;
 const HOST_MUTABLE_FORBIDDEN_SELECTORS = new Set(['.MathJax_Display']);
-const MATRIX_REQUIREMENTS = Object.freeze({
-  total: 35,
-  required: 27,
-  requiredHosts: 23,
-  quarantine: 2,
-  h1CoverageRules: 8,
-  dynamicCoverageRules: 3,
-});
-
-function normalizeSelectorList(value, fallback) {
-  const raw = Array.isArray(value) ? value : value ? [value] : fallback ? [fallback] : [];
+function normalizeSelectorList(value) {
+  const raw = Array.isArray(value) ? value : value ? [value] : [];
   return [...new Set(raw.map((selector) => String(selector).trim()).filter(Boolean))];
 }
 
@@ -44,12 +35,12 @@ function resolveForbiddenMustExistSelectors(
 }
 
 function normalizeHoverTargets(value, options = {}) {
-  const legacyFallback = typeof options === 'string' ? options : options.fallbackSelector;
+  const fallbackSelector = options.fallbackSelector;
   const coverageRules = Array.isArray(options?.coverageRules) ? options.coverageRules : [];
   const source = Array.isArray(value) && value.length > 0
     ? value
-    : legacyFallback
-      ? [{name: 'primary', selector: legacyFallback, index: 0}]
+    : fallbackSelector
+      ? [{name: 'primary', selector: fallbackSelector, index: 0}]
       : [];
   const normalized = source.map((target, index) => {
     const selector = String(target?.selector || '').trim();
@@ -100,17 +91,8 @@ function normalizeInteractionScenarios(value) {
   return normalized;
 }
 
-function normalizeCoverageRules(value, legacySelectors = []) {
-  const source = Array.isArray(value) && value.length > 0
-    ? value
-    : normalizeSelectorList(legacySelectors).map((selector, index) => ({
-      name: `legacy-${index + 1}`,
-      selector,
-      kind: 'content',
-      minInitial: 1,
-      minSeen: 1,
-      trackDynamic: false,
-    }));
+function normalizeCoverageRules(value) {
+  const source = Array.isArray(value) ? value : [];
   return source.map((rule, index) => ({
     name: String(rule?.name || `coverage-${index + 1}`).trim(),
     selector: String(rule?.selector || '').trim(),
@@ -162,9 +144,9 @@ function validateCoverageRules(caseName, rules, options = {}) {
   return errors;
 }
 
-function normalizeCaseConfig(caseName, caseConfig) {
+function normalizeCaseConfig(caseConfig) {
   const tier = caseConfig.tier || 'required';
-  const requiredSelectors = normalizeSelectorList(caseConfig.requiredSelectors, caseConfig.selector);
+  const requiredSelectors = normalizeSelectorList(caseConfig.requiredSelectors);
   const forbiddenSelectors = normalizeSelectorList(caseConfig.forbiddenSelectors);
   const optionalForbiddenSelectors = normalizeSelectorList(caseConfig.optionalForbiddenSelectors);
   const configuredForbiddenMustExistSelectors = normalizeSelectorList(caseConfig.forbiddenMustExistSelectors);
@@ -176,22 +158,20 @@ function normalizeCaseConfig(caseName, caseConfig) {
   );
   const dynamicForbiddenSelectors = normalizeSelectorList(caseConfig.dynamicForbiddenSelectors);
   const mutableForbiddenSelectors = normalizeSelectorList(caseConfig.mutableForbiddenSelectors);
-  const fullCoverageSelectors = normalizeSelectorList(caseConfig.fullCoverageSelectors);
-  const coverageRules = normalizeCoverageRules(caseConfig.coverageRules, fullCoverageSelectors);
+  const coverageRules = normalizeCoverageRules(caseConfig.coverageRules);
   const hoverTargets = normalizeHoverTargets(caseConfig.hoverTargets, {
-    fallbackSelector: caseConfig.hoverSelector || caseConfig.selector || requiredSelectors[0],
+    fallbackSelector: caseConfig.hoverSelector || requiredSelectors[0],
     coverageRules,
   });
 
   return {
-    selector: caseConfig.hoverSelector || caseConfig.selector || requiredSelectors[0],
+    selector: caseConfig.hoverSelector || requiredSelectors[0],
     requiredSelectors,
     forbiddenSelectors,
     optionalForbiddenSelectors,
     forbiddenMustExistSelectors,
     dynamicForbiddenSelectors,
     mutableForbiddenSelectors,
-    fullCoverageSelectors,
     coverageRules,
     hoverTargets,
     interactionSelectors: normalizeSelectorList(caseConfig.interactionSelectors),
@@ -201,16 +181,15 @@ function normalizeCaseConfig(caseName, caseConfig) {
   };
 }
 
-function collectBaseCaseConfigErrors(caseName, caseConfig, normalized = normalizeCaseConfig(caseName, caseConfig)) {
+function collectBaseCaseConfigErrors(caseName, caseConfig, normalized = normalizeCaseConfig(caseConfig)) {
   const errors = [];
-  const configuredRequiredSelectors = caseConfig.requiredSelectors ||
-    (caseConfig.selector ? [caseConfig.selector] : []);
+  const configuredRequiredSelectors = caseConfig.requiredSelectors;
   const rawRequiredSelectors = Array.isArray(configuredRequiredSelectors)
     ? configuredRequiredSelectors
     : [configuredRequiredSelectors];
   if (rawRequiredSelectors.length === 0 ||
       rawRequiredSelectors.some((selector) => !String(selector).trim())) {
-    errors.push(`${caseName} 必须配置 requiredSelectors 或旧版 selector`);
+    errors.push(`${caseName} 必须配置 requiredSelectors`);
   }
   if (caseConfig.hoverTargets && (!Array.isArray(caseConfig.hoverTargets) || caseConfig.hoverTargets.length === 0 ||
       caseConfig.hoverTargets.some((target) => !target?.name || !target?.selector ||
@@ -233,7 +212,6 @@ function collectBaseCaseConfigErrors(caseName, caseConfig, normalized = normaliz
       '必须是允许列表、dynamicForbiddenSelectors 与 forbiddenSelectors 的非空子集'],
     ['forbiddenMustExistSelectors', false, (selector) => rawForbiddenSelectors.includes(selector),
       '必须是 forbiddenSelectors 的非空子集'],
-    ['fullCoverageSelectors', false, null, '必须是非空数组'],
   ]) {
     const value = caseConfig[field];
     if (value && (!Array.isArray(value) || (!allowEmpty && value.length === 0) ||
@@ -263,17 +241,6 @@ function collectBaseCaseConfigErrors(caseName, caseConfig, normalized = normaliz
 
 module.exports = {
   CASES,
-  CASES_PATH,
-  HOST_MUTABLE_FORBIDDEN_SELECTORS,
-  MATRIX_REQUIREMENTS,
-  MAX_INTERACTION_CLOSE_ATTEMPTS,
   collectBaseCaseConfigErrors,
   normalizeCaseConfig,
-  normalizeCoverageRules,
-  normalizeHoverTargets,
-  normalizeInteractionScenarios,
-  normalizeSelectorList,
-  resolveForbiddenMustExistSelectors,
-  validateCoverageRules,
-  validateMutableForbiddenSelectors,
 };

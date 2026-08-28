@@ -76,13 +76,6 @@ export function browserBuildTargetFromEnv(env?: Partial<ImportMetaEnv>): Browser
     return {browser, manifestVersion};
 }
 
-/** Keep a missing import.meta.env conservative and independently testable. */
-export function browserBuildTargetFromImportMeta(
-    meta?: {readonly env?: Partial<ImportMetaEnv>},
-): BrowserBuildTarget {
-    return browserBuildTargetFromEnv(meta?.env);
-}
-
 /**
  * 构建标记同时服务于产物审计。这里必须直接读取静态属性；把整个 import.meta 传给函数会绕过
  * Vite/WXT 的 compile-time replacement，导致 Chrome 生产包被误判为 unknown/MV2。

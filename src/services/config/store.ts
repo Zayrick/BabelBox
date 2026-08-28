@@ -473,7 +473,6 @@ async function initializeConfig(): Promise<void> {
         // 存储 API 暂时不可用时仍提供默认配置，避免 Firefox 设置页因初始化 rejection 反复重载。
         console.error('[FluentRead] 配置读取失败，使用默认配置', error);
         const fallback = new Config();
-        const serialized = serializeConfig(fallback);
         initialized = true;
         lastPersistedSerialized = '';
         applyConfig(fallback);
@@ -488,10 +487,6 @@ export function subscribeConfig(listener: ConfigListener): () => void {
     listeners.add(listener);
     if (initialized) listener(normalizeConfig(config));
     return () => listeners.delete(listener);
-}
-
-export function getConfigSnapshot(): Config {
-    return normalizeConfig(config);
 }
 
 /**

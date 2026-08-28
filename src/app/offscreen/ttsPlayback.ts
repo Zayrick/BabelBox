@@ -3,7 +3,6 @@ import {
     sameSelectionTtsRoute,
     type SelectionTtsPlaybackRequest,
     type SelectionTtsPlaybackState,
-    type SelectionTtsRoute,
 } from '@/src/features/selection-translation/protocol';
 
 export type {

@@ -49,7 +49,3 @@ export function normalizeSelectionTtsVoiceOrder(value: unknown): string[] {
 export function selectionTtsVoiceLocale(voice: string): string {
     return voice.split('-').slice(0, 2).join('-');
 }
-
-export function selectionTtsVoiceOption(voice: string): SelectionTtsVoiceOption | undefined {
-    return SELECTION_TTS_VOICE_OPTIONS.find((option) => option.value === voice);
-}

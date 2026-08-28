@@ -55,8 +55,7 @@ describe('翻译服务连接测试', () => {
             tencentSecretId: '',
             tencentSecretKey: '',
             serviceCredentials: {},
-            // An empty inventory is the legacy compatibility path: service is
-            // already a provider registry key.
+            // Without an explicit inventory, service is already a provider registry key.
             translationServices: [],
         });
         adapter.mockReset();

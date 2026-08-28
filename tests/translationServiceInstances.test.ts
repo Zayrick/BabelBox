@@ -8,7 +8,7 @@ import {
 } from '@/src/core/config/model'
 import {
   aiTranslationProviders,
-  clearLegacyTranslationServiceConfiguration,
+  clearTranslationServiceConfiguration,
   createAITranslationService,
   createDefaultTranslationServices,
   getFirstEnabledTranslationServiceId,
@@ -386,7 +386,7 @@ describe('translation service instances', () => {
     })
 
     const deleted = config.translationServices.find((item) => item.id === deletedId)!
-    clearLegacyTranslationServiceConfiguration(config, deleted)
+    clearTranslationServiceConfiguration(config, deleted)
     clearTranslationServiceCredentials(config, deletedId)
 
     expect(config.token[deletedId]).toBeUndefined()
@@ -413,7 +413,7 @@ describe('translation service instances', () => {
     for (const [provider, legacyConfig] of cases) {
       const config = normalizeConfig({service: provider, ...legacyConfig})
       const instance = config.translationServices.find((item) => item.id === provider)!
-      clearLegacyTranslationServiceConfiguration(config, instance)
+      clearTranslationServiceConfiguration(config, instance)
       if (provider === services.custom) expect(config.custom).toBe(defaultOption.custom)
       if (provider === services.newapi) expect(config.newApiUrl).toBe('http://localhost:3000')
       if (provider === services.azureOpenai) expect(config.azureOpenaiEndpoint).toBe('')

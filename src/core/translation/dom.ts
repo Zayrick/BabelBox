@@ -48,10 +48,6 @@ export function isDocumentSurface(element: Element): boolean {
     return element === owner?.documentElement || element === owner?.body;
 }
 
-export function isExtensionElement(element: Element): boolean {
-    return Boolean(element.matches(extensionSelector) || element.closest(extensionSelector));
-}
-
 export function isExtensionElementSelf(element: Element): boolean {
     return element.matches(extensionSelector);
 }

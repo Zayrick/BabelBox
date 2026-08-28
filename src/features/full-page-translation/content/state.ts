@@ -505,10 +505,6 @@ function liveSharedTranslationLayoutOverride(
     return undefined;
 }
 
-export function hasTranslationLayoutOverride(element: HTMLElement): boolean {
-    return liveSharedTranslationLayoutOverride(element) !== undefined;
-}
-
 function translationLayoutAncestorChain(owner: HTMLElement): HTMLElement[] {
     const ancestors: HTMLElement[] = [];
     let current = getComposedParent(owner);

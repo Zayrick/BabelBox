@@ -2,8 +2,7 @@ import { services } from "./catalog";
 import type { MiniMaxBillingPlan, MiniMaxRegion, MiMoBillingPlan, MiMoRegion } from "./catalog";
 import {DEFAULT_DEEPLX_ENDPOINT} from "./deeplx";
 
-// MiniMax 的 OpenAI 兼容地址目前按区域区分；计费方案单独建模，用于
-// Key/权益校验，也为未来两套方案出现不同端点保留明确的配置维度。
+// MiniMax 的 OpenAI 兼容地址按区域区分；计费方案单独参与 Key/权益校验。
 export const MINIMAX_ENDPOINTS: Record<MiniMaxBillingPlan, Record<MiniMaxRegion, string>> = {
     payg: {
         global: "https://api.minimax.io/v1/chat/completions",

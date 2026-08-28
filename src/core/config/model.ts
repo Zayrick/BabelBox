@@ -13,6 +13,7 @@ import {
 } from "@/src/core/site-rules/domain";
 import {
     createDefaultTranslationServices,
+    DEFAULT_NEW_API_URL,
     getDefaultTranslationServiceName,
     getTranslationServiceInstance,
     normalizeTranslationServices,
@@ -25,7 +26,6 @@ export type DeepSeekThinkingMode = 'enabled' | 'disabled';
 export type VideoSubtitleDisplayMode = 'bilingual' | 'translation-only' | 'original-only';
 export type FullPageTranslationMode = 'viewport' | 'all';
 export const DEFAULT_VIDEO_SUBTITLE_FONT_SIZE = 100;
-export const DEFAULT_NEW_API_URL = 'http://localhost:3000';
 export const VIDEO_SUBTITLE_FONT_SIZE_OPTIONS = [80, 90, 100, 110, 120, 140, 160] as const;
 export const DEFAULT_MOUSE_HOVER_TRANSLATION_DELAY = 50;
 export const MOUSE_HOVER_TRANSLATION_DELAY_MIN = 0;

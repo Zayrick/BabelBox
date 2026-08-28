@@ -1,3 +1,4 @@
+import {browser} from 'wxt/browser';
 import {
     downloadImageOcrLanguages,
     recognizeImage,
@@ -25,7 +26,7 @@ export function startOffscreenApp(): void {
         ], {type: contentType})),
         revokeObjectUrl: (url) => URL.revokeObjectURL(url),
         notify: (request, state, error) => {
-            void chrome.runtime.sendMessage({
+            void browser.runtime.sendMessage({
                 type: 'selectionTtsPlaybackState',
                 tabId: request.tabId,
                 clientRequestId: request.clientRequestId,
@@ -43,6 +44,6 @@ export function startOffscreenApp(): void {
         downloadOcrLanguages: downloadImageOcrLanguages,
     });
 
-    chrome.runtime.onMessage.addListener(listener);
+    browser.runtime.onMessage.addListener(listener);
     window.addEventListener('pagehide', () => ttsPlayer.dispose(), {once: true});
 }

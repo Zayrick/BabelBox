@@ -18,7 +18,6 @@ import {
 } from '@/src/services/translation/queue';
 import {
   isRetryableTranslationError,
-  TranslationRequestError,
   unwrapTranslationResponse,
 } from '@/src/services/translation/errors';
 
@@ -44,20 +43,6 @@ function throwIfAborted(signal?: AbortSignal): void {
 
 function isAbortError(error: unknown): boolean {
   return error instanceof Error && error.name === 'AbortError';
-}
-
-function shouldRetryTranslationRequest(
-  error: unknown,
-  aiSdkService: boolean,
-  explicitRetryPolicy: boolean,
-): boolean {
-  if (!isRetryableTranslationError(error)) return false;
-  if (!aiSdkService || explicitRetryPolicy) return true;
-
-  // AI SDK already exhausts HTTP 429/5xx retries. Its browser fetch path does
-  // not retry a rejected fetch promise, so only that transport boundary gets
-  // a small outer fallback. Runtime messaging failures are treated likewise.
-  return !(error instanceof TranslationRequestError) || error.kind === 'network';
 }
 
 function waitForDelay(delay: number, signal?: AbortSignal): Promise<void> {
@@ -173,12 +158,9 @@ export async function translateText(origin: string, context: string = document.t
     signal,
     queueSession,
   } = options;
-  const aiSdkService = servicesType.isAiSdk(selectedProvider);
-  const explicitRetryPolicy = options.maxRetries !== undefined;
-  // AI SDK services own protocol-aware HTTP retries (429/5xx). Keep the
-  // legacy outer retry loop for the adapters that have not migrated yet, plus
-  // two fallback attempts for browser-level fetch rejection.
-  const maxRetries = options.maxRetries ?? (aiSdkService ? 2 : 3);
+  // AI SDK providers own their HTTP retry policy. Other providers receive one
+  // client-level retry unless the caller supplies an explicit policy.
+  const maxRetries = options.maxRetries ?? (servicesType.isAiSdk(selectedProvider) ? 0 : 1);
   throwIfAborted(signal);
   const cleanedOrigin = origin?.replace(/[\s\u3000]/g, '') || '';
   if (!cleanedOrigin || cleanedOrigin.length === 0) {
@@ -227,7 +209,7 @@ export async function translateText(origin: string, context: string = document.t
         return result;
       } catch (error) {
         if (isAbortError(error)) throw error;
-        if (retryCount < maxRetries && shouldRetryTranslationRequest(error, aiSdkService, explicitRetryPolicy)) {
+        if (retryCount < maxRetries && isRetryableTranslationError(error)) {
           if (isDev) {
             console.log(`[翻译API] 翻译失败，${retryCount + 1}/${maxRetries} 次重试`);
           }
@@ -266,9 +248,7 @@ export async function translateTextBatch(
     queueSession,
   } = options;
   assertTranslationCredentials(selectedService, selectedModel);
-  const aiSdkService = servicesType.isAiSdk(selectedProvider);
-  const explicitRetryPolicy = options.maxRetries !== undefined;
-  const maxRetries = options.maxRetries ?? (aiSdkService ? 2 : 3);
+  const maxRetries = options.maxRetries ?? (servicesType.isAiSdk(selectedProvider) ? 0 : 1);
   throwIfAborted(signal);
   const pageContext = await resolvePageContext(options.pageContext, selectedService, selectedModel);
   throwIfAborted(signal);
@@ -305,7 +285,7 @@ export async function translateTextBatch(
         return result as string[];
       } catch (error) {
         if (isAbortError(error)) throw error;
-        if (retryCount < maxRetries && shouldRetryTranslationRequest(error, aiSdkService, explicitRetryPolicy)) {
+        if (retryCount < maxRetries && isRetryableTranslationError(error)) {
           await waitForDelay(retryDelay, signal);
           return translationTask(retryCount + 1);
         }
@@ -332,7 +312,6 @@ export async function translateVideoText(origin: string): Promise<string> {
   const pageContext = await resolvePageContext(undefined, service, model);
 
   // 视频字幕是高频、短文本请求。计数保留在内存中，并合并为低频写入，避免
-  // storage 写入和配置订阅回调把播放器主线程拖入高频循环。
   scheduleVideoCountSave();
   return enqueueTranslation(async (lease) => {
     const response = await waitForRequest(browser.runtime.sendMessage({

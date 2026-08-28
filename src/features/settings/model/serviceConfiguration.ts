@@ -17,7 +17,6 @@ export interface ServiceConfigurationFieldVisibility {
   mimoRegion: boolean
   azureOpenaiEndpoint: boolean
   deepLxEndpoint: boolean
-  akSkCredentials: boolean
   youdaoCredentials: boolean
   tencentCredentials: boolean
   robotId: boolean
@@ -75,7 +74,6 @@ export function createServiceConfigurationPresentation(
     mimoRegion: service === services.mimo,
     azureOpenaiEndpoint: servicesType.isAzureOpenai(service),
     deepLxEndpoint: service === services.deeplx,
-    akSkCredentials: servicesType.isUseAkSk(service),
     youdaoCredentials: servicesType.isYoudao(service),
     tencentCredentials: servicesType.isTencent(service),
     robotId: servicesType.isCoze(service),

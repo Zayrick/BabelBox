@@ -138,7 +138,7 @@ function parseArgs(argv) {
   }
 
   const caseConfig = CASES[args.case];
-  const normalized = normalizeCaseConfig(args.case, caseConfig);
+  const normalized = normalizeCaseConfig(caseConfig);
   const configErrors = collectBaseCaseConfigErrors(args.case, caseConfig, normalized);
   if (configErrors.length > 0) {
     throw new Error(`case ${args.case} 配置无效：\n- ${configErrors.join('\n- ')}`);
@@ -1509,8 +1509,8 @@ async function revealFullPageTarget(page, selector) {
   await page.waitForTimeout(900);
 }
 
-async function readFullPageState(page, selector, requiredSelectors, fullCoverageSelectors, controlSelector) {
-  return page.evaluate(({targetSelector, required, coverageSelectors, buttonSelector}) => {
+async function readFullPageState(page, selector, requiredSelectors, controlSelector) {
+  return page.evaluate(({targetSelector, required, buttonSelector}) => {
     const wrappers = [...document.querySelectorAll('.fluent-read-bilingual-content')];
     const parents = new Set(wrappers.map((wrapper) => wrapper.parentElement));
     const target = document.querySelector(targetSelector);
@@ -1530,27 +1530,11 @@ async function readFullPageState(page, selector, requiredSelectors, fullCoverage
         translationTexts: translations.map((translation) => translation.textContent?.trim() || ''),
       };
     });
-    const fullCoverage = coverageSelectors.map((coverageSelector) => {
-      const nodes = [...document.querySelectorAll(coverageSelector)].filter((candidate) => {
-        if (candidate.closest('[hidden], [aria-hidden="true"], [inert]')) return false;
-        const rect = candidate.getBoundingClientRect();
-        const style = getComputedStyle(candidate);
-        return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden' &&
-          Boolean(candidate.textContent?.trim());
-      });
-      const translated = nodes.filter((node) => {
-        const translations = [...node.querySelectorAll('.fluent-read-bilingual-content')];
-        return translations.length > 0 &&
-          translations.every((translation) => /[\u3400-\u9fff]/u.test(translation.textContent || ''));
-      });
-      return {selector: coverageSelector, visibleCount: nodes.length, translatedCount: translated.length};
-    });
     return {
       totalBilingual: wrappers.length,
       uniqueWrapperParents: parents.size,
       targetBilingual: target?.querySelectorAll('.fluent-read-bilingual-content').length || 0,
       requiredBilingual,
-      fullCoverage,
       controlTexts: buttonSelector
         ? [...document.querySelectorAll(buttonSelector)].map((node) => node.textContent?.trim() || '')
         : [],
@@ -1558,7 +1542,6 @@ async function readFullPageState(page, selector, requiredSelectors, fullCoverage
   }, {
     targetSelector: selector,
     required: requiredSelectors,
-    coverageSelectors: fullCoverageSelectors,
     buttonSelector: controlSelector || '',
   });
 }
@@ -1891,7 +1874,6 @@ async function runFullTranslationPass(context, pass) {
     selector,
     requiredSelectors,
     runtimeCoverageRules,
-    fullCoverageSelectors,
     pageContract,
     interactionScenarios,
     controlSelector,
@@ -1943,7 +1925,6 @@ async function runFullTranslationPass(context, pass) {
     page,
     selector,
     requiredSelectors,
-    fullCoverageSelectors,
     controlSelector,
   );
   const coverage = await readCoverageReport(page);
@@ -1951,8 +1932,7 @@ async function runFullTranslationPass(context, pass) {
   if (pageState.targetBilingual < 1 || pageState.totalBilingual < 1 ||
       pageState.uniqueWrapperParents !== pageState.totalBilingual ||
       pageState.requiredBilingual.some((item) => item.bilingualCount < 1 ||
-        item.translationTexts.some((text) => !/[\u3400-\u9fff]/u.test(text))) ||
-      pageState.fullCoverage.some((item) => item.visibleCount < 1 || item.translatedCount !== item.visibleCount)) {
+        item.translationTexts.some((text) => !/[\u3400-\u9fff]/u.test(text)))) {
     const message = first ? '全文滚动后状态异常' : '全文再次滚动后状态异常';
     throw new Error(`${message}：${JSON.stringify(pageState)}`);
   }
@@ -1977,7 +1957,6 @@ async function runFullCase(
   selector,
   requiredSelectors,
   coverageRules,
-  fullCoverageSelectors,
   pageContract,
   interactionScenarios,
   controlSelector,
@@ -1999,7 +1978,6 @@ async function runFullCase(
     selector,
     requiredSelectors,
     runtimeCoverageRules,
-    fullCoverageSelectors,
     pageContract,
     interactionScenarios,
     controlSelector,
@@ -2162,7 +2140,6 @@ async function main() {
         args.selector,
         args.requiredSelectors,
         args.coverageRules,
-        args.fullCoverageSelectors,
         pageContract,
         args.interactionScenarios,
         args.controlSelector,
@@ -2182,7 +2159,6 @@ async function main() {
       forbiddenMustExistSelectors: args.forbiddenMustExistSelectors,
       dynamicForbiddenSelectors: args.dynamicForbiddenSelectors,
       mutableForbiddenSelectors: args.mutableForbiddenSelectors,
-      fullCoverageSelectors: args.fullCoverageSelectors,
       coverageRules: args.coverageRules,
       hoverTargets: args.hoverTargets,
       interactionSelectors: args.interactionSelectors,

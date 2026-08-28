@@ -1,4 +1,3 @@
-import {parseHTML} from 'linkedom';
 import { describe, expect, it } from 'vitest';
 import {
   buildYoutubeTimedTextUrl,
@@ -6,7 +5,6 @@ import {
   cuesToSrt,
   extractYoutubeCaptionTracks,
   finalizeVideoSubtitleCues,
-  getYoutubeVideoId,
   parseYoutubeTimedTextResponse,
   sanitizeSubtitleFilename,
 } from '@/src/features/video-subtitle/content/youtubeSubtitleData';
@@ -254,16 +252,6 @@ describe('YouTube 字幕轨道数据', () => {
     ]);
 
     expect(cuesToSrt([{startMs: -100, durationMs: 20, text: 'early'}])).toContain('00:00:00,000 --> 00:00:00,000');
-    expect(getYoutubeVideoId({hostname: 'www.youtube.com', pathname: '/watch', search: '?v=abc123'} as Location)).toBe('abc123');
-    expect(getYoutubeVideoId({hostname: 'www.youtube.com', pathname: '/shorts/short-id', search: ''} as Location)).toBe('short-id');
-    expect(getYoutubeVideoId({hostname: 'www.youtube.com', pathname: '/', search: ''} as Location)).toBe('');
-    expect(getYoutubeVideoId({
-      hostname: 'www.youtube.com',
-      get pathname() {
-        throw new Error('bad location');
-      },
-      search: '',
-    } as unknown as Location)).toBe('');
     expect(sanitizeSubtitleFilename('  bad:/name*with?spaces  ')).toBe('bad_name_with_spaces');
     expect(sanitizeSubtitleFilename('   ')).toBe('youtube-subtitles');
   });

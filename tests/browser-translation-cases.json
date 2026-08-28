@@ -57,7 +57,6 @@
     "interactionSelectors": ["main a[href]"],
     "modes": ["hover", "full"],
     "tier": "required",
-    "notes": "Issue #293 的核心回归页：PR 列表标题必须由 hover/full 同一候选规则覆盖。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
     "service": "freeTranslation"
@@ -124,7 +123,6 @@
     ],
     "modes": ["hover", "full"],
     "tier": "required",
-    "notes": "用户截图中的主回归页：H1、正文分节、段落和列表必须分别达到 100% 覆盖；旧的 7-wrapper 单点基线必须失败。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
     "service": "freeTranslation"
@@ -331,7 +329,6 @@
     "modes": ["hover", "full"],
     "tier": "quarantine",
     "quarantineReason": "格式化 PRE 需要按双换行做专用语义分段；通用核心安全策略仍默认保护 PRE。",
-    "notes": "记录 Issue #212 的格式化文本场景，待独立 formatted-text capability 后转 required。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
     "service": "freeTranslation"
@@ -403,7 +400,7 @@
   },
   "mdn-javascript-guide": {
     "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Grammar_and_types",
-    "selector": "main p",
+    "hoverSelector": "main p",
     "requiredSelectors": ["main p"],
     "coverageRules": [
       {"name": "guide-title", "selector": "main h1", "kind": "heading", "minInitial": 1},
@@ -414,14 +411,13 @@
     "interactionSelectors": ["main a[href]"],
     "modes": ["hover", "full"],
     "tier": "required",
-    "notes": "保留旧 selector 字段，覆盖向后兼容路径。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
     "service": "freeTranslation"
   },
   "example-com": {
     "url": "https://example.com",
-    "selector": "p",
+    "hoverSelector": "p",
     "requiredSelectors": ["p"],
     "coverageRules": [
       {"name": "example-title", "selector": "main h1", "kind": "heading", "minInitial": 1, "sourceIncludes": ["Example Domain"]},
@@ -431,7 +427,6 @@
     "interactionSelectors": ["main a[href], body a[href]"],
     "modes": ["hover", "full"],
     "tier": "required",
-    "notes": "保留最小静态页，并通过 selector 字段验证旧配置仍可运行。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
     "service": "freeTranslation"
@@ -448,7 +443,6 @@
     "modes": ["hover", "full"],
     "tier": "quarantine",
     "quarantineReason": "超长论坛线程在当前隔离 Edge 环境中发生进程级无输出退出；保留为大页面压力观察样本。",
-    "notes": "Immersive Translate Issue #212 的论坛正文误判场景。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
     "service": "freeTranslation"
@@ -482,7 +476,6 @@
     "interactionSelectors": ["#an-informal-introduction-to-python a[href]"],
     "modes": ["hover", "full"],
     "tier": "required",
-    "notes": "验证正文中的 inline notranslate/code 保持原样且父段仍可翻译。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
     "service": "freeTranslation"
@@ -500,7 +493,6 @@
     "interactionSelectors": ["#main-content a[href]"],
     "modes": ["hover", "full"],
     "tier": "required",
-    "notes": "Go 官方教程；验证带代码与命令示例的文档正文。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
     "service": "freeTranslation"
@@ -518,7 +510,6 @@
     "interactionSelectors": ["#mdbook-content main a[href]"],
     "modes": ["hover", "full"],
     "tier": "required",
-    "notes": "Rust 官方 mdBook；验证 inline code 保真与正文列表。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
     "service": "freeTranslation"
@@ -535,8 +526,7 @@
     "interactionSelectors": ["a[href]"],
     "modes": ["hover", "full"],
     "tier": "quarantine",
-    "quarantineReason": "FluentRead Issue #49 的原始 Steam 讨论已被删除，站点只返回 item does not exist，保留为历史来源回归。",
-    "notes": "FluentRead Issue #49 的真实英文论坛样本，覆盖原帖、动态回复和长论坛 DOM。",
+    "quarantineReason": "该 Steam 讨论页已删除，站点只返回 item does not exist。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
     "service": "freeTranslation"
@@ -555,7 +545,6 @@
     "interactionSelectors": ["main a[href]"],
     "modes": ["hover", "full"],
     "tier": "required",
-    "notes": "FluentRead Issue #42 的 Swift DocC 页面，标题、正文、列表必须翻译，inline code 必须保真。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
     "service": "freeTranslation"
@@ -574,7 +563,6 @@
     "modes": ["hover", "full"],
     "tier": "quarantine",
     "quarantineReason": "W3C 当前对隔离自动化浏览器返回 Cloudflare security interstitial，无法稳定取得正文。",
-    "notes": "W3C 长文档样本；站点解除自动化挑战后重新转回 required。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
     "service": "freeTranslation"
@@ -591,7 +579,6 @@
     "interactionSelectors": ["#docContent a[href]"],
     "modes": ["hover", "full"],
     "tier": "required",
-    "notes": "PostgreSQL 官方静态文档，用于验证标题、导航链接和代码混排正文。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
     "service": "freeTranslation"
@@ -609,7 +596,6 @@
     "interactionSelectors": ["#content a[href]"],
     "modes": ["hover", "full"],
     "tier": "required",
-    "notes": "NGINX 官方静态教程；覆盖大量代码混排正文、章节标题和恢复。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
     "service": "freeTranslation"
@@ -627,7 +613,6 @@
     "interactionSelectors": [".contents a[href]"],
     "modes": ["hover", "full"],
     "tier": "required",
-    "notes": "curl 官方长篇静态文档；覆盖多级标题、长正文、inline code 与大量 pre。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
     "service": "freeTranslation"
@@ -645,7 +630,6 @@
     "interactionSelectors": [".fancy a[href]"],
     "modes": ["hover", "full"],
     "tier": "required",
-    "notes": "SQLite 官方 SQL 参考；覆盖超大 SVG 语法图旁的正文和多级章节，SVG 必须完全跳过。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
     "service": "freeTranslation"
@@ -664,7 +648,6 @@
     "interactionSelectors": ["#main a[href]"],
     "modes": ["hover", "full"],
     "tier": "required",
-    "notes": "Pro Git 官方静态章节；覆盖层级标题、长段落和图片说明周围的正文。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
     "service": "freeTranslation"
@@ -680,7 +663,7 @@
     "interactionSelectors": ["main article a[href]"],
     "modes": ["hover", "full"],
     "tier": "quarantine",
-    "quarantineReason": "FluentRead Issue #121 是中文目标语言下的布局不变性负例；现有 runner 以必须生成中文译文为通过条件，需后续独立 no-op/layout 模式后转 required。",
+    "quarantineReason": "该页是中文目标语言下的布局不变性场景，当前 runner 只验证会生成译文的页面。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
     "service": "freeTranslation"

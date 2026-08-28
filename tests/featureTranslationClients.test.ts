@@ -5,7 +5,6 @@ import {
 } from '@/src/features/area-translation/services/client';
 import {
     fetchImageInExtension,
-    recognizeImageInExtension,
     translateImageInExtension,
 } from '@/src/features/image-translation/services/client';
 
@@ -17,7 +16,6 @@ vi.mock('wxt/browser', () => ({
 
 beforeEach(() => {
     sendMessage.mockReset();
-    vi.stubGlobal('browser', {runtime: {sendMessage}});
 });
 
 describe('圈选翻译内容脚本客户端', () => {
@@ -74,27 +72,6 @@ describe('圈选翻译内容脚本客户端', () => {
 });
 
 describe('图片翻译内容脚本客户端', () => {
-    it('识别图片并在后台省略行数组时返回空结果', async () => {
-        const lines = [{text: 'Hello', bbox: {x0: 1, y0: 2, x1: 3, y1: 4}}];
-        sendMessage.mockResolvedValueOnce({success: true, lines}).mockResolvedValueOnce({success: true});
-
-        await expect(recognizeImageInExtension('image', 'en')).resolves.toEqual(lines);
-        await expect(recognizeImageInExtension('image', 'auto')).resolves.toEqual([]);
-        expect(sendMessage).toHaveBeenNthCalledWith(1, {
-            type: 'fluentReadImageOcr',
-            image: 'image',
-            sourceLanguage: 'en',
-        });
-    });
-
-    it.each([
-        [{success: false, error: '识别失败'}, '识别失败'],
-        [undefined, '图片 OCR 服务不可用'],
-    ])('拒绝失败的 OCR 响应 %#', async (response, message) => {
-        sendMessage.mockResolvedValue(response);
-        await expect(recognizeImageInExtension('image', 'auto')).rejects.toThrow(message);
-    });
-
     it('返回完整图片翻译结果并保留页面上下文', async () => {
         const lines = [{text: '你好', bbox: {x0: 1, y0: 2, x1: 3, y1: 4}, backgroundColor: '#fff'}];
         sendMessage.mockResolvedValue({success: true, image: 'translated', lines});

@@ -1,3 +1,4 @@
+import {browser} from 'wxt/browser';
 import { selectChangedTranslations, type OcrLine } from '@/src/features/image-translation/core';
 import { areaRectToImageCrop, type AreaTranslationSelection } from '@/src/features/area-translation/public';
 import { inpaintTextRegions } from './inpainting';
@@ -71,19 +72,11 @@ function drawTranslatedText(
 }
 
 async function translateTexts(texts: string[], title: string): Promise<string[]> {
-    const response = await new Promise<any>((resolve, reject) => {
-        chrome.runtime.sendMessage({
-            type: 'fluentReadImageTranslateTexts',
-            texts,
-            title,
-        }, (result: unknown) => {
-            if (chrome.runtime.lastError) {
-                reject(new Error(chrome.runtime.lastError.message));
-            } else {
-                resolve(result);
-            }
-        });
-    });
+    const response = await browser.runtime.sendMessage({
+        type: 'fluentReadImageTranslateTexts',
+        texts,
+        title,
+    }) as {success?: boolean; translations?: unknown; error?: string} | undefined;
     if (!response?.success || !Array.isArray(response.translations)) {
         throw new Error(response?.error || '图片文字翻译失败');
     }

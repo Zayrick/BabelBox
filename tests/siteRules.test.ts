@@ -8,7 +8,7 @@ import {
     normalizeAlwaysTranslateDomains,
     normalizeDisabledExtensionDomains,
     shouldAutoTranslatePage,
-} from '@/src/features/site-rules/domain';
+} from '@/src/core/site-rules/domain';
 
 describe('始终翻译网站规则', () => {
     it('使用 Public Suffix List 统一为可注册域名，并覆盖私有后缀', () => {

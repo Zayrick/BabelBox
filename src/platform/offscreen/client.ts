@@ -1,10 +1,8 @@
+import {browser} from 'wxt/browser';
+
 export interface OffscreenMessage {
     readonly type: string;
 }
-
-export type OffscreenMessageEnvelope<TMessage extends OffscreenMessage> = TMessage & {
-    readonly target: 'offscreen';
-};
 
 export interface OffscreenRuntimeApi {
     readonly lastError?: {readonly message?: string};
@@ -125,6 +123,6 @@ export function createOffscreenClient(dependencies: OffscreenClientDependencies)
 }
 
 export const chromeOffscreenClient = createOffscreenClient({
-    getRuntime: () => chrome.runtime as OffscreenRuntimeApi,
-    getOffscreen: () => chrome.offscreen as unknown as OffscreenDocumentApi | undefined,
+    getRuntime: () => browser.runtime as unknown as OffscreenRuntimeApi,
+    getOffscreen: () => browser.offscreen as unknown as OffscreenDocumentApi | undefined,
 });

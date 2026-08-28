@@ -169,21 +169,6 @@
       <el-col :span="12"><el-input v-model="config.deeplx" placeholder="http://localhost:1188/translate" /></el-col>
     </el-row>
 
-    <el-row v-if="presentation.fields.akSkCredentials" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="服务商提供的访问密钥。" :show-after="300">API Key</SettingsHelpLabel></el-col>
-      <el-col :span="12">
-        <el-input v-model="config.ak" :class="{ 'input-error': !config.ak.trim() }" placeholder="请输入 Access Key" />
-        <div v-if="!config.ak.trim()" class="error-text">Access Key 为必填项</div>
-      </el-col>
-    </el-row>
-    <el-row v-if="presentation.fields.akSkCredentials" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="服务商提供的私密密钥，请妥善保管。" :show-after="300">Secret Key</SettingsHelpLabel></el-col>
-      <el-col :span="12">
-        <el-input v-model="config.sk" :class="{ 'input-error': !config.sk.trim() }" type="password" placeholder="请输入 Secret Key" />
-        <div v-if="!config.sk.trim()" class="error-text">Secret Key 为必填项</div>
-      </el-col>
-    </el-row>
-
     <el-row v-if="presentation.fields.youdaoCredentials" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="有道翻译服务提供的 App Key。" :show-after="300">App Key</SettingsHelpLabel></el-col>
       <el-col :span="12">
@@ -379,13 +364,13 @@ function ensureInstanceCredential(): TranslationServiceCredential {
   const id = instanceId.value
   const existing = config.value.serviceCredentials[id]
   if (existing) return existing
-  const legacyProviderConfig = instance.value?.id === instance.value?.provider
+  const usesProviderId = instance.value?.id === instance.value?.provider
   const credential = {
-    apiKey: legacyProviderConfig ? config.value.token[service.value] || '' : '',
-    appKey: legacyProviderConfig ? config.value.youdaoAppKey || '' : '',
-    appSecret: legacyProviderConfig ? config.value.youdaoAppSecret || '' : '',
-    secretId: legacyProviderConfig ? config.value.tencentSecretId || '' : '',
-    secretKey: legacyProviderConfig ? config.value.tencentSecretKey || '' : '',
+    apiKey: usesProviderId ? config.value.token[service.value] || '' : '',
+    appKey: usesProviderId ? config.value.youdaoAppKey || '' : '',
+    appSecret: usesProviderId ? config.value.youdaoAppSecret || '' : '',
+    secretId: usesProviderId ? config.value.tencentSecretId || '' : '',
+    secretKey: usesProviderId ? config.value.tencentSecretKey || '' : '',
   }
   config.value.serviceCredentials[id] = credential
   return credential

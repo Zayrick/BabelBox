@@ -203,8 +203,6 @@ export const servicesType = {
     isUseCustomBody: (service: string) => servicesType.AI.has(service),
     isCustom: (service: string) => service === services.custom,
     isNewApi: (service: string) => service === services.newapi,
-    // 文心一言已迁移到千帆 v2 的 Bearer Token 鉴权；保留方法供 UI 兼容。
-    isUseAkSk: (_service: string) => false,
     isCoze: (service: string) => service === services.cozecom || service === services.cozecn,
     isYoudao: (service: string) => service === services.youdao,
     isTencent: (service: string) => service === services.tencent || service === services.huanYuanTranslation,

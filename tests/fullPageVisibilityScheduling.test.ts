@@ -23,7 +23,9 @@ const runtime = vi.hoisted(() => ({
     config: {service: "microsoft", display: 0, to: "zh", fullPageTranslationMode: "viewport" as "viewport" | "all"},
     ensureTranslationTruncationLayout: vi.fn(() => true),
 }));
+const browserMocks = vi.hoisted(() => ({sendMessage: vi.fn(async () => undefined)}));
 
+vi.mock('wxt/browser', () => ({browser: {runtime: {sendMessage: browserMocks.sendMessage}}}));
 vi.mock('@/src/features/full-page-translation/content/configCheck', () => ({checkConfig: () => true}));
 vi.mock("@/src/core/config/constants", () => ({
     styles: {singleTranslation: 0, bilingualTranslation: 1},
@@ -155,7 +157,6 @@ vi.mock("@/src/core/translation/public", () => {
 
 import {
     autoTranslateEnglishPage,
-    handleBilingualTranslation,
     handleTranslation,
     isFullPageTranslationActive,
     restoreOriginalContent,
@@ -244,6 +245,7 @@ describe("全文翻译可见性锚点", () => {
         runtime.config.display = 0;
         runtime.config.fullPageTranslationMode = "viewport";
         runtime.ensureTranslationTruncationLayout.mockClear();
+        browserMocks.sendMessage.mockClear();
         TestIntersectionObserver.instances = [];
         TestMutationObserver.instances = [];
 
@@ -916,7 +918,8 @@ describe("全文翻译可见性锚点", () => {
         runtime.candidates = [{element: paragraph, kind: "content", reason: "paragraph"}];
         runtime.requests.mockRejectedValueOnce(new Error("provider unavailable"));
 
-        handleBilingualTranslation(paragraph, false);
+        runtime.pointCandidate = runtime.candidates[0]!;
+        handleTranslation(20, 20);
         await finishScheduledWork();
 
         expect(getTranslationState(paragraph)?.phase).toBe("error");
@@ -946,7 +949,8 @@ describe("全文翻译可见性锚点", () => {
             setLayoutBox(paragraph, 620, 90);
             runtime.candidates = [{element: paragraph, kind: "content", reason: "paragraph"}];
 
-            handleBilingualTranslation(paragraph, false);
+            runtime.pointCandidate = runtime.candidates[0]!;
+            handleTranslation(20, 20);
             await finishScheduledWork();
 
             const hoverState = getTranslationState(paragraph)!;
@@ -1012,7 +1016,8 @@ describe("全文翻译可见性锚点", () => {
         setLayoutBox(host, 640, 120);
         runtime.candidates = [{element: host, nodes: sourceNodes, kind: "content", reason: "inline-run"}];
 
-        handleBilingualTranslation(host, false);
+        runtime.pointCandidate = runtime.candidates[0]!;
+        handleTranslation(20, 20);
         await finishScheduledWork();
 
         const segment = host.querySelector<HTMLElement>('[data-fr-translation-segment="true"]')!;
@@ -1061,7 +1066,8 @@ describe("全文翻译可见性锚点", () => {
         const pendingRequest = deferred<string[]>();
         runtime.requests.mockImplementationOnce(() => pendingRequest.promise);
 
-        handleBilingualTranslation(host, false);
+        runtime.pointCandidate = runtime.candidates[0]!;
+        handleTranslation(20, 20);
         await vi.advanceTimersByTimeAsync(1);
         await Promise.resolve();
 
@@ -1108,7 +1114,8 @@ describe("全文翻译可见性锚点", () => {
         setLayoutBox(paragraph, 600, 80);
         runtime.candidates = [{element: paragraph, kind: "content", reason: "exact-hover"}];
 
-        handleBilingualTranslation(paragraph, false);
+        runtime.pointCandidate = runtime.candidates[0]!;
+        handleTranslation(20, 20);
         await finishScheduledWork();
         const hoverState = getTranslationState(paragraph)!;
         expect(hoverState.phase).toBe("translated");

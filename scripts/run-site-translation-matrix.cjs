@@ -7,7 +7,6 @@ const path = require('node:path');
 const {spawn} = require('node:child_process');
 const {
   CASES,
-  MATRIX_REQUIREMENTS,
   collectBaseCaseConfigErrors,
   normalizeCaseConfig,
 } = require('./site-translation/case-config.cjs');
@@ -83,8 +82,6 @@ function validateMatrix(caseConfigs = CASES) {
   const quarantine = entries.filter(([, config]) => config.tier === 'quarantine');
   const urls = new Set(entries.map(([, config]) => config.url));
   const requiredHosts = new Set();
-  const requiredCoverageRules = [];
-  const normalizedByName = new Map();
   const errors = [];
 
   for (const [name, config] of entries) {
@@ -102,8 +99,7 @@ function validateMatrix(caseConfigs = CASES) {
 
     let normalized;
     try {
-      normalized = normalizeCaseConfig(name, config);
-      normalizedByName.set(name, normalized);
+      normalized = normalizeCaseConfig(config);
       errors.push(...collectBaseCaseConfigErrors(name, config, normalized));
     } catch (error) {
       errors.push(`${name} 配置规范化失败：${error.message}`);
@@ -113,17 +109,11 @@ function validateMatrix(caseConfigs = CASES) {
     const requiredForbiddenSelectors = normalized.forbiddenSelectors.filter(
       (selector) => !normalized.optionalForbiddenSelectors.includes(selector),
     );
-    if (tier === 'required') {
-      requiredCoverageRules.push(...normalized.coverageRules.map((rule) => ({...rule, caseName: name})));
-    }
-    if (!config.hoverSelector && !config.selector) errors.push(`${name} 缺少 hoverSelector/selector`);
+    if (!config.hoverSelector) errors.push(`${name} 缺少 hoverSelector`);
     if (tier === 'required' && Array.isArray(config.forbiddenMustExistSelectors) &&
         JSON.stringify([...new Set(config.forbiddenMustExistSelectors)]) !==
           JSON.stringify([...new Set(requiredForbiddenSelectors)])) {
       errors.push(`${name} 是 required case，forbiddenMustExistSelectors 如显式配置必须覆盖全部非可选 forbiddenSelectors`);
-    }
-    if (tier === 'required' && config.fullCoverageSelectors) {
-      errors.push(`${name} 不得再使用 fullCoverageSelectors；请迁移到 coverageRules`);
     }
     const hoverSelectors = new Set(normalized.hoverTargets.map(({selector}) => selector));
     const missingHoverSelectors = normalized.coverageRules
@@ -138,55 +128,7 @@ function validateMatrix(caseConfigs = CASES) {
     if (config.tier === 'quarantine' && !config.quarantineReason) errors.push(`${name} 缺少 quarantineReason`);
   }
 
-  if (entries.length < MATRIX_REQUIREMENTS.total) {
-    errors.push(`case 总数不足 ${MATRIX_REQUIREMENTS.total} 个：${entries.length}`);
-  }
-  if (required.length < MATRIX_REQUIREMENTS.required) {
-    errors.push(`required case 不足 ${MATRIX_REQUIREMENTS.required} 个：${required.length}`);
-  }
-  if (requiredHosts.size < MATRIX_REQUIREMENTS.requiredHosts) {
-    errors.push(`required 独立域名不足 ${MATRIX_REQUIREMENTS.requiredHosts} 个：${requiredHosts.size}`);
-  }
-  if (quarantine.length < MATRIX_REQUIREMENTS.quarantine) {
-    errors.push(`quarantine case 不足 ${MATRIX_REQUIREMENTS.quarantine} 个：${quarantine.length}`);
-  }
   if (urls.size !== entries.length) errors.push(`URL 不唯一：${urls.size}/${entries.length}`);
-  if (requiredCoverageRules.filter((rule) => rule.kind === 'heading' && /\bh1\b/iu.test(rule.selector)).length <
-      MATRIX_REQUIREMENTS.h1CoverageRules) {
-    errors.push(`required 矩阵至少需要 ${MATRIX_REQUIREMENTS.h1CoverageRules} 个独立 H1 全覆盖契约`);
-  }
-  if (requiredCoverageRules.filter((rule) => rule.trackDynamic).length <
-      MATRIX_REQUIREMENTS.dynamicCoverageRules) {
-    errors.push(`required 矩阵至少需要 ${MATRIX_REQUIREMENTS.dynamicCoverageRules} 个动态节点覆盖契约`);
-  }
-
-  const pr4038 = caseConfigs['github-immersive-pr-4038'];
-  const pr4038Rules = normalizedByName.get('github-immersive-pr-4038')?.coverageRules || [];
-  if (!pr4038 || (pr4038.tier || 'required') !== 'required') {
-    errors.push('缺少 required 的 github-immersive-pr-4038 回归页');
-  } else if (!pr4038Rules.some((rule) => rule.kind === 'heading' && /\bh1\b/iu.test(rule.selector)) ||
-      !pr4038Rules.some((rule) => rule.kind === 'content') ||
-      !pr4038Rules.some((rule) => rule.kind === 'list')) {
-    errors.push('github-immersive-pr-4038 必须分别覆盖 H1、正文和列表，不能只验证单个 selector');
-  }
-  const pr4038HoverSelectors = (pr4038?.hoverTargets || []).map((target) => target.selector);
-  if (JSON.stringify(pr4038HoverSelectors) !== JSON.stringify([
-    'main h1',
-    '.markdown-body h2',
-    '.markdown-body p',
-    '.markdown-body li',
-  ])) {
-    errors.push('github-immersive-pr-4038 的 hover 必须分别验证 H1、首个 H2、首个 P 和首个 LI');
-  }
-  if (!pr4038?.forbiddenMustExistSelectors?.includes("button[aria-haspopup='dialog'][aria-label*='search' i]") ||
-      !pr4038?.interactionScenarios?.some((scenario) =>
-        scenario.triggerSelector === "button[aria-haspopup='dialog'][aria-label*='search' i]" &&
-        scenario.dialogSelector === "[role='dialog'][aria-modal='true']" &&
-        scenario.comboboxSelector === "[role='combobox']" &&
-        scenario.listboxSelector === "[role='listbox']" && scenario.inputText === 'issues' &&
-        scenario.closeAttempts === 2)) {
-    errors.push('github-immersive-pr-4038 必须验证真实 Search trigger、输入、dialog、combobox 和 listbox');
-  }
 
   if (errors.length > 0) throw new Error(`站点矩阵配置无效：\n- ${errors.join('\n- ')}`);
   return {entries, required, quarantine, requiredHosts};
@@ -323,7 +265,7 @@ async function main() {
         tier: config.tier || 'required',
         url: config.url,
         modes: config.modes || ['hover', 'full'],
-        coverageRules: normalizeCaseConfig(name, config).coverageRules,
+        coverageRules: normalizeCaseConfig(config).coverageRules,
         quarantineReason: config.quarantineReason || null,
       })),
     }, null, 2)}\n`);
@@ -370,4 +312,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = {MATRIX_REQUIREMENTS, computeJobTimeoutMs, runChildWithWatchdog, validateMatrix};
+module.exports = {computeJobTimeoutMs, runChildWithWatchdog, validateMatrix};

@@ -1,1 +1,1 @@
-export {sendErrorMessage, showPageNotice} from './content/notice';
+export {sendErrorMessage} from './content/notice';

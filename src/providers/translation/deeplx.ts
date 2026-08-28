@@ -97,10 +97,6 @@ async function translateFromDeepLX(
     return responseData.data;
 }
 
-export function normalizeDeepLXLanguage(language: string): string {
-    return normalizeLanguage(language);
-}
-
 export function getDeepLXRequestLanguages(from: string, to: string): {sourceLang: string; targetLang: string} {
     return {
         sourceLang: normalizeLanguage(from),

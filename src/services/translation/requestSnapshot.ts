@@ -98,33 +98,33 @@ export function resolveTranslationServiceConfig(
 
     const provider = instance?.provider || instanceId;
     const credential = source.serviceCredentials?.[instanceId];
-    const legacyProviderConfig = instanceId === provider;
+    const usesProviderId = instanceId === provider;
     const modelId = instance?.modelId
         || instanceMapValue(source.model, instanceId, provider)
-        || (legacyProviderConfig ? source.model[provider] || '' : '');
+        || (usesProviderId ? source.model[provider] || '' : '');
     const endpoint = instance?.proxy
         || instance?.endpoint
         || instanceMapValue(source.proxy, instanceId, provider)
-        || (legacyProviderConfig ? source.proxy[provider] || '' : '')
-        || (legacyProviderConfig && provider === 'custom' ? source.custom : '')
-        || (legacyProviderConfig && provider === 'newapi' ? source.newApiUrl : '')
-        || (legacyProviderConfig && provider === 'azureOpenai' ? source.azureOpenaiEndpoint : '');
+        || (usesProviderId ? source.proxy[provider] || '' : '')
+        || (usesProviderId && provider === 'custom' ? source.custom : '')
+        || (usesProviderId && provider === 'newapi' ? source.newApiUrl : '')
+        || (usesProviderId && provider === 'azureOpenai' ? source.azureOpenaiEndpoint : '');
     const token = credential
         ? credential.apiKey
         : instanceMapValue(source.token, instanceId, provider)
-            || (legacyProviderConfig ? source.token[provider] || '' : '');
+            || (usesProviderId ? source.token[provider] || '' : '');
     const customBody = instance?.customBody
         || instanceMapValue(source.customBody, instanceId, provider)
-        || (legacyProviderConfig ? source.customBody[provider] || '' : '');
+        || (usesProviderId ? source.customBody[provider] || '' : '');
     const systemRole = instance?.systemRole
         || instanceMapValue(source.system_role, instanceId, provider)
-        || (legacyProviderConfig ? source.system_role[provider] || '' : '');
+        || (usesProviderId ? source.system_role[provider] || '' : '');
     const userRole = instance?.userRole
         || instanceMapValue(source.user_role, instanceId, provider)
-        || (legacyProviderConfig ? source.user_role[provider] || '' : '');
+        || (usesProviderId ? source.user_role[provider] || '' : '');
     const robotId = instance?.robotId
         || instanceMapValue(source.robot_id, instanceId, provider)
-        || (legacyProviderConfig ? source.robot_id[provider] || '' : '');
+        || (usesProviderId ? source.robot_id[provider] || '' : '');
     const requirementKey = `${provider}:${modelId}`;
 
     const scoped = createTranslationProviderConfigSnapshot({
@@ -151,10 +151,10 @@ export function resolveTranslationServiceConfig(
         minimaxRegion: instance?.minimaxRegion || source.minimaxRegion,
         mimoBillingPlan: instance?.mimoBillingPlan || source.mimoBillingPlan,
         mimoRegion: instance?.mimoRegion || source.mimoRegion,
-        youdaoAppKey: credential?.appKey || (legacyProviderConfig ? source.youdaoAppKey : ''),
-        youdaoAppSecret: credential?.appSecret || (legacyProviderConfig ? source.youdaoAppSecret : ''),
-        tencentSecretId: credential?.secretId || (legacyProviderConfig ? source.tencentSecretId : ''),
-        tencentSecretKey: credential?.secretKey || (legacyProviderConfig ? source.tencentSecretKey : ''),
+        youdaoAppKey: credential?.appKey || (usesProviderId ? source.youdaoAppKey : ''),
+        youdaoAppSecret: credential?.appSecret || (usesProviderId ? source.youdaoAppSecret : ''),
+        tencentSecretId: credential?.secretId || (usesProviderId ? source.tencentSecretId : ''),
+        tencentSecretKey: credential?.secretKey || (usesProviderId ? source.tencentSecretKey : ''),
     });
 
     return Object.freeze({instanceId, provider, instance, config: scoped});
