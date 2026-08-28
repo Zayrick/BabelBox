@@ -85,7 +85,7 @@
     </section>
   </div>
   </section>
-  <section v-show="props.activeSection === 'settings-sites'" id="settings-sites" class="settings-section site-settings-section">
+  <section v-show="props.activeSection === 'settings-sites'" id="settings-sites" class="settings-section settings-list-section site-settings-section">
     <el-row class="settings-control-row" data-setting="global-auto-translate">
       <el-col :span="20" class="settings-control-label lightblue rounded-corner">
         <span class="popup-text popup-vertical-left">所有网站自动翻译</span>

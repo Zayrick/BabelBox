@@ -47,14 +47,11 @@
         role="listitem"
         :data-site-rule="domain"
       >
-        <span class="site-rule-icon" aria-hidden="true">
-          <component :is="ruleIcon" :size="17" :stroke-width="1.9" focusable="false" />
-        </span>
         <span class="site-rule-copy">
           <strong :title="domain">{{ domain }}</strong>
         </span>
         <button class="site-rule-remove" type="button" :aria-label="`删除 ${domain}`" :title="`删除 ${domain}`" @click="removeDomain(domain)">
-          <Trash2 :size="15" :stroke-width="1.9" aria-hidden="true" focusable="false" />
+          删除
         </button>
       </article>
     </div>
@@ -69,7 +66,7 @@
 
 <script lang="ts" setup>
 import { computed, nextTick, ref } from 'vue';
-import { Ban, Globe, Languages, ShieldCheck, Trash2 } from '@lucide/vue';
+import { Globe, ShieldCheck } from '@lucide/vue';
 import { getSiteBaseDomain } from '@/src/core/site-rules/domain';
 
 const props = withDefaults(defineProps<{
@@ -90,7 +87,6 @@ const statusMessage = ref('');
 const domainInput = ref<HTMLInputElement | null>(null);
 const domains = computed(() => props.modelValue ?? []);
 const normalizedPreview = computed(() => inputValue.value ? getSiteBaseDomain(inputValue.value) : null);
-const ruleIcon = computed(() => props.variant === 'disable-extension' ? Ban : Languages);
 const emptyIcon = computed(() => props.variant === 'disable-extension' ? ShieldCheck : Globe);
 const labels = computed(() => props.variant === 'disable-extension'
   ? {
@@ -166,10 +162,13 @@ function removeDomain(domain: string) {
 
 <style scoped>
 .site-rules-editor {
-  margin-top: 12px;
-  padding: 16px 0 0;
+  margin: 0;
+  padding: 16px;
+  background: var(--surface, #fff);
+}
+
+.site-rules-editor + .site-rules-editor {
   border-top: 1px solid var(--line, #e5e8ef);
-  background: transparent;
 }
 
 .site-rules-heading {
@@ -286,37 +285,26 @@ function removeDomain(domain: string) {
 }
 
 .site-rules-list {
-  display: grid;
-  gap: 0;
   max-height: 360px;
   margin-top: 14px;
-  padding-right: 3px;
   overflow-y: auto;
+  border: 1px solid var(--line, #e5e8ef);
+  border-radius: 8px;
   scrollbar-width: thin;
 }
 
 .site-rule-item {
   display: grid;
-  grid-template-columns: 30px minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   min-height: 52px;
-  padding: 8px 4px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--line, #e5e8ef);
-  background: transparent;
+  background: var(--surface, #fff);
 }
 
-.site-rule-icon {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 7px;
-  color: var(--brand-strong, #dc315f);
-  background: var(--brand-soft, #fff0f4);
-  font-size: 13px;
-  font-weight: 800;
-}
+.site-rule-item:last-child { border-bottom: 0; }
 
 .site-rule-copy { min-width: 0; }
 
@@ -329,21 +317,17 @@ function removeDomain(domain: string) {
 }
 
 .site-rule-remove {
-  display: grid;
-  width: 32px;
-  height: 32px;
   min-height: 32px;
-  padding: 0;
-  place-items: center;
-  border: 1px solid var(--line, #e5e8ef);
+  padding: 0 4px;
+  border: 0;
   color: var(--brand-strong, #dc315f);
   background: transparent;
-  font-size: 10px;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .site-rule-remove:hover {
-  border-color: rgba(239, 71, 118, .35);
-  background: var(--brand-soft, #fff0f4);
+  color: var(--brand, #ef4776);
 }
 
 .site-rules-empty {
@@ -417,7 +401,7 @@ function removeDomain(domain: string) {
 
 @media (max-width: 600px) {
   .site-rules-editor {
-    padding-top: 14px;
+    padding: 14px 12px;
   }
 
   .site-rules-heading {
@@ -439,18 +423,6 @@ function removeDomain(domain: string) {
     width: 100%;
   }
 
-  .site-rule-item {
-    grid-template-columns: 32px minmax(0, 1fr);
-  }
-
-  .site-rule-icon {
-    width: 32px;
-    height: 32px;
-  }
-
-  .site-rule-remove {
-    grid-column: 2;
-    justify-self: start;
-  }
+  .site-rule-item { padding: 8px 10px; }
 }
 </style>
