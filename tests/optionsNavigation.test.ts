@@ -16,6 +16,15 @@ describe('options navigation view-model', () => {
     expect(DEFAULT_NAVIGATION_SECTION).toBe('settings-general')
   })
 
+  it('marks only vocabulary and video navigation items as Beta', () => {
+    expect(navigationItems.filter((item) => item.badge === 'Beta').map((item) => item.id)).toEqual([
+      'settings-vocabulary',
+      'settings-video',
+    ])
+    expect(resolveNavigationItem('settings-vocabulary').label).toBe('单词本')
+    expect(resolveNavigationItem('settings-video').label).toBe('视频字幕')
+  })
+
   it('resolves valid sections and falls back for malformed hashes', () => {
     expect(resolveNavigationItem('settings-services').title).toBe('翻译服务与模型')
     expect(resolveNavigationItem('missing').id).toBe(DEFAULT_NAVIGATION_SECTION)

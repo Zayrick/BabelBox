@@ -21,7 +21,10 @@
             <span class="nav-icon" aria-hidden="true">
               <component :is="navigationIcons[item.icon]" :size="18" :stroke-width="1.9" focusable="false" />
             </span>
-            <strong>{{ item.label }}</strong>
+            <span class="nav-title">
+              <strong>{{ item.label }}</strong>
+              <span v-if="item.badge" class="nav-badge">{{ item.badge }}</span>
+            </span>
           </button>
         </section>
       </nav>

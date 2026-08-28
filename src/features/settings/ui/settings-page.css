@@ -61,7 +61,23 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 .sidebar nav button.active { color: var(--brand-strong); background: var(--brand-soft); }
 .nav-icon { display: grid; width: 30px; height: 30px; place-items: center; color: currentColor; }
 .nav-icon svg { display: block; }
-.sidebar nav strong { overflow: hidden; font-size: 12px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.nav-title { display: flex; min-width: 0; align-items: center; gap: 6px; }
+.sidebar nav strong { overflow: hidden; min-width: 0; font-size: 12px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.nav-badge {
+  display: inline-flex;
+  min-height: 17px;
+  flex: 0 0 auto;
+  align-items: center;
+  padding: 1px 6px;
+  border: 1px solid color-mix(in srgb, var(--brand-strong) 28%, transparent);
+  border-radius: 999px;
+  color: var(--brand-strong);
+  background: var(--brand-soft);
+  font-size: 9px;
+  font-weight: 750;
+  line-height: 1;
+  letter-spacing: .02em;
+}
 
 .workspace {
   display: flex;

@@ -15,6 +15,7 @@ export type NavigationItem = {
   id: string
   icon: NavigationIconKey
   label: string
+  badge?: 'Beta'
   group: string
   title: string
   searchDescription: string
@@ -52,7 +53,7 @@ export const navigationGroups: NavigationGroup[] = [
     label: '学习工具',
     items: [
       {
-        id: 'settings-vocabulary', icon: 'vocabulary', label: '单词本 Beta', group: '学习工具', title: '单词本',
+        id: 'settings-vocabulary', icon: 'vocabulary', label: '单词本', badge: 'Beta', group: '学习工具', title: '单词本',
         searchDescription: '单词本、收藏、复习、掌握程度、学习记录、Anki、导入导出',
       },
     ],
@@ -73,7 +74,7 @@ export const navigationGroups: NavigationGroup[] = [
         searchDescription: '图片翻译、OCR、语言包、中文、英文、日文、下载',
       },
       {
-        id: 'settings-video', icon: 'video', label: '视频字幕 Beta 测试', group: '阅读工具', title: '边看边译视频字幕',
+        id: 'settings-video', icon: 'video', label: '视频字幕', badge: 'Beta', group: '阅读工具', title: '边看边译视频字幕',
         searchDescription: 'YouTube、视频字幕、视频翻译服务、DeepLX、微软翻译',
       },
     ],
@@ -125,7 +126,7 @@ export function filterNavigationItems(query: string): NavigationItem[] {
   if (!keyword) return []
 
   return navigationItems.filter((item) =>
-    `${item.label}${item.group}${item.title}${item.searchDescription}`
+    `${item.label}${item.badge ?? ''}${item.group}${item.title}${item.searchDescription}`
       .toLocaleLowerCase()
       .includes(keyword),
   )
