@@ -149,16 +149,32 @@
       <div class="translate-action">
         <button
           class="translate-button"
-          :class="{ translated: pageTranslated }"
+          :class="{ translated: pageTranslated, 'has-feedback': actionFeedbacks.page, 'feedback-error': actionFeedbacks.page?.tone === 'error' }"
           type="button"
-          :disabled="!config.on || translating || Boolean(selectedServiceUnavailableMessage)"
+          :disabled="!config.on || translationActionPending || Boolean(selectedServiceUnavailableMessage)"
           :aria-pressed="pageTranslated"
+          :aria-busy="activeTranslationAction === 'page'"
           @click="togglePageTranslation"
         >
-          <span v-if="translating" class="spinner" />
-          <Languages v-else class="translate-glyph" aria-hidden="true" />
-          <span class="translate-label">{{ pageTranslated ? '恢复当前网页' : '翻译当前网页' }}</span>
-          <kbd class="translate-hotkey" :class="{ disabled: fullPageHotkey === '未设置' }">{{ fullPageHotkey }}</kbd>
+          <Transition name="translate-content" mode="out-in">
+            <span
+              :key="pageActionPresentation.key"
+              class="translate-button-content"
+              aria-live="polite"
+            >
+              <span v-if="pageActionPresentation.state === 'pending'" class="spinner" aria-hidden="true" />
+              <X v-else-if="pageActionPresentation.state === 'error'" class="translate-glyph" aria-hidden="true" />
+              <Check v-else-if="pageActionPresentation.state === 'success'" class="translate-glyph" aria-hidden="true" />
+              <Languages v-else class="translate-glyph" aria-hidden="true" />
+              <span class="translate-label">{{ pageActionPresentation.label }}</span>
+              <kbd
+                v-if="pageActionPresentation.showHotkey"
+                class="translate-hotkey"
+                :class="{ disabled: fullPageHotkey === '未设置' }"
+                aria-hidden="true"
+              >{{ fullPageHotkey }}</kbd>
+            </span>
+          </Transition>
         </button>
         <button
           v-if="canUseAIContext"
@@ -167,7 +183,7 @@
           :aria-pressed="config.enableAIContext"
           :aria-label="config.enableAIContext ? '关闭 AI精翻' : '开启 AI精翻'"
           :title="config.enableAIContext ? '关闭 AI精翻' : '开启 AI精翻'"
-          :disabled="!config.on || translating"
+          :disabled="!config.on || translationActionPending"
           @click="toggleAIContext"
         >
           <span class="ai-context-copy">AI精翻</span>
@@ -183,7 +199,12 @@
         <div class="site-rule-actions">
           <button
             class="site-rule-button"
-            :class="{ enabled: currentSiteAlwaysTranslated, 'global-enabled': config.autoTranslate }"
+            :class="{
+              enabled: currentSiteAlwaysTranslated,
+              'global-enabled': config.autoTranslate,
+              'feedback-success': actionFeedbacks['site-rule']?.tone === 'success',
+              'feedback-error': actionFeedbacks['site-rule']?.tone === 'error',
+            }"
             data-setting="always-translate-site"
             :data-site-domain="currentSiteDomain"
             :data-enabled="currentSiteAlwaysTranslated"
@@ -191,15 +212,21 @@
             role="switch"
             :aria-checked="currentSiteAlwaysTranslated"
             :aria-label="currentSiteSwitchLabel"
-            :disabled="translating || config.autoTranslate || currentSiteExtensionDisabled"
+            :disabled="translationActionPending || config.autoTranslate || currentSiteExtensionDisabled"
             @click="setCurrentSiteAlwaysTranslated(!currentSiteAlwaysTranslated)"
           >
-            <span>{{ config.autoTranslate ? '全局自动翻译' : currentSiteAlwaysTranslated ? '始终翻译已开启' : '始终翻译此网站' }}</span>
+            <Transition name="action-copy" mode="out-in">
+              <span :key="siteRuleActionLabel" aria-live="polite">{{ siteRuleActionLabel }}</span>
+            </Transition>
             <i aria-hidden="true" />
           </button>
           <button
             class="site-rule-button site-disable-rule-button"
-            :class="{ enabled: currentSiteExtensionDisabled }"
+            :class="{
+              enabled: currentSiteExtensionDisabled,
+              'feedback-success': actionFeedbacks['site-disable']?.tone === 'success',
+              'feedback-error': actionFeedbacks['site-disable']?.tone === 'error',
+            }"
             data-setting="disable-extension-site"
             :data-site-domain="currentSiteDomain"
             :data-enabled="currentSiteExtensionDisabled"
@@ -207,10 +234,12 @@
             role="switch"
             :aria-checked="currentSiteExtensionDisabled"
             :aria-label="currentSiteExtensionSwitchLabel"
-            :disabled="translating"
+            :disabled="translationActionPending"
             @click="setCurrentSiteExtensionDisabled(!currentSiteExtensionDisabled)"
           >
-            <span>{{ currentSiteExtensionDisabled ? '已禁用扩展' : '在此网站禁用扩展' }}</span>
+            <Transition name="action-copy" mode="out-in">
+              <span :key="siteDisableActionLabel" aria-live="polite">{{ siteDisableActionLabel }}</span>
+            </Transition>
             <i aria-hidden="true" />
           </button>
         </div>
@@ -305,7 +334,18 @@
         <span>开源项目</span>
         <ExternalLink class="external-mark" aria-hidden="true" />
       </a>
-      <button type="button" :disabled="clearingCache" @click="clearCache">{{ clearingCache ? '清理中…' : '清除缓存' }}</button>
+      <button
+        class="cache-clear-button"
+        :class="actionFeedbacks.cache?.tone"
+        type="button"
+        :disabled="clearingCache"
+        :aria-busy="clearingCache"
+        @click="clearCache"
+      >
+        <Transition name="action-copy" mode="out-in">
+          <span :key="cacheActionLabel" aria-live="polite">{{ cacheActionLabel }}</span>
+        </Transition>
+      </button>
     </footer>
 
     <el-drawer
@@ -536,6 +576,7 @@ import { getSelectedModelLabel } from '@/src/ui/view-model/serviceCatalog';
 import { SELECTION_TTS_VOICE_OPTIONS } from '@/src/core/config/selectionTts';
 import { getSiteBaseDomain } from '@/src/core/site-rules/domain';
 import { requestTranslationCacheClear } from './cache';
+import { useActionFeedback } from './actionFeedback';
 import {isBrowserTabId} from '@/src/platform/browser/ids';
 import ServiceIcon from '@/src/ui/components/ServiceIcon.vue';
 import {browserCapabilities} from '@/src/platform/browser/capabilities';
@@ -551,7 +592,8 @@ const config = ref(new Config());
 const drawerVisible = ref(false);
 const activeDrawer = ref<DrawerName>('hover');
 const selectionDrawerTab = ref<'text' | 'area'>('text');
-const translating = ref(false);
+const activeTranslationAction = ref<'page' | 'site-rule' | null>(null);
+const pagePendingVisible = ref(false);
 const pageTranslated = ref(false);
 const currentTabId = ref<number | null>(null);
 const currentSiteDomain = ref('');
@@ -569,6 +611,14 @@ let lastSerialized = '';
 let applyingExternalConfig = false;
 let pageExitSaveStarted = false;
 let noticeTimer: ReturnType<typeof setTimeout> | undefined;
+let pagePendingTimer: ReturnType<typeof setTimeout> | undefined;
+type PopupActionTarget = 'page' | 'site-rule' | 'site-disable' | 'cache';
+const {
+  feedbacks: actionFeedbacks,
+  show: showActionFeedback,
+  clear: clearActionFeedback,
+  dispose: disposeActionFeedback,
+} = useActionFeedback<PopupActionTarget>();
 const darkMode = window.matchMedia('(prefers-color-scheme: dark)');
 const drawerSettingsSection: Record<DrawerName, SettingsSection> = {
   hover: 'settings-shortcuts',
@@ -605,6 +655,7 @@ const servicePickerAriaLabel = computed(() => serviceModelLabel.value
   ? `翻译服务：${serviceLabel.value}，当前模型：${serviceModelLabel.value}`
   : `翻译服务：${serviceLabel.value}`);
 const credentialWarning = computed(() => selectedServiceUnavailableMessage.value || getMissingCredentialMessage(config.value.service, config.value));
+const translationActionPending = computed(() => activeTranslationAction.value !== null);
 const currentSiteSupported = computed(() => currentTabId.value !== null && Boolean(currentSiteDomain.value));
 const currentSiteRuleEnabled = computed(() => currentSiteSupported.value
   && (config.value.alwaysTranslateDomains ?? []).includes(currentSiteDomain.value));
@@ -634,6 +685,29 @@ const fullPageHotkey = computed(() => {
     : config.value.floatingBallHotkey;
   return hotkey && hotkey !== 'none' ? hotkey : '未设置';
 });
+const pageActionPresentation = computed(() => {
+  const feedback = actionFeedbacks.page;
+  if (feedback) {
+    return {
+      key: `feedback-${feedback.tone}-${feedback.message}`,
+      state: feedback.tone,
+      label: feedback.message,
+      showHotkey: false,
+    } as const;
+  }
+  const label = pageTranslated.value ? '恢复当前网页' : '翻译当前网页';
+  if (activeTranslationAction.value === 'page' && pagePendingVisible.value) {
+    return { key: `pending-${label}`, state: 'pending', label, showHotkey: false } as const;
+  }
+  return { key: `idle-${label}`, state: 'idle', label, showHotkey: true } as const;
+});
+const siteRuleActionLabel = computed(() => actionFeedbacks['site-rule']?.message
+  || (activeTranslationAction.value === 'site-rule'
+    ? '正在开启…'
+    : config.value.autoTranslate ? '全局自动翻译' : currentSiteAlwaysTranslated.value ? '始终翻译已开启' : '始终翻译此网站'));
+const siteDisableActionLabel = computed(() => actionFeedbacks['site-disable']?.message
+  || (currentSiteExtensionDisabled.value ? '已禁用扩展' : '在此网站禁用扩展'));
+const cacheActionLabel = computed(() => actionFeedbacks.cache?.message || (clearingCache.value ? '清理中…' : '清除缓存'));
 const selectionSummary = computed(() => {
   const textSummary = ({ disabled: '已关闭', bilingual: '双语显示', 'translation-only': '仅显示译文' }[config.value.selectionTranslatorMode] || '双语显示');
   const triggerSummary = selectionTriggers.find(item => item.value === config.value.selectionTranslatorTrigger)?.label || '显示图标';
@@ -725,7 +799,7 @@ function selectService(value: string) {
   servicePickerOpen.value = false;
 }
 function toggleAIContext() {
-  if (!canUseAIContext.value || !config.value.on || translating.value) return;
+  if (!canUseAIContext.value || !config.value.on || translationActionPending.value) return;
   config.value.enableAIContext = !config.value.enableAIContext;
 }
 onMounted(() => {
@@ -742,6 +816,8 @@ onUnmounted(() => {
   document.removeEventListener('keydown', handleDonationKeydown);
   darkMode.onchange = null;
   if (noticeTimer) clearTimeout(noticeTimer);
+  if (pagePendingTimer) clearTimeout(pagePendingTimer);
+  disposeActionFeedback();
 });
 
 function saveOnPageHide() {
@@ -791,6 +867,7 @@ async function setCurrentSiteAlwaysTranslated(enabled: boolean) {
   const domain = currentSiteDomain.value;
   const tabId = currentTabId.value;
   if (!domain || tabId === null) return;
+  clearActionFeedback('site-rule');
   if (config.value.autoTranslate) {
     showNotice('所有网站自动翻译已开启，请在完整设置中关闭全局开关');
     return;
@@ -806,20 +883,20 @@ async function setCurrentSiteAlwaysTranslated(enabled: boolean) {
     : currentDomains.filter(item => item !== domain);
 
   if (!enabled) {
-    showNotice(`已关闭 ${domain} 的始终翻译，当前网页保持不变`);
+    showActionFeedback('site-rule', '已关闭，当前页不变');
     return;
   }
 
   if (!config.value.on) {
-    showNotice(`已保存 ${domain}，启用插件后生效`);
+    showActionFeedback('site-rule', '已保存，启用后生效');
     return;
   }
   if (credentialWarning.value) {
-    showNotice(`已保存 ${domain}；${credentialWarning.value}`, 'error');
+    showActionFeedback('site-rule', '已保存，请先配置服务', 'error');
     return;
   }
 
-  translating.value = true;
+  activeTranslationAction.value = 'site-rule';
   try {
     const response = await browser.tabs.sendMessage(tabId, {
       type: 'contextMenuTranslate',
@@ -827,12 +904,12 @@ async function setCurrentSiteAlwaysTranslated(enabled: boolean) {
     }) as { status?: string; isTranslated?: boolean } | undefined;
     if (response?.status !== 'success') throw new Error('Translation failed');
     pageTranslated.value = typeof response.isTranslated === 'boolean' ? response.isTranslated : true;
-    showNotice(`已开启 ${domain} 的始终翻译`);
+    showActionFeedback('site-rule', '已开启并开始翻译');
   } catch (error) {
     console.error(error);
-    showNotice(`已保存 ${domain}，当前网页请刷新后重试`, 'error');
+    showActionFeedback('site-rule', '已保存，请刷新重试', 'error');
   } finally {
-    translating.value = false;
+    activeTranslationAction.value = null;
   }
 }
 
@@ -840,20 +917,21 @@ async function setCurrentSiteExtensionDisabled(enabled: boolean) {
   const domain = currentSiteDomain.value;
   const tabId = currentTabId.value;
   if (!domain || tabId === null) return;
+  clearActionFeedback('site-disable');
 
   const currentDomains = config.value.disabledExtensionDomains ?? [];
   config.value.disabledExtensionDomains = enabled
     ? currentDomains.includes(domain) ? currentDomains : [...currentDomains, domain]
     : currentDomains.filter(item => item !== domain);
   pageTranslated.value = false;
-  translating.value = false;
+  activeTranslationAction.value = null;
 
   // 先通知当前页立即收起扩展 UI；配置仍由 popup 的统一保存链路持久化。
   await browser.tabs.sendMessage(tabId, {
     type: 'updateSiteExtensionDisabled',
     isDisabled: enabled,
   }).catch(() => undefined);
-  showNotice(enabled ? `已在 ${domain} 禁用扩展` : `已恢复 ${domain} 的扩展`);
+  showActionFeedback('site-disable', enabled ? '已在此网站禁用' : '已恢复此网站');
 }
 
 async function broadcast(message: Record<string, unknown>) {
@@ -898,12 +976,19 @@ async function openDocumentTranslation() {
 }
 
 async function togglePageTranslation() {
+  clearActionFeedback('page');
   if (credentialWarning.value) {
-    showNotice(credentialWarning.value, 'error');
+    showActionFeedback('page', '请先完成服务配置', 'error');
     return;
   }
 
-  translating.value = true;
+  activeTranslationAction.value = 'page';
+  pagePendingVisible.value = false;
+  if (pagePendingTimer) clearTimeout(pagePendingTimer);
+  pagePendingTimer = setTimeout(() => {
+    pagePendingTimer = undefined;
+    if (activeTranslationAction.value === 'page') pagePendingVisible.value = true;
+  }, 180);
   const action = pageTranslated.value ? 'restore' : 'fullPage';
   try {
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
@@ -913,21 +998,33 @@ async function togglePageTranslation() {
     pageTranslated.value = typeof response.isTranslated === 'boolean'
       ? response.isTranslated
       : action === 'fullPage';
-    showNotice(pageTranslated.value ? '正在翻译当前网页' : '已恢复网页原文');
+    finishPagePendingPresentation();
+    showActionFeedback('page', pageTranslated.value ? '网页翻译已开启' : '已恢复网页原文');
   } catch (error) {
     console.error(error);
-    showNotice('当前页面暂不支持翻译，请刷新后重试', 'error');
-  } finally { translating.value = false; }
+    finishPagePendingPresentation();
+    showActionFeedback('page', '暂不支持，请刷新重试', 'error');
+  } finally {
+    finishPagePendingPresentation();
+    activeTranslationAction.value = null;
+  }
+}
+
+function finishPagePendingPresentation() {
+  if (pagePendingTimer) clearTimeout(pagePendingTimer);
+  pagePendingTimer = undefined;
+  pagePendingVisible.value = false;
 }
 
 async function clearCache() {
+  clearActionFeedback('cache');
   clearingCache.value = true;
   try {
     await requestTranslationCacheClear((message) => browser.runtime.sendMessage(message));
-    showNotice('全部翻译缓存已清除');
+    showActionFeedback('cache', '清除成功');
   } catch (error) {
     console.error(error);
-    showNotice('缓存清除失败', 'error');
+    showActionFeedback('cache', '清除失败，请重试', 'error');
   } finally { clearingCache.value = false; }
 }
 

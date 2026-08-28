@@ -391,8 +391,26 @@ h2 {
   background: var(--brand-strong);
 }
 .translate-button.translated { background: var(--brand-strong); }
+.translate-button.feedback-error { background: #d9345e; }
+.translate-button-content {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
 .translate-glyph { width: 17px; height: 17px; flex: none; }
 .translate-label { white-space: nowrap; }
+.translate-content-enter-active, .translate-content-leave-active {
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+.translate-content-enter-from { opacity: 0; transform: translateY(4px) scale(.98); }
+.translate-content-leave-to { opacity: 0; transform: translateY(-4px) scale(.98); }
+.action-copy-enter-active, .action-copy-leave-active {
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+.action-copy-enter-from { opacity: 0; transform: translateY(3px); }
+.action-copy-leave-to { opacity: 0; transform: translateY(-3px); }
 .translate-hotkey {
   display: inline-flex;
   min-height: 20px;
@@ -507,6 +525,7 @@ h2 {
   border-radius: 50%;
   background: #b8bec9;
 }
+.site-rule-button > span { min-width: 0; }
 .site-rule-button:hover:not(:disabled) {
   border-color: rgba(239, 71, 118, .4);
   color: var(--ink);
@@ -517,6 +536,10 @@ h2 {
   background: var(--brand-soft);
 }
 .site-rule-button.enabled > i { background: var(--brand); }
+.site-rule-button.feedback-success { color: #16855e; border-color: rgba(22, 133, 94, .35); }
+.site-rule-button.feedback-success > i { background: #24b47e; }
+.site-rule-button.feedback-error { color: #d9345e; border-color: rgba(217, 52, 94, .35); }
+.site-rule-button.feedback-error > i { background: #d9345e; }
 .site-rule-button:disabled { cursor: default; opacity: .7; }
 .site-rule-button.global-enabled:disabled { opacity: 1; }
 .site-disable-rule-button.enabled {
@@ -568,6 +591,11 @@ h2 {
   text-align: center;
 }
 .notice.error { color: #d9345e; }
+
+@media (prefers-reduced-motion: reduce) {
+  .translate-content-enter-active, .translate-content-leave-active,
+  .action-copy-enter-active, .action-copy-leave-active { transition: none; }
+}
 
 .features { margin-top: 12px; }
 .eyebrow {
@@ -714,6 +742,8 @@ footer button {
   cursor: pointer;
 }
 footer button:hover { color: var(--brand-strong); }
+.cache-clear-button.success { color: #16855e; }
+.cache-clear-button.error { color: #d9345e; }
 .opensource-link {
   display: inline-flex;
   min-height: 24px;
