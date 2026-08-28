@@ -11,11 +11,15 @@
       </a>
       <span v-if="parsedDocument" class="document-status" :class="{ complete: hasTranslation }">
         <strong>{{ hasTranslation ? '已完成翻译' : '等待翻译' }}</strong>
-        <span>{{ hasTranslation ? '✅' : 'Beta' }}</span>
+        <CircleCheck v-if="hasTranslation" class="document-status-icon" :size="17" :stroke-width="2" aria-hidden="true" focusable="false" />
+        <span v-else>Beta</span>
       </span>
       <div class="header-actions">
         <span class="privacy-note"><i /> 文件只在当前浏览器中处理</span>
-        <button class="ghost-button" type="button" @click="openSettings">翻译设置 ↗</button>
+        <button class="ghost-button" type="button" @click="openSettings">
+          翻译设置
+          <ExternalLink :size="14" :stroke-width="1.9" aria-hidden="true" focusable="false" />
+        </button>
       </div>
     </header>
 
@@ -84,7 +88,9 @@
               <el-option v-for="item in sourceLanguageOptions" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
           </label>
-          <span class="language-arrow" aria-hidden="true">→</span>
+          <span class="language-arrow" aria-hidden="true">
+            <ArrowRight :size="18" :stroke-width="1.9" focusable="false" />
+          </span>
           <label class="language-control">
             <span>目标语言</span>
             <el-select
@@ -424,13 +430,17 @@
 
     <footer class="document-footer">
       <span>流畅阅读文档翻译 Beta · PDF / ePub / HTML / JSON / TXT / DOCX / Markdown / 字幕</span>
-      <a href="https://github.com/Bistutu/FluentRead" target="_blank" rel="noreferrer">开源项目 ↗</a>
+      <a href="https://github.com/Bistutu/FluentRead" target="_blank" rel="noreferrer">
+        开源项目
+        <ExternalLink :size="13" :stroke-width="1.9" aria-hidden="true" focusable="false" />
+      </a>
     </footer>
   </div>
 </template>
 
 <script lang="ts" setup>
 import {computed, onMounted, onUnmounted, reactive, ref, watch} from 'vue';
+import {ArrowRight, CircleCheck, ExternalLink} from '@lucide/vue';
 import {browser} from 'wxt/browser';
 import {
   Config,

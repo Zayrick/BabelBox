@@ -1,7 +1,7 @@
 <template>
   <div v-show="showIndicator || showTooltip || noticeMessage || copySuccess" class="fr-selection-translator-root" :data-display-delay="selectionSettings.delay" @pointerdown.stop>
     <button v-if="showIndicator && !showTooltip" class="fr-selection-indicator" :class="`fr-selection-indicator--${triggerMode}`" :style="indicatorStyle" type="button" aria-label="打开划词翻译" title="打开划词翻译" @pointerdown.prevent.stop @click="openTooltip">
-      <span class="fr-selection-indicator-glyph" aria-hidden="true">↗</span>
+      <ArrowUpRight class="fr-selection-indicator-glyph" aria-hidden="true" />
     </button>
 
     <section v-if="showTooltip" ref="tooltip-ref" class="fr-translation-tooltip" :class="{ 'fr-dark-theme': isDarkTheme }" :data-placement="popupPlacement" :style="tooltipStyle" role="dialog" aria-label="划词翻译结果" @pointerdown.stop>
@@ -18,9 +18,9 @@
             :aria-label="vocabularyButtonTitle"
             :aria-pressed="isVocabularySaved"
             @click="saveVocabularyEntry"
-          ><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2.7 2.86 5.8 6.4.93-4.63 4.51 1.09 6.38L12 17.3l-5.72 3.02 1.09-6.38-4.63-4.51 6.4-.93L12 2.7Z" /></svg></button>
-          <button class="fr-action-btn" type="button" title="复制译文" aria-label="复制译文" @click="copyTranslation"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg></button>
-          <button class="fr-close-btn" type="button" title="关闭" aria-label="关闭翻译结果" @click="closeTooltip">×</button>
+          ><Star aria-hidden="true" /></button>
+          <button class="fr-action-btn" type="button" title="复制译文" aria-label="复制译文" @click="copyTranslation"><Copy aria-hidden="true" /></button>
+          <button class="fr-close-btn" type="button" title="关闭" aria-label="关闭翻译结果" @click="closeTooltip"><X aria-hidden="true" /></button>
         </div>
       </header>
 
@@ -37,7 +37,7 @@
                   <span class="fr-word-normalized" v-if="selectedText.toLowerCase() !== wordCard.normalizedWord">词典词形：{{ wordCard.word }}</span>
                 </div>
                 <button v-if="wordCard.phonetics.length === 0" class="fr-text-audio-btn fr-word-heading-audio" type="button" :aria-label="wordAudioLabel({ text: wordCard.word })" :title="wordAudioLabel({ text: wordCard.word })" @click="toggleWordAudio({ text: wordCard.word })">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z" /><path d="M16 9.5a4.5 4.5 0 0 1 0 5M18.5 7a8 8 0 0 1 0 10" /></svg>
+                  <Volume2 aria-hidden="true" />
                 </button>
               </div>
               <div v-if="wordCard.phonetics.length > 0" class="fr-word-pronunciations" aria-label="发音">
@@ -45,8 +45,8 @@
                   <span class="fr-word-pronunciation-label">{{ pronunciation.label || (index === 0 ? '发音' : '变体') }}</span>
                   <span class="fr-word-ipa">{{ pronunciation.text || '点击播放' }}</span>
                   <button class="fr-text-audio-btn" type="button" :aria-label="wordAudioLabel(pronunciation)" :title="wordAudioLabel(pronunciation)" @click="toggleWordAudio(pronunciation)">
-                    <svg v-if="isCurrentWordAudio(pronunciation)" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6v12M16 6v12" /></svg>
-                    <svg v-else viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z" /><path d="M16 9.5a4.5 4.5 0 0 1 0 5M18.5 7a8 8 0 0 1 0 10" /></svg>
+                    <Pause v-if="isCurrentWordAudio(pronunciation)" aria-hidden="true" />
+                    <Volume2 v-else aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -82,15 +82,15 @@
           <div v-if="selectionSettings.mode === 'bilingual' && !isWordCardVisible" class="fr-text-block fr-original-text">
             <div class="fr-text-label">原文</div><pre>{{ selectedText }}</pre>
             <button class="fr-text-audio-btn" type="button" :aria-label="audioLabel('source')" :title="audioLabel('source')" @click="toggleAudio(selectedText, 'source')">
-              <svg v-if="isCurrentAudio('source')" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6v12M16 6v12" /></svg>
-              <svg v-else viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z" /><path d="M16 9.5a4.5 4.5 0 0 1 0 5M18.5 7a8 8 0 0 1 0 10" /></svg>
+              <Pause v-if="isCurrentAudio('source')" aria-hidden="true" />
+              <Volume2 v-else aria-hidden="true" />
             </button>
           </div>
           <div v-if="(selectionSettings.mode === 'bilingual' || selectionSettings.mode === 'translation-only') && !isWordCardVisible" class="fr-text-block fr-translation-result">
             <div class="fr-text-label">译文</div><pre>{{ translationResult }}</pre>
             <button class="fr-text-audio-btn" type="button" :aria-label="audioLabel('translation')" :title="audioLabel('translation')" @click="toggleAudio(translationResult, 'translation')">
-              <svg v-if="isCurrentAudio('translation')" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6v12M16 6v12" /></svg>
-              <svg v-else viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Z" /><path d="M16 9.5a4.5 4.5 0 0 1 0 5M18.5 7a8 8 0 0 1 0 10" /></svg>
+              <Pause v-if="isCurrentAudio('translation')" aria-hidden="true" />
+              <Volume2 v-else aria-hidden="true" />
             </button>
           </div>
           <div v-if="error && (translationResult || wordCard)" class="fr-inline-error"><span>{{ error }}</span><button type="button" @click="retryTranslation">重试</button></div>
@@ -106,6 +106,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
+import { ArrowUpRight, Copy, Pause, Star, Volume2, X } from '@lucide/vue';
 import {browser} from 'wxt/browser';
 import { config, subscribeConfig } from '@/src/services/config/store';
 import {translateText} from '@/src/services/translation/client';
@@ -1196,11 +1197,11 @@ onBeforeUnmount(() => {
 <style scoped>
 .fr-selection-translator-root { position: fixed; inset: 0; z-index: 2147483647; width: 100vw; height: 100vh; pointer-events: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #25252a; }
 .fr-selection-indicator, .fr-translation-tooltip, .fr-copy-success-toast, .fr-action-toast { pointer-events: auto; }
-.fr-selection-indicator { position: fixed; width: 18px; height: 18px; padding: 0; border: 0; border-radius: 50%; transform: translate(-50%, -50%); background: #ef4b86; color: #fff; box-shadow: 0 2px 7px rgba(204, 40, 104, .28), 0 0 0 2px rgba(255, 255, 255, .94); cursor: pointer; transition: transform .14s ease, box-shadow .14s ease; }
+.fr-selection-indicator { position: fixed; display: grid; width: 18px; height: 18px; padding: 0; place-items: center; border: 0; border-radius: 50%; transform: translate(-50%, -50%); background: #ef4b86; color: #fff; box-shadow: 0 2px 7px rgba(204, 40, 104, .28), 0 0 0 2px rgba(255, 255, 255, .94); cursor: pointer; transition: transform .14s ease, box-shadow .14s ease; }
 .fr-selection-indicator--dot { width: 8px; height: 8px; }
 .fr-selection-indicator--dot .fr-selection-indicator-glyph { display: none; }
 .fr-selection-indicator:hover, .fr-selection-indicator:focus-visible { transform: translate(-50%, -50%) scale(1.1); box-shadow: 0 4px 14px rgba(204, 40, 104, .4), 0 0 0 3px rgba(255, 255, 255, .95); outline: none; }
-.fr-selection-indicator-glyph { font-size: 10px; font-weight: 700; line-height: 1; }
+.fr-selection-indicator-glyph { width: 11px; height: 11px; stroke-width: 2.4; }
 .fr-translation-tooltip, .fr-translation-tooltip * { box-sizing: border-box; }
 .fr-translation-tooltip { position: fixed; width: min(360px, calc(100vw - 20px)); max-height: min(500px, calc(100vh - 20px)); overflow: hidden; border: 1px solid rgba(35, 35, 43, .11); border-radius: 17px; background: rgba(255, 254, 252, .98); box-shadow: 0 18px 46px rgba(35, 33, 43, .15), 0 3px 10px rgba(35, 33, 43, .06); backdrop-filter: blur(18px); -webkit-user-select: none; user-select: none; }
 .fr-tooltip-header { display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; border-bottom: 1px solid #eeecee; font-size: 14px; font-weight: 700; }
@@ -1214,7 +1215,8 @@ onBeforeUnmount(() => {
 .fr-action-btn:disabled { cursor: not-allowed; opacity: .38; }
 .fr-vocabulary-btn.fr-saved { color: #ef4b86; }
 .fr-vocabulary-btn.fr-saved svg { fill: currentColor; stroke: currentColor; }
-.fr-close-btn { width: 26px; height: 26px; font-size: 21px; line-height: 1; border-radius: 7px; }
+.fr-close-btn { display: grid; width: 26px; height: 26px; place-items: center; border-radius: 7px; }
+.fr-close-btn svg { width: 16px; height: 16px; }
 .fr-close-btn:hover, .fr-close-btn:focus-visible { background: #f4f4f7; color: #303038; outline: none; }
 .fr-tooltip-content { max-height: min(440px, calc(100vh - 72px)); overflow: auto; padding: 13px 14px 15px; scrollbar-color: rgba(108, 105, 112, .4) transparent; scrollbar-width: thin; }
 .fr-loading-state, .fr-error-state { display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 80px; color: #777780; font-size: 13px; }

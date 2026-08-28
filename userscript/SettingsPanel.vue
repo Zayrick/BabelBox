@@ -6,7 +6,7 @@
           <img v-if="iconUrl" :src="iconUrl" alt="" />
           <span><strong id="fr-userscript-settings-title">流畅阅读</strong><small>{{ versionLabel }}</small></span>
         </div>
-        <button type="button" class="close" aria-label="关闭设置" @click="close">×</button>
+        <button type="button" class="close" aria-label="关闭设置" @click="close"><X aria-hidden="true" /></button>
       </header>
 
       <div class="notice">
@@ -90,6 +90,7 @@
 
 <script setup lang="ts">
 import {computed, onMounted, ref} from 'vue';
+import {X} from '@lucide/vue';
 import {ElOption, ElSelect} from 'element-plus';
 import 'element-plus/es/components/select/style/css';
 import {browser} from 'wxt/browser';
@@ -204,7 +205,8 @@ footer { border-top: 1px solid #e5e8ef; }
 .brand strong { font-size: 16px; }
 .brand small { margin-top: 2px; color: #7c8493; font-size: 10px; }
 button { border: 0; font: inherit; cursor: pointer; }
-.close { width: 34px; height: 34px; border-radius: 10px; background: #f2f3f7; color: #727a88; font-size: 22px; line-height: 1; }
+.close { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 10px; background: #f2f3f7; color: #727a88; line-height: 1; }
+.close svg { width: 18px; height: 18px; }
 .notice { margin: 14px 18px 0; padding: 10px 13px; border: 1px solid #f0c7d4; border-radius: 11px; background: #fff4f7; color: #7a3148; font-size: 11px; line-height: 1.55; }
 .settings-grid { display: grid; overflow: auto; padding: 16px 18px 20px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 fieldset, details { min-width: 0; margin: 0; padding: 15px; border: 1px solid #e2e6ee; border-radius: 15px; background: #fff; }

@@ -22,7 +22,7 @@
             <p id="custom-hotkey-description">支持 Ctrl、Alt、Shift 与字母或功能键组合；不支持 CMD/Meta。</p>
           </div>
           <button class="dialog-close" type="button" aria-label="关闭自定义快捷键" @click="handleCancel">
-            <span aria-hidden="true">×</span>
+            <X aria-hidden="true" />
           </button>
         </header>
 
@@ -105,7 +105,7 @@
         </div>
 
         <footer class="dialog-footer">
-          <button v-if="currentHotkey" class="clear-button" type="button" @click="clearHotkey">清除快捷键</button>
+          <button v-if="currentHotkey" class="clear-button" type="button" @click="clearHotkey"><Trash2 aria-hidden="true" />清除快捷键</button>
           <div class="dialog-actions">
             <button class="secondary-button" type="button" @click="handleCancel">取消</button>
             <button class="primary-button" type="button" :disabled="!canConfirm" @click="handleConfirm">确认</button>
@@ -119,7 +119,14 @@
 <script setup lang="ts" name="CustomHotkeyInput">
 import { ref, computed, nextTick, watch } from 'vue';
 import { ElIcon } from 'element-plus';
-import { Loading, WarningFilled, Warning, CircleCheckFilled } from '@element-plus/icons-vue';
+import {
+  CircleAlert as WarningFilled,
+  CircleCheck as CircleCheckFilled,
+  LoaderCircle as Loading,
+  Trash2,
+  TriangleAlert as Warning,
+  X,
+} from '@lucide/vue';
 import { parseHotkey, validateHotkeyConflicts, type ParsedHotkey } from '@/src/core/hotkey';
 
 // Props
@@ -448,6 +455,11 @@ function handleCancel() {
   transition: color 160ms ease, background 160ms ease, border-color 160ms ease;
 }
 
+.dialog-close svg {
+  width: 18px;
+  height: 18px;
+}
+
 .dialog-close:hover,
 .dialog-close:focus-visible {
   border-color: #f4ced9;
@@ -736,10 +748,18 @@ function handleCancel() {
 }
 
 .clear-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 0;
   border: 0;
   color: #bd656d;
   background: transparent;
+}
+
+.clear-button svg {
+  width: 15px;
+  height: 15px;
 }
 
 .clear-button:hover,

@@ -221,7 +221,7 @@
             <span class="hotkey-text placeholder-text" v-else>
               点击设置自定义快捷键
             </span>
-            <el-button size="small" type="text" @click="openCustomMouseHotkeyDialog" class="edit-button">
+            <el-button size="small" type="text" aria-label="编辑鼠标悬浮快捷键" @click="openCustomMouseHotkeyDialog" class="edit-button">
               <el-icon><Edit /></el-icon>
             </el-button>
           </div>
@@ -286,7 +286,7 @@
             <span class="hotkey-text placeholder-text" v-else>
               点击设置自定义快捷键
             </span>
-            <el-button size="small" type="text" @click="openCustomHotkeyDialog" class="edit-button">
+            <el-button size="small" type="text" aria-label="编辑全文翻译快捷键" @click="openCustomHotkeyDialog" class="edit-button">
               <el-icon><Edit /></el-icon>
             </el-button>
           </div>
@@ -379,7 +379,7 @@
             <span class="hotkey-text placeholder-text" v-else>
               点击设置自定义快捷键
             </span>
-            <el-button size="small" type="text" @click="openCustomSelectionHotkeyDialog" class="edit-button">
+            <el-button size="small" type="text" aria-label="编辑划词翻译快捷键" @click="openCustomSelectionHotkeyDialog" class="edit-button">
               <el-icon><Edit /></el-icon>
             </el-button>
           </div>
@@ -660,13 +660,13 @@
                 :disabled="historyBusy || !canUndo"
                 aria-label="撤销配置恢复"
                 @click="runHistoryAction('undo')"
-              >撤销</el-button>
+              ><el-icon><Undo2 /></el-icon>撤销</el-button>
               <el-button
                 size="small"
                 :disabled="historyBusy || !canRedo"
                 aria-label="重做配置恢复"
                 @click="runHistoryAction('redo')"
-              >重做</el-button>
+              ><el-icon><Redo2 /></el-icon>重做</el-button>
             </div>
           </div>
 
@@ -689,7 +689,7 @@
                 :disabled="historyBusy || entry.version === currentHistoryVersion"
                 :aria-label="`恢复配置 v${entry.version}`"
                 @click="runHistoryAction('restore', entry.version)"
-              >恢复</el-button>
+              ><el-icon><History /></el-icon>恢复</el-button>
             </article>
           </div>
           <div v-else class="config-history-empty">还没有可恢复的配置版本。</div>
@@ -727,7 +727,7 @@
           <el-col :span="24">
             <el-input v-model="importData" type="textarea" :rows="8" placeholder="请在此处粘贴您的JSON配置" />
             <div style="margin-top: 10px; text-align: right;">
-              <el-button @click="saveImport">保存</el-button>
+              <el-button @click="saveImport"><el-icon><Save /></el-icon>保存</el-button>
             </div>
           </el-col>
         </el-row>
@@ -779,7 +779,17 @@ import {
   normalizeMouseHoverTranslationDelay,
   normalizeSelectionTranslatorDelay,
 } from '@/src/core/config/model';
-import { InfoFilled, Refresh, Edit, Upload, Download } from '@element-plus/icons-vue'
+import {
+  CircleHelp as InfoFilled,
+  Download,
+  History,
+  Pencil as Edit,
+  Redo2,
+  RotateCcw as Refresh,
+  Save,
+  Undo2,
+  Upload,
+} from '@lucide/vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {browser} from 'wxt/browser';
 import {isBrowserTabId} from '@/src/platform/browser/ids';

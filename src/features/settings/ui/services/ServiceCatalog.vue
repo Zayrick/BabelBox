@@ -8,7 +8,7 @@
     <div class="catalog-layout">
       <aside class="service-rail" aria-label="翻译服务列表">
         <label class="catalog-search">
-          <span aria-hidden="true">⌕</span>
+          <Search :size="16" :stroke-width="1.8" aria-hidden="true" focusable="false" />
           <input v-model.trim="serviceQuery" type="search" placeholder="搜索翻译服务" />
         </label>
 
@@ -34,9 +34,12 @@
               </span>
               <span
                 v-if="defaultService === item.value"
-                class="current-dot"
+                class="current-service-status"
                 title="默认翻译服务"
-              ></span>
+              >
+                <CircleCheck :size="15" :stroke-width="2" aria-hidden="true" focusable="false" />
+                <span class="service-status-label">默认翻译服务</span>
+              </span>
             </button>
           </section>
         </div>
@@ -62,7 +65,7 @@
               <strong>{{ selectedModelLabel || '尚未选择模型' }}</strong>
             </div>
             <label v-if="modelOptions.length > commonModelCount" class="model-search">
-              <span aria-hidden="true">⌕</span>
+              <Search :size="16" :stroke-width="1.8" aria-hidden="true" focusable="false" />
               <input v-model.trim="modelQuery" type="search" placeholder="搜索模型" />
             </label>
           </div>
@@ -94,7 +97,7 @@
                   <strong>{{ model }}</strong>
                   <small v-if="model === customModelLabel">填写服务商支持的模型标识</small>
                 </span>
-                <span v-if="selectedModel === model" class="checkmark">✓</span>
+                <Check v-if="selectedModel === model" class="checkmark" :size="15" :stroke-width="2.4" aria-hidden="true" focusable="false" />
               </button>
             </div>
 
@@ -110,14 +113,14 @@
                 <strong>更多模型</strong>
                 <small>{{ moreModels.length }} 个较少使用的模型</small>
               </span>
-              <b>{{ moreModelsOpen ? '收起' : '展开' }} <i aria-hidden="true">⌄</i></b>
+              <b>{{ moreModelsOpen ? '收起' : '展开' }} <ChevronDown :size="13" :stroke-width="2" aria-hidden="true" focusable="false" /></b>
             </button>
           </div>
           <p v-else class="catalog-empty">没有匹配的模型</p>
         </div>
 
         <div v-else class="no-model-panel">
-          <span aria-hidden="true">✓</span>
+          <span aria-hidden="true"><CircleCheck :size="15" :stroke-width="2.2" focusable="false" /></span>
           <div><strong>此服务无需模型配置</strong><p>机器翻译直接使用自身引擎。</p></div>
         </div>
 
@@ -132,6 +135,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { Check, ChevronDown, CircleCheck, Search } from '@lucide/vue'
 import ServiceIcon from '@/src/ui/components/ServiceIcon.vue'
 import { customModelString } from '@/src/core/config/catalog'
 import {
@@ -195,19 +199,20 @@ watch(modelQuery, () => {
 .catalog-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); min-height: 0; flex: 1; overflow: hidden; }
 .service-rail { min-height: 0; padding: 12px 10px 14px; border-right: 1px solid #eceef3; background: #fafbfc; overflow-y: auto; }
 .catalog-search, .model-search { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px; border: 1px solid #dfe3eb; border-radius: 8px; background: #fff; }
-.catalog-search span, .model-search span { color: #8991a2; font-size: 16px; }
+.catalog-search > svg, .model-search > svg { flex: 0 0 auto; color: #8991a2; }
 .catalog-search input, .model-search input { width: 100%; min-width: 0; border: 0; outline: 0; color: #172033; background: transparent; font-size: 13px; }
 .service-groups { display: grid; gap: 12px; margin-top: 12px; }
 .group-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; padding: 7px 6px 5px; border-bottom: 1px solid #e5e8ef; color: #667187; background: transparent; }
 .group-heading strong { color: #46526a; font-size: 12px; letter-spacing: .05em; }
 .group-heading span { font-size: 10px; }
 .service-group { min-width: 0; }
-.service-item { display: grid; grid-template-columns: 40px minmax(0, 1fr) 8px; align-items: center; gap: 9px; width: 100%; padding: 8px; border: 1px solid transparent; border-radius: 8px; color: #172033; background: transparent; text-align: left; cursor: pointer; transition: background 150ms ease, border-color 150ms ease; }
+.service-item { display: grid; grid-template-columns: 40px minmax(0, 1fr) 16px; align-items: center; gap: 9px; width: 100%; padding: 8px; border: 1px solid transparent; border-radius: 8px; color: #172033; background: transparent; text-align: left; cursor: pointer; transition: background 150ms ease, border-color 150ms ease; }
 .service-item:hover { border-color: #e2e5ec; background: #fff; }
 .service-item.active { border-color: #f3c4d1; background: #fff0f4; }
 .service-copy { display: flex; min-width: 0; flex-direction: column; }
 .service-copy strong { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
-.current-dot { width: 7px; height: 7px; border-radius: 50%; background: #ef4776; }
+.current-service-status { display: grid; place-items: center; color: #da315f; }
+.service-status-label { position: absolute; width: 1px; height: 1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .service-detail { display: flex; min-width: 0; min-height: 0; margin: 0; padding: 18px 20px; background: #fff; flex-direction: column; overflow: hidden; }
 .service-detail > .detail-hero,
 .service-detail > .model-section,
@@ -237,15 +242,15 @@ watch(modelQuery, () => {
 .model-item > span:nth-child(2) { display: flex; min-width: 0; flex-direction: column; }
 .model-item strong { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
 .model-item small { overflow: hidden; margin-top: 3px; color: #9299a8; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
-.checkmark { color: #da315f; font-size: 12px; font-weight: 900; }
+.checkmark { color: #da315f; }
 .more-models-toggle { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; gap: 10px; width: 100%; margin-top: 8px; padding: 9px 10px; border: 1px solid #e4e7ee; border-radius: 8px; color: #172033; background: #fafbfc; text-align: left; cursor: pointer; }
 .more-models-toggle:hover { border-color: #f0a9bc; background: #fff8fa; }
 .more-models-toggle > span { display: flex; flex-direction: column; }
 .more-models-toggle strong { font-size: 10px; }
 .more-models-toggle small { margin-top: 2px; color: #9299a8; font-size: 8px; }
-.more-models-toggle b { color: #c72a56; font-size: 9px; font-weight: 750; white-space: nowrap; }
-.more-models-toggle i { display: inline-block; margin-left: 3px; font-style: normal; transition: transform 150ms ease; }
-.more-models-toggle[aria-expanded="true"] i { transform: rotate(180deg); }
+.more-models-toggle b { display: inline-flex; align-items: center; gap: 3px; color: #c72a56; font-size: 9px; font-weight: 750; white-space: nowrap; }
+.more-models-toggle b svg { transition: transform 150ms ease; }
+.more-models-toggle[aria-expanded="true"] b svg { transform: rotate(180deg); }
 .no-model-panel { display: flex; align-items: center; gap: 10px; margin-top: 16px; padding: 14px 0; border-bottom: 1px solid #d9eee5; background: transparent; }
 .no-model-panel > span { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; color: #fff; background: #28aa79; font-size: 12px; }
 .no-model-panel strong { color: #185d46; font-size: 15px; }

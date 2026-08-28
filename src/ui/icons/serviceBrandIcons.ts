@@ -91,23 +91,21 @@ export const serviceBrandIcons: Readonly<Record<string, ServiceBrandIcon>> = Obj
   newapi: createBrandIcon('new-api', newapiSvg, newapiHex),
 })
 
-/** TheSVG 3.3.1 中没有与这些服务准确匹配的品牌资源。 */
-export const serviceIconFallbackGlyphs: Readonly<Record<string, string>> = Object.freeze({
-  freeTranslation: '译',
-  deeplx: 'DX',
-  xiaoniu: '小',
-  youdao: '有',
-  custom: '+',
+export type ServiceFallbackIconKey = 'languages' | 'server' | 'custom' | 'unknown'
+
+/** TheSVG 3.3.1 中没有准确品牌资源的服务使用语义图标，不再回退为文字缩写。 */
+export const serviceFallbackIconKeys: Readonly<Record<string, ServiceFallbackIconKey>> = Object.freeze({
+  freeTranslation: 'languages',
+  deeplx: 'server',
+  xiaoniu: 'languages',
+  youdao: 'languages',
+  custom: 'custom',
 })
 
 export function resolveServiceBrandIcon(service: string): ServiceBrandIcon | undefined {
   return serviceBrandIcons[service]
 }
 
-export function resolveServiceIconFallbackGlyph(service: string, label = ''): string {
-  const explicitGlyph = serviceIconFallbackGlyphs[service]
-  if (explicitGlyph) return explicitGlyph
-
-  const [firstGlyph = '?'] = Array.from(label.trim() || service)
-  return firstGlyph.toLocaleUpperCase()
+export function resolveServiceFallbackIconKey(service: string): ServiceFallbackIconKey {
+  return serviceFallbackIconKeys[service] ?? 'unknown'
 }

@@ -59,7 +59,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 }
 .sidebar nav button:hover { background: var(--surface-soft); }
 .sidebar nav button.active { color: var(--brand-strong); background: var(--brand-soft); }
-.nav-icon { display: grid; width: 30px; height: 30px; place-items: center; color: currentColor; font-size: 13px; font-weight: 750; }
+.nav-icon { display: grid; width: 30px; height: 30px; place-items: center; color: currentColor; }
+.nav-icon svg { display: block; }
 .sidebar nav strong { overflow: hidden; font-size: 12px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
 
 .workspace {
@@ -85,7 +86,7 @@ h1 { margin: 0; font-size: 26px; line-height: 1.25; letter-spacing: -.025em; }
   border-radius: 8px;
   background: var(--surface);
 }
-.search-box > span { color: var(--muted); font-size: 18px; }
+.search-box > svg { flex: 0 0 auto; color: var(--muted); }
 .search-box input { width: 100%; border: 0; outline: 0; color: var(--ink); background: transparent; font-size: 12px; }
 .search-box input::placeholder { color: #9ca3b2; }
 
@@ -96,7 +97,7 @@ h1 { margin: 0; font-size: 26px; line-height: 1.25; letter-spacing: -.025em; }
 .search-results span { display: flex; min-width: 0; flex-direction: column; }
 .search-results strong { font-size: 12px; }
 .search-results small, .search-empty { color: var(--muted); font-size: 10px; }
-.search-results b { color: var(--brand-strong); font-size: 10px; }
+.search-results b { display: inline-flex; align-items: center; gap: 4px; color: var(--brand-strong); font-size: 10px; }
 .search-empty { padding: 16px; text-align: center; }
 
 .settings-card {
@@ -280,7 +281,7 @@ h1 { margin: 0; font-size: 26px; line-height: 1.25; letter-spacing: -.025em; }
   text-decoration: none;
 }
 .about-links a:hover { color: var(--brand-strong); }
-.about-links a span { color: var(--brand-strong); font-size: 15px; }
+.about-links a > svg { flex: 0 0 auto; color: var(--brand-strong); }
 
 @media (max-width: 1050px) {
   .sidebar { width: 210px; flex-basis: 210px; }

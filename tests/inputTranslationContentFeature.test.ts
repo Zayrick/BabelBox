@@ -27,6 +27,10 @@ class FakeDocument {
     createElement(tagName: string): any {
         return fakeElement(tagName);
     }
+
+    createElementNS(_namespace: string, tagName: string): any {
+        return fakeElement(tagName);
+    }
 }
 
 function fakeClassList() {

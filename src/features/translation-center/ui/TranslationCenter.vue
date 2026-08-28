@@ -23,7 +23,7 @@
         :disabled="sourceLanguage === 'auto'"
         @click="swapLanguages"
       >
-        ⇄
+        <ArrowLeftRight aria-hidden="true" />
       </button>
 
       <div class="language-picker-group">
@@ -48,20 +48,22 @@
             aria-haspopup="dialog"
             @click.stop="servicePickerOpen = !servicePickerOpen"
           >
-            <span>＋</span>
+            <Plus class="add-service-icon" aria-hidden="true" />
             更多服务
             <b>{{ cards.length }}</b>
-            <span class="add-service-chevron">⌄</span>
+            <ChevronDown class="add-service-chevron" aria-hidden="true" />
           </button>
           <div v-if="servicePickerOpen" class="service-picker-popover" role="dialog" aria-label="添加更多翻译服务">
             <header class="service-picker-header">
               <div>
                 <strong>添加更多服务</strong>
               </div>
-              <button type="button" class="service-picker-close" aria-label="关闭更多服务" @click="servicePickerOpen = false">×</button>
+              <button type="button" class="service-picker-close" aria-label="关闭更多服务" @click="servicePickerOpen = false">
+                <X aria-hidden="true" />
+              </button>
             </header>
             <label class="service-picker-search">
-              <span aria-hidden="true">⌕</span>
+              <Search class="service-picker-search-icon" aria-hidden="true" />
               <input v-model.trim="serviceSearchQuery" type="search" placeholder="搜索服务名称" aria-label="搜索翻译服务" />
             </label>
             <div class="service-picker-groups">
@@ -82,7 +84,7 @@
                     <strong>{{ item.label }}</strong>
                     <small>{{ serviceDescription(item.value) }}</small>
                   </span>
-                  <b aria-hidden="true">＋</b>
+                  <span class="service-picker-option-add" aria-hidden="true"><Plus /></span>
                 </button>
               </section>
               <p v-if="filteredServiceGroups.length === 0">没有找到可添加的翻译服务</p>
@@ -134,13 +136,14 @@
             <h3 id="translation-results-title">{{ cards.length }} 个翻译服务</h3>
           </div>
           <div class="results-heading-actions">
-            <span class="results-order-hint">⠿ 拖动卡片可排序</span>
+            <span class="results-order-hint"><GripVertical aria-hidden="true" />拖动卡片可排序</span>
             <button
               class="copy-all-button"
               type="button"
               :disabled="successfulCards.length === 0"
               @click="copyAllResults"
             >
+              <Copy aria-hidden="true" />
               {{ copiedService === 'all' ? '已复制' : '复制全部' }}
             </button>
           </div>
@@ -167,7 +170,7 @@
                   @keydown.alt.arrow-up.prevent="moveCard(card.service, -1)"
                   @keydown.alt.arrow-down.prevent="moveCard(card.service, 1)"
                 >
-                  ⠿
+                  <GripVertical aria-hidden="true" />
                 </button>
                 <ServiceIcon :service="card.service" :label="serviceLabel(card.service)" size="medium" />
                 <div>
@@ -185,7 +188,7 @@
                   :disabled="cards.length <= 1"
                   @click="removeService(card.service)"
                 >
-                  ×
+                  <X aria-hidden="true" />
                 </button>
               </div>
             </header>
@@ -202,13 +205,17 @@
               <footer>
                 <span>{{ card.duration }} ms · 第 {{ card.run }} 次</span>
                 <button type="button" @click="copyResult(card)">
+                  <Copy aria-hidden="true" />
                   {{ copiedService === card.service ? '已复制' : '复制译文' }}
                 </button>
               </footer>
             </div>
             <div v-else class="translation-result-error">
               <p>{{ card.error }}</p>
-              <button type="button" :disabled="!sourceText.trim() || isRunning" @click="retryService(card.service)">重试</button>
+              <button type="button" :disabled="!sourceText.trim() || isRunning" @click="retryService(card.service)">
+                <RefreshCw aria-hidden="true" />
+                重试
+              </button>
             </div>
           </article>
         </div>
@@ -219,6 +226,16 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import {
+  ArrowLeftRight,
+  ChevronDown,
+  Copy,
+  GripVertical,
+  Plus,
+  RefreshCw,
+  Search,
+  X,
+} from '@lucide/vue'
 import {browser} from 'wxt/browser'
 import ServiceIcon from '@/src/ui/components/ServiceIcon.vue'
 import {
@@ -664,16 +681,17 @@ onUnmounted(() => {
 .language-picker-group :deep(.el-select__caret) { color: var(--muted); }
 
 .language-swap-button {
+  display: grid;
   width: 38px;
   height: 36px;
+  place-items: center;
   border: 1px solid transparent;
   border-radius: 8px;
   color: var(--brand-strong);
   background: var(--brand-soft);
   cursor: pointer;
-  font-size: 20px;
-  line-height: 1;
 }
+.language-swap-button svg { width: 17px; height: 17px; }
 .language-swap-button:hover:not(:disabled) { border-color: #f1b2c5; }
 .language-swap-button:disabled { cursor: not-allowed; opacity: .45; }
 
@@ -693,9 +711,9 @@ onUnmounted(() => {
   font-weight: 700;
 }
 .add-service-button:hover { border-color: #ef9ab1; color: var(--brand-strong); background: var(--brand-soft); }
-.add-service-button > span:first-child { color: var(--brand); font-size: 18px; font-weight: 400; }
+.add-service-icon { width: 16px; height: 16px; flex: none; color: var(--brand); }
 .add-service-button b { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; color: #fff; background: var(--ink); font-size: 10px; }
-.add-service-chevron { color: var(--muted); font-size: 16px; }
+.add-service-chevron { width: 15px; height: 15px; flex: none; color: var(--muted); }
 .service-picker-popover {
   position: absolute;
   z-index: 8;
@@ -714,11 +732,12 @@ onUnmounted(() => {
 .service-picker-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
 .service-picker-header > div { min-width: 0; }
 .service-picker-header strong { color: var(--ink); font-size: 15px; }
-.service-picker-close { display: grid; place-items: center; width: 26px; height: 26px; flex: none; border: 0; border-radius: 8px; color: var(--muted); background: transparent; cursor: pointer; font-size: 20px; line-height: 1; }
+.service-picker-close { display: grid; place-items: center; width: 26px; height: 26px; flex: none; border: 0; border-radius: 8px; color: var(--muted); background: transparent; cursor: pointer; }
+.service-picker-close svg { width: 16px; height: 16px; }
 .service-picker-close:hover { color: var(--brand-strong); background: var(--brand-soft); }
 .service-picker-search { display: flex; align-items: center; gap: 8px; margin: 10px 12px 7px; padding: 0 10px; height: 36px; border: 1px solid #e1e5ee; border-radius: 8px; color: var(--muted); background: var(--surface-soft); }
 .service-picker-search:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(239, 71, 118, .1); }
-.service-picker-search span { font-size: 18px; }
+.service-picker-search-icon { width: 16px; height: 16px; flex: none; }
 .service-picker-search input { width: 100%; min-width: 0; border: 0; outline: 0; color: var(--ink); background: transparent; font: inherit; font-size: 12px; }
 .service-picker-search input::placeholder { color: #a2a8b5; }
 .service-picker-groups { min-height: 0; flex: 1 1 auto; overflow-y: auto; padding: 0 7px 8px; }
@@ -731,7 +750,8 @@ onUnmounted(() => {
 .service-picker-option-copy { display: grid; min-width: 0; flex: 1; gap: 3px; }
 .service-picker-option-copy strong { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .service-picker-option-copy small { overflow: hidden; color: var(--muted); font-size: 9px; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
-.service-picker-option > b { display: grid; place-items: center; width: 23px; height: 23px; flex: none; border-radius: 7px; color: var(--brand-strong); background: var(--brand-soft); font-size: 16px; font-weight: 400; }
+.service-picker-option-add { display: grid; place-items: center; width: 23px; height: 23px; flex: none; border-radius: 7px; color: var(--brand-strong); background: var(--brand-soft); }
+.service-picker-option-add svg { width: 14px; height: 14px; }
 .service-picker-groups > p { margin: 28px 8px; color: var(--muted); font-size: 11px; text-align: center; }
 .translation-center-layout { display: grid; grid-template-columns: minmax(300px, .88fr) minmax(420px, 1.12fr); gap: 10px; height: auto; min-height: 0; }
 .translation-input-panel,
@@ -766,8 +786,10 @@ onUnmounted(() => {
 
 .results-heading { margin-bottom: 10px; }
 .results-heading-actions { display: flex; align-items: center; gap: 9px; }
-.results-order-hint { color: var(--muted); font-size: 9px; white-space: nowrap; }
-.copy-all-button { min-height: 30px; padding: 0 10px; border: 1px solid var(--line); border-radius: 9px; color: var(--brand-strong); background: var(--surface); cursor: pointer; font-size: 10px; font-weight: 700; }
+.results-order-hint { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: 9px; white-space: nowrap; }
+.results-order-hint svg { width: 13px; height: 13px; }
+.copy-all-button { display: inline-flex; min-height: 30px; align-items: center; gap: 5px; padding: 0 10px; border: 1px solid var(--line); border-radius: 9px; color: var(--brand-strong); background: var(--surface); cursor: pointer; font-size: 10px; font-weight: 700; }
+.copy-all-button svg { width: 13px; height: 13px; }
 .copy-all-button:hover:not(:disabled) { border-color: #ef9ab1; background: var(--brand-soft); }
 .copy-all-button:disabled { cursor: not-allowed; color: #b4bac5; }
 .translation-result-list { display: grid; gap: 0; min-height: 0; overflow-y: auto; padding: 0 3px 0 0; }
@@ -778,7 +800,8 @@ onUnmounted(() => {
 .translation-result-card[data-status='success'] { border-color: #ecd8df; }
 .translation-result-card-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .translation-result-service-name { display: flex; align-items: center; min-width: 0; gap: 10px; }
-.drag-handle { display: grid; place-items: center; width: 18px; height: 28px; flex: none; padding: 0; border: 0; border-radius: 6px; color: #a6adba; background: transparent; cursor: grab; font-size: 18px; letter-spacing: -4px; line-height: 1; }
+.drag-handle { display: grid; place-items: center; width: 18px; height: 28px; flex: none; padding: 0; border: 0; border-radius: 6px; color: #a6adba; background: transparent; cursor: grab; }
+.drag-handle svg { width: 16px; height: 16px; }
 .drag-handle:hover, .drag-handle:focus-visible { color: var(--brand-strong); background: var(--brand-soft); outline: none; }
 .drag-handle:active { cursor: grabbing; }
 .translation-result-service-name > div { min-width: 0; }
@@ -788,7 +811,8 @@ onUnmounted(() => {
 .result-state.success { color: #16825f; background: #e9f8f1; }
 .result-state.loading { color: #91611c; background: #fff5df; }
 .result-state.error { color: #b1435e; background: #fff0f3; }
-.remove-service-button { display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 7px; color: #8b93a1; background: transparent; cursor: pointer; font-size: 20px; line-height: 1; }
+.remove-service-button { display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 7px; color: #8b93a1; background: transparent; cursor: pointer; }
+.remove-service-button svg { width: 15px; height: 15px; }
 .remove-service-button:hover:not(:disabled) { color: #b1435e; background: #fff0f3; }
 .remove-service-button:disabled { cursor: not-allowed; opacity: .35; }
 .translation-result-placeholder { display: flex; align-items: center; min-height: 46px; margin-top: 8px; padding: 8px 0; color: #9aa2b0; background: transparent; font-size: 11px; }
@@ -801,10 +825,12 @@ onUnmounted(() => {
 .translation-result-content { margin-top: 8px; padding: 9px 0 0; border-top: 1px solid #f3e2e7; color: var(--ink); background: transparent; }
 .translation-result-content p { min-height: 24px; margin: 0; font-size: 14px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; }
 .translation-result-content footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; color: var(--muted); font-size: 9px; }
-.translation-result-content footer button { padding: 0; border: 0; color: var(--brand-strong); background: transparent; cursor: pointer; font-size: 10px; font-weight: 700; }
+.translation-result-content footer button { display: inline-flex; align-items: center; gap: 5px; padding: 0; border: 0; color: var(--brand-strong); background: transparent; cursor: pointer; font-size: 10px; font-weight: 700; }
+.translation-result-content footer button svg { width: 13px; height: 13px; }
 .translation-result-error { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-top: 11px; padding: 10px 12px; border-radius: 10px; color: #9f3d57; background: #fff3f5; }
 .translation-result-error p { flex: 1; margin: 0; font-size: 11px; line-height: 1.6; word-break: break-word; }
-.translation-result-error button { flex: none; padding: 4px 7px; border: 1px solid #efb1c1; border-radius: 7px; color: #a43755; background: transparent; cursor: pointer; font-size: 10px; font-weight: 700; }
+.translation-result-error button { display: inline-flex; flex: none; align-items: center; gap: 5px; padding: 4px 7px; border: 1px solid #efb1c1; border-radius: 7px; color: #a43755; background: transparent; cursor: pointer; font-size: 10px; font-weight: 700; }
+.translation-result-error button svg { width: 13px; height: 13px; }
 .translation-result-error button:disabled { cursor: not-allowed; opacity: .45; }
 
 @media (max-width: 1050px) {

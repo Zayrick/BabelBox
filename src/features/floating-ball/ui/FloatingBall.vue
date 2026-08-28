@@ -26,11 +26,7 @@
       @pointerdown.stop
       @click.stop="toggleTranslation"
     >
-      <svg class="translation-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <text x="0.8" y="12.5" fill="currentColor" font-size="12" font-weight="700" font-family="Arial, sans-serif">A</text>
-        <text x="11.8" y="12.5" fill="currentColor" font-size="11.5" font-weight="700" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">文</text>
-        <path d="M4 16h16M4 16l2-2M4 16l2 2M20 16l-2-2M20 16l-2 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-      </svg>
+      <Languages class="translation-icon" :size="18" :stroke-width="1.8" aria-hidden="true" focusable="false" />
       <span v-if="isTranslating" class="check-mark" aria-hidden="true" />
     </button>
 
@@ -58,10 +54,7 @@
       @pointerdown.stop
       @click.stop="handleSettingsClick"
     >
-      <svg viewBox="6 5 16 15" fill="none" aria-hidden="true">
-        <path d="m19.43 12.98 1.25.98-1.5 2.6-1.5-.6a7.3 7.3 0 0 1-1.69.98L15.77 18h-3l-.22-1.06a7.3 7.3 0 0 1-1.69-.98l-1.5.6-1.5-2.6 1.25-.98a6.7 6.7 0 0 1 0-1.96l-1.25-.98 1.5-2.6 1.5.6a7.3 7.3 0 0 1 1.69-.98L12.77 6h3l.22 1.06c.6.24 1.16.57 1.69.98l1.5-.6 1.5 2.6-1.25.98a6.7 6.7 0 0 1 0 1.96Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
-        <circle cx="14.27" cy="12" r="2.4" stroke="currentColor" stroke-width="1.7" />
-      </svg>
+      <Settings :size="18" :stroke-width="1.8" aria-hidden="true" focusable="false" />
     </button>
 
     <div v-if="showShortcutTooltip" class="shortcut-tooltip" role="status">{{ shortcutTip }}</div>
@@ -71,6 +64,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { PropType, CSSProperties } from 'vue';
+import {Languages, Settings} from '@lucide/vue';
 import {config} from '@/src/services/config/store';
 
 const DRAG_THRESHOLD = 6;

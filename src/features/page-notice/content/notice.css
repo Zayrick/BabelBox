@@ -158,8 +158,12 @@
     border-radius: 6px;
     color: #9da4b2;
     background: transparent;
-    font-size: 18px;
     line-height: 1;
+}
+
+.notice-close svg {
+    width: 14px;
+    height: 14px;
 }
 
 .notice-close:hover,

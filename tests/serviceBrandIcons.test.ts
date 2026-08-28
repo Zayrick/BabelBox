@@ -2,15 +2,15 @@ import {describe, expect, it} from 'vitest'
 import {services} from '@/src/core/config/catalog'
 import {
   resolveServiceBrandIcon,
-  resolveServiceIconFallbackGlyph,
+  resolveServiceFallbackIconKey,
   serviceBrandIcons,
-  serviceIconFallbackGlyphs,
+  serviceFallbackIconKeys,
 } from '@/src/ui/icons/serviceBrandIcons'
 
 describe('translation service brand icons', () => {
   it('makes an explicit icon decision for every public translation service', () => {
     const brandServices = Object.keys(serviceBrandIcons)
-    const fallbackServices = Object.keys(serviceIconFallbackGlyphs)
+    const fallbackServices = Object.keys(serviceFallbackIconKeys)
 
     expect(brandServices.filter((service) => fallbackServices.includes(service))).toEqual([])
     expect([...brandServices, ...fallbackServices].sort()).toEqual(Object.values(services).sort())
@@ -45,13 +45,13 @@ describe('translation service brand icons', () => {
     }
   })
 
-  it('uses clear text fallbacks only when TheSVG has no exact service asset', () => {
+  it('uses semantic Lucide fallbacks only when TheSVG has no exact service asset', () => {
     expect(resolveServiceBrandIcon(services.deeplx)).toBeUndefined()
-    expect(resolveServiceIconFallbackGlyph(services.freeTranslation, '免费翻译')).toBe('译')
-    expect(resolveServiceIconFallbackGlyph(services.deeplx, 'DeepLX')).toBe('DX')
-    expect(resolveServiceIconFallbackGlyph(services.xiaoniu, '小牛翻译')).toBe('小')
-    expect(resolveServiceIconFallbackGlyph(services.youdao, '有道翻译')).toBe('有')
-    expect(resolveServiceIconFallbackGlyph(services.custom, '自定义接口')).toBe('+')
-    expect(resolveServiceIconFallbackGlyph('future-service', 'Future')).toBe('F')
+    expect(resolveServiceFallbackIconKey(services.freeTranslation)).toBe('languages')
+    expect(resolveServiceFallbackIconKey(services.deeplx)).toBe('server')
+    expect(resolveServiceFallbackIconKey(services.xiaoniu)).toBe('languages')
+    expect(resolveServiceFallbackIconKey(services.youdao)).toBe('languages')
+    expect(resolveServiceFallbackIconKey(services.custom)).toBe('custom')
+    expect(resolveServiceFallbackIconKey('future-service')).toBe('unknown')
   })
 })

@@ -204,6 +204,7 @@ h2 {
   place-items: center;
   color: var(--muted);
 }
+.arrow svg { width: 14px; height: 14px; }
 
 .service-picker {
   position: relative;
@@ -265,11 +266,12 @@ h2 {
 .chevron {
   position: absolute;
   right: 12px;
+  display: grid;
+  place-items: center;
   color: var(--muted);
-  font-size: 16px;
-  line-height: 1;
   transition: transform 160ms ease;
 }
+.chevron svg { width: 15px; height: 15px; }
 .chevron.open { transform: rotate(180deg); }
 .service-picker-panel {
   position: absolute;
@@ -335,9 +337,10 @@ h2 {
   white-space: nowrap;
 }
 .service-option-check {
+  width: 14px;
+  height: 14px;
+  flex: none;
   color: var(--brand-strong);
-  font-size: 14px;
-  font-weight: 700;
 }
 .service-more-toggle {
   justify-content: space-between;
@@ -353,12 +356,12 @@ h2 {
   gap: 4px;
 }
 .service-more-meta b {
+  display: grid;
+  place-items: center;
   color: var(--muted);
-  font-size: 14px;
-  line-height: 1;
-  font-weight: 500;
   transition: transform 160ms ease;
 }
+.service-more-meta b svg { width: 14px; height: 14px; }
 .service-more-meta b.open { transform: rotate(180deg); }
 
 .translate-action {
@@ -388,7 +391,7 @@ h2 {
   background: var(--brand-strong);
 }
 .translate-button.translated { background: var(--brand-strong); }
-.translate-glyph { font-size: 11px; font-weight: 700; }
+.translate-glyph { width: 17px; height: 17px; flex: none; }
 .translate-label { white-space: nowrap; }
 .translate-hotkey {
   display: inline-flex;
@@ -615,8 +618,7 @@ h2 {
   color: var(--muted);
   background: var(--surface-soft);
 }
-.feature-icon.rose { font-size: 18px; }
-.feature-icon.violet { font-family: Georgia, serif; font-size: 16px; }
+.feature-icon svg { width: 15px; height: 15px; }
 .feature-card > span:nth-child(2), .feature-copy {
   display: flex;
   min-width: 0;
@@ -664,15 +666,13 @@ h2 {
   background: #b8bec9;
 }
 .feature-card > i.active { background: #24b47e; }
-.feature-card > b {
+.feature-chevron {
+  width: 15px;
+  height: 15px;
   color: var(--muted);
-  font-size: 16px;
-  font-weight: 400;
 }
 .video-feature-card.needs-enable { background: var(--surface-soft); }
 .video-feature-card.needs-enable small { color: var(--brand-strong); }
-.video-feature-card .feature-icon.teal { font-size: 11px; }
-.document-feature-card .feature-icon.blue { font-size: 13px; }
 .feature-card:disabled, .translate-button:disabled,
 .language-pair .el-select.is-disabled, .select-row .el-select.is-disabled {
   cursor: not-allowed;
@@ -717,8 +717,8 @@ footer button:hover { color: var(--brand-strong); }
   text-decoration: none;
 }
 .opensource-link:hover { color: var(--brand-strong); }
-.opensource-link svg { width: 12px; height: 12px; fill: currentColor; }
-.opensource-link .external-mark { font-size: 11px; line-height: 1; }
+.opensource-link .github-mark { width: 12px; height: 12px; fill: currentColor; }
+.opensource-link .external-mark { width: 12px; height: 12px; }
 
 .donation-overlay {
   position: fixed;
@@ -755,11 +755,9 @@ footer button:hover { color: var(--brand-strong); }
   border-radius: 8px;
   color: var(--muted);
   background: transparent;
-  font-size: 22px;
-  font-weight: 300;
-  line-height: 1;
   cursor: pointer;
 }
+.donation-close svg { width: 17px; height: 17px; }
 .donation-close:hover { color: var(--brand-strong); background: var(--brand-soft); }
 .donation-card h2 { padding-right: 24px; padding-left: 24px; }
 .donation-description {
@@ -828,10 +826,9 @@ footer button:hover { color: var(--brand-strong); }
   border-radius: 8px;
   color: var(--muted);
   background: transparent;
-  font-size: 22px;
-  font-weight: 300;
   cursor: pointer;
 }
+.drawer-header > button svg { width: 18px; height: 18px; }
 .drawer-header > button:hover { color: var(--brand-strong); background: var(--brand-soft); }
 .drawer-content { margin-top: 12px; }
 .selection-mode-tabs {
@@ -970,8 +967,8 @@ footer button:hover { color: var(--brand-strong); }
   border-radius: 8px;
   color: var(--brand-strong);
   background: var(--brand-soft);
-  font-size: 15px;
 }
+.wordbook-shortcut-icon svg { width: 17px; height: 17px; }
 .wordbook-shortcut > span:nth-child(2) {
   display: flex;
   min-width: 0;
@@ -990,10 +987,10 @@ footer button:hover { color: var(--brand-strong); }
   font-size: 9px;
   line-height: 1.4;
 }
-.wordbook-shortcut b {
+.wordbook-shortcut-chevron {
+  width: 17px;
+  height: 17px;
   color: var(--muted);
-  font-size: 18px;
-  font-weight: 400;
 }
 .chips {
   display: grid;
@@ -1035,10 +1032,15 @@ footer button:hover { color: var(--brand-strong); }
   cursor: pointer;
 }
 .drawer-settings-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   margin-top: 12px;
   border: 0;
   background: var(--surface-soft);
 }
+.drawer-settings-link svg { width: 14px; height: 14px; }
 .capability-unavailable {
   display: grid;
   gap: 4px;

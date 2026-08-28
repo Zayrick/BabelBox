@@ -21,16 +21,16 @@
 
     <div v-if="betaEnabled && !selectionTranslatorEnabled" class="selection-reminder" role="note">
       <span>单词收藏入口位于划词翻译卡中；当前划词翻译仍是关闭状态。</span>
-      <button type="button" @click="emit('navigate', 'settings-shortcuts')">前往开启</button>
+      <button type="button" @click="emit('navigate', 'settings-shortcuts')">前往开启<ArrowRight class="button-icon" aria-hidden="true" /></button>
     </div>
 
     <section class="privacy-note" aria-label="本地存储说明">
-      <span aria-hidden="true">⌂</span>
+      <span class="privacy-note-icon" aria-hidden="true"><HardDrive /></span>
       <div><strong>学习数据仅保存在当前浏览器</strong><small>不建账号、不上传复习记录；卸载扩展前请导出备份。无痕窗口不提供持久收藏。</small></div>
     </section>
 
     <div v-if="loadError" class="error-state" role="alert">
-      <span>{{ loadError }}</span><button type="button" @click="loadEntries">重试</button>
+      <span>{{ loadError }}</span><button type="button" @click="loadEntries"><RefreshCw class="button-icon" aria-hidden="true" />重试</button>
     </div>
 
     <template v-else>
@@ -44,7 +44,7 @@
       <section v-if="reviewActive" class="review-shell" aria-live="polite">
         <header class="review-header">
           <strong>复习 {{ reviewPosition }} / {{ reviewTotal }}</strong>
-          <button type="button" :disabled="actionBusy" @click="finishReview">退出本轮</button>
+          <button type="button" :disabled="actionBusy" @click="finishReview"><X class="button-icon" aria-hidden="true" />退出本轮</button>
         </header>
 
         <div v-if="currentReview" class="review-card">
@@ -61,7 +61,7 @@
             <div class="answer-heading"><h3>{{ currentReview.term }}</h3><span v-if="currentReview.phonetic">{{ currentReview.phonetic }}</span></div>
             <p class="answer-translation">{{ entryTranslation(currentReview) || '暂无可用译义' }}</p>
             <p v-if="latestContext(currentReview)?.text" class="answer-context">{{ latestContext(currentReview)?.text }}</p>
-            <a v-if="latestContext(currentReview)?.sourceUrl" :href="latestContext(currentReview)?.sourceUrl" target="_blank" rel="noreferrer">查看收藏来源 ↗</a>
+            <a v-if="latestContext(currentReview)?.sourceUrl" :href="latestContext(currentReview)?.sourceUrl" target="_blank" rel="noreferrer">查看收藏来源<ExternalLink class="inline-link-icon" aria-hidden="true" /></a>
             <div class="review-actions">
               <button type="button" class="again" :disabled="actionBusy" @click="rateReview('again')"><span>1</span><strong>忘了</strong><small>约 10 分钟后</small></button>
               <button type="button" class="good" :disabled="actionBusy" @click="rateReview('good')"><span>2</span><strong>记得</strong><small>{{ goodIntervalLabel(currentReview) }}</small></button>
@@ -70,24 +70,24 @@
         </div>
 
         <div v-else class="review-complete">
-          <span aria-hidden="true">✓</span>
+          <span class="review-complete-icon" aria-hidden="true"><CircleCheck /></span>
           <h3>本轮复习完成</h3>
           <p>复习 {{ reviewStats.reviewed }} 个 · 记得 {{ reviewStats.good }} 个 · 忘了 {{ reviewStats.again }} 个</p>
-          <button type="button" @click="finishReview">返回单词本</button>
+          <button type="button" @click="finishReview"><ArrowLeft class="button-icon" aria-hidden="true" />返回单词本</button>
         </div>
       </section>
 
       <template v-else>
         <section class="primary-actions">
           <button class="start-review" type="button" :disabled="loading || actionBusy || reviewPlan.length === 0" @click="startReview">
-            <span aria-hidden="true">▶</span>
+            <span aria-hidden="true"><Play /></span>
             <strong>{{ reviewPlan.length ? `开始复习 ${reviewPlan.length} 个` : '今天没有到期单词' }}</strong>
           </button>
-          <button type="button" class="refresh-button" :disabled="loading" @click="loadEntries">{{ loading ? '读取中…' : '刷新' }}</button>
+          <button type="button" class="refresh-button" :disabled="loading" @click="loadEntries"><RefreshCw class="button-icon" aria-hidden="true" />{{ loading ? '读取中…' : '刷新' }}</button>
         </section>
 
         <section class="toolbar" aria-label="筛选单词">
-          <label class="search-field"><span aria-hidden="true">⌕</span><input v-model.trim="query" type="search" placeholder="搜索单词、译义或上下文" /></label>
+          <label class="search-field"><Search class="search-field-icon" aria-hidden="true" /><input v-model.trim="query" type="search" placeholder="搜索单词、译义或上下文" /></label>
           <el-select v-model="statusFilter" class="toolbar-select" aria-label="掌握状态">
             <el-option label="全部状态" value="all" />
             <el-option label="待复习" value="due" />
@@ -105,9 +105,9 @@
 
         <section v-if="loading && entries.length === 0" class="empty-state"><span class="loading-ring" /><p>正在读取本地单词本…</p></section>
         <section v-else-if="entries.length === 0" class="empty-state">
-          <span aria-hidden="true">☆</span><h3>还没有收藏单词</h3><p>开启 Beta 后，在网页中划选一个英文单词，再点击学习卡标题栏的星标。</p>
+          <BookOpen class="empty-state-icon" aria-hidden="true" /><h3>还没有收藏单词</h3><p>开启 Beta 后，在网页中划选一个英文单词，再点击学习卡标题栏的星标。</p>
         </section>
-        <section v-else-if="filteredEntries.length === 0" class="empty-state"><span aria-hidden="true">⌕</span><h3>没有匹配的词条</h3><p>试试清空搜索内容或切换掌握状态。</p></section>
+        <section v-else-if="filteredEntries.length === 0" class="empty-state"><Search class="empty-state-icon" aria-hidden="true" /><h3>没有匹配的词条</h3><p>试试清空搜索内容或切换掌握状态。</p></section>
 
         <section v-else class="word-list" aria-label="收藏的单词">
           <article v-for="entry in pagedEntries" :key="entry.id" class="word-row">
@@ -118,24 +118,24 @@
               <div class="word-meta">
                 <span v-if="entry.partOfSpeech">{{ entry.partOfSpeech }}</span>
                 <span>{{ entry.encounterCount }} 次收藏记录</span>
-                <a v-if="latestContext(entry)?.sourceUrl" :href="latestContext(entry)?.sourceUrl" target="_blank" rel="noreferrer">{{ sourceHost(latestContext(entry)?.sourceUrl) }}</a>
+                <a v-if="latestContext(entry)?.sourceUrl" :href="latestContext(entry)?.sourceUrl" target="_blank" rel="noreferrer">{{ sourceHost(latestContext(entry)?.sourceUrl) }}<ExternalLink class="inline-link-icon" aria-hidden="true" /></a>
               </div>
             </div>
             <div class="word-progress">
               <span class="status-pill" :class="`status-${entry.status}`">{{ statusLabel(entry.status) }}</span>
               <small>{{ nextReviewLabel(entry) }}</small>
               <div class="row-actions">
-                <button v-if="entry.status !== 'mastered'" type="button" :disabled="actionBusy" @click="setMastered(entry)">标记掌握</button>
-                <button v-else type="button" :disabled="actionBusy" @click="relearn(entry)">重新学习</button>
-                <button type="button" class="danger" :disabled="actionBusy" @click="removeEntry(entry)">删除</button>
+                <button v-if="entry.status !== 'mastered'" type="button" :disabled="actionBusy" @click="setMastered(entry)"><Check class="button-icon" aria-hidden="true" />标记掌握</button>
+                <button v-else type="button" :disabled="actionBusy" @click="relearn(entry)"><RotateCcw class="button-icon" aria-hidden="true" />重新学习</button>
+                <button type="button" class="danger" :disabled="actionBusy" @click="removeEntry(entry)"><Trash2 class="button-icon" aria-hidden="true" />删除</button>
               </div>
             </div>
           </article>
 
           <nav v-if="pageCount > 1" class="pagination" aria-label="单词本分页">
-            <button type="button" :disabled="page <= 1" @click="page -= 1">上一页</button>
+            <button type="button" :disabled="page <= 1" @click="page -= 1"><ArrowLeft class="button-icon" aria-hidden="true" />上一页</button>
             <span>第 {{ page }} / {{ pageCount }} 页 · 共 {{ filteredEntries.length }} 个</span>
-            <button type="button" :disabled="page >= pageCount" @click="page += 1">下一页</button>
+            <button type="button" :disabled="page >= pageCount" @click="page += 1">下一页<ArrowRight class="button-icon" aria-hidden="true" /></button>
           </nav>
         </section>
 
@@ -143,10 +143,10 @@
           <div class="data-heading"><div><h3>独立备份与迁移</h3><p>不会混入普通配置 JSON，也不会被清除翻译缓存。</p></div></div>
           <label class="privacy-export"><input v-model="includePrivateContext" type="checkbox" /><span><strong>导出上下文和来源</strong><small>可能包含浏览过的页面标题、文本片段与去参数后的网址，默认不导出。</small></span></label>
           <div class="data-actions">
-            <button type="button" :disabled="actionBusy || entries.length === 0" @click="exportJson">导出 FluentRead JSON</button>
-            <button type="button" :disabled="actionBusy || entries.length === 0" @click="exportAnki">导出 Anki TSV</button>
-            <button type="button" :disabled="actionBusy" @click="importInput?.click()">合并导入 JSON</button>
-            <button type="button" class="danger" :disabled="actionBusy || entries.length === 0" @click="clearAll">清空单词本</button>
+            <button type="button" :disabled="actionBusy || entries.length === 0" @click="exportJson"><Download class="button-icon" aria-hidden="true" />导出 FluentRead JSON</button>
+            <button type="button" :disabled="actionBusy || entries.length === 0" @click="exportAnki"><Download class="button-icon" aria-hidden="true" />导出 Anki TSV</button>
+            <button type="button" :disabled="actionBusy" @click="importInput?.click()"><Upload class="button-icon" aria-hidden="true" />合并导入 JSON</button>
+            <button type="button" class="danger" :disabled="actionBusy || entries.length === 0" @click="clearAll"><Trash2 class="button-icon" aria-hidden="true" />清空单词本</button>
             <input ref="import-input" class="visually-hidden" type="file" accept="application/json,.json" @change="importJson" />
           </div>
         </section>
@@ -154,13 +154,31 @@
     </template>
 
     <div v-if="toastMessage" class="book-toast" role="status">
-      <span>{{ toastMessage }}</span><button v-if="undoExport" type="button" @click="undoRemove">撤销</button>
+      <span>{{ toastMessage }}</span><button v-if="undoExport" type="button" @click="undoRemove"><Undo2 class="button-icon" aria-hidden="true" />撤销</button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue';
+import {
+  ArrowLeft,
+  ArrowRight,
+  BookOpen,
+  Check,
+  CircleCheck,
+  Download,
+  ExternalLink,
+  HardDrive,
+  Play,
+  RefreshCw,
+  RotateCcw,
+  Search,
+  Trash2,
+  Undo2,
+  Upload,
+  X,
+} from '@lucide/vue';
 import {browser} from 'wxt/browser';
 import {
   config as runtimeConfig,
@@ -674,9 +692,10 @@ onBeforeUnmount(() => {
 .beta-switch[aria-checked="true"] { background: #ef4776; }
 .beta-switch[aria-checked="true"] i { transform: translateX(20px); }
 .selection-reminder { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-color: #f2d59f; color: #7e5912; background: #fff9ec; font-size: 11px; }
-.selection-reminder button { border: 0; color: #a56600; background: transparent; cursor: pointer; font: inherit; font-weight: 800; }
+.selection-reminder button { display: inline-flex; align-items: center; gap: 5px; border: 0; color: #a56600; background: transparent; cursor: pointer; font: inherit; font-weight: 800; }
 .privacy-note { display: flex; align-items: center; gap: 10px; padding: 11px 12px; color: #365f54; background: #f1fbf7; }
 .privacy-note > span { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 7px; background: #dff5ec; font-size: 15px; }
+.privacy-note-icon svg { width: 16px; height: 16px; }
 .privacy-note div { display: flex; flex-direction: column; }
 .privacy-note strong { font-size: 11px; }
 .privacy-note small { margin-top: 3px; color: #628078; font-size: 9.5px; line-height: 1.45; }
@@ -688,11 +707,12 @@ onBeforeUnmount(() => {
 .start-review { display: flex; min-height: 48px; padding: 8px 13px; border: 0; border-radius: 8px; color: #fff; background: #ef4776; flex: 1; align-items: center; gap: 10px; text-align: left; cursor: pointer; }
 .start-review:disabled { color: #8c94a3; background: #e8eaf0; cursor: not-allowed; }
 .start-review > span:first-child { display: grid; width: 26px; height: 26px; place-items: center; border-radius: 50%; background: rgba(255,255,255,.18); }
+.start-review > span:first-child svg { width: 13px; height: 13px; fill: currentColor; }
 .start-review strong { font-size: 12px; }
-.refresh-button { min-width: 70px; border: 1px solid #e1e4ec; border-radius: 8px; color: #dc315f; background: #fff; cursor: pointer; font-size: 10px; font-weight: 750; }
+.refresh-button { display: inline-flex; min-width: 70px; align-items: center; justify-content: center; gap: 5px; border: 1px solid #e1e4ec; border-radius: 8px; color: #dc315f; background: #fff; cursor: pointer; font-size: 10px; font-weight: 750; }
 .toolbar { display: grid; grid-template-columns: minmax(220px, 1fr) 150px 150px; gap: 8px; padding: 0; background: transparent; }
 .search-field { display: flex; height: 40px; align-items: center; gap: 8px; padding: 0 11px; border: 1px solid #e1e4ec; border-radius: 8px; background: #fff; }
-.search-field span { color: #8b93a2; font-size: 17px; }
+.search-field-icon { width: 16px; height: 16px; flex: none; color: #8b93a2; }
 .search-field input { width: 100%; border: 0; outline: 0; color: #172033; background: transparent; font-size: 11px; }
 .toolbar-select { width: 100%; min-width: 0; }
 .toolbar-select :deep(.el-select__wrapper) {
@@ -720,7 +740,7 @@ onBeforeUnmount(() => {
 .word-main > p { margin: 7px 0 0; overflow-wrap: anywhere; color: #383f4c; font-size: 12px; font-weight: 650; white-space: pre-wrap; }
 .context-preview { display: -webkit-box; margin-top: 8px; overflow: hidden; overflow-wrap: anywhere; color: #737c8f; font-size: 10px; line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .word-meta { display: flex; flex-wrap: wrap; gap: 5px 10px; margin-top: 9px; color: #9299a8; font-size: 9px; }
-.word-meta a { color: #b03c62; text-decoration: none; }
+.word-meta a { display: inline-flex; align-items: center; gap: 3px; color: #b03c62; text-decoration: none; }
 .word-progress { display: flex; align-items: flex-end; flex-direction: column; }
 .word-progress > small { margin-top: 7px; color: #737c8f; font-size: 9px; }
 .status-pill { display: inline-flex; padding: 4px 8px; border-radius: 6px; font-size: 9px; font-weight: 800; }
@@ -729,7 +749,7 @@ onBeforeUnmount(() => {
 .status-familiar { color: #2a68a1; background: #e8f3ff; }
 .status-mastered { color: #17765a; background: #e3f7ef; }
 .row-actions { display: flex; gap: 6px; margin-top: auto; padding-top: 14px; }
-.row-actions button, .data-actions button, .pagination button { min-height: 30px; padding: 0 9px; border: 1px solid #e1e4ec; border-radius: 7px; color: #4a5261; background: #fff; cursor: pointer; font-size: 9px; font-weight: 700; }
+.row-actions button, .data-actions button, .pagination button { display: inline-flex; min-height: 30px; align-items: center; justify-content: center; gap: 5px; padding: 0 9px; border: 1px solid #e1e4ec; border-radius: 7px; color: #4a5261; background: #fff; cursor: pointer; font-size: 9px; font-weight: 700; }
 .row-actions button:hover, .data-actions button:hover, .pagination button:hover { border-color: #ef9ab1; color: #dc315f; }
 button.danger { color: #c53d4f; }
 button:disabled { cursor: not-allowed; opacity: .55; }
@@ -745,18 +765,18 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .data-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .data-actions button { min-height: 34px; padding: 0 11px; background: #fff; }
 .empty-state { display: grid; min-height: 170px; place-items: center; align-content: center; gap: 7px; padding: 24px; border: 1px dashed #dfe3eb; border-radius: 10px; color: #9aa1af; background: #fbfcfe; text-align: center; }
-.empty-state > span { font-size: 28px; }
+.empty-state-icon { width: 28px; height: 28px; }
 .empty-state h3, .empty-state p { margin: 0; }
 .empty-state h3 { color: #4d5563; font-size: 14px; }
 .empty-state p { max-width: 420px; font-size: 10px; line-height: 1.55; }
 .loading-ring { width: 24px; height: 24px; border: 2px solid #f6cada; border-top-color: #ef4776; border-radius: 50%; animation: spin .7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .error-state { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border: 1px solid #f2c7ce; border-radius: 8px; color: #a73045; background: #fff3f5; font-size: 11px; }
-.error-state button { border: 0; color: inherit; background: transparent; cursor: pointer; font-weight: 800; }
+.error-state button { display: inline-flex; align-items: center; gap: 5px; border: 0; color: inherit; background: transparent; cursor: pointer; font-weight: 800; }
 .review-shell { padding: 14px; }
 .review-header { display: flex; align-items: center; justify-content: space-between; }
 .review-header strong { font-size: 11px; }
-.review-header button { border: 0; color: #737c8f; background: transparent; cursor: pointer; font-size: 10px; }
+.review-header button { display: inline-flex; align-items: center; gap: 5px; border: 0; color: #737c8f; background: transparent; cursor: pointer; font-size: 10px; }
 .review-card { position: relative; display: grid; min-height: 300px; margin-top: 10px; padding: 16px; place-items: center; align-content: center; text-align: center; }
 .review-card > .status-pill { position: absolute; align-self: start; justify-self: start; }
 .review-prompt { min-width: 0; max-width: 620px; }
@@ -771,7 +791,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .answer-heading span { color: #8b6474; font-family: Georgia, serif; font-size: 14px; }
 .answer-translation { margin: 10px 0 0; overflow-wrap: anywhere; color: #ba315f; font-size: 18px; font-weight: 750; white-space: pre-wrap; }
 .answer-context { margin: 12px 0 0; padding: 10px 12px; overflow-wrap: anywhere; border-radius: 8px; color: #606978; background: #f7f8fb; font-size: 10px; line-height: 1.55; text-align: left; }
-.review-answer > a { display: inline-block; margin-top: 8px; color: #a13b60; font-size: 9px; text-decoration: none; }
+.review-answer > a { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; color: #a13b60; font-size: 9px; text-decoration: none; }
 .review-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 18px; }
 .review-actions button { display: grid; min-height: 54px; grid-template-columns: 22px 1fr; grid-template-rows: 1fr 1fr; padding: 8px 11px; border: 1px solid #e3e6ed; border-radius: 8px; background: #fff; text-align: left; cursor: pointer; }
 .review-actions button > span { grid-row: 1 / 3; align-self: center; color: #8b93a2; font-size: 10px; }
@@ -781,11 +801,14 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .review-actions .good:hover { border-color: #70c8ab; background: #f1fbf7; }
 .review-complete { display: grid; min-height: 280px; place-items: center; align-content: center; gap: 8px; }
 .review-complete > span { display: grid; width: 54px; height: 54px; place-items: center; border-radius: 50%; color: #fff; background: #27ae80; font-size: 25px; }
+.review-complete-icon svg { width: 27px; height: 27px; }
 .review-complete h3, .review-complete p { margin: 0; }
 .review-complete p { color: #737c8f; font-size: 10px; }
-.review-complete button { min-height: 38px; margin-top: 10px; padding: 0 15px; border: 0; border-radius: 8px; color: #fff; background: #ef4776; cursor: pointer; font-size: 10px; font-weight: 750; }
+.review-complete button { display: inline-flex; min-height: 38px; align-items: center; gap: 6px; margin-top: 10px; padding: 0 15px; border: 0; border-radius: 8px; color: #fff; background: #ef4776; cursor: pointer; font-size: 10px; font-weight: 750; }
 .book-toast { position: fixed; z-index: 30; right: 28px; bottom: 24px; display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 8px; color: #fff; background: #252a33; box-shadow: 0 8px 22px rgba(0,0,0,.2); font-size: 10px; }
-.book-toast button { padding: 0; border: 0; color: #ffb8ce; background: transparent; cursor: pointer; font: inherit; font-weight: 800; }
+.book-toast button { display: inline-flex; align-items: center; gap: 5px; padding: 0; border: 0; color: #ffb8ce; background: transparent; cursor: pointer; font: inherit; font-weight: 800; }
+.button-icon { width: 13px; height: 13px; flex: none; }
+.inline-link-icon { width: 11px; height: 11px; flex: none; }
 .visually-hidden { position: fixed; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 :global(:root.dark .vocabulary-book) { color: #f4f5f8; }

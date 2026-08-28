@@ -1,4 +1,6 @@
 import {throttle} from '@/src/shared/function/throttle';
+import {X} from 'lucide';
+import {createLucideIconElement} from '@/src/ui/icons/lucideDom';
 import noticeStyles from './notice.css?inline';
 
 type NoticeType = 'error' | 'success';
@@ -172,7 +174,7 @@ export function showPageNotice(message: string, type: NoticeType): HTMLElement {
     close.className = 'notice-close';
     close.type = 'button';
     close.setAttribute('aria-label', '关闭通知');
-    close.textContent = '×';
+    close.appendChild(createLucideIconElement(X));
 
     notice.append(mark, copy, close);
     stack.appendChild(notice);

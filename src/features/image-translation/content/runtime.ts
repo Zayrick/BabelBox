@@ -1,6 +1,8 @@
 import { config } from '@/src/services/config/store';
 import { fetchImageInExtension, translateImageInExtension } from '@/src/features/image-translation/services/client';
 import type { OcrLine } from '@/src/features/image-translation/core';
+import { Languages, LoaderCircle, RotateCcw, TriangleAlert } from 'lucide';
+import { replaceLucideIcon } from '@/src/ui/icons/lucideDom';
 
 const IMAGE_TRANSLATION_OVERLAY = 'fluent-read-image-translation-overlay';
 const IMAGE_TRANSLATION_ROOT = 'fluent-read-image-translation-root';
@@ -60,6 +62,7 @@ function ensureImageOverlayRoot(): HTMLDivElement {
       .${IMAGE_TRANSLATION_OVERLAY} { position: fixed !important; overflow: hidden !important; pointer-events: none !important; box-sizing: border-box !important; }
       .${IMAGE_TRANSLATION_OVERLAY} canvas { position: absolute !important; inset: 0 !important; display: none; width: 100%; height: 100%; pointer-events: none; }
       .${IMAGE_TRANSLATION_BUTTON} {
+        display: grid !important; place-items: center !important;
         position: absolute !important; left: 8px !important; bottom: 8px !important; z-index: 1 !important;
         width: 26px !important; height: 26px !important; padding: 0 !important;
         border: 1px solid rgba(255,255,255,.7) !important; border-radius: 999px !important;
@@ -70,9 +73,16 @@ function ensureImageOverlayRoot(): HTMLDivElement {
         transition: opacity .15s ease, transform .15s ease, background .15s ease !important;
       }
       .${IMAGE_TRANSLATION_BUTTON}:hover, .${IMAGE_TRANSLATION_BUTTON}:focus-visible { background: rgba(20,20,20,.9) !important; opacity: 1 !important; outline: none !important; transform: scale(1.06); }
-      .${IMAGE_TRANSLATION_BUTTON}[data-phase="loading"] { animation: fluent-read-image-translation-pulse 1.1s ease-in-out infinite; }
+      .${IMAGE_TRANSLATION_BUTTON} svg { display: block !important; width: 15px !important; height: 15px !important; margin: auto !important; stroke-width: 2 !important; }
+      .${IMAGE_TRANSLATION_BUTTON}[data-animations="true"][data-phase="loading"] { animation: fluent-read-image-translation-pulse 1.1s ease-in-out infinite; }
+      .${IMAGE_TRANSLATION_BUTTON}[data-animations="true"][data-phase="loading"] svg { animation: fluent-read-image-translation-spin .9s linear infinite; }
       .${IMAGE_TRANSLATION_BUTTON}[data-phase="error"] { background: rgba(185,28,28,.88) !important; }
       @keyframes fluent-read-image-translation-pulse { 0%,100% { opacity:.52; } 50% { opacity:1; } }
+      @keyframes fluent-read-image-translation-spin { to { transform: rotate(360deg); } }
+      @media (prefers-reduced-motion: reduce) {
+        .${IMAGE_TRANSLATION_BUTTON} { animation: none !important; transition: none !important; }
+        .${IMAGE_TRANSLATION_BUTTON} svg { animation: none !important; }
+      }
     `;
     const container = document.createElement('div');
     shadow.append(style, container);
@@ -146,7 +156,9 @@ function createState(image: HTMLImageElement): ImageTranslationState {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = IMAGE_TRANSLATION_BUTTON;
-    button.textContent = '文';
+    button.dataset.phase = 'idle';
+    button.dataset.animations = String(config.animations);
+    replaceLucideIcon(button, Languages);
     button.title = '翻译图片';
     button.setAttribute('aria-label', '翻译图片');
     button.addEventListener('pointerenter', event => event.stopPropagation());
@@ -341,10 +353,20 @@ function renderTranslatedBitmap(state: ImageTranslationState, renderedWidth: num
 function setButtonState(state: ImageTranslationState, phase: ImageTranslationPhase, message: string): void {
     const userMessage = message;
     state.phase = phase;
-    state.button.textContent = phase === 'translated' ? '↶' : phase === 'error' ? '!' : '文';
+    replaceLucideIcon(
+        state.button,
+        phase === 'translated'
+            ? RotateCcw
+            : phase === 'error'
+                ? TriangleAlert
+                : phase === 'loading'
+                    ? LoaderCircle
+                    : Languages,
+    );
     state.button.title = userMessage;
     state.button.setAttribute('aria-label', userMessage);
     state.button.dataset.phase = phase;
+    state.button.dataset.animations = String(config.animations);
 }
 
 function restoreImageTranslation(state: ImageTranslationState): void {

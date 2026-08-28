@@ -35,9 +35,7 @@
       </span>
 
       <button type="button" aria-label="本次全文翻译不再显示进度面板" title="本次隐藏" @click="dismiss">
-        <svg viewBox="0 0 16 16" aria-hidden="true">
-          <path d="m4 4 8 8m0-8-8 8" />
-        </svg>
+        <X aria-hidden="true" />
       </button>
     </aside>
   </Transition>
@@ -45,6 +43,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { X } from '@lucide/vue';
 import {
   getFullPageTranslationProgress,
   subscribeFullPageTranslationProgress,

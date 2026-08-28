@@ -5,6 +5,7 @@
     :data-custom-service-configuration="compute.showCustom ? 'true' : 'false'"
   >
     <div v-if="compute.credentialWarning" class="credential-warning" role="alert">
+      <TriangleAlert class="status-icon" aria-hidden="true" />
       <strong>配置提醒</strong>
       <span>{{ compute.credentialWarning }}</span>
     </div>
@@ -23,7 +24,9 @@
         :disabled="connectionTestBusy"
         @click="testConnection"
       >
-        {{ connectionTestBusy ? '检查中…' : '检查连接' }}
+        <LoaderCircle v-if="connectionTestBusy" class="button-icon is-spinning" aria-hidden="true" />
+        <PlugZap v-else class="button-icon" aria-hidden="true" />
+        <span>{{ connectionTestBusy ? '检查中…' : '检查连接' }}</span>
       </button>
     </Teleport>
 
@@ -35,6 +38,9 @@
       role="status"
       aria-live="polite"
     >
+      <LoaderCircle v-if="connectionTestState === 'testing'" class="status-icon is-spinning" aria-hidden="true" />
+      <CircleCheck v-else-if="connectionTestState === 'success'" class="status-icon" aria-hidden="true" />
+      <CircleX v-else class="status-icon" aria-hidden="true" />
       <strong>{{ connectionTestState === 'testing' ? '检查中' : connectionTestState === 'success' ? '连接正常' : '连接失败' }}</strong>
       <span>{{ connectionTestMessage }}</span>
     </div>
@@ -209,7 +215,7 @@
           <strong>请求模板</strong>
           <small>按 OpenAI Chat Completions 格式发送。</small>
         </div>
-        <el-button type="primary" link size="small" @click="resetCustomTemplate">恢复默认模板</el-button>
+        <el-button type="primary" link size="small" @click="resetCustomTemplate"><el-icon><RotateCcw /></el-icon>恢复默认模板</el-button>
       </div>
 
       <el-row class="settings-control-row">
@@ -256,7 +262,15 @@
 
 <script setup lang="ts">
 import { computed, ref, toRef, watch } from 'vue'
-import { InfoFilled } from '@element-plus/icons-vue'
+import {
+  CircleCheck,
+  CircleHelp as InfoFilled,
+  CircleX,
+  LoaderCircle,
+  PlugZap,
+  RotateCcw,
+  TriangleAlert,
+} from '@lucide/vue'
 import type { Config } from '@/src/core/config/model'
 import { defaultOption, options as optionConfig } from '@/src/core/config/catalog'
 import { isValidCustomBody } from '@/src/core/config/customBody'
@@ -405,6 +419,22 @@ watch(service, resetConnectionTest)
   line-height: 1.5;
 }
 
+.status-icon,
+.button-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  stroke-width: 2;
+}
+
+.is-spinning {
+  animation: fluentread-icon-spin 900ms linear infinite;
+}
+
+@keyframes fluentread-icon-spin {
+  to { transform: rotate(360deg); }
+}
+
 .subsection-heading {
   display: flex;
   align-items: center;
@@ -454,6 +484,9 @@ watch(service, resetConnectionTest)
 }
 
 .connection-test-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   flex: 0 0 auto;
   align-self: flex-start;
   margin-left: auto;

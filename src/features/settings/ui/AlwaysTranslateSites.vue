@@ -47,18 +47,20 @@
         role="listitem"
         :data-site-rule="domain"
       >
-        <span class="site-rule-icon" aria-hidden="true">{{ labels.icon }}</span>
+        <span class="site-rule-icon" aria-hidden="true">
+          <component :is="ruleIcon" :size="17" :stroke-width="1.9" focusable="false" />
+        </span>
         <span class="site-rule-copy">
           <strong :title="domain">{{ domain }}</strong>
         </span>
-        <button class="site-rule-remove" type="button" :aria-label="`删除 ${domain}`" @click="removeDomain(domain)">
-          删除
+        <button class="site-rule-remove" type="button" :aria-label="`删除 ${domain}`" :title="`删除 ${domain}`" @click="removeDomain(domain)">
+          <Trash2 :size="15" :stroke-width="1.9" aria-hidden="true" focusable="false" />
         </button>
       </article>
     </div>
 
     <div v-else class="site-rules-empty" data-site-rules-empty>
-      <span aria-hidden="true">◇</span>
+      <component :is="emptyIcon" :size="24" :stroke-width="1.7" aria-hidden="true" focusable="false" />
       <strong>{{ labels.emptyTitle }}</strong>
       <small>{{ labels.emptyDescription }}</small>
     </div>
@@ -67,6 +69,7 @@
 
 <script lang="ts" setup>
 import { computed, nextTick, ref } from 'vue';
+import { Ban, Globe, Languages, ShieldCheck, Trash2 } from '@lucide/vue';
 import { getSiteBaseDomain } from '@/src/core/site-rules/domain';
 
 const props = withDefaults(defineProps<{
@@ -87,6 +90,8 @@ const statusMessage = ref('');
 const domainInput = ref<HTMLInputElement | null>(null);
 const domains = computed(() => props.modelValue ?? []);
 const normalizedPreview = computed(() => inputValue.value ? getSiteBaseDomain(inputValue.value) : null);
+const ruleIcon = computed(() => props.variant === 'disable-extension' ? Ban : Languages);
+const emptyIcon = computed(() => props.variant === 'disable-extension' ? ShieldCheck : Globe);
 const labels = computed(() => props.variant === 'disable-extension'
   ? {
     settingId: 'disabled-extension-sites',
@@ -99,7 +104,6 @@ const labels = computed(() => props.variant === 'disable-extension'
     placeholder: '例如：https://docs.example.com/article',
     addButton: '添加网站',
     listLabel: '禁用扩展网站名单',
-    icon: '禁',
     emptyTitle: '还没有禁用扩展的网站',
     emptyDescription: '可从上方手动添加，也可在扩展弹窗中为当前网站快速禁用。',
     duplicateMessage: (domain: string) => `${domain} 已在禁用扩展名单中。`,
@@ -117,7 +121,6 @@ const labels = computed(() => props.variant === 'disable-extension'
     placeholder: '例如：https://docs.example.com/article',
     addButton: '添加网站',
     listLabel: '始终翻译网站名单',
-    icon: '译',
     emptyTitle: '还没有始终翻译的网站',
     emptyDescription: '可从上方手动添加，也可在扩展弹窗中为当前网站快速开启。',
     duplicateMessage: (domain: string) => `${domain} 已在始终翻译名单中。`,
@@ -326,8 +329,12 @@ function removeDomain(domain: string) {
 }
 
 .site-rule-remove {
-  min-height: 30px;
-  padding: 0 11px;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  place-items: center;
   border: 1px solid var(--line, #e5e8ef);
   color: var(--brand-strong, #dc315f);
   background: transparent;
@@ -354,10 +361,9 @@ function removeDomain(domain: string) {
   flex-direction: column;
 }
 
-.site-rules-empty > span {
+.site-rules-empty > svg {
   margin-bottom: 5px;
   color: var(--brand-strong, #dc315f);
-  font-size: 24px;
 }
 
 .site-rules-empty strong {

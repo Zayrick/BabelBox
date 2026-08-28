@@ -13,7 +13,7 @@
       <img :src="translatedImage" alt="圈选翻译结果" draggable="false" />
       <div class="fr-area-toolbar">
         <span>圈选翻译</span>
-        <button type="button" aria-label="关闭圈选翻译结果" title="关闭" @click="clearResult">×</button>
+        <button type="button" aria-label="关闭圈选翻译结果" title="关闭" @click="clearResult"><X aria-hidden="true" /></button>
       </div>
     </section>
 
@@ -30,6 +30,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { X } from '@lucide/vue';
 import { config } from '@/src/services/config/store';
 import { captureVisibleAreaInExtension, translateCapturedAreaInExtension } from '@/src/features/area-translation/services/client';
 import { isAreaHotkey, isAreaZKey, isUsableAreaRect, normalizeAreaRect, type AreaPoint, type AreaRect } from '@/src/features/area-translation/core';
@@ -281,6 +282,7 @@ onBeforeUnmount(() => {
 .fr-area-result img { display: block; width: 100%; height: 100%; user-select: none; -webkit-user-drag: none; }
 .fr-area-toolbar { position: absolute; top: 7px; right: 7px; display: flex; align-items: center; gap: 5px; padding: 3px 4px 3px 8px; border-radius: 999px; background: rgba(30, 27, 34, .82); color: #fff; font-size: 10px; line-height: 22px; pointer-events: none; backdrop-filter: blur(6px); }
 .fr-area-toolbar button { width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .14); color: #fff; font-size: 17px; line-height: 18px; cursor: pointer; pointer-events: auto; }
+.fr-area-toolbar button svg { width: 13px; height: 13px; }
 .fr-area-toolbar button:hover, .fr-area-toolbar button:focus-visible { background: rgba(255, 255, 255, .28); outline: none; }
 .fr-area-error { display: flex; flex-direction: column; gap: 7px; min-width: 230px; max-width: 340px; padding: 13px; border: 1px solid #f0b4c8; border-radius: 12px; background: rgba(255, 248, 250, .98); color: #6c263d; font-size: 12px; box-shadow: 0 12px 30px rgba(75, 30, 47, .2); }
 .fr-area-error strong { font-size: 13px; }

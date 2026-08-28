@@ -1,5 +1,7 @@
 import type { ContentScriptContext } from 'wxt/utils/content-script-context';
 import type { ShadowRootContentScriptUi } from 'wxt/utils/content-script-ui/shadow-root';
+import { CircleAlert, CircleCheck, LoaderCircle, type IconNode } from 'lucide';
+import { createLucideIconElement } from '@/src/ui/icons/lucideDom';
 import {
     canCommitInputBoxTranslation,
     getDeepActiveElement,
@@ -80,11 +82,11 @@ export function setInputBoxText(element: HTMLElement, text: string): void {
     }
 }
 
-function getTooltipIcon(type: 'translating' | 'success' | 'error'): string {
-    const icons = {
-        translating: '•',
-        success: '✓',
-        error: '!',
+function getTooltipIcon(type: 'translating' | 'success' | 'error'): IconNode {
+    const icons: Record<typeof type, IconNode> = {
+        translating: LoaderCircle,
+        success: CircleCheck,
+        error: CircleAlert,
     };
     return icons[type];
 }
@@ -195,6 +197,9 @@ export function createInputTranslationContentFeature(
                     overflow: visible !important;
                 }
                 .fluent-input-tooltip {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
                     position: fixed;
                     box-sizing: border-box;
                     background: rgba(17, 24, 39, 0.88);
@@ -215,12 +220,24 @@ export function createInputTranslationContentFeature(
                 .fluent-input-tooltip.translating { background: rgba(59, 130, 246, 0.9); }
                 .fluent-input-tooltip.success { background: rgba(34, 197, 94, 0.9); }
                 .fluent-input-tooltip.error { background: rgba(239, 68, 68, 0.9); }
+                .fluent-input-tooltip-icon { width: 14px; height: 14px; flex: 0 0 auto; stroke-width: 2; }
+                ${deps.config.animations ? '.fluent-input-tooltip.translating .fluent-input-tooltip-icon { animation: fluent-read-input-icon-spin .9s linear infinite; }' : ''}
+                @keyframes fluent-read-input-icon-spin { to { transform: rotate(360deg); } }
+                @media (prefers-reduced-motion: reduce) {
+                    .fluent-input-tooltip { transition: none; }
+                    .fluent-input-tooltip-icon { animation: none !important; }
+                }
             `,
             onMount(container) {
                 const tooltip = rootDocument.createElement('div');
                 tooltip.className = `fluent-input-tooltip ${type}`;
                 tooltip.id = 'fluent-input-translation-tooltip';
-                tooltip.textContent = `${getTooltipIcon(type)} ${message}`;
+                const icon = createLucideIconElement(getTooltipIcon(type), {}, rootDocument);
+                icon.classList.add('fluent-input-tooltip-icon');
+                const messageElement = rootDocument.createElement('span');
+                messageElement.textContent = message;
+                tooltip.appendChild(icon);
+                tooltip.appendChild(messageElement);
                 tooltip.style.top = `${rect.bottom + 12}px`;
                 tooltip.style.left = `${rect.left + (rect.width / 2)}px`;
                 tooltip.style.transform = 'translateX(-50%) translateY(3px)';

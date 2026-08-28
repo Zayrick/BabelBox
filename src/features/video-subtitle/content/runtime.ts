@@ -1,5 +1,7 @@
 import {browser} from 'wxt/browser';
+import {Check, Download, Settings, type IconNode} from 'lucide';
 import { config, requestConfigSave, subscribeConfig } from '@/src/services/config/store';
+import {replaceLucideIcon} from '@/src/ui/icons/lucideDom';
 import { options, servicesType } from '@/src/core/config/catalog';
 import {
   normalizeVideoSubtitleFontSize,
@@ -682,10 +684,16 @@ function installVideoSubtitleStyle(): HTMLStyleElement {
       color: #ff8fbd !important;
     }
     #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-check {
-      display: inline-block !important;
+      display: inline-flex !important;
+      align-items: center !important;
       width: 20px !important;
       color: #ff8fbd !important;
       font-weight: 800 !important;
+    }
+    #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-check svg {
+      width: 14px !important;
+      height: 14px !important;
+      stroke-width: 2.4 !important;
     }
     #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-label { flex: 1 !important; }
     #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-value {
@@ -1264,7 +1272,7 @@ export function mountVideoSubtitleTranslation(): () => void {
     if (toggle) {
       toggle.disabled = !config.on;
       toggle.setAttribute('aria-checked', String(enabled));
-      toggle.querySelector<HTMLElement>('[data-check]')!.textContent = enabled ? '✓' : '';
+      replaceLucideIcon(toggle.querySelector<HTMLElement>('[data-check]')!, enabled ? Check : null);
       toggle.querySelector<HTMLElement>('[data-state]')!.textContent = config.on
         ? (enabled ? '已开启' : '立即开启')
         : status;
@@ -1274,7 +1282,7 @@ export function mountVideoSubtitleTranslation(): () => void {
     const visibility = menu.querySelector<HTMLButtonElement>('[data-action="toggle-visible"]');
     if (visibility) {
       visibility.setAttribute('aria-checked', String(visible));
-      visibility.querySelector<HTMLElement>('[data-check]')!.textContent = visible ? '✓' : '';
+      replaceLucideIcon(visibility.querySelector<HTMLElement>('[data-check]')!, visible ? Check : null);
       visibility.querySelector<HTMLElement>('[data-state]')!.textContent = visible ? '显示中' : '已隐藏';
     }
     menu.querySelectorAll<HTMLButtonElement>('[data-mode]').forEach((item) => {
@@ -1457,7 +1465,7 @@ export function mountVideoSubtitleTranslation(): () => void {
     }
   };
 
-  const createMenuItem = (action: string, label: string): HTMLButtonElement => {
+  const createMenuItem = (action: string, label: string, icon: IconNode | null = null): HTMLButtonElement => {
     const item = document.createElement('button');
     item.type = 'button';
     item.className = `fluent-read-video-menu-item${action === 'toggle-translation' ? ' fluent-read-video-menu-primary-action' : ''}`;
@@ -1469,6 +1477,7 @@ export function mountVideoSubtitleTranslation(): () => void {
     }
     const check = createTextElement('span', 'fluent-read-video-menu-check', '');
     check.dataset.check = 'true';
+    replaceLucideIcon(check, icon);
     const labelElement = createTextElement('span', 'fluent-read-video-menu-label', label);
     const state = createTextElement('span', 'fluent-read-video-menu-value', '');
     state.dataset.state = 'true';
@@ -1526,14 +1535,11 @@ export function mountVideoSubtitleTranslation(): () => void {
     menu.appendChild(modeGroup);
 
     menu.appendChild(createMenuItem('toggle-visible', '显示字幕'));
-    const originalDownload = createMenuItem('download-subtitles', '下载原文字幕');
-    originalDownload.querySelector('[data-check]')?.remove();
+    const originalDownload = createMenuItem('download-subtitles', '下载原文字幕', Download);
     menu.appendChild(originalDownload);
-    const translatedDownload = createMenuItem('download-translated-subtitles', '下载译文字幕');
-    translatedDownload.querySelector('[data-check]')?.remove();
+    const translatedDownload = createMenuItem('download-translated-subtitles', '下载译文字幕', Download);
     menu.appendChild(translatedDownload);
-    const settings = createMenuItem('open-settings', '打开视频翻译设置');
-    settings.querySelector('[data-check]')?.remove();
+    const settings = createMenuItem('open-settings', '打开视频翻译设置', Settings);
     settings.querySelector('[data-state]')?.remove();
     menu.appendChild(settings);
     player.appendChild(menu);

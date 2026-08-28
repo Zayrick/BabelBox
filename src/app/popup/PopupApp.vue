@@ -16,11 +16,11 @@
       </div>
       <div class="header-actions">
         <button class="donation-button" type="button" title="赞赏流畅阅读" aria-label="打开赞赏页" @click="openDonation()">
-          <Coffee />
+          <Coffee aria-hidden="true" />
           <span>赞赏</span>
         </button>
         <button class="settings-button" type="button" title="完整设置" aria-label="打开完整设置" @click="openOptions()">
-          <Setting />
+          <Settings aria-hidden="true" />
           <span>设置</span>
         </button>
       </div>
@@ -36,7 +36,9 @@
         @click.self="closeDonation"
       >
         <section class="donation-card">
-          <button class="donation-close" type="button" aria-label="关闭赞赏页" @click="closeDonation">×</button>
+          <button class="donation-close" type="button" aria-label="关闭赞赏页" @click="closeDonation">
+            <X aria-hidden="true" />
+          </button>
           <h2 id="donation-title">赞赏流畅阅读</h2>
           <p class="donation-description">微信扫码赞赏</p>
           <div class="donation-qr-frame">
@@ -61,7 +63,7 @@
             <el-option v-for="item in options.form" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </label>
-        <span class="arrow">→</span>
+        <span class="arrow" aria-hidden="true"><ArrowRight /></span>
         <label>
           <span>目标语言</span>
           <el-select v-model="config.to" aria-label="网页翻译目标语言" :disabled="!config.on">
@@ -89,7 +91,7 @@
               <em v-if="serviceModelLabel" class="service-model" :title="serviceModelLabel">{{ serviceModelLabel }}</em>
             </span>
           </span>
-          <span class="chevron" :class="{ open: servicePickerOpen }">⌄</span>
+          <span class="chevron" :class="{ open: servicePickerOpen }" aria-hidden="true"><ChevronDown /></span>
         </button>
 
         <div v-if="servicePickerOpen" class="service-picker-panel" role="listbox" aria-label="翻译服务列表">
@@ -111,13 +113,13 @@
             >
               <ServiceIcon :service="item.value" :label="item.label" size="small" />
               <span>{{ item.label }}</span>
-              <span v-if="config.service === item.value" class="service-option-check">✓</span>
+              <Check v-if="config.service === item.value" class="service-option-check" aria-hidden="true" />
             </button>
           </div>
 
           <button class="service-more-toggle" type="button" :aria-expanded="moreServicesOpen" @click="moreServicesOpen = !moreServicesOpen">
             <span>更多服务</span>
-            <span class="service-more-meta">{{ moreServiceOptions.length }} 项 <b :class="{ open: moreServicesOpen }">⌄</b></span>
+            <span class="service-more-meta">{{ moreServiceOptions.length }} 项 <b :class="{ open: moreServicesOpen }"><ChevronDown aria-hidden="true" /></b></span>
           </button>
 
           <div v-if="moreServicesOpen" class="service-group service-group-more">
@@ -133,7 +135,7 @@
             >
               <ServiceIcon :service="item.value" :label="item.label" size="small" />
               <span>{{ item.label }}</span>
-              <span v-if="config.service === item.value" class="service-option-check">✓</span>
+              <Check v-if="config.service === item.value" class="service-option-check" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -154,7 +156,7 @@
           @click="togglePageTranslation"
         >
           <span v-if="translating" class="spinner" />
-          <span v-else class="translate-glyph">A↔译</span>
+          <Languages v-else class="translate-glyph" aria-hidden="true" />
           <span class="translate-label">{{ pageTranslated ? '恢复当前网页' : '翻译当前网页' }}</span>
           <kbd class="translate-hotkey" :class="{ disabled: fullPageHotkey === '未设置' }">{{ fullPageHotkey }}</kbd>
         </button>
@@ -221,22 +223,22 @@
       <span class="eyebrow features-eyebrow">快捷功能</span>
       <div class="feature-grid">
         <button class="feature-card" type="button" :disabled="!config.on" @click="openDrawer('hover')">
-          <span class="feature-icon rose">↖</span>
+          <span class="feature-icon rose" aria-hidden="true"><MousePointer /></span>
           <span><strong>鼠标悬停翻译</strong><small>{{ hoverSummary }}</small></span>
           <i :class="{ active: config.hotkey !== 'none' }" />
         </button>
         <button class="feature-card" type="button" :disabled="!config.on" @click="openDrawer('selection')">
-          <span class="feature-icon violet">I</span>
+          <span class="feature-icon violet" aria-hidden="true"><TextSelect /></span>
           <span><strong>划词翻译</strong><small>{{ selectionSummary }}</small></span>
           <i :class="{ active: config.selectionTranslatorMode !== 'disabled' || (browserCapabilities.areaTranslation && config.selectionAreaEnabled) }" />
         </button>
         <button class="feature-card" type="button" :disabled="!config.on" @click="openDrawer('appearance')">
-          <span class="feature-icon amber">Aa</span>
+          <span class="feature-icon amber" aria-hidden="true"><Type /></span>
           <span><strong>译文显示</strong><small>{{ displaySummary }}</small></span>
-          <b>›</b>
+          <ChevronRight class="feature-chevron" aria-hidden="true" />
         </button>
         <button class="feature-card" type="button" :disabled="!config.on" @click="openDrawer('image')">
-          <span class="feature-icon teal">▧</span>
+          <span class="feature-icon teal" aria-hidden="true"><ImageIcon /></span>
           <span class="feature-copy">
             <span class="feature-title"><strong>图片翻译</strong><em class="beta-badge">Beta 测试</em></span>
             <small>{{ imageTranslationSummary }}</small>
@@ -252,7 +254,7 @@
           :aria-label="config.videoTranslationEnabled ? '打开视频字幕设置，当前已开启' : '打开视频字幕设置，点击开启字幕翻译'"
           @click="openDrawer('video')"
         >
-          <span class="feature-icon teal">CC</span>
+          <span class="feature-icon teal" aria-hidden="true"><Captions /></span>
           <span class="feature-copy">
             <span class="feature-title"><strong>视频字幕</strong><em class="beta-badge">Beta 测试</em></span>
             <small>{{ videoSummary }}</small>
@@ -267,12 +269,12 @@
           aria-label="打开文档翻译，Beta 测试"
           @click="openDocumentTranslation()"
         >
-          <span class="feature-icon blue">文</span>
+          <span class="feature-icon blue" aria-hidden="true"><FileText /></span>
           <span class="feature-copy">
             <span class="feature-title"><strong>文档翻译</strong><em class="beta-badge">Beta 测试</em></span>
             <small>HTML / TXT / Markdown / 字幕 / JSON</small>
           </span>
-          <b>›</b>
+          <ChevronRight class="feature-chevron" aria-hidden="true" />
         </button>
       </div>
     </section>
@@ -285,11 +287,11 @@
         rel="noreferrer"
         aria-label="在 GitHub 查看流畅阅读开源项目"
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
+        <svg class="github-mark" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M12 .3a12 12 0 0 0-3.79 23.39c.6.11.82-.26.82-.58v-2.26c-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.75.08-.74.08-.74 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.5.99.11-.77.42-1.3.76-1.6-2.67-.3-5.47-1.34-5.47-5.95 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.17 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.29-1.55 3.3-1.23 3.3-1.23.66 1.65.24 2.87.12 3.17.77.84 1.24 1.91 1.24 3.22 0 4.62-2.81 5.65-5.49 5.95.43.37.81 1.1.81 2.22v3.29c0 .32.22.69.83.57A12 12 0 0 0 12 .3" />
         </svg>
         <span>开源项目</span>
-        <span class="external-mark" aria-hidden="true">↗</span>
+        <ExternalLink class="external-mark" aria-hidden="true" />
       </a>
       <button type="button" :disabled="clearingCache" @click="clearCache">{{ clearingCache ? '清理中…' : '清除缓存' }}</button>
     </footer>
@@ -306,7 +308,7 @@
       <div class="drawer-handle" />
       <header class="drawer-header">
         <h2>{{ drawerTitle }}</h2>
-        <button type="button" aria-label="关闭" @click="drawerVisible = false">×</button>
+        <button type="button" aria-label="关闭" @click="drawerVisible = false"><X aria-hidden="true" /></button>
       </header>
 
       <div v-if="activeDrawer === 'hover'" class="drawer-content">
@@ -386,12 +388,12 @@
                 :label="`${item.label} · ${item.locale}`"
                 :value="item.value"
               />
-            </el-select>
+          </el-select>
             <small class="drawer-hint">留空时自动选择音色。</small>
           <button class="wordbook-shortcut" type="button" @click="openOptions('settings-vocabulary')">
-            <span class="wordbook-shortcut-icon" aria-hidden="true">★</span>
+            <span class="wordbook-shortcut-icon" aria-hidden="true"><Star /></span>
             <span><strong>单词本 <em>Beta</em></strong><small>{{ config.vocabularyBookEnabled ? '查看收藏、今日复习与掌握程度' : '开启后可从单词学习卡收藏并复习' }}</small></span>
-            <b aria-hidden="true">›</b>
+            <ChevronRight class="wordbook-shortcut-chevron" aria-hidden="true" />
           </button>
           </div>
         </div>
@@ -420,13 +422,13 @@
           <small>原有开关偏好已保留；请在 Chrome 中使用此功能。</small>
         </div>
         <div v-if="browserCapabilities.imageTranslation" class="setting-row">
-          <span><strong>启用图片翻译</strong><small>在网页图片左下角显示“文”按钮</small></span>
+          <span><strong>启用图片翻译</strong><small>在网页图片左下角显示翻译按钮</small></span>
           <button class="switch compact" type="button" role="switch" :aria-checked="!config.disableImageTranslator" aria-label="启用或关闭图片翻译" @click="setImageTranslatorEnabled(config.disableImageTranslator)"><i /></button>
         </div>
       </div>
 
       <div v-else-if="activeDrawer === 'video'" class="drawer-content">
-        <div class="video-beta-banner"><span class="feature-icon teal">CC</span><span><strong>YouTube 字幕翻译</strong><small>Beta 测试</small></span></div>
+        <div class="video-beta-banner"><span class="feature-icon teal" aria-hidden="true"><Captions /></span><span><strong>YouTube 字幕翻译</strong><small>Beta 测试</small></span></div>
         <div class="setting-row video-enable-row" :class="{ 'needs-enable': !config.videoTranslationEnabled }">
           <span><strong>{{ config.videoTranslationEnabled ? '字幕翻译已开启' : '开启字幕翻译' }}</strong><small>在 YouTube 原生字幕下方显示译文</small></span>
           <button class="switch compact" type="button" role="switch" :aria-checked="config.videoTranslationEnabled" aria-label="启用或关闭视频字幕翻译" @click="setVideoTranslationEnabled(!config.videoTranslationEnabled)"><i /></button>
@@ -468,7 +470,10 @@
         </label>
       </div>
 
-      <button class="drawer-settings-link" type="button" @click="openOptions(drawerSettingsSection[activeDrawer])">在完整设置中查看全部选项 ↗</button>
+      <button class="drawer-settings-link" type="button" @click="openOptions(drawerSettingsSection[activeDrawer])">
+        <span>在完整设置中查看全部选项</span>
+        <ExternalLink aria-hidden="true" />
+      </button>
     </el-drawer>
 
     <CustomHotkeyInput v-model="showCustomMouseHotkeyDialog" :current-value="config.customHotkey" @confirm="confirmMouseHotkey" @cancel="cancelMouseHotkey" />
@@ -486,7 +491,24 @@ import {
   requestConfigSave,
   subscribeConfig,
 } from '@/src/services/config/store';
-import { Setting } from '@element-plus/icons-vue';
+import {
+  ArrowRight,
+  Captions,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Coffee,
+  ExternalLink,
+  FileText,
+  Image as ImageIcon,
+  Languages,
+  MousePointer,
+  Settings,
+  Star,
+  TextSelect,
+  Type,
+  X,
+} from '@lucide/vue';
 import {
   Config,
   SELECTION_TRANSLATOR_DELAY_MAX,

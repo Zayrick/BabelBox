@@ -16,15 +16,28 @@
       alt=""
       draggable="false"
     />
-    <span v-else class="service-brand-fallback">{{ fallbackGlyph }}</span>
+    <component
+      :is="fallbackIcon"
+      v-else
+      class="service-brand-fallback"
+      :stroke-width="2"
+    />
   </span>
 </template>
 
 <script setup lang="ts">
 import {computed} from 'vue'
 import {
+  Braces,
+  CircleQuestionMark,
+  Languages,
+  Server,
+  type LucideIcon,
+} from '@lucide/vue'
+import {
   resolveServiceBrandIcon,
-  resolveServiceIconFallbackGlyph,
+  resolveServiceFallbackIconKey,
+  type ServiceFallbackIconKey,
 } from '@/src/ui/icons/serviceBrandIcons'
 
 const props = withDefaults(defineProps<{
@@ -37,7 +50,13 @@ const props = withDefaults(defineProps<{
 })
 
 const brandIcon = computed(() => resolveServiceBrandIcon(props.service))
-const fallbackGlyph = computed(() => resolveServiceIconFallbackGlyph(props.service, props.label))
+const fallbackIcons: Record<ServiceFallbackIconKey, LucideIcon> = {
+  languages: Languages,
+  server: Server,
+  custom: Braces,
+  unknown: CircleQuestionMark,
+}
+const fallbackIcon = computed(() => fallbackIcons[resolveServiceFallbackIconKey(props.service)])
 </script>
 
 <style scoped>
@@ -97,14 +116,14 @@ const fallbackGlyph = computed(() => resolveServiceIconFallbackGlyph(props.servi
 }
 
 .service-brand-fallback {
-  font-size: 13px;
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -0.04em;
+  width: 50%;
+  height: 50%;
+  stroke-width: 2;
 }
 
 .service-brand-icon--small .service-brand-fallback,
 .service-brand-icon--model .service-brand-fallback {
-  font-size: 11px;
+  width: 56%;
+  height: 56%;
 }
 </style>
