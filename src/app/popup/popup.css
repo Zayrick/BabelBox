@@ -233,31 +233,24 @@ h2 {
   display: flex;
   min-width: 0;
   flex: 1;
+  align-self: stretch;
+  align-items: flex-start;
+  justify-content: center;
   flex-direction: column;
-}
-.service-copy small {
-  color: var(--muted);
-  font-size: 9px;
-}
-.service-value {
-  display: flex;
-  min-width: 0;
-  align-items: baseline;
-  gap: 8px;
+  gap: 1px;
+  text-align: left;
 }
 .service-copy strong, .service-model {
+  max-width: 100%;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .service-copy strong {
-  max-width: 45%;
-  flex: 0 0 auto;
   font-size: 12px;
 }
 .service-model {
-  flex: 1 1 0;
   color: var(--muted);
   font-size: 9px;
   font-style: normal;
@@ -288,30 +281,7 @@ h2 {
   box-shadow: 0 12px 28px rgba(27, 36, 57, .16);
   scrollbar-width: thin;
 }
-.service-picker-heading {
-  padding: 4px 4px 8px;
-  border-bottom: 1px solid var(--line);
-}
-.service-picker-heading strong { font-size: 12px; }
-.service-group {
-  display: grid;
-  gap: 4px;
-  padding-top: 4px;
-}
-.service-group-label, .service-more-meta {
-  color: var(--muted);
-  font-size: 9px;
-}
-.service-group-label {
-  padding: 4px;
-  font-weight: 600;
-}
-.service-group-more {
-  margin-top: 4px;
-  padding-top: 4px;
-  border-top: 1px solid var(--line);
-}
-.service-option, .service-more-toggle {
+.service-option {
   display: flex;
   width: 100%;
   min-height: 34px;
@@ -325,7 +295,7 @@ h2 {
   text-align: left;
   cursor: pointer;
 }
-.service-option:hover, .service-option[aria-selected="true"], .service-more-toggle:hover {
+.service-option:hover, .service-option[aria-selected="true"] {
   background: var(--brand-soft);
 }
 .service-option > span:nth-child(2) {
@@ -342,27 +312,6 @@ h2 {
   flex: none;
   color: var(--brand-strong);
 }
-.service-more-toggle {
-  justify-content: space-between;
-  margin-top: 4px;
-  border-top: 1px solid var(--line);
-  border-radius: 0;
-  font-size: 10px;
-  font-weight: 600;
-}
-.service-more-meta {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-.service-more-meta b {
-  display: grid;
-  place-items: center;
-  color: var(--muted);
-  transition: transform 160ms ease;
-}
-.service-more-meta b svg { width: 14px; height: 14px; }
-.service-more-meta b.open { transform: rotate(180deg); }
 
 .translate-action {
   display: flex;

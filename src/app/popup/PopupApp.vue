@@ -85,59 +85,27 @@
         >
           <ServiceIcon :service="selectedServiceProvider" :label="serviceLabel" size="small" />
           <span class="service-copy">
-            <small>翻译服务</small>
-            <span class="service-value">
-              <strong>{{ serviceLabel }}</strong>
-              <em v-if="serviceModelLabel" class="service-model" :title="serviceModelLabel">{{ serviceModelLabel }}</em>
-            </span>
+            <strong>{{ serviceLabel }}</strong>
+            <em v-if="serviceModelLabel" class="service-model" :title="serviceModelLabel">{{ serviceModelLabel }}</em>
           </span>
           <span class="chevron" :class="{ open: servicePickerOpen }" aria-hidden="true"><ChevronDown /></span>
         </button>
 
         <div v-if="servicePickerOpen" class="service-picker-panel" role="listbox" aria-label="翻译服务列表">
-          <div class="service-picker-heading">
-            <strong>选择翻译服务</strong>
-          </div>
-
-          <div class="service-group">
-            <span class="service-group-label">常用服务</span>
-            <button
-              v-for="item in popularServiceOptions"
-              :key="item.value"
-              class="service-option"
-              type="button"
-              role="option"
-              :data-service-value="item.value"
-              :aria-selected="config.service === item.value"
-              @click="selectService(item.value)"
-            >
-              <ServiceIcon :service="item.provider" :label="item.label" size="small" />
-              <span>{{ item.label }}</span>
-              <Check v-if="config.service === item.value" class="service-option-check" aria-hidden="true" />
-            </button>
-          </div>
-
-          <button class="service-more-toggle" type="button" :aria-expanded="moreServicesOpen" @click="moreServicesOpen = !moreServicesOpen">
-            <span>更多服务</span>
-            <span class="service-more-meta">{{ moreServiceOptions.length }} 项 <b :class="{ open: moreServicesOpen }"><ChevronDown aria-hidden="true" /></b></span>
+          <button
+            v-for="item in serviceOptions"
+            :key="item.value"
+            class="service-option"
+            type="button"
+            role="option"
+            :data-service-value="item.value"
+            :aria-selected="config.service === item.value"
+            @click="selectService(item.value)"
+          >
+            <ServiceIcon :service="item.provider" :label="item.label" size="small" />
+            <span>{{ item.label }}</span>
+            <Check v-if="config.service === item.value" class="service-option-check" aria-hidden="true" />
           </button>
-
-          <div v-if="moreServicesOpen" class="service-group service-group-more">
-            <button
-              v-for="item in moreServiceOptions"
-              :key="item.value"
-              class="service-option"
-              type="button"
-              role="option"
-              :data-service-value="item.value"
-              :aria-selected="config.service === item.value"
-              @click="selectService(item.value)"
-            >
-              <ServiceIcon :service="item.provider" :label="item.label" size="small" />
-              <span>{{ item.label }}</span>
-              <Check v-if="config.service === item.value" class="service-option-check" aria-hidden="true" />
-            </button>
-          </div>
         </div>
       </div>
 
@@ -620,7 +588,6 @@ const showCustomMouseHotkeyDialog = ref(false);
 const showCustomSelectionHotkeyDialog = ref(false);
 const servicePicker = ref<HTMLElement | null>(null);
 const servicePickerOpen = ref(false);
-const moreServicesOpen = ref(true);
 const hydrated = ref(false);
 let lastSerialized = '';
 let applyingExternalConfig = false;
@@ -647,8 +614,6 @@ const persistConfig = (value: unknown) => requestConfigSave(value, browser.runti
 const serviceOptions = computed(() => getSelectableTranslationServices(config.value));
 const videoServiceOptions = computed(() => getSelectableTranslationServices(config.value));
 const videoSubtitleFontSizeOptions = VIDEO_SUBTITLE_FONT_SIZE_OPTIONS;
-const popularServiceOptions = computed(() => serviceOptions.value.slice(0, 5));
-const moreServiceOptions = computed(() => serviceOptions.value.slice(5));
 const styleOptions = computed(() => options.styles.filter((item: any) => !item.disabled));
 const selectedServiceProvider = computed(() => getTranslationServiceProvider(config.value, config.value.service));
 const selectedVideoServiceProvider = computed(() => getTranslationServiceProvider(config.value, config.value.videoService));
@@ -812,7 +777,6 @@ function handleServicePickerKeydown(event: KeyboardEvent) {
 function toggleServicePicker() {
   if (!config.value.on) return;
   servicePickerOpen.value = !servicePickerOpen.value;
-  if (servicePickerOpen.value) moreServicesOpen.value = true;
 }
 function selectService(value: string) {
   config.value.service = value;
