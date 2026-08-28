@@ -142,7 +142,7 @@ interface FullPageSession {
      * while the extension's own restore mutations keep the segment excluded.
      */
     userCancelledCandidates: Map<Node, string>;
-    /** Candidate keys currently consuming one of the full-page concurrency slots. */
+    /** Candidate keys whose translation pipelines have started and not settled. */
     inFlightCandidates: Map<Node, TranslationCandidate>;
     /**
      * Translation results already requested by this full-page session. Host
@@ -348,7 +348,6 @@ async function translateSlotsIndividually(
     throwIfAborted(signal);
     const translations = new Array<string>(origins.length);
     let nextIndex = 0;
-    const workerCount = Math.min(3, origins.length);
     let failed = false;
     let firstError: unknown;
     let hasFirstError = false;
@@ -358,7 +357,7 @@ async function translateSlotsIndividually(
         if (queueSession) cancelTranslationQueueSession(queueSession, createAbortError());
     };
     signal?.addEventListener('abort', abortSiblings, {once: true});
-    const workers = Array.from({length: workerCount}, async () => {
+    const workers = Array.from({length: origins.length}, async () => {
         while (!failed && nextIndex < origins.length) {
             throwIfAborted(siblingController.signal);
             const index = nextIndex;
@@ -1251,9 +1250,8 @@ function scheduleFullPageDrain(session: FullPageSession): void {
 function drainFullPage(session: FullPageSession): void {
     if (!session.active || session.draining) return;
     session.draining = true;
-    const maxConcurrent = 3;
 
-    while (session.active && session.inFlightCandidates.size < maxConcurrent && session.pending.size > 0) {
+    while (session.active && session.pending.size > 0) {
         let entry: [Node, TranslationCandidate] | undefined;
         for (const pendingEntry of session.pending.entries()) {
             if (!session.inFlightCandidates.has(pendingEntry[0])) {
@@ -2118,9 +2116,9 @@ export function restoreOriginalContent(): void {
 }
 
 /**
- * 启动全文翻译会话：根固定为 documentElement，使用较大的预取窗口和并发
- * 限制，并持续观察新增 DOM/open ShadowRoot。这样 body 被 SPA 替换后仍能
- * 继续工作，也不会一次性给整页发出数百个请求。
+ * 启动全文翻译会话：根固定为 documentElement，使用可见性预取窗口，并持续
+ * 观察新增 DOM/open ShadowRoot。候选调度只管理 DOM 生命周期，网络并发统一
+ * 交给翻译队列控制。
  */
 export function autoTranslateEnglishPage(): void {
     if (!checkConfig() || fullPageSession?.active) return;

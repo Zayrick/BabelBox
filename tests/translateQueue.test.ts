@@ -58,6 +58,22 @@ describe('translation queue', () => {
     await expect(jobs[4]).resolves.toBe(4);
   });
 
+  it('接受超过一百的显式并发配置', async () => {
+    mockConfig.maxConcurrentTranslations = 101;
+    const controls = Array.from({length: 102}, () => deferred<number>());
+    const started: number[] = [];
+    const jobs = controls.map((control, index) => enqueueTranslation(async () => {
+      started.push(index);
+      return control.promise;
+    }));
+
+    expect(started).toEqual(Array.from({length: 101}, (_, index) => index));
+    controls[0].resolve(0);
+    await vi.waitFor(() => expect(started).toEqual(Array.from({length: 102}, (_, index) => index)));
+    controls.slice(1).forEach((control, index) => control.resolve(index + 1));
+    await expect(Promise.all(jobs)).resolves.toEqual(Array.from({length: 102}, (_, index) => index));
+  });
+
   it('向调用方传播任务错误，并继续处理队列中的下一个任务', async () => {
     mockConfig.maxConcurrentTranslations = 1;
     const expected = new Error('translation failed');

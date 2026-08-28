@@ -454,7 +454,6 @@
             <el-input-number
                 v-model="config.maxConcurrentTranslations"
                 :min="1"
-                :max="100"
                 :step="1"
                 style="width: 100%"
                 @change="handleConcurrentChange"
@@ -1242,9 +1241,9 @@ const getCustomMouseHotkeyDisplayName = () => {
 // 处理并发数量变化
 const handleConcurrentChange = (currentValue: number | undefined) => {
   // 验证并发数量的有效性
-  if (currentValue === undefined || currentValue < 1 || currentValue > 100) {
+  if (currentValue === undefined || !Number.isFinite(currentValue) || currentValue < 1) {
     ElMessage({
-      message: '并发数量必须在 1-100 之间',
+      message: '并发数量必须大于等于 1',
       type: 'warning',
       duration: 2000
     });

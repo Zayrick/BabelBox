@@ -167,7 +167,7 @@ describe('document translation API', () => {
             .rejects.toThrow('第 1 段文档翻译失败：provider unavailable');
     });
 
-    it('AI 并行 worker 首次失败后不再派发余下段落或继续报告进度', async () => {
+    it('AI 逐段任务全部提交给统一队列，首次失败后不再报告过期进度', async () => {
         mocks.defaultService = 'openai';
         const releaseSlowRequests: Array<() => void> = [];
         const progress: number[] = [];
@@ -186,13 +186,13 @@ describe('document translation API', () => {
             fileName: 'sample.md',
             onProgress: ({completed}) => progress.push(completed),
         })).rejects.toThrow('第 1 段文档翻译失败');
-        expect(mocks.translateText).toHaveBeenCalledTimes(3);
+        expect(mocks.translateText).toHaveBeenCalledTimes(8);
 
         releaseSlowRequests.forEach((release) => release());
         await Promise.resolve();
         await Promise.resolve();
 
-        expect(mocks.translateText).toHaveBeenCalledTimes(3);
+        expect(mocks.translateText).toHaveBeenCalledTimes(8);
         expect(progress).toEqual([0]);
     });
 

@@ -381,7 +381,7 @@ describe("全文翻译可见性锚点", () => {
         expect(belowFold.textContent).toBe("译:Paragraph near the page bottom");
     });
 
-    it("立即翻译整页仍只并发三个候选，释放槽位后才启动下一项", async () => {
+    it("立即翻译整页会提交全部候选，由统一翻译队列控制请求并发", async () => {
         runtime.config.fullPageTranslationMode = "all";
         document.body.innerHTML = ["One", "Two", "Three", "Four"]
             .map((label, index) => `<p id="all-candidate-${index}">${label}</p>`)
@@ -400,24 +400,16 @@ describe("全文翻译可见性锚点", () => {
         autoTranslateEnglishPage();
         await vi.advanceTimersByTimeAsync(51);
         await Promise.resolve();
-        expect(runtime.requests).toHaveBeenCalledTimes(3);
-
-        requests[0]!.resolve(["译:One"]);
-        await vi.advanceTimersByTimeAsync(1);
-        await Promise.resolve();
-        await Promise.resolve();
         expect(runtime.requests).toHaveBeenCalledTimes(4);
 
-        requests[1]!.resolve(["译:Two"]);
-        requests[2]!.resolve(["译:Three"]);
-        requests[3]!.resolve(["译:Four"]);
+        requests.forEach((request, index) => request.resolve([`译:${candidates[index]!.textContent}`]));
         await finishScheduledWork();
         expect(candidates.map((candidate) => candidate.textContent)).toEqual([
             "译:One", "译:Two", "译:Three", "译:Four",
         ]);
     });
 
-    it("恢复整页翻译会清空未启动项，且在途结果不会重新写回页面", async () => {
+    it("恢复整页翻译会清空会话，且在途结果不会重新写回页面", async () => {
         runtime.config.fullPageTranslationMode = "all";
         document.body.innerHTML = ["One", "Two", "Three", "Four"]
             .map((label, index) => `<p id="restore-candidate-${index}">${label}</p>`)
@@ -429,22 +421,20 @@ describe("全文翻译可见性锚点", () => {
             kind: "content" as const,
             reason: "paragraph",
         }));
-        const requests = candidates.slice(0, 3).map(() => deferred<string[]>());
+        const requests = candidates.map(() => deferred<string[]>());
         let nextRequest = 0;
         runtime.requests.mockImplementation(() => requests[nextRequest++]!.promise);
 
         autoTranslateEnglishPage();
         await vi.advanceTimersByTimeAsync(51);
         await Promise.resolve();
-        expect(runtime.requests).toHaveBeenCalledTimes(3);
+        expect(runtime.requests).toHaveBeenCalledTimes(4);
 
         restoreOriginalContent();
-        requests[0]!.resolve(["旧译:One"]);
-        requests[1]!.resolve(["旧译:Two"]);
-        requests[2]!.resolve(["旧译:Three"]);
+        requests.forEach((request, index) => request.resolve([`旧译:${candidates[index]!.textContent}`]));
         await finishScheduledWork();
 
-        expect(runtime.requests).toHaveBeenCalledTimes(3);
+        expect(runtime.requests).toHaveBeenCalledTimes(4);
         expect(candidates.map((candidate) => candidate.textContent)).toEqual(["One", "Two", "Three", "Four"]);
         expect(document.querySelectorAll('[data-fr-translation-owned="true"]')).toHaveLength(0);
     });
@@ -639,7 +629,7 @@ describe("全文翻译可见性锚点", () => {
         expect(title.textContent).toBe("译:Text-only heading");
     });
 
-    it("inFlightCandidates 是唯一并发计数，并在 settle 后释放下一候选", async () => {
+    it("全部可见候选都会启动，并在 settle 后从 inFlightCandidates 释放", async () => {
         document.body.innerHTML = ["One", "Two", "Three", "Four"]
             .map((label, index) => `<p id="candidate-${index}">${label}</p>`)
             .join("");
@@ -661,7 +651,7 @@ describe("全文翻译可见性锚点", () => {
         await vi.advanceTimersByTimeAsync(1);
         await Promise.resolve();
 
-        expect(runtime.requests).toHaveBeenCalledTimes(3);
+        expect(runtime.requests).toHaveBeenCalledTimes(4);
 
         requests[0]!.resolve(["译:One"]);
         await vi.advanceTimersByTimeAsync(1);
@@ -724,12 +714,12 @@ describe("全文翻译可见性锚点", () => {
             await Promise.resolve();
             await Promise.resolve();
 
-            expect(runtime.requests).toHaveBeenCalledTimes(3);
+            expect(runtime.requests).toHaveBeenCalledTimes(4);
             expectCurrentProgress({
                 active: true,
-                running: 3,
-                remaining: 2,
-                queued: 1,
+                running: 4,
+                remaining: 1,
+                queued: 0,
                 offscreen: 1,
             });
 
@@ -751,12 +741,12 @@ describe("全文翻译可见性锚点", () => {
             await vi.advanceTimersByTimeAsync(1);
             await Promise.resolve();
 
-            expect(runtime.requests).toHaveBeenCalledTimes(4);
+            expect(runtime.requests).toHaveBeenCalledTimes(5);
             expectCurrentProgress({
                 active: true,
-                running: 3,
-                remaining: 1,
-                queued: 1,
+                running: 4,
+                remaining: 0,
+                queued: 0,
                 offscreen: 0,
             });
 
@@ -816,18 +806,18 @@ describe("全文翻译可见性锚点", () => {
         await Promise.resolve();
         await Promise.resolve();
 
-        expect(runtime.requests).toHaveBeenCalledTimes(3);
+        expect(runtime.requests).toHaveBeenCalledTimes(5);
         expect(TestIntersectionObserver.instances[0]!.observe).not.toHaveBeenCalled();
         expect(getFullPageTranslationProgress()).toMatchObject({
             active: true,
-            running: 3,
-            remaining: 2,
-            queued: 2,
+            running: 5,
+            remaining: 0,
+            queued: 0,
             offscreen: 0,
         });
 
         restoreOriginalContent();
-        requests.slice(0, 3).forEach((request, index) => request.resolve([`译:${candidates[index]!.textContent}`]));
+        requests.forEach((request, index) => request.resolve([`译:${candidates[index]!.textContent}`]));
         await finishScheduledWork();
         expect(getFullPageTranslationProgress()).toMatchObject({active: false});
     });

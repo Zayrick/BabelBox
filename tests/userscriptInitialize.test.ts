@@ -109,7 +109,7 @@ describe('legacy userscript migration', () => {
         existing.selectionAreaEnabled = true;
         existing.disableImageTranslator = false;
         existing.videoTranslationEnabled = true;
-        existing.maxConcurrentTranslations = 99;
+        existing.maxConcurrentTranslations = 250;
         existing.token[services.openai] = 'preserved-token';
         existing.extra = {preserved: true};
         const {values} = installLegacyStorage([
@@ -125,7 +125,7 @@ describe('legacy userscript migration', () => {
         expect(stored.selectionAreaEnabled).toBe(false);
         expect(stored.disableImageTranslator).toBe(true);
         expect(stored.videoTranslationEnabled).toBe(false);
-        expect(stored.maxConcurrentTranslations).toBe(20);
+        expect(stored.maxConcurrentTranslations).toBe(250);
         expect(stored.token[services.openai]).toBe('preserved-token');
         expect(stored.extra).toEqual({preserved: true});
     });

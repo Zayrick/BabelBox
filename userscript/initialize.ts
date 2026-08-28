@@ -88,7 +88,7 @@ export function normalizeUserscriptConfig(value: unknown): Config {
     next.selectionAreaEnabled = false;
     next.disableImageTranslator = true;
     next.videoTranslationEnabled = false;
-    next.maxConcurrentTranslations = Math.min(20, Math.max(1, Number(next.maxConcurrentTranslations) || 6));
+    next.maxConcurrentTranslations = Math.max(1, Number(next.maxConcurrentTranslations) || 6);
     return next;
 }
 

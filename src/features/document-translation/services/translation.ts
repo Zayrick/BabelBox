@@ -145,42 +145,33 @@ export function createDocumentSegmentTranslator(
             return translations;
         }
 
-        let nextIndex = 0;
         let stopped = false;
-        const workerCount = Math.min(3, segments.length);
-        const worker = async () => {
-            while (true) {
-                throwIfAborted(options.signal);
-                const index = nextIndex;
-                nextIndex += 1;
-                if (index >= segments.length) return;
-
-                try {
-                    const translation = await gateway.translateText(segments[index].source, context, {
-                        signal: options.signal,
-                        pageContext,
-                        serviceOverride: options.serviceOverride,
-                        modelOverride: options.modelOverride,
-                        sourceLanguage,
-                        targetLanguage,
-                        maxRetries: options.maxRetries,
-                    });
-                    // Promise.all 会在首个 worker 失败时立即 reject；其余在途请求仍会稍后结束。
-                    // 失败后不再上报过期进度，也不继续认领新的文档片段。
-                    if (stopped) return;
-                    translations[segments[index].id] = translation;
-                    completed += 1;
-                    reportProgress();
-                } catch (error) {
-                    if (stopped) return;
-                    stopped = true;
-                    if (options.signal?.aborted) throwIfAborted(options.signal);
-                    throw new Error(`第 ${index + 1} 段文档翻译失败：${getErrorMessage(error)}`);
-                }
+        // 文档层一次提交全部逐段任务，实际网络并发统一由翻译队列控制。
+        await Promise.all(segments.map(async (segment, index) => {
+            throwIfAborted(options.signal);
+            try {
+                const translation = await gateway.translateText(segment.source, context, {
+                    signal: options.signal,
+                    pageContext,
+                    serviceOverride: options.serviceOverride,
+                    modelOverride: options.modelOverride,
+                    sourceLanguage,
+                    targetLanguage,
+                    maxRetries: options.maxRetries,
+                });
+                // Promise.all 会在首个任务失败时立即 reject；其余在途请求仍会稍后结束。
+                // 失败后不再上报过期进度。
+                if (stopped) return;
+                translations[segment.id] = translation;
+                completed += 1;
+                reportProgress();
+            } catch (error) {
+                if (stopped) return;
+                stopped = true;
+                if (options.signal?.aborted) throwIfAborted(options.signal);
+                throw new Error(`第 ${index + 1} 段文档翻译失败：${getErrorMessage(error)}`);
             }
-        };
-
-        await Promise.all(Array.from({length: workerCount}, () => worker()));
+        }));
         return translations;
     };
 }
