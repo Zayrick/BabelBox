@@ -77,6 +77,24 @@ describe('translation service instances', () => {
     ])
   })
 
+  it('preserves an explicitly empty model for a newly added AI service', () => {
+    const instance = createAITranslationService(services.openai, {
+      id: 'service:openai:unconfigured',
+      modelId: '',
+    })
+    const normalized = normalizeTranslationServices([
+      ...createDefaultTranslationServices(),
+      instance,
+    ])
+
+    expect(instance).toMatchObject({
+      modelId: '',
+      name: 'OpenAI',
+    })
+    expect(normalized.find((item) => item.id === instance.id)?.modelId).toBe('')
+    expect(createAITranslationService(services.openai).modelId).toBe(defaultModels.get(services.openai))
+  })
+
   it('changes page-local cache identity when an instance model or endpoint changes', () => {
     const instance = createAITranslationService(services.openai, {
       id: 'service:openai:cache-version',

@@ -35,17 +35,52 @@
         </el-col>
         <el-col :span="12"><el-input v-model="instanceName" maxlength="80" placeholder="请输入服务名称" /></el-col>
       </el-row>
-      <el-row class="margin-bottom margin-left-2em">
+      <el-row v-if="servicesType.isUseModel(service)" class="margin-bottom margin-left-2em">
         <el-col :span="12" class="lightblue rounded-corner">
           <SettingsHelpLabel content="当前服务实例实际请求的模型标识；同一供应商可以添加多个不同模型。">模型 ID</SettingsHelpLabel>
         </el-col>
-        <el-col :span="12"><el-input v-model="instanceModelId" placeholder="请输入模型 ID" /></el-col>
+        <el-col :span="12">
+          <div v-if="modelCatalogSupported" class="model-catalog-control">
+            <el-select
+              v-model="instanceModelId"
+              filterable
+              allow-create
+              default-first-option
+              fit-input-width
+              popper-class="fluentread-model-catalog-popper"
+              :loading="modelCatalogLoading"
+              placeholder="输入或选择模型 ID"
+              @visible-change="onModelCatalogVisible"
+            >
+              <el-option
+                v-if="modelCatalogError"
+                :label="modelCatalogFailureLabel"
+                :value="MODEL_CATALOG_FAILURE_VALUE"
+                disabled
+              >
+                <span class="model-catalog-option">{{ modelCatalogFailureLabel }}</span>
+              </el-option>
+              <el-option v-for="model in modelCatalogModels" :key="model" :label="model" :value="model">
+                <span class="model-catalog-option">{{ model }}</span>
+              </el-option>
+            </el-select>
+            <el-button
+              :loading="modelCatalogLoading"
+              aria-label="重新获取模型列表"
+              title="重新获取模型列表"
+              @click="refreshModelCatalog"
+            >
+              <RefreshCw v-if="!modelCatalogLoading" :size="16" aria-hidden="true" />
+            </el-button>
+          </div>
+          <el-input v-else v-model="instanceModelId" placeholder="请输入模型 ID" />
+        </el-col>
       </el-row>
       <el-row v-if="showInstanceEndpoint" class="margin-bottom margin-left-2em">
         <el-col :span="12" class="lightblue rounded-corner">
           <SettingsHelpLabel content="可选。留空时使用供应商默认请求地址；自定义、New API 和 Azure OpenAI 服务必须填写。">请求地址</SettingsHelpLabel>
         </el-col>
-        <el-col :span="12"><el-input v-model="instanceEndpoint" inputmode="url" placeholder="留空使用供应商默认地址" /></el-col>
+        <el-col :span="12"><el-input v-model="instanceEndpoint" inputmode="url" placeholder="留空使用供应商默认地址" @change="refreshModelCatalogIfSupported" /></el-col>
       </el-row>
     </template>
 
@@ -53,7 +88,7 @@
       <el-col :span="12" class="lightblue rounded-corner">
         <SettingsHelpLabel content="可选。留空时不发送鉴权信息；填写后默认仅保存在当前浏览器会话。只有在配置管理中明确开启后，才会以明文写入扩展本地存储并跨重启保留。">访问令牌</SettingsHelpLabel>
       </el-col>
-      <el-col :span="12"><el-input v-model="apiKey" type="password" show-password placeholder="可选；留空时不发送鉴权信息" /></el-col>
+      <el-col :span="12"><el-input v-model="apiKey" type="password" show-password placeholder="可选；留空时不发送鉴权信息" @change="refreshModelCatalogIfSupported" /></el-col>
     </el-row>
     <p v-if="presentation.fields.minimaxRegion && minimaxKeyMismatch" class="minimax-key-note is-warning">
       {{ minimaxKeyMismatch }}
@@ -64,7 +99,7 @@
         <SettingsHelpLabel content="按量付费和 Token Plan 使用不同的账户权益；请按控制台中 Key 的来源选择。">MiniMax 计费方式</SettingsHelpLabel>
       </el-col>
       <el-col :span="12">
-        <el-select v-model="minimaxBillingPlan" aria-label="MiniMax 计费方式" placeholder="请选择 MiniMax 计费方式">
+        <el-select v-model="minimaxBillingPlan" aria-label="MiniMax 计费方式" placeholder="请选择 MiniMax 计费方式" @change="refreshModelCatalogIfSupported">
           <el-option class="select-left" v-for="item in options.minimaxBillingPlan" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </el-col>
@@ -75,7 +110,7 @@
         <SettingsHelpLabel content="选择与 MiniMax Key 来源一致的 API 区域。Token Plan Key（sk-cp-）和按量付费 Key 不能互换。">MiniMax 区域</SettingsHelpLabel>
       </el-col>
       <el-col :span="12">
-        <el-select v-model="minimaxRegion" aria-label="MiniMax API 区域" placeholder="请选择 MiniMax API 区域">
+        <el-select v-model="minimaxRegion" aria-label="MiniMax API 区域" placeholder="请选择 MiniMax API 区域" @change="refreshModelCatalogIfSupported">
           <el-option class="select-left" v-for="item in options.minimaxRegion" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </el-col>
@@ -95,7 +130,7 @@
         <SettingsHelpLabel content="按量付费和 Token Plan 使用不同的账户权益；请按小米 MiMo 控制台中 Key 的来源选择。">小米 MiMo 计费方式</SettingsHelpLabel>
       </el-col>
       <el-col :span="12">
-        <el-select v-model="mimoBillingPlan" aria-label="小米 MiMo 计费方式" placeholder="请选择小米 MiMo 计费方式">
+        <el-select v-model="mimoBillingPlan" aria-label="小米 MiMo 计费方式" placeholder="请选择小米 MiMo 计费方式" @change="refreshModelCatalogIfSupported">
           <el-option class="select-left" v-for="item in options.mimoBillingPlan" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </el-col>
@@ -106,7 +141,7 @@
         <SettingsHelpLabel content="Token Plan 必须使用购买页面提供的集群地址；中国、新加坡和欧洲集群的 tp- Key 不能混用。按量付费统一使用 api.xiaomimimo.com。">MiMo API 集群</SettingsHelpLabel>
       </el-col>
       <el-col :span="12">
-        <el-select v-model="mimoRegion" aria-label="小米 MiMo API 集群" placeholder="请选择小米 MiMo API 集群">
+        <el-select v-model="mimoRegion" aria-label="小米 MiMo API 集群" placeholder="请选择小米 MiMo API 集群" @change="refreshModelCatalogIfSupported">
           <el-option class="select-left" v-for="item in options.mimoRegion" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </el-col>
@@ -256,6 +291,7 @@ import {
   CircleX,
   LoaderCircle,
   PlugZap,
+  RefreshCw,
   RotateCcw,
 } from '@lucide/vue'
 import type { Config, TranslationServiceCredential } from '@/src/core/config/model'
@@ -266,6 +302,11 @@ import type {ServiceConfigurationPresentation} from '@/src/features/settings/mod
 import {browser} from 'wxt/browser'
 import { requestConfigSave } from '@/src/services/config/store'
 import { CONNECTION_TEST_MESSAGE, getMimoEndpoint, MINIMAX_ENDPOINTS } from '@/src/core/config/constants'
+import {
+  hasDynamicTranslationModelCatalog,
+  TRANSLATION_MODEL_CATALOG_MESSAGE,
+  type TranslationModelCatalogResponse,
+} from '@/src/services/translation/modelCatalog'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import SettingsHelpLabel from '../SettingsHelpLabel.vue'
 import AdvancedRequestParameters from './AdvancedRequestParameters.vue'
@@ -284,11 +325,55 @@ const instance = computed(() => props.instance)
 const instanceId = computed(() => instance.value?.id || props.service)
 const service = computed(() => instance.value?.provider || props.service)
 const isAIInstance = computed(() => instance.value?.kind === 'ai')
+const modelCatalogSupported = computed(() => isAIInstance.value
+  && hasDynamicTranslationModelCatalog(service.value))
 const showInstanceEndpoint = computed(() => isAIInstance.value
   && (servicesType.isUseProxy(service.value) || servicesType.isUseCustomUrl(service.value)))
 const presentation = toRef(props, 'presentation')
 const options = toRef(props, 'options')
 const isValidAzureEndpoint = toRef(props, 'isValidAzureEndpoint')
+
+const MODEL_CATALOG_FAILURE_VALUE = '__fluentread_model_catalog_failure__'
+const modelCatalogModels = ref<string[]>([])
+const modelCatalogLoading = ref(false)
+const modelCatalogError = ref('')
+const modelCatalogFailureLabel = computed(() => `获取模型列表失败：${modelCatalogError.value}`)
+let modelCatalogRequestVersion = 0
+let modelCatalogMounted = true
+
+async function refreshModelCatalog(): Promise<void> {
+  if (!modelCatalogSupported.value) return
+  const requestVersion = ++modelCatalogRequestVersion
+  modelCatalogLoading.value = true
+  modelCatalogError.value = ''
+
+  try {
+    await requestConfigSave(config.value, browser.runtime.sendMessage.bind(browser.runtime))
+    const response = await browser.runtime.sendMessage({
+      type: TRANSLATION_MODEL_CATALOG_MESSAGE,
+      service: instanceId.value,
+    }) as TranslationModelCatalogResponse | undefined
+    if (!response?.success) throw new Error(response?.error || '请求模型列表失败')
+    if (!modelCatalogMounted || requestVersion !== modelCatalogRequestVersion) return
+    modelCatalogModels.value = response.models
+  } catch (error) {
+    if (!modelCatalogMounted || requestVersion !== modelCatalogRequestVersion) return
+    modelCatalogModels.value = []
+    modelCatalogError.value = error instanceof Error ? error.message : String(error)
+  } finally {
+    if (modelCatalogMounted && requestVersion === modelCatalogRequestVersion) {
+      modelCatalogLoading.value = false
+    }
+  }
+}
+
+function refreshModelCatalogIfSupported(): void {
+  if (modelCatalogSupported.value) void refreshModelCatalog()
+}
+
+function onModelCatalogVisible(visible: boolean): void {
+  if (visible) void refreshModelCatalog()
+}
 
 function ensureInstanceCredential(): TranslationServiceCredential {
   const id = instanceId.value
@@ -602,8 +687,17 @@ function resetCustomTemplate(): void {
 }
 
 watch(instanceId, resetConnectionTest)
+watch([instanceId, modelCatalogSupported], ([, supported]) => {
+  modelCatalogRequestVersion += 1
+  modelCatalogModels.value = []
+  modelCatalogError.value = ''
+  modelCatalogLoading.value = false
+  if (supported) void refreshModelCatalog()
+}, {immediate: true})
 onBeforeUnmount(() => {
   connectionTestMounted = false
+  modelCatalogMounted = false
+  modelCatalogRequestVersion += 1
   clearConnectionTestResetTimer()
 })
 </script>
@@ -618,6 +712,56 @@ onBeforeUnmount(() => {
   color: var(--el-color-danger);
   font-size: 12px;
   line-height: 1.4;
+}
+
+.model-catalog-control {
+  --model-catalog-control-size: 38px;
+  --model-catalog-control-radius: 8px;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 7px;
+}
+
+.model-catalog-control :deep(.el-select) {
+  width: 0;
+  min-width: 0;
+  flex: 1;
+}
+
+.model-catalog-control :deep(.el-select__wrapper) {
+  height: var(--model-catalog-control-size);
+  min-height: var(--model-catalog-control-size);
+  box-sizing: border-box;
+  border-radius: var(--model-catalog-control-radius);
+}
+
+.model-catalog-control :deep(.el-button) {
+  width: var(--model-catalog-control-size);
+  height: var(--model-catalog-control-size);
+  padding: 0;
+  aspect-ratio: 1;
+  flex: 0 0 var(--model-catalog-control-size);
+  border-radius: var(--model-catalog-control-radius);
+}
+
+.model-catalog-option {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+:global(.fluentread-model-catalog-popper .el-select-dropdown__item) {
+  height: auto;
+  min-width: 0;
+  min-height: 34px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  overflow: hidden;
+  line-height: 1.35;
+  white-space: normal;
 }
 
 .button-icon {

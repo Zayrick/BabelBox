@@ -44,25 +44,49 @@
 
           <div v-if="showAddService" class="add-service-panel">
             <div class="add-service-title">
-              <ServiceIcon :service="addDraft.provider" :label="providerLabel(addDraft.provider)" size="small" />
               <strong>添加 AI 翻译服务</strong>
             </div>
-            <label><span>供应商</span><el-select v-model="addDraft.provider" class="fr-userscript-select" aria-label="AI 供应商" :teleported="false" :popper-options="selectPopperOptions" @change="resetAddProviderDefaults"><el-option v-for="item in aiProviderOptions" :key="item.value" :label="item.label" :value="item.value"><span class="provider-option"><ServiceIcon :service="item.value" :label="item.label" size="small" /><span>{{ item.label }}</span></span></el-option></el-select></label>
-            <label><span>模型 ID</span><input v-model.trim="addDraft.modelId" autocomplete="off" :placeholder="suggestedModelId || '请输入模型 ID'" /></label>
-            <label><span>自定义名称</span><input v-model.trim="addDraft.name" autocomplete="off" :placeholder="suggestedServiceName" /></label>
-            <label><span>请求地址</span><input v-model.trim="addDraft.endpoint" inputmode="url" placeholder="可选；自定义、New API 和 Azure OpenAI 请填写" /></label>
-            <label><span>API Key</span><input v-model.trim="addDraft.apiKey" type="password" autocomplete="off" placeholder="可稍后配置" /></label>
-            <div class="add-service-actions"><button type="button" class="secondary" @click="showAddService = false">取消</button><button type="button" class="primary" @click="addAIService">添加</button></div>
+            <p class="hint">选择供应商后直接添加；模型、凭据和请求地址在下方服务详情中配置。</p>
+            <div class="add-provider-grid" aria-label="可添加的 AI 翻译供应商">
+              <button v-for="item in aiProviderOptions" :key="item.value" type="button" @click="addAIService(item.value)">
+                <ServiceIcon :service="item.value" :label="item.label" size="small" />
+                <span>{{ item.label }}</span>
+                <small>添加</small>
+              </button>
+            </div>
+            <div class="add-service-actions"><button type="button" class="secondary" @click="showAddService = false">关闭</button></div>
           </div>
 
           <label><span>当前使用</span><el-select v-model="draft.service" class="fr-userscript-select" aria-label="翻译服务" :teleported="false" :popper-options="selectPopperOptions" @change="managedServiceId = draft.service"><el-option v-for="item in serviceOptions" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
           <p v-if="serviceDescription" class="hint">{{ serviceDescription }}</p>
           <template v-if="selectedInstance">
             <label v-if="selectedInstance.kind === 'ai'"><span>服务名称</span><input v-model.trim="selectedInstance.name" autocomplete="off" /></label>
-            <label v-if="selectedInstance.kind === 'ai'"><span>模型 ID</span><input v-model.trim="selectedInstance.modelId" autocomplete="off" /></label>
+            <label v-if="selectedInstance.kind === 'ai' && servicesType.isUseModel(selectedProvider)">
+              <span>模型 ID</span>
+              <el-select
+                v-if="modelCatalogSupported"
+                v-model="selectedInstance.modelId"
+                class="fr-userscript-select"
+                aria-label="模型 ID"
+                filterable
+                allow-create
+                default-first-option
+                fit-input-width
+                popper-class="fr-userscript-model-catalog-popper"
+                :loading="modelCatalogLoading"
+                :teleported="false"
+                :popper-options="selectPopperOptions"
+                placeholder="输入或选择模型 ID"
+                @visible-change="onModelCatalogVisible"
+              >
+                <el-option v-if="modelCatalogError" :label="modelCatalogFailureLabel" :value="MODEL_CATALOG_FAILURE_VALUE" disabled><span class="model-catalog-option">{{ modelCatalogFailureLabel }}</span></el-option>
+                <el-option v-for="model in modelCatalogModels" :key="model" :label="model" :value="model"><span class="model-catalog-option">{{ model }}</span></el-option>
+              </el-select>
+              <input v-else v-model.trim="selectedInstance.modelId" autocomplete="off" />
+            </label>
             <label v-if="selectedInstance.kind === 'ai' && usesToken" class="toggle"><span>当前模型需要 API Key</span><input v-model="selectedInstance.requireApiKey" type="checkbox" /></label>
-            <label v-if="usesToken"><span>API Key / Token</span><input v-model.trim="serviceApiKey" type="password" autocomplete="off" /></label>
-            <label v-if="selectedInstance.kind === 'ai'"><span>请求地址（可选）</span><input v-model.trim="serviceEndpoint" inputmode="url" placeholder="留空使用供应商默认接口" /></label>
+            <label v-if="usesToken"><span>API Key / Token</span><input v-model.trim="serviceApiKey" type="password" autocomplete="off" @change="refreshModelCatalogIfSupported" /></label>
+            <label v-if="selectedInstance.kind === 'ai'"><span>请求地址（可选）</span><input v-model.trim="serviceEndpoint" inputmode="url" placeholder="留空使用供应商默认接口" @change="refreshModelCatalogIfSupported" /></label>
             <label v-if="selectedProvider === services.deeplx"><span>DeepLX 地址</span><input v-model.trim="draft.deeplx" inputmode="url" /></label>
             <label v-if="selectedInstance.kind === 'machine' && servicesType.isUseProxy(selectedProvider)"><span>代理地址（可选）</span><input v-model.trim="selectedInstance.proxy" inputmode="url" placeholder="留空使用默认接口" /></label>
           </template>
@@ -117,7 +141,7 @@
 </template>
 
 <script setup lang="ts">
-import {computed, onMounted, ref} from 'vue';
+import {computed, onBeforeUnmount, onMounted, ref, watch} from 'vue';
 import {X} from '@lucide/vue';
 import {ElOption, ElSelect} from 'element-plus';
 import 'element-plus/es/components/select/style/css';
@@ -125,7 +149,7 @@ import {browser} from 'wxt/browser';
 import ServiceIcon from '@/src/ui/components/ServiceIcon.vue';
 import {Config, type TranslationServiceCredential} from '@/src/core/config/model';
 import {config as runtimeConfig, configReady, saveConfig} from '@/src/services/config/store';
-import {defaultModels, options, services, servicesType} from '@/src/core/config/catalog';
+import {options, services, servicesType} from '@/src/core/config/catalog';
 import {getMissingCredentialMessage} from '@/src/core/config/validation';
 import {clearTranslationServiceCredentials} from '@/src/core/config/credentials';
 import {
@@ -133,13 +157,17 @@ import {
   clearLegacyTranslationServiceConfiguration,
   createAITranslationService,
   createTranslationServiceId,
-  getDefaultTranslationServiceName,
   getTranslationProviderDescription,
   getTranslationProviderLabel,
   getTranslationServiceInstance,
   type TranslationServiceInstance,
 } from '@/src/core/config/translationServices';
 import {getSelectableTranslationServices} from '@/src/services/translation/capabilities';
+import {
+  hasDynamicTranslationModelCatalog,
+  TRANSLATION_MODEL_CATALOG_MESSAGE,
+  type TranslationModelCatalogResponse,
+} from '@/src/services/translation/modelCatalog';
 import {
   getEnabledUserscriptServices,
   isUserscriptServiceSupported,
@@ -156,23 +184,6 @@ const statusIsError = ref(false);
 const showAddService = ref(false);
 const managedServiceId = ref('');
 const selectPopperOptions = {strategy: 'fixed'} as const;
-
-interface AddServiceDraft {
-  provider: string;
-  modelId: string;
-  name: string;
-  endpoint: string;
-  apiKey: string;
-}
-
-const firstAIProvider = aiTranslationProviders.find(isUserscriptServiceSupported) || services.openai;
-const addDraft = ref<AddServiceDraft>({
-  provider: firstAIProvider,
-  modelId: defaultModels.get(firstAIProvider) || '',
-  name: '',
-  endpoint: '',
-  apiKey: '',
-});
 const serviceOptions = computed(() => getSelectableTranslationServices(draft.value)
   .filter(item => isUserscriptServiceSupported(item.provider)));
 const managedServices = computed(() => draft.value.translationServices
@@ -196,11 +207,15 @@ const canUseAIContext = computed(() => servicesType.isUseAIContext(
 const credentialWarning = computed(() => selectedInstance.value
   ? getMissingCredentialMessage(selectedInstance.value.id, draft.value) || ''
   : '');
-const suggestedModelId = computed(() => defaultModels.get(addDraft.value.provider) || '');
-const suggestedServiceName = computed(() => getDefaultTranslationServiceName(
-  addDraft.value.provider,
-  addDraft.value.modelId.trim() || suggestedModelId.value,
-));
+const modelCatalogSupported = computed(() => selectedInstance.value?.kind === 'ai'
+  && hasDynamicTranslationModelCatalog(selectedProvider.value));
+const MODEL_CATALOG_FAILURE_VALUE = '__fluentread_model_catalog_failure__';
+const modelCatalogModels = ref<string[]>([]);
+const modelCatalogLoading = ref(false);
+const modelCatalogError = ref('');
+const modelCatalogFailureLabel = computed(() => `获取模型列表失败：${modelCatalogError.value}`);
+let modelCatalogRequestVersion = 0;
+let modelCatalogMounted = true;
 
 type CredentialKey = keyof TranslationServiceCredential;
 
@@ -272,6 +287,54 @@ onMounted(async () => {
   managedServiceId.value = draft.value.service;
 });
 
+async function refreshModelCatalog(): Promise<void> {
+  const service = selectedInstance.value;
+  if (!service || !modelCatalogSupported.value) return;
+  const requestVersion = ++modelCatalogRequestVersion;
+  modelCatalogLoading.value = true;
+  modelCatalogError.value = '';
+
+  try {
+    const response = await browser.runtime.sendMessage({
+      type: TRANSLATION_MODEL_CATALOG_MESSAGE,
+      service: service.id,
+      config: draft.value,
+    }) as TranslationModelCatalogResponse | undefined;
+    if (!response?.success) throw new Error(response?.error || '请求模型列表失败');
+    if (!modelCatalogMounted || requestVersion !== modelCatalogRequestVersion) return;
+    modelCatalogModels.value = response.models;
+  } catch (error) {
+    if (!modelCatalogMounted || requestVersion !== modelCatalogRequestVersion) return;
+    modelCatalogModels.value = [];
+    modelCatalogError.value = error instanceof Error ? error.message : String(error);
+  } finally {
+    if (modelCatalogMounted && requestVersion === modelCatalogRequestVersion) {
+      modelCatalogLoading.value = false;
+    }
+  }
+}
+
+function refreshModelCatalogIfSupported(): void {
+  if (modelCatalogSupported.value) void refreshModelCatalog();
+}
+
+function onModelCatalogVisible(visible: boolean): void {
+  if (visible) void refreshModelCatalog();
+}
+
+watch([() => selectedInstance.value?.id, modelCatalogSupported], ([, supported]) => {
+  modelCatalogRequestVersion += 1;
+  modelCatalogModels.value = [];
+  modelCatalogError.value = '';
+  modelCatalogLoading.value = false;
+  if (supported) void refreshModelCatalog();
+}, {immediate: true});
+
+onBeforeUnmount(() => {
+  modelCatalogMounted = false;
+  modelCatalogRequestVersion += 1;
+});
+
 function providerLabel(provider: string): string {
   return getTranslationProviderLabel(provider);
 }
@@ -329,55 +392,21 @@ function removeAIService(instance: TranslationServiceInstance): void {
   status.value = `已删除「${instance.name}」，保存设置后生效。`;
 }
 
-function resetAddProviderDefaults(): void {
-  addDraft.value.modelId = defaultModels.get(addDraft.value.provider) || '';
-  addDraft.value.name = '';
-  addDraft.value.endpoint = '';
-  addDraft.value.apiKey = '';
-}
-
-function addAIService(): void {
-  const provider = addDraft.value.provider;
+function addAIService(provider: string): void {
   if (!isUserscriptServiceSupported(provider) || !servicesType.isAI(provider)) {
     statusIsError.value = true;
     status.value = '请选择 userscript 支持的 AI 供应商。';
     return;
   }
-  const modelId = addDraft.value.modelId.trim() || defaultModels.get(provider) || '';
-  if (servicesType.isUseModel(provider) && !modelId) {
-    statusIsError.value = true;
-    status.value = '请填写模型 ID。';
-    return;
-  }
-  const endpointRequiredProviders = new Set<string>([
-    services.custom,
-    services.newapi,
-    services.azureOpenai,
-  ]);
-  if (endpointRequiredProviders.has(provider) && !addDraft.value.endpoint.trim()) {
-    statusIsError.value = true;
-    status.value = '该供应商需要填写请求地址。';
-    return;
-  }
 
   const instance = createAITranslationService(provider, {
     id: createTranslationServiceId(provider, draft.value.translationServices),
-    modelId,
-    name: addDraft.value.name.trim() || getDefaultTranslationServiceName(provider, modelId),
-    endpoint: addDraft.value.endpoint.trim(),
+    modelId: '',
   });
   draft.value.translationServices.push(instance);
-  draft.value.serviceCredentials[instance.id] = {
-    apiKey: addDraft.value.apiKey.trim(),
-    appKey: '',
-    appSecret: '',
-    secretId: '',
-    secretKey: '',
-  };
   draft.value.service = instance.id;
   managedServiceId.value = instance.id;
   showAddService.value = false;
-  resetAddProviderDefaults();
   statusIsError.value = false;
   status.value = `已添加「${instance.name}」，保存设置后生效。`;
 }
@@ -473,8 +502,13 @@ summary { cursor: pointer; }
 .delete-service { padding: 3px 5px; border-radius: 6px; background: transparent; color: #a44d67; font-size: 9px; }
 .delete-service:hover { background: #ffe7ee; color: #bd3159; }
 .add-service-panel { margin-top: 9px; padding: 10px; border: 1px solid #f0c7d4; border-radius: 11px; background: #fff8fa; }
-.add-service-title, .provider-option { display: flex; align-items: center; gap: 8px; }
+.add-service-title { display: flex; align-items: center; gap: 8px; }
 .add-service-title strong { color: #d93d6b; font-size: 11px; }
+.add-provider-grid { display: grid; max-height: 210px; overflow-y: auto; margin-top: 9px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.add-provider-grid button { display: grid; min-width: 0; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 7px; padding: 7px; border: 1px solid #e2e6ee; border-radius: 9px; background: #fff; color: #20283a; text-align: left; }
+.add-provider-grid button:hover { border-color: #ef8eaa; background: #fff0f4; }
+.add-provider-grid button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; font-weight: 700; }
+.add-provider-grid button small { color: #b43d61; font-size: 9px; }
 .add-service-actions { display: flex; justify-content: flex-end; margin-top: 10px; gap: 7px; }
 .add-service-actions button { padding: 7px 11px; border-radius: 8px; font-size: 10px; font-weight: 700; }
 label { display: grid; align-items: center; gap: 10px; margin-top: 11px; grid-template-columns: minmax(120px, .8fr) minmax(0, 1.4fr); color: #4d5668; font-size: 11px; }
@@ -490,6 +524,8 @@ input:focus, textarea:focus { border-color: #ef4776; box-shadow: 0 0 0 3px rgba(
 .fr-userscript-settings :deep(.el-select-dropdown__item) { color: #20283a; font-size: 12px; }
 .fr-userscript-settings :deep(.el-select-dropdown__item.is-hovering) { background: #fff0f4; }
 .fr-userscript-settings :deep(.el-select-dropdown__item.is-selected) { color: #d93d6b; font-weight: 700; }
+.fr-userscript-settings :deep(.fr-userscript-model-catalog-popper .el-select-dropdown__item) { height: auto; min-width: 0; min-height: 34px; padding-top: 8px; padding-bottom: 8px; overflow: hidden; line-height: 1.35; white-space: normal; }
+.model-catalog-option { display: block; width: 100%; min-width: 0; overflow-wrap: anywhere; white-space: normal; }
 textarea { resize: vertical; line-height: 1.45; }
 .toggle input { justify-self: end; width: 38px; height: 20px; accent-color: #ef4776; }
 .hint, .warning { margin: 8px 0 0; padding: 8px 10px; border-radius: 9px; font-size: 10px; line-height: 1.5; }
@@ -512,6 +548,8 @@ footer button { padding: 9px 13px; border-radius: 9px; font-size: 11px; font-wei
 .dark .add-service { background: #49323b; color: #f0a9bf; }
 .dark .service-row { border-color: #4b4e59; background: #373a44; }
 .dark .service-row.selected, .dark .add-service-panel { border-color: #775060; background: #3b2e35; }
+.dark .add-provider-grid button { border-color: #50535f; background: #373a44; color: #f1f2f5; }
+.dark .add-provider-grid button:hover { border-color: #775060; background: #49323b; }
 .dark .service-row-main { color: #f1f2f5; }
 .dark .service-row-main small { color: #b7bbc5; }
 .dark .delete-service { color: #e6a0b6; }
@@ -527,6 +565,7 @@ footer button { padding: 9px 13px; border-radius: 9px; font-size: 11px; font-wei
   .fr-userscript-settings { width: 100vw; max-height: 100vh; border: 0; border-radius: 0; }
   .settings-grid { grid-template-columns: 1fr; }
   fieldset:nth-of-type(3), details { grid-column: auto; }
+  .add-provider-grid { grid-template-columns: 1fr; }
   label { grid-template-columns: 1fr; gap: 5px; }
   footer { align-items: stretch; flex-direction: column; }
   footer > div { justify-content: stretch; }

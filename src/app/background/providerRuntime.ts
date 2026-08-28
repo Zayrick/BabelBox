@@ -3,4 +3,8 @@ export {
     formatConnectionTestError,
     runTranslationServiceConnectionTest,
 } from '@/src/providers/translation/connectionTest';
+export {
+    formatTranslationModelCatalogError,
+    listTranslationServiceModels,
+} from '@/src/providers/translation/modelCatalog';
 export {translateMicrosoftTexts} from '@/src/providers/translation/microsoft';

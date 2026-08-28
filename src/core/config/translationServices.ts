@@ -199,7 +199,9 @@ export function createAITranslationService(
   input: Partial<Omit<TranslationServiceInstance, 'provider' | 'kind'>> = {},
 ): TranslationServiceInstance {
   if (!servicesType.isAI(provider)) throw new Error(`未知 AI 翻译供应商: ${provider}`)
-  const modelId = stringValue(input.modelId) || defaultModels.get(provider) || ''
+  const modelId = Object.hasOwn(input, 'modelId')
+    ? stringValue(input.modelId)
+    : defaultModels.get(provider) || ''
   const instance = baseInstance(
     stringValue(input.id) || createTranslationServiceId(provider),
     provider,
@@ -221,7 +223,11 @@ function normalizeTranslationServiceInstance(value: unknown): TranslationService
   const kind: TranslationServiceKind = servicesType.isMachine(provider) ? 'machine' : 'ai'
   if (kind === 'machine' && id !== provider) return null
   if (reservedProviderServiceIds.has(id) && id !== provider) return null
-  const modelId = kind === 'ai' ? stringValue(source.modelId) || defaultModels.get(provider) || '' : ''
+  const modelId = kind === 'ai'
+    ? typeof source.modelId === 'string'
+      ? stringValue(source.modelId)
+      : defaultModels.get(provider) || ''
+    : ''
   const defaults = baseInstance(id, provider, kind, modelId)
   const deepseekApiType = source.deepseekApiType === 'responses' || source.deepseekApiType === 'chat'
     ? source.deepseekApiType

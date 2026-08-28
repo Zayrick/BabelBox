@@ -900,7 +900,6 @@ function setTranslationServiceEnabled(id: string, enabled: boolean): void {
 
 function addTranslationService(payload: AddTranslationServicePayload): void {
   config.value.translationServices.push(payload.instance);
-  config.value.serviceCredentials[payload.instance.id] = payload.credential;
   configurationService.value = payload.instance.id;
   ElMessage.success(`已添加 ${payload.instance.name}`);
 }

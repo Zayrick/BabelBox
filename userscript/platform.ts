@@ -2,12 +2,20 @@ import {translateMicrosoftTexts} from '@/src/providers/translation/microsoft';
 import {runTranslationServiceConnectionTest} from '@/src/providers/translation/connectionTest';
 import {
     applyConfigHistoryAction,
+    config,
     configReady,
     CONFIG_HISTORY_MESSAGE,
     CONFIG_PERSIST_MESSAGE,
     saveConfig,
 } from '@/src/services/config/store';
 import {CONNECTION_TEST_MESSAGE} from '@/src/core/config/constants';
+import {
+    TRANSLATION_MODEL_CATALOG_MESSAGE,
+} from '@/src/services/translation/modelCatalog';
+import {
+    formatTranslationModelCatalogError,
+    listTranslationServiceModels,
+} from '@/src/providers/translation/modelCatalog';
 import {
     cleanupTranslationCache,
     clearTranslationCache,
@@ -50,6 +58,19 @@ export function createPlatformMessageHandler(openSettings: () => void) {
                 return {success: true, ...result};
             } catch (error) {
                 return {success: false, error: error instanceof Error ? error.message : String(error)};
+            }
+        }
+
+        if (message.type === TRANSLATION_MODEL_CATALOG_MESSAGE) {
+            await configReady;
+            try {
+                const source = message.config && typeof message.config === 'object'
+                    ? message.config
+                    : config;
+                const models = await listTranslationServiceModels(String(message.service || ''), source);
+                return {success: true, models};
+            } catch (error) {
+                return {success: false, error: formatTranslationModelCatalogError(error)};
             }
         }
 

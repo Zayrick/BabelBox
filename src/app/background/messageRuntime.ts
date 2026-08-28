@@ -1,5 +1,11 @@
 import {browser} from 'wxt/browser';
-import {formatConnectionTestError, runTranslationServiceConnectionTest, translateMicrosoftTexts} from './providerRuntime';
+import {
+    formatConnectionTestError,
+    formatTranslationModelCatalogError,
+    listTranslationServiceModels,
+    runTranslationServiceConnectionTest,
+    translateMicrosoftTexts,
+} from './providerRuntime';
 import {
     applyConfigHistoryAction,
     config,
@@ -21,6 +27,7 @@ import {createConfigHistoryHandler} from './handlers/configHistory';
 import {createTranslationCacheHandler} from './handlers/translationCache';
 import {createConfigPersistenceHandler, type ConfigPersistenceContext} from './handlers/configPersistence';
 import {createConnectionTestHandler} from './handlers/connectionTest';
+import {createTranslationModelCatalogHandler} from './handlers/modelCatalog';
 import {
     createFullPageTranslationStateHandlers,
     type FullPageBackgroundContext,
@@ -84,6 +91,11 @@ export function installBackgroundMessageRuntime(options: BackgroundMessageRuntim
             ready: configReady,
             runConnectionTest: runTranslationServiceConnectionTest,
             formatError: formatConnectionTestError,
+        }),
+        createTranslationModelCatalogHandler({
+            ready: configReady,
+            listModels: listTranslationServiceModels,
+            formatError: formatTranslationModelCatalogError,
         }),
         createInputBoxTranslationHandler({
             translateText: async (text, targetLanguage) => {
