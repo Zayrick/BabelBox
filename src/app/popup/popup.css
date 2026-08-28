@@ -659,13 +659,24 @@ h2 {
   line-height: 1;
   white-space: nowrap;
 }
-.feature-card > i {
+.feature-indicators {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--muted);
+}
+.feature-indicators > i {
+  flex: none;
   width: 6px;
   height: 6px;
   border-radius: 50%;
   background: #b8bec9;
 }
-.feature-card > i.active { background: #24b47e; }
+.feature-indicators > i.active { background: #24b47e; }
+.feature-indicators > svg {
+  width: 15px;
+  height: 15px;
+}
 .feature-chevron {
   width: 15px;
   height: 15px;

@@ -225,12 +225,18 @@
         <button class="feature-card" type="button" :disabled="!config.on" @click="openDrawer('hover')">
           <span class="feature-icon rose" aria-hidden="true"><MousePointer /></span>
           <span><strong>鼠标悬停翻译</strong><small>{{ hoverSummary }}</small></span>
-          <i :class="{ active: config.hotkey !== 'none' }" />
+          <span class="feature-indicators" aria-hidden="true">
+            <i :class="{ active: config.hotkey !== 'none' }" />
+            <ChevronRight />
+          </span>
         </button>
         <button class="feature-card" type="button" :disabled="!config.on" @click="openDrawer('selection')">
           <span class="feature-icon violet" aria-hidden="true"><TextSelect /></span>
           <span><strong>划词翻译</strong><small>{{ selectionSummary }}</small></span>
-          <i :class="{ active: config.selectionTranslatorMode !== 'disabled' || (browserCapabilities.areaTranslation && config.selectionAreaEnabled) }" />
+          <span class="feature-indicators" aria-hidden="true">
+            <i :class="{ active: config.selectionTranslatorMode !== 'disabled' || (browserCapabilities.areaTranslation && config.selectionAreaEnabled) }" />
+            <ChevronRight />
+          </span>
         </button>
         <button class="feature-card" type="button" :disabled="!config.on" @click="openDrawer('appearance')">
           <span class="feature-icon amber" aria-hidden="true"><Type /></span>
@@ -243,7 +249,10 @@
             <span class="feature-title"><strong>图片翻译</strong><em class="beta-badge">Beta 测试</em></span>
             <small>{{ imageTranslationSummary }}</small>
           </span>
-          <i :class="{ active: browserCapabilities.imageTranslation && !config.disableImageTranslator }" />
+          <span class="feature-indicators" aria-hidden="true">
+            <i :class="{ active: browserCapabilities.imageTranslation && !config.disableImageTranslator }" />
+            <ChevronRight />
+          </span>
         </button>
         <button
           class="feature-card video-feature-card"
@@ -259,7 +268,10 @@
             <span class="feature-title"><strong>视频字幕</strong><em class="beta-badge">Beta 测试</em></span>
             <small>{{ videoSummary }}</small>
           </span>
-          <i :class="{ active: config.videoTranslationEnabled }" />
+          <span class="feature-indicators" aria-hidden="true">
+            <i :class="{ active: config.videoTranslationEnabled }" />
+            <ChevronRight />
+          </span>
         </button>
         <button
           class="feature-card document-feature-card"
@@ -274,7 +286,7 @@
             <span class="feature-title"><strong>文档翻译</strong><em class="beta-badge">Beta 测试</em></span>
             <small>HTML / TXT / Markdown / 字幕 / JSON</small>
           </span>
-          <ChevronRight class="feature-chevron" aria-hidden="true" />
+          <ExternalLink class="feature-chevron" aria-hidden="true" />
         </button>
       </div>
     </section>
