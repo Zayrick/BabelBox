@@ -80,7 +80,7 @@ export function browserBuildTargetFromEnv(env?: Partial<ImportMetaEnv>): Browser
  * 构建标记同时服务于产物审计。这里必须直接读取静态属性；把整个 import.meta 传给函数会绕过
  * Vite/WXT 的 compile-time replacement，导致 Chrome 生产包被误判为 unknown/MV2。
  */
-export const browserCapabilityBuildMarker = `__FLUENTREAD_BROWSER_CAPABILITY_BUILD__:${import.meta.env.BROWSER}:mv${import.meta.env.MANIFEST_VERSION}__`;
+export const browserCapabilityBuildMarker = `__BABELBOX_BROWSER_CAPABILITY_BUILD__:${import.meta.env.BROWSER}:mv${import.meta.env.MANIFEST_VERSION}__`;
 const compiledBrowserBuildTarget = browserBuildTargetFromEnv({
     BROWSER: import.meta.env.BROWSER,
     MANIFEST_VERSION: import.meta.env.MANIFEST_VERSION,

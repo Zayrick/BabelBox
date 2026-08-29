@@ -41,7 +41,7 @@ describe('translation error serialization', () => {
       retryAfterMs: 1250,
       requestId: ' req-1 ',
     })).toEqual({
-      marker: 'fluentread-translation-error-v1',
+      marker: 'babelbox-translation-error-v1',
       message: 'explicit failure',
       kind: 'response',
       retryable: false,
@@ -60,7 +60,7 @@ describe('translation error serialization', () => {
       retryAfterMs: 'soon',
       requestId: '',
     })).toEqual({
-      marker: 'fluentread-translation-error-v1',
+      marker: 'babelbox-translation-error-v1',
       message: '翻译请求失败',
       kind: 'unknown',
       retryable: true,

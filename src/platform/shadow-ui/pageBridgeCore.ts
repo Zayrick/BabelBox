@@ -1,9 +1,9 @@
-export const SHADOW_ROOT_EVENT = 'fluentread-open-shadow-root';
-export const ROUTE_CHANGE_EVENT = 'fluentread-route-change';
-export const SHADOW_BRIDGE_DISPOSE_EVENT = 'fluentread-shadow-bridge-dispose';
-export const SHADOW_BRIDGE_ENABLE_EVENT = 'fluentread-shadow-bridge-enable';
-export const SHADOW_BRIDGE_STATE_KEY = '__fluentReadShadowBridgeState__';
-export const SHADOW_BRIDGE_LIFECYCLE_STATE_KEY = '__fluentReadShadowBridgeLifecycleState__';
+export const SHADOW_ROOT_EVENT = 'babelbox-open-shadow-root';
+export const ROUTE_CHANGE_EVENT = 'babelbox-route-change';
+export const SHADOW_BRIDGE_DISPOSE_EVENT = 'babelbox-shadow-bridge-dispose';
+export const SHADOW_BRIDGE_ENABLE_EVENT = 'babelbox-shadow-bridge-enable';
+export const SHADOW_BRIDGE_STATE_KEY = '__babelboxShadowBridgeState__';
+export const SHADOW_BRIDGE_LIFECYCLE_STATE_KEY = '__babelboxShadowBridgeLifecycleState__';
 
 export interface BridgeEventTarget {
     addEventListener(type: string, listener: () => void): void;
@@ -76,7 +76,7 @@ export function installShadowRouteBridgeCore(environment: ShadowRouteBridgeEnvir
     const previous = environment.stateHost[SHADOW_BRIDGE_STATE_KEY] as ShadowRouteBridgeState | undefined;
     previous?.dispose?.();
 
-    const owner = Symbol('fluentread-shadow-bridge');
+    const owner = Symbol('babelbox-shadow-bridge');
     const originalAttachShadow = environment.attachShadow.get();
     const originalPushState = environment.pushState.get();
     const originalReplaceState = environment.replaceState.get();
@@ -135,7 +135,7 @@ export function installShadowRouteBridgeLifecycleCore(environment: ShadowRouteBr
     const previous = environment.stateHost[SHADOW_BRIDGE_LIFECYCLE_STATE_KEY] as ShadowRouteBridgeLifecycleState | undefined;
     previous?.dispose?.();
 
-    const owner = Symbol('fluentread-shadow-bridge-lifecycle');
+    const owner = Symbol('babelbox-shadow-bridge-lifecycle');
     let disposeBridge = installShadowRouteBridgeCore(environment);
     const disable = () => disposeBridge();
     const enable = () => {

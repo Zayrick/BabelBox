@@ -279,8 +279,8 @@ describe('YouTube timedtext MAIN world bridge core', () => {
     it('只为非空 timedtext 文本创建跨 world payload', () => {
         const base = 'https://www.youtube.com/watch?v=1';
         expect(createYoutubeTimedTextPayload('/api/timedtext', '<xml/>', base)).toEqual({
-            source: 'fluent-read',
-            type: 'fluent-read-youtube-timedtext',
+            source: 'babelbox',
+            type: 'babelbox-youtube-timedtext',
             url: '/api/timedtext',
             responseText: '<xml/>',
         });

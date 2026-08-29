@@ -1,4 +1,4 @@
-export const CONFIG_REVISION_FIELD = '__fluentConfigRevision' as const;
+export const CONFIG_REVISION_FIELD = '__babelboxConfigRevision' as const;
 
 export function isConfigRecord(value: unknown): value is Record<string, unknown> {
     return value !== null && typeof value === 'object' && !Array.isArray(value);

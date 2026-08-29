@@ -84,8 +84,8 @@ async function main() {
     assert(firefoxManifest.manifest_version === 2, 'Firefox 默认产物必须是 Manifest V2');
     assert(countPermission(firefoxManifest, 'offscreen') === 0, 'Firefox 不得声明 Chrome-only offscreen 权限');
     assert(firefoxArtifacts.length === 0, `Firefox 不得包含 Offscreen 页面或 chunk：${firefoxArtifacts.join(', ')}`);
-    const chromeBuildMarker = '__FLUENTREAD_BROWSER_CAPABILITY_BUILD__:chrome:mv3__';
-    const firefoxBuildMarker = '__FLUENTREAD_BROWSER_CAPABILITY_BUILD__:firefox:mv2__';
+    const chromeBuildMarker = '__BABELBOX_BROWSER_CAPABILITY_BUILD__:chrome:mv3__';
+    const firefoxBuildMarker = '__BABELBOX_BROWSER_CAPABILITY_BUILD__:firefox:mv2__';
     assert(chromeJavaScript.includes(chromeBuildMarker), 'Chrome 产物缺少 chrome/MV3 runtime capability 构建标记');
     assert(!chromeJavaScript.includes(firefoxBuildMarker), 'Chrome 产物混入 Firefox runtime capability 构建标记');
     assert(firefoxJavaScript.includes(firefoxBuildMarker), 'Firefox 产物缺少 firefox/MV2 runtime capability 构建标记');

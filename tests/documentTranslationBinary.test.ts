@@ -69,16 +69,16 @@ describe('binary document translation formats', () => {
         const parsed = await parseBinaryDocument('sample.epub', loadBytes('sample.epub'));
         expect(parsed.format).toBe('epub');
         expect(parsed.binary?.kind === 'epub' && parsed.binary.chapters).toHaveLength(2);
-        expect(parsed.segments.some((segment) => segment.contextLabel === 'Fluent reading')).toBe(true);
+        expect(parsed.segments.some((segment) => segment.contextLabel === 'BabelBox reading')).toBe(true);
 
         const translations = parsed.segments.map((segment) => `译文：${segment.source}`);
         const download = await createDocumentDownload(parsed, translations, 'bilingual');
         const zip = await JSZip.loadAsync(download.data as Uint8Array);
         expect(await zip.file('mimetype')!.async('string')).toBe('application/epub+zip');
         const chapter = await zip.file('OEBPS/chapter-1.xhtml')!.async('string');
-        expect(chapter).toContain('Fluent reading for local books');
-        expect(chapter).toContain('译文：Fluent reading for local books');
-        expect(chapter).toContain('data-fluent-read-document-translation="true"');
+        expect(chapter).toContain('BabelBox reading for local books');
+        expect(chapter).toContain('译文：BabelBox reading for local books');
+        expect(chapter).toContain('data-babelbox-document-translation="true"');
         const linkedChapter = await zip.file('OEBPS/chapter-2.xhtml')!.async('string');
         expect(linkedChapter).toContain('href="chapter-1.xhtml"');
         expect(linkedChapter.match(/<title>/gu)).toHaveLength(1);

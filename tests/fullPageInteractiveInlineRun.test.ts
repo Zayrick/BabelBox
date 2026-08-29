@@ -36,21 +36,21 @@ vi.mock('@/src/services/translation/queue', () => ({
 vi.mock('@/src/features/full-page-translation/ui/translationIndicators', () => ({
     insertLoadingSpinner: (node: HTMLElement) => {
         const spinner = node.ownerDocument.createElement('span');
-        spinner.className = 'fluent-read-loading';
-        spinner.setAttribute('data-fr-translation-owned', 'true');
+        spinner.className = 'babelbox-loading';
+        spinner.setAttribute('data-babelbox-translation-owned', 'true');
         spinner.setAttribute('data-animation-mode', 'shimmer');
-        node.setAttribute('data-fr-translation-shimmer', 'true');
+        node.setAttribute('data-babelbox-translation-shimmer', 'true');
         node.appendChild(spinner);
         runtime.spinners.set(node, spinner);
         return spinner;
     },
     removeLoadingSpinner: (node: HTMLElement, spinner?: HTMLElement) => {
-        node.removeAttribute('data-fr-translation-shimmer');
+        node.removeAttribute('data-babelbox-translation-shimmer');
         spinner?.remove();
     },
     insertFailedTip: (node: HTMLElement) => {
         const retry = node.ownerDocument.createElement('span');
-        retry.setAttribute('data-fr-translation-owned', 'true');
+        retry.setAttribute('data-babelbox-translation-owned', 'true');
         node.appendChild(retry);
         return retry;
     },
@@ -58,8 +58,8 @@ vi.mock('@/src/features/full-page-translation/ui/translationIndicators', () => (
 vi.mock('@/src/features/full-page-translation/content/renderer', () => ({
     appendBilingualTranslation: (node: HTMLElement, text: string) => {
         const content = node.ownerDocument.createElement('span');
-        content.className = 'fluent-read-bilingual-content';
-        content.setAttribute('data-fr-translation-owned', 'true');
+        content.className = 'babelbox-bilingual-content';
+        content.setAttribute('data-babelbox-translation-owned', 'true');
         content.textContent = text;
         node.appendChild(content);
         return content;
@@ -178,10 +178,10 @@ describe('全文翻译交互控件旁的 inline-run', () => {
         await vi.waitFor(() => {
             expect(button.textContent?.trim()).toBe('显示');
             expect(cell.textContent?.replace(/\s+/gu, '')).toBe('显示转录');
-            expect(cell.querySelectorAll('[data-fr-translation-segment="true"]')).toHaveLength(1);
+            expect(cell.querySelectorAll('[data-babelbox-translation-segment="true"]')).toHaveLength(1);
         });
 
-        const segment = cell.querySelector<HTMLElement>('[data-fr-translation-segment="true"]')!;
+        const segment = cell.querySelector<HTMLElement>('[data-babelbox-translation-segment="true"]')!;
         // A cache hit can commit before MutationObserver delivery. These are the
         // real source-migration records, now observed against the final translated
         // generation rather than its former loading phase.
@@ -221,7 +221,7 @@ describe('全文翻译交互控件旁的 inline-run', () => {
 
         expect(runtime.requests.mock.calls.filter(([origins]) => origins.includes('Transcriptions'))).toHaveLength(1);
         expect(runtime.requests.mock.calls.filter(([origins]) => origins.includes('show'))).toHaveLength(1);
-        expect(cell.querySelectorAll('[data-fr-translation-segment="true"]')).toHaveLength(1);
+        expect(cell.querySelectorAll('[data-babelbox-translation-segment="true"]')).toHaveLength(1);
         expect(cell.textContent?.replace(/\s+/gu, '')).toBe('显示转录');
     });
 });

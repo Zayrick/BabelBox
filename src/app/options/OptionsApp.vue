@@ -3,7 +3,7 @@
     <aside class="sidebar">
       <div class="brand">
         <img src="/icon/128.png" alt="" />
-        <div><strong>流畅阅读</strong><small>FluentRead · V{{ version }}</small></div>
+        <div><strong>翻译机</strong><small>BabelBox · V{{ version }}</small></div>
       </div>
 
       <el-scrollbar
@@ -62,17 +62,17 @@
       >
         <section v-if="activeSection === 'settings-about'" id="settings-about" class="about-page" aria-labelledby="about-title">
           <div class="about-summary">
-            <img class="about-logo" src="/icon/128.png" alt="流畅阅读图标" />
+            <img class="about-logo" src="/icon/128.png" alt="翻译机图标" />
             <div>
-              <h2 id="about-title">流畅阅读</h2>
-              <span class="about-version">FluentRead · V{{ version }}</span>
+              <h2 id="about-title">翻译机</h2>
+              <span class="about-version">BabelBox · V{{ version }}</span>
             </div>
           </div>
           <p class="about-description">一款提供网页双语翻译、划词翻译与多翻译服务支持的开源浏览器扩展。</p>
           <div class="about-links">
-            <a href="https://github.com/Bistutu/FluentRead" target="_blank" rel="noreferrer">开源项目 <ExternalLink :size="16" :stroke-width="1.8" aria-hidden="true" focusable="false" /></a>
-            <a href="https://fluent.thinkstu.com/" target="_blank" rel="noreferrer">使用文档 <ExternalLink :size="16" :stroke-width="1.8" aria-hidden="true" focusable="false" /></a>
-            <a href="https://github.com/Bistutu/FluentRead/issues" target="_blank" rel="noreferrer">问题反馈 <ExternalLink :size="16" :stroke-width="1.8" aria-hidden="true" focusable="false" /></a>
+            <a href="https://github.com/Zayrick/BabelBox" target="_blank" rel="noreferrer">开源项目 <ExternalLink :size="16" :stroke-width="1.8" aria-hidden="true" focusable="false" /></a>
+            <a href="https://github.com/Zayrick/BabelBox/tree/main/docs" target="_blank" rel="noreferrer">使用文档 <ExternalLink :size="16" :stroke-width="1.8" aria-hidden="true" focusable="false" /></a>
+            <a href="https://github.com/Zayrick/BabelBox/issues" target="_blank" rel="noreferrer">问题反馈 <ExternalLink :size="16" :stroke-width="1.8" aria-hidden="true" focusable="false" /></a>
           </div>
         </section>
         <VocabularyBook v-else-if="activeSection === 'settings-vocabulary'" @navigate="selectSection" />

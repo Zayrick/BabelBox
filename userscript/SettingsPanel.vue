@@ -1,28 +1,28 @@
 <template>
-  <div class="fr-userscript-settings-backdrop fr-theme" :class="{ 'fr-dark-theme': isDark }" role="presentation" @click.self="close">
-    <section class="fr-userscript-settings" role="dialog" aria-modal="true" aria-labelledby="fr-userscript-settings-title">
+  <div class="babelbox-userscript-settings-backdrop babelbox-theme" :class="{ 'babelbox-dark-theme': isDark }" role="presentation" @click.self="close">
+    <section class="babelbox-userscript-settings" role="dialog" aria-modal="true" aria-labelledby="babelbox-userscript-settings-title">
       <header>
         <div class="brand">
           <img v-if="iconUrl" :src="iconUrl" alt="" />
-          <span><strong id="fr-userscript-settings-title">流畅阅读</strong><small>{{ versionLabel }}</small></span>
+          <span><strong id="babelbox-userscript-settings-title">翻译机</strong><small>{{ versionLabel }}</small></span>
         </div>
         <button type="button" class="close" aria-label="关闭设置" @click="close"><X aria-hidden="true" /></button>
       </header>
 
       <div class="notice">
-        该版本复用 FluentRead 当前翻译核心。截图 OCR、圈选翻译、Chrome 内置翻译和扩展右键菜单依赖浏览器扩展权限，userscript 中暂不提供。
+        该版本复用 BabelBox 当前翻译核心。截图 OCR、圈选翻译、Chrome 内置翻译和扩展右键菜单依赖浏览器扩展权限，userscript 中暂不提供。
       </div>
 
       <div class="settings-grid">
         <fieldset>
           <legend>基础设置</legend>
-          <label class="toggle"><span>启用 FluentRead</span><el-switch v-model="draft.on" class="fr-userscript-switch" aria-label="启用 FluentRead" /></label>
-          <label><span>源语言</span><el-select v-model="draft.from" class="fr-userscript-select" aria-label="源语言" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.form" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
-          <label><span>目标语言</span><el-select v-model="draft.to" class="fr-userscript-select" aria-label="目标语言" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.to" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
-          <label><span>译文显示</span><el-select v-model="draft.display" class="fr-userscript-select" aria-label="译文显示" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.display" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
-          <label><span>双语样式</span><el-select v-model="draft.style" class="fr-userscript-select" aria-label="双语样式" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in styleOptions" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
-          <label class="toggle"><span>打开网页后自动翻译</span><el-switch v-model="draft.autoTranslate" class="fr-userscript-switch" aria-label="打开网页后自动翻译" /></label>
-          <label class="toggle"><span>使用翻译缓存</span><el-switch v-model="draft.useCache" class="fr-userscript-switch" aria-label="使用翻译缓存" /></label>
+          <label class="toggle"><span>启用 BabelBox</span><el-switch v-model="draft.on" class="babelbox-userscript-switch" aria-label="启用 BabelBox" /></label>
+          <label><span>源语言</span><el-select v-model="draft.from" class="babelbox-userscript-select" aria-label="源语言" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.form" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
+          <label><span>目标语言</span><el-select v-model="draft.to" class="babelbox-userscript-select" aria-label="目标语言" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.to" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
+          <label><span>译文显示</span><el-select v-model="draft.display" class="babelbox-userscript-select" aria-label="译文显示" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.display" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
+          <label><span>双语样式</span><el-select v-model="draft.style" class="babelbox-userscript-select" aria-label="双语样式" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in styleOptions" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
+          <label class="toggle"><span>打开网页后自动翻译</span><el-switch v-model="draft.autoTranslate" class="babelbox-userscript-switch" aria-label="打开网页后自动翻译" /></label>
+          <label class="toggle"><span>使用翻译缓存</span><el-switch v-model="draft.useCache" class="babelbox-userscript-switch" aria-label="使用翻译缓存" /></label>
         </fieldset>
 
         <fieldset>
@@ -37,7 +37,7 @@
               <button type="button" class="service-row-main" @click="selectManagedService(item.id)"><strong>{{ item.name }}</strong><small>{{ providerLabel(item.provider) }}<template v-if="item.modelId"> · {{ item.modelId }}</template></small></button>
               <div class="service-row-actions">
                 <button v-if="item.kind === 'ai'" type="button" class="delete-service" :aria-label="`删除 ${item.name}`" @click.stop="removeAIService(item)">删除</button>
-                <el-switch class="fr-userscript-switch" size="small" :aria-label="`${item.name} 启用状态`" :model-value="item.enabled" @click.stop @change="setServiceEnabled(item, Boolean($event))" />
+                <el-switch class="babelbox-userscript-switch" size="small" :aria-label="`${item.name} 启用状态`" :model-value="item.enabled" @click.stop @change="setServiceEnabled(item, Boolean($event))" />
               </div>
             </div>
           </div>
@@ -57,7 +57,7 @@
             <div class="add-service-actions"><button type="button" class="secondary" @click="showAddService = false">关闭</button></div>
           </div>
 
-          <label><span>当前使用</span><el-select v-model="draft.service" class="fr-userscript-select" aria-label="翻译服务" :teleported="false" :popper-options="selectPopperOptions" @change="managedServiceId = draft.service"><el-option v-for="item in serviceOptions" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
+          <label><span>当前使用</span><el-select v-model="draft.service" class="babelbox-userscript-select" aria-label="翻译服务" :teleported="false" :popper-options="selectPopperOptions" @change="managedServiceId = draft.service"><el-option v-for="item in serviceOptions" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
           <p v-if="serviceDescription" class="hint">{{ serviceDescription }}</p>
           <template v-if="selectedInstance">
             <label v-if="selectedInstance.kind === 'ai'"><span>服务名称</span><input v-model.trim="selectedInstance.name" autocomplete="off" /></label>
@@ -66,13 +66,13 @@
               <el-select
                 v-if="modelCatalogSupported"
                 v-model="selectedInstance.modelId"
-                class="fr-userscript-select"
+                class="babelbox-userscript-select"
                 aria-label="模型 ID"
                 filterable
                 allow-create
                 default-first-option
                 fit-input-width
-                popper-class="fr-userscript-model-catalog-popper"
+                popper-class="babelbox-userscript-model-catalog-popper"
                 :loading="modelCatalogLoading"
                 :teleported="false"
                 :popper-options="selectPopperOptions"
@@ -84,7 +84,7 @@
               </el-select>
               <input v-else v-model.trim="selectedInstance.modelId" autocomplete="off" />
             </label>
-            <label v-if="selectedInstance.kind === 'ai' && usesToken" class="toggle"><span>当前模型需要 API Key</span><el-switch v-model="selectedInstance.requireApiKey" class="fr-userscript-switch" aria-label="当前模型需要 API Key" /></label>
+            <label v-if="selectedInstance.kind === 'ai' && usesToken" class="toggle"><span>当前模型需要 API Key</span><el-switch v-model="selectedInstance.requireApiKey" class="babelbox-userscript-switch" aria-label="当前模型需要 API Key" /></label>
             <label v-if="usesToken"><span>API Key / Token</span><input v-model.trim="serviceApiKey" type="password" autocomplete="off" @change="refreshModelCatalogIfSupported" /></label>
             <label v-if="selectedInstance.kind === 'ai'"><span>请求地址（可选）</span><input v-model.trim="serviceEndpoint" inputmode="url" placeholder="留空使用供应商默认接口" @change="refreshModelCatalogIfSupported" /></label>
             <label v-if="selectedProvider === services.deeplx"><span>DeepLX 地址</span><input v-model.trim="draft.deeplx" inputmode="url" /></label>
@@ -100,31 +100,31 @@
           </template>
           <label v-if="selectedInstance && servicesType.isCoze(selectedProvider)"><span>Bot ID</span><input v-model.trim="selectedInstance.robotId" autocomplete="off" /></label>
           <p v-if="credentialWarning" class="warning">{{ credentialWarning }}</p>
-          <label class="toggle"><span>AI 网页上下文</span><el-switch v-model="draft.enableAIContext" class="fr-userscript-switch" aria-label="AI 网页上下文" :disabled="!canUseAIContext" /></label>
+          <label class="toggle"><span>AI 网页上下文</span><el-switch v-model="draft.enableAIContext" class="babelbox-userscript-switch" aria-label="AI 网页上下文" :disabled="!canUseAIContext" /></label>
         </fieldset>
 
         <fieldset>
           <legend>页面交互</legend>
-          <label class="toggle"><span>显示全文翻译悬浮球</span><el-switch v-model="floatingBallEnabled" class="fr-userscript-switch" aria-label="显示全文翻译悬浮球" /></label>
-          <label class="toggle"><span>显示翻译进度面板</span><el-switch v-model="draft.translationProgressPanelEnabled" class="fr-userscript-switch" aria-label="显示翻译进度面板" /></label>
-          <label><span>全文快捷键</span><el-select v-model="draft.floatingBallHotkey" class="fr-userscript-select" aria-label="全文快捷键" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.floatingBallHotkeys" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
-          <label><span>全文翻译范围</span><el-select v-model="draft.fullPageTranslationMode" class="fr-userscript-select" aria-label="全文翻译范围" :teleported="false" :popper-options="selectPopperOptions"><el-option label="按阅读进度（推荐）" value="viewport" /><el-option label="立即翻译到网页底部" value="all" /></el-select></label>
+          <label class="toggle"><span>显示全文翻译悬浮球</span><el-switch v-model="floatingBallEnabled" class="babelbox-userscript-switch" aria-label="显示全文翻译悬浮球" /></label>
+          <label class="toggle"><span>显示翻译进度面板</span><el-switch v-model="draft.translationProgressPanelEnabled" class="babelbox-userscript-switch" aria-label="显示翻译进度面板" /></label>
+          <label><span>全文快捷键</span><el-select v-model="draft.floatingBallHotkey" class="babelbox-userscript-select" aria-label="全文快捷键" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.floatingBallHotkeys" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
+          <label><span>全文翻译范围</span><el-select v-model="draft.fullPageTranslationMode" class="babelbox-userscript-select" aria-label="全文翻译范围" :teleported="false" :popper-options="selectPopperOptions"><el-option label="按阅读进度（推荐）" value="viewport" /><el-option label="立即翻译到网页底部" value="all" /></el-select></label>
           <p class="hint">“立即翻译到网页底部”会处理当前已加载的整页内容，并持续翻译之后新增的内容；它不会自动滚动页面，但可能产生更多请求。</p>
-          <label><span>悬浮翻译触发</span><el-select v-model="draft.hotkey" class="fr-userscript-select" aria-label="悬浮翻译触发" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in hoverOptions" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
-          <label><span>划词翻译</span><el-select v-model="draft.selectionTranslatorMode" class="fr-userscript-select" aria-label="划词翻译" :teleported="false" :popper-options="selectPopperOptions"><el-option label="关闭" value="disabled" /><el-option label="原文 + 译文" value="bilingual" /><el-option label="仅译文" value="translation-only" /></el-select></label>
-          <label v-if="draft.selectionTranslatorMode !== 'disabled'"><span>划词触发</span><el-select v-model="draft.selectionTranslatorTrigger" class="fr-userscript-select" aria-label="划词触发" :teleported="false" :popper-options="selectPopperOptions"><el-option label="直接显示" value="direct" /><el-option label="翻译图标" value="icon" /><el-option label="小圆点" value="dot" /></el-select></label>
-          <label><span>输入框翻译</span><el-select v-model="draft.inputBoxTranslationTrigger" class="fr-userscript-select" aria-label="输入框翻译" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.inputBoxTranslationTrigger" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
-          <label v-if="draft.inputBoxTranslationTrigger !== 'disabled'"><span>输入框目标语言</span><el-select v-model="draft.inputBoxTranslationTarget" class="fr-userscript-select" aria-label="输入框目标语言" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.inputBoxTranslationTarget" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
+          <label><span>悬浮翻译触发</span><el-select v-model="draft.hotkey" class="babelbox-userscript-select" aria-label="悬浮翻译触发" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in hoverOptions" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
+          <label><span>划词翻译</span><el-select v-model="draft.selectionTranslatorMode" class="babelbox-userscript-select" aria-label="划词翻译" :teleported="false" :popper-options="selectPopperOptions"><el-option label="关闭" value="disabled" /><el-option label="原文 + 译文" value="bilingual" /><el-option label="仅译文" value="translation-only" /></el-select></label>
+          <label v-if="draft.selectionTranslatorMode !== 'disabled'"><span>划词触发</span><el-select v-model="draft.selectionTranslatorTrigger" class="babelbox-userscript-select" aria-label="划词触发" :teleported="false" :popper-options="selectPopperOptions"><el-option label="直接显示" value="direct" /><el-option label="翻译图标" value="icon" /><el-option label="小圆点" value="dot" /></el-select></label>
+          <label><span>输入框翻译</span><el-select v-model="draft.inputBoxTranslationTrigger" class="babelbox-userscript-select" aria-label="输入框翻译" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.inputBoxTranslationTrigger" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
+          <label v-if="draft.inputBoxTranslationTrigger !== 'disabled'"><span>输入框目标语言</span><el-select v-model="draft.inputBoxTranslationTarget" class="babelbox-userscript-select" aria-label="输入框目标语言" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.inputBoxTranslationTarget" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
           <label><span>并发翻译数</span><input v-model.number="draft.maxConcurrentTranslations" type="number" min="1" /></label>
-          <label><span>动画效果</span><el-select v-model="draft.animationMode" class="fr-userscript-select" aria-label="动画效果" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.animationModes" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
-          <label><span>主题</span><el-select v-model="draft.theme" class="fr-userscript-select" aria-label="主题" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.theme" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
+          <label><span>动画效果</span><el-select v-model="draft.animationMode" class="babelbox-userscript-select" aria-label="动画效果" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.animationModes" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
+          <label><span>主题</span><el-select v-model="draft.theme" class="babelbox-userscript-select" aria-label="主题" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.theme" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
         </fieldset>
 
         <fieldset class="filter-fieldset">
           <legend>内容过滤</legend>
           <p class="hint">默认规则可以编辑或删除。网站规则优先于同一元素命中的全局规则。</p>
-          <label class="toggle"><span>跳过隐藏内容</span><el-switch v-model="draft.translationFilter.global.excludeHidden" class="fr-userscript-switch" aria-label="跳过隐藏内容" /></label>
-          <label class="toggle"><span>跳过可编辑内容</span><el-switch v-model="draft.translationFilter.global.excludeEditable" class="fr-userscript-switch" aria-label="跳过可编辑内容" /></label>
+          <label class="toggle"><span>跳过隐藏内容</span><el-switch v-model="draft.translationFilter.global.excludeHidden" class="babelbox-userscript-switch" aria-label="跳过隐藏内容" /></label>
+          <label class="toggle"><span>跳过可编辑内容</span><el-switch v-model="draft.translationFilter.global.excludeEditable" class="babelbox-userscript-switch" aria-label="跳过可编辑内容" /></label>
           <TranslationFilterRulesEditor v-model="draft.translationFilter.global.rules" />
           <div v-if="currentSiteDomain" class="userscript-site-filter-heading">
             <span><strong>当前网站</strong><small>{{ currentSiteDomain }} · 对所有子域生效</small></span>
@@ -205,8 +205,8 @@ import {
 } from './initialize';
 
 const emit = defineEmits<{close: []}>();
-const versionLabel = `FluentRead V${process.env.VUE_APP_VERSION} · Userscript V${process.env.VUE_APP_USERSCRIPT_VERSION}`;
-const iconUrl = globalThis.__FLUENTREAD_ICON_DATA__ || '';
+const versionLabel = `BabelBox V${process.env.VUE_APP_VERSION} · Userscript V${process.env.VUE_APP_USERSCRIPT_VERSION}`;
+const iconUrl = globalThis.__BABELBOX_ICON_DATA__ || '';
 const draft = ref(new Config());
 const saving = ref(false);
 const status = ref('');
@@ -245,7 +245,7 @@ const credentialWarning = computed(() => selectedInstance.value
   : '');
 const modelCatalogSupported = computed(() => selectedInstance.value?.kind === 'ai'
   && hasDynamicTranslationModelCatalog(selectedProvider.value));
-const MODEL_CATALOG_FAILURE_VALUE = '__fluentread_model_catalog_failure__';
+const MODEL_CATALOG_FAILURE_VALUE = '__babelbox_model_catalog_failure__';
 const modelCatalogModels = ref<string[]>([]);
 const modelCatalogLoading = ref(false);
 const modelCatalogError = ref('');
@@ -523,7 +523,7 @@ async function togglePageTranslation(): Promise<void> {
 </script>
 
 <style scoped>
-.fr-userscript-settings-backdrop {
+.babelbox-userscript-settings-backdrop {
   position: fixed;
   inset: 0;
   z-index: 2147483647;
@@ -539,7 +539,7 @@ async function togglePageTranslation(): Promise<void> {
   pointer-events: auto;
   backdrop-filter: blur(8px);
 }
-.fr-userscript-settings {
+.babelbox-userscript-settings {
   display: flex;
   width: min(980px, calc(100vw - 32px));
   max-height: min(900px, calc(100vh - 32px));
@@ -597,19 +597,19 @@ label { display: grid; align-items: center; gap: 10px; margin-top: 11px; grid-te
 label > span { line-height: var(--line-height-tight); }
 input, textarea { width: 100%; min-width: 0; box-sizing: border-box; padding: 9px 10px; border: 1px solid var(--line); border-radius: var(--radius-control); color: var(--ink); background: var(--surface-soft); font: inherit; font-size: var(--font-body); outline: none; }
 input:focus, textarea:focus { border-color: var(--brand); background: var(--surface); box-shadow: 0 0 0 3px var(--brand-soft); }
-.fr-userscript-select { width: 100%; min-width: 0; font-size: var(--font-body); }
-.fr-userscript-select :deep(.el-select__wrapper) { min-height: var(--control-height); padding: 0 10px; border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--surface-soft); box-shadow: none; }
-.fr-userscript-select :deep(.el-select__wrapper:hover) { border-color: var(--el-color-primary-light-3); }
-.fr-userscript-select :deep(.el-select__wrapper.is-focused) { border-color: var(--brand); background: var(--surface); box-shadow: 0 0 0 3px var(--brand-soft); }
-.fr-userscript-select :deep(.el-select__selected-item), .fr-userscript-select :deep(.el-select__placeholder) { color: var(--ink); font-size: var(--font-body); }
-.fr-userscript-settings :deep(.el-select__popper.el-popper) { border-color: var(--line); background: var(--surface); }
-.fr-userscript-settings :deep(.el-select-dropdown__item) { color: var(--ink); font-size: var(--font-body); }
-.fr-userscript-settings :deep(.el-select-dropdown__item.is-hovering) { background: var(--brand-soft); }
-.fr-userscript-settings :deep(.el-select-dropdown__item.is-selected) { color: var(--brand-strong); font-weight: var(--weight-semibold); }
-.fr-userscript-settings :deep(.fr-userscript-model-catalog-popper .el-select-dropdown__item) { height: auto; min-width: 0; min-height: 34px; padding-top: 8px; padding-bottom: 8px; overflow: hidden; line-height: var(--line-height-tight); white-space: normal; }
+.babelbox-userscript-select { width: 100%; min-width: 0; font-size: var(--font-body); }
+.babelbox-userscript-select :deep(.el-select__wrapper) { min-height: var(--control-height); padding: 0 10px; border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--surface-soft); box-shadow: none; }
+.babelbox-userscript-select :deep(.el-select__wrapper:hover) { border-color: var(--el-color-primary-light-3); }
+.babelbox-userscript-select :deep(.el-select__wrapper.is-focused) { border-color: var(--brand); background: var(--surface); box-shadow: 0 0 0 3px var(--brand-soft); }
+.babelbox-userscript-select :deep(.el-select__selected-item), .babelbox-userscript-select :deep(.el-select__placeholder) { color: var(--ink); font-size: var(--font-body); }
+.babelbox-userscript-settings :deep(.el-select__popper.el-popper) { border-color: var(--line); background: var(--surface); }
+.babelbox-userscript-settings :deep(.el-select-dropdown__item) { color: var(--ink); font-size: var(--font-body); }
+.babelbox-userscript-settings :deep(.el-select-dropdown__item.is-hovering) { background: var(--brand-soft); }
+.babelbox-userscript-settings :deep(.el-select-dropdown__item.is-selected) { color: var(--brand-strong); font-weight: var(--weight-semibold); }
+.babelbox-userscript-settings :deep(.babelbox-userscript-model-catalog-popper .el-select-dropdown__item) { height: auto; min-width: 0; min-height: 34px; padding-top: 8px; padding-bottom: 8px; overflow: hidden; line-height: var(--line-height-tight); white-space: normal; }
 .model-catalog-option { display: block; width: 100%; min-width: 0; overflow-wrap: anywhere; white-space: normal; }
 textarea { resize: vertical; line-height: var(--line-height-body); }
-.fr-userscript-switch { --el-switch-on-color: var(--brand); --el-switch-off-color: var(--el-border-color); --el-switch-border-color: var(--el-border-color); justify-self: end; }
+.babelbox-userscript-switch { --el-switch-on-color: var(--brand); --el-switch-off-color: var(--el-border-color); --el-switch-border-color: var(--el-border-color); justify-self: end; }
 .hint, .warning { margin: 8px 0 0; padding: 8px 10px; border-radius: var(--radius-control); font-size: var(--font-caption); line-height: var(--line-height-body); }
 .hint { color: var(--muted); background: var(--surface-soft); }
 .userscript-site-filter-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
@@ -628,8 +628,8 @@ footer button { padding: 9px 13px; border-radius: var(--radius-control); font-si
 .status { min-height: 16px; color: var(--success); font-size: var(--font-caption); }
 .status.error { color: var(--danger); }
 @media (max-width: 720px) {
-  .fr-userscript-settings-backdrop { padding: 0; place-items: stretch; }
-  .fr-userscript-settings { width: 100vw; max-height: 100vh; border: 0; border-radius: 0; }
+  .babelbox-userscript-settings-backdrop { padding: 0; place-items: stretch; }
+  .babelbox-userscript-settings { width: 100vw; max-height: 100vh; border: 0; border-radius: 0; }
   .settings-grid { grid-template-columns: 1fr; }
   fieldset:nth-of-type(3), details { grid-column: auto; }
   .add-provider-grid { grid-template-columns: 1fr; }

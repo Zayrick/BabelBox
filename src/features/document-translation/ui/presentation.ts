@@ -54,7 +54,7 @@ export function getDocumentPreviewMeta(document: ParsedDocument | null): Documen
         hint: '在隔离阅读器中保留标题、段落、列表与表格，脚本和外部请求不会运行',
     };
     return {
-        eyebrow: '流畅阅读',
+        eyebrow: '翻译机',
         title: '原文与译文',
         hint: '按自然段连续阅读和校对，下载时保留原文件换行结构',
     };

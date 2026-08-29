@@ -7,7 +7,7 @@ const { createRequire } = require('node:module');
 
 const DOCUMENT_EXAMPLES = [
   {name: 'sample.pdf', badge: 'PDF', mimeType: 'application/pdf', source: 'Document Translation Example'},
-  {name: 'sample.epub', badge: 'EPUB', mimeType: 'application/epub+zip', source: 'Fluent reading'},
+  {name: 'sample.epub', badge: 'EPUB', mimeType: 'application/epub+zip', source: 'BabelBox reading'},
   {name: 'sample.docx', badge: 'DOCX', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', source: 'REFERENCE GUIDE'},
   {name: 'sample.html', badge: 'HTML', mimeType: 'text/html', source: 'Document translation example'},
   {name: 'sample.txt', badge: 'TXT', mimeType: 'text/plain', source: 'Document translation example'},
@@ -51,7 +51,7 @@ function loadPlaywright(playwrightRoot) {
   } catch (error) {
     if (!playwrightRoot) fail(`无法加载 Playwright：${error.message}`);
     const root = path.resolve(playwrightRoot);
-    const requireFromRuntime = createRequire(path.join(root, '__fluentread_document_test__.cjs'));
+    const requireFromRuntime = createRequire(path.join(root, '__babelbox_document_test__.cjs'));
     return requireFromRuntime('playwright');
   }
 }
@@ -143,9 +143,9 @@ async function main() {
 
   const {chromium} = loadPlaywright(args.playwrightRoot);
   const {launchFocusSafePersistentContext, newPageWithoutForeground} = loadFocusSafeBrowser(args.focusSafeHelper);
-  const artifactsDir = path.resolve(args.artifactsDir || path.join(os.tmpdir(), 'fluentread-document-evidence'));
+  const artifactsDir = path.resolve(args.artifactsDir || path.join(os.tmpdir(), 'babelbox-document-evidence'));
   fs.mkdirSync(artifactsDir, {recursive: true});
-  const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'fluentread-document-edge-profile-'));
+  const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'babelbox-document-edge-profile-'));
   const errors = [];
   const result = {
     ok: false,

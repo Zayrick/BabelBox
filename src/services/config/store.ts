@@ -147,7 +147,7 @@ async function initializeConfigHistory(): Promise<void> {
     } catch (error) {
         historyInitialized = true;
         setHistoryState(createBaselineConfigHistory(config, persistedConfigRevision), false);
-        console.error('[FluentRead] 配置历史读取失败，使用当前配置快照', error);
+        console.error('[BabelBox] 配置历史读取失败，使用当前配置快照', error);
     }
 }
 
@@ -178,7 +178,7 @@ function flushHistorySnapshot(snapshot: RestorableConfig): Promise<void> {
         if (historyFlushPromise === current) historyFlushPromise = null;
     };
     void current.then(clearIfCurrent, clearIfCurrent);
-    void current.catch((error) => console.error('[FluentRead] 配置历史保存失败', error));
+    void current.catch((error) => console.error('[BabelBox] 配置历史保存失败', error));
     return current;
 }
 
@@ -348,7 +348,7 @@ function registerSessionCredentialWatch(): void {
         });
         sessionCredentialWatchRegistered = true;
     } catch (error) {
-        console.warn('[FluentRead] 当前浏览器不支持 session 凭据监听', error);
+        console.warn('[BabelBox] 当前浏览器不支持 session 凭据监听', error);
     }
 }
 
@@ -428,7 +428,7 @@ async function initializeConfig(): Promise<void> {
                 await writeAndVerifyCredentials(SESSION_CREDENTIALS_STORAGE_KEY, checkpointCredentials);
             } catch (error) {
                 lastPersistedSerialized = serialized;
-                console.warn('[FluentRead] session 凭据不可用，保留旧凭据存储以避免数据丢失', error);
+                console.warn('[BabelBox] session 凭据不可用，保留旧凭据存储以避免数据丢失', error);
                 registerSessionCredentialWatch();
                 return;
             }
@@ -473,11 +473,11 @@ async function initializeConfig(): Promise<void> {
     } catch (error) {
         if (initialized) {
             lastPersistedSerialized = serializeConfig(config);
-            console.error('[FluentRead] 配置安全迁移未完成，保留当前运行时与旧存储以便重试', error);
+            console.error('[BabelBox] 配置安全迁移未完成，保留当前运行时与旧存储以便重试', error);
             return;
         }
         // 存储 API 暂时不可用时仍提供默认配置，避免 Firefox 设置页因初始化 rejection 反复重载。
-        console.error('[FluentRead] 配置读取失败，使用默认配置', error);
+        console.error('[BabelBox] 配置读取失败，使用默认配置', error);
         const fallback = new Config();
         initialized = true;
         lastPersistedSerialized = '';
@@ -691,7 +691,7 @@ export async function requestConfigHistoryAction(
     } catch (error) {
         const history = await applyConfigHistoryAction(action, version);
         if (error instanceof Error && !error.message.includes('Receiving end')) {
-            console.warn('[FluentRead] 后台配置历史操作失败，已回退到当前上下文', error);
+            console.warn('[BabelBox] 后台配置历史操作失败，已回退到当前上下文', error);
         }
         return history;
     }

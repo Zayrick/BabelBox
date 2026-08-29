@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// 在临时 Chromium/Edge profile 中验证 FluentRead 的网页隐私边界：
+// 在临时 Chromium/Edge profile 中验证 BabelBox 的网页隐私边界：
 // 1. 内容脚本不修改宿主站点 localStorage；
 // 2. 扩展 UI 保持 closed Shadow DOM，宿主页面不能访问扩展存储；
 // 3. options 真实消息/UI 路径遵守 session 默认、显式 local opt-in、导出脱敏和 opt-out 清理。
@@ -16,7 +16,7 @@ const HOST_SENTINEL_KEY = 'host-sentinel';
 const HOST_SENTINEL_VALUE = 'keep-host-data';
 const HOST_PREFERENCE_KEY = 'host-preference';
 const HOST_PREFERENCE_VALUE = 'keep-preference';
-const CREDENTIAL_SENTINEL_PREFIX = 'fr-api-key-lifecycle-sentinel-';
+const CREDENTIAL_SENTINEL_PREFIX = 'babelbox-api-key-lifecycle-sentinel-';
 const CREDENTIAL_FIELDS = [
   'token',
   'ak',
@@ -35,8 +35,8 @@ function parseArgs(argv) {
     background: true,
     timeout: 45_000,
     browserPath: null,
-    focusSafeHelper: process.env.FLUENTREAD_FOCUS_SAFE_HELPER || '',
-    artifactsDir: path.join(os.tmpdir(), 'fluentread-privacy-boundary-evidence'),
+    focusSafeHelper: process.env.BABELBOX_FOCUS_SAFE_HELPER || '',
+    artifactsDir: path.join(os.tmpdir(), 'babelbox-privacy-boundary-evidence'),
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -67,14 +67,14 @@ function loadPlaywright(playwrightRoot) {
   } catch (localError) {
     if (!playwrightRoot) throw localError;
     const root = path.resolve(playwrightRoot);
-    const loader = createRequire(path.join(root, '__fluentread_privacy_boundary_loader__.cjs'));
+    const loader = createRequire(path.join(root, '__babelbox_privacy_boundary_loader__.cjs'));
     return loader('playwright');
   }
 }
 
 function loadFocusSafeBrowser(helperPath) {
   if (!helperPath) {
-    throw new Error('后台浏览器测试必须传入 --focus-safe-helper 或设置 FLUENTREAD_FOCUS_SAFE_HELPER');
+    throw new Error('后台浏览器测试必须传入 --focus-safe-helper 或设置 BABELBOX_FOCUS_SAFE_HELPER');
   }
   const resolved = path.resolve(helperPath);
   if (!fs.existsSync(resolved)) throw new Error(`focus-safe helper 不存在：${resolved}`);
@@ -154,7 +154,7 @@ function fixtureHtml() {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>FluentRead Privacy Boundary Fixture</title>
+  <title>BabelBox Privacy Boundary Fixture</title>
   <script>
     (() => {
       const entries = ${JSON.stringify(initialStorage)};
@@ -340,10 +340,10 @@ async function configurePrivacySurfaces(worker) {
     while (Date.now() < initializationDeadline) {
       const stored = await chrome.storage.local.get('config');
       current = parseConfig(stored.config);
-      if (Number.isSafeInteger(current.__fluentConfigRevision)) break;
+      if (Number.isSafeInteger(current.__babelboxConfigRevision)) break;
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
-    if (!Number.isSafeInteger(current.__fluentConfigRevision)) {
+    if (!Number.isSafeInteger(current.__babelboxConfigRevision)) {
       throw new Error('background config initialization did not complete');
     }
     const next = {
@@ -357,10 +357,10 @@ async function configurePrivacySurfaces(worker) {
       selectionAreaEnabled: true,
       disableImageTranslator: false,
       persistCredentials: false,
-      __fluentConfigRevision: current.__fluentConfigRevision + 1,
+      __babelboxConfigRevision: current.__babelboxConfigRevision + 1,
     };
     await chrome.storage.local.set({ config: next });
-    const matchesExpectedSurfaces = (value) => value.__fluentConfigRevision === next.__fluentConfigRevision
+    const matchesExpectedSurfaces = (value) => value.__babelboxConfigRevision === next.__babelboxConfigRevision
       && value.disableFloatingBall === false
       && value.disableSelectionTranslator === false
       && value.selectionAreaEnabled === true
@@ -541,30 +541,30 @@ async function pageBoundaryState(page) {
         .filter((key) => typeof key === 'string')
         .map((key) => [key, localStorage.getItem(key)]),
     );
-    const extensionHosts = Array.from(document.querySelectorAll('[data-fluent-read-ui], [id^="fluent-read-"]'));
+    const extensionHosts = Array.from(document.querySelectorAll('[data-babelbox-ui], [id^="babelbox-"]'));
     return {
       storage,
       pageCanAccessChromeStorage: Boolean(globalThis.chrome?.storage),
       pageCanAccessBrowserStorage: Boolean(globalThis.browser?.storage),
       extensionHosts: extensionHosts.map((host) => ({
         id: host.id,
-        ui: host.getAttribute('data-fluent-read-ui'),
+        ui: host.getAttribute('data-babelbox-ui'),
         hasOpenShadowRoot: Boolean(host.shadowRoot),
       })),
       areaBoundary: (() => {
-        const host = document.querySelector('#fluent-read-area-translator-container');
+        const host = document.querySelector('#babelbox-area-translator-container');
         return { present: Boolean(host), pageVisibleShadowRoot: Boolean(host?.shadowRoot) };
       })(),
       floatingBoundary: (() => {
-        const host = document.querySelector('#fluent-read-floating-ball-container');
+        const host = document.querySelector('#babelbox-floating-ball-container');
         return { present: Boolean(host), pageVisibleShadowRoot: Boolean(host?.shadowRoot) };
       })(),
       selectionBoundary: (() => {
-        const host = document.querySelector('#fluent-read-selection-translator-container');
+        const host = document.querySelector('#babelbox-selection-translator-container');
         return { present: Boolean(host), pageVisibleShadowRoot: Boolean(host?.shadowRoot) };
       })(),
       imageBoundary: (() => {
-        const host = document.querySelector('#fluent-read-image-translation-root');
+        const host = document.querySelector('#babelbox-image-translation-root');
         return { present: Boolean(host), pageVisibleShadowRoot: Boolean(host?.shadowRoot) };
       })(),
     };
@@ -618,7 +618,7 @@ async function main() {
   const artifactsDir = path.resolve(args.artifactsDir);
   const browserPath = resolveBrowserExecutable(args.browserPath);
   const manifestEvidence = readManifest(extensionDir);
-  const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'fluentread-privacy-boundary-'));
+  const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'babelbox-privacy-boundary-'));
   const credentialSentinel = `${CREDENTIAL_SENTINEL_PREFIX}${randomUUID()}`;
   const credentialSentinelSha256 = createHash('sha256').update(credentialSentinel).digest('hex');
   const credentialMessageClientId = `privacy-boundary-credential-lifecycle-${randomUUID()}`;
@@ -711,18 +711,18 @@ async function main() {
 
     await page.goto(fixture.url, { waitUntil: 'domcontentloaded', timeout: args.timeout });
     await activatePage(page);
-    await page.waitForSelector('#fluent-read-page-styles', { state: 'attached', timeout: args.timeout });
+    await page.waitForSelector('#babelbox-page-styles', { state: 'attached', timeout: args.timeout });
     const initialStorage = await page.evaluate(() => window.__privacyBoundaryInitialStorage);
     assertHostStorageBoundary(initialStorage, await page.evaluate(storageObjectFromPage));
 
     const configuredSurfaces = await configurePrivacySurfaces(worker);
     await page.reload({ waitUntil: 'domcontentloaded', timeout: args.timeout });
-    await page.waitForSelector('#fluent-read-page-styles', { state: 'attached', timeout: args.timeout });
-    await page.waitForSelector('#fluent-read-floating-ball-container', { state: 'attached', timeout: args.timeout });
-    await page.waitForSelector('#fluent-read-selection-translator-container', { state: 'attached', timeout: args.timeout });
-    await page.waitForSelector('#fluent-read-area-translator-container', { state: 'attached', timeout: args.timeout });
+    await page.waitForSelector('#babelbox-page-styles', { state: 'attached', timeout: args.timeout });
+    await page.waitForSelector('#babelbox-floating-ball-container', { state: 'attached', timeout: args.timeout });
+    await page.waitForSelector('#babelbox-selection-translator-container', { state: 'attached', timeout: args.timeout });
+    await page.waitForSelector('#babelbox-area-translator-container', { state: 'attached', timeout: args.timeout });
     await page.hover('#privacy-image');
-    await page.waitForSelector('#fluent-read-image-translation-root', { state: 'attached', timeout: args.timeout });
+    await page.waitForSelector('#babelbox-image-translation-root', { state: 'attached', timeout: args.timeout });
     await page.screenshot({ path: path.join(artifactsDir, 'privacy-boundary-before-events.png'), fullPage: true });
     evidence.screenshots.push(path.join(artifactsDir, 'privacy-boundary-before-events.png'));
 

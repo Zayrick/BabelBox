@@ -250,7 +250,7 @@ describe('translation API request lifecycle performance', () => {
   it('preserves structured background error details', async () => {
     mocks.config.service = 'mock-ai';
     mocks.sendMessage.mockResolvedValue({
-      marker: 'fluentread-translation-error-v1',
+      marker: 'babelbox-translation-error-v1',
       message: '当前翻译服务的 API Key 无效（HTTP 401）。',
       kind: 'authentication',
       retryable: false,

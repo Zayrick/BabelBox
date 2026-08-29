@@ -37,8 +37,8 @@ export function mountFloatingBall(ctx?: ContentScriptContext) {
   config.floatingBallPosition = ballPosition;
 
   mountingPromise = createVueShadowUi(contentScriptContext, {
-    name: 'fluent-read-floating-ball-ui',
-    hostId: 'fluent-read-floating-ball-container',
+    name: 'babelbox-floating-ball-ui',
+    hostId: 'babelbox-floating-ball-container',
     component: FloatingBall,
     props: {
       position: ballPosition,
@@ -47,7 +47,7 @@ export function mountFloatingBall(ctx?: ContentScriptContext) {
       initialTranslating: isFullPageTranslationActive(),
       onSettingsClick: () => {
         void browser.runtime.sendMessage({type: 'openOptionsPage'}).catch((error: unknown) => {
-          console.error('[FluentRead] 打开设置页失败', error);
+          console.error('[BabelBox] 打开设置页失败', error);
         });
       },
       // 添加位置变化事件监听
@@ -86,7 +86,7 @@ export function mountFloatingBall(ctx?: ContentScriptContext) {
 
     return floatingBallInstance;
   }).catch((error: unknown) => {
-    console.error('[FluentRead] 悬浮球挂载失败', error);
+    console.error('[BabelBox] 悬浮球挂载失败', error);
     return null;
   }).finally(() => {
     mountingPromise = null;

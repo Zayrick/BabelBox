@@ -152,7 +152,7 @@ describe('Offscreen platform client', () => {
         expect(createDocument).toHaveBeenCalledWith({
             url: 'pages/offscreen.html',
             reasons: ['DOM_SCRAPING', 'AUDIO_PLAYBACK'],
-            justification: 'FluentRead needs an extension-owned DOM for Translation API, OCR, and CSP-independent TTS playback',
+            justification: 'BabelBox needs an extension-owned DOM for Translation API, OCR, and CSP-independent TTS playback',
         });
         creation.resolve();
         await expect(Promise.all([first, second])).resolves.toEqual([undefined, undefined]);

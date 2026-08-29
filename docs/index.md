@@ -2,12 +2,9 @@
 layout: home
 
 hero:
-  name: FluentRead
+  name: BabelBox
   text: 让双语阅读自然发生
   tagline: 一个开源、可定制、以阅读体验为中心的浏览器翻译扩展。保留原文结构，在你真正需要的地方呈现译文。
-  image:
-    src: /logo.png
-    alt: FluentRead logo
   actions:
     - theme: brand
       text: 立即开始
@@ -17,7 +14,7 @@ hero:
       link: /guide/features
     - theme: alt
       text: GitHub
-      link: https://github.com/Bistutu/FluentRead
+      link: https://github.com/Zayrick/BabelBox
 
 features:
   - title: 页面翻译
@@ -36,33 +33,18 @@ features:
 
 <div class="home-section">
 
-## 先看它如何工作
+## 核心工作流
 
-FluentRead 会把译文放在原文附近，而不是把你带到另一个页面。你可以在同一篇文章中对照阅读、恢复原文，或再次翻译。
+1. 打开普通网页或受支持的本地文档。
+2. 在弹窗中选择源语言、目标语言和翻译服务。
+3. 执行全文、划词、悬浮、图片、圈选、文档或视频字幕翻译。
+4. 在原内容附近阅读译文，随时恢复原文或更换配置后重译。
 
-<figure class="showcase-card">
-  <img src="/screenshots/translation.png" alt="FluentRead translating an article into bilingual paragraphs" />
-  <figcaption>在原页面中保留段落结构，译文紧跟原文呈现。</figcaption>
-</figure>
+BabelBox 不要求跳转到独立翻译网站。全文译文会放回原段落附近，局部功能则只处理当前选择的内容。
 
-## 一个干净的控制中心
+## 界面与配置
 
-常用操作集中在弹窗里：选择源语言和目标语言、切换翻译模式、打开设置，或快速恢复当前页面。
-
-<div class="showcase-grid">
-  <figure class="showcase-card">
-    <img src="/screenshots/popup.png" alt="FluentRead popup with translation controls" />
-    <figcaption>弹窗：语言、模式和常用操作一目了然。</figcaption>
-  </figure>
-  <figure class="showcase-card">
-    <img src="/screenshots/settings-general.png" alt="FluentRead general settings page" />
-    <figcaption>设置：按阅读习惯调整主题、样式和行为。</figcaption>
-  </figure>
-  <figure class="showcase-card">
-    <img src="/screenshots/settings-services.png" alt="FluentRead translation services settings" />
-    <figcaption>服务：集中管理可用的翻译引擎与凭据。</figcaption>
-  </figure>
-</div>
+弹窗负责当前页面的高频操作；完整设置页负责阅读偏好、翻译服务与模型、快捷键、网站规则、图片翻译、单词本、高级行为和配置历史。服务凭据按实例隔离，默认只在当前浏览器会话中保存。
 
 ## 从这里开始
 
@@ -83,6 +65,10 @@ FluentRead 会把译文放在原文附近，而不是把你带到另一个页面
 
 ## 开源项目
 
-FluentRead 使用 GPL-3.0 许可证发布。欢迎通过 GitHub 提交问题、改进建议或代码贡献。
+BabelBox 使用 GPL-3.0 许可证发布。欢迎通过 GitHub 提交问题、改进建议或代码贡献。
+
+BabelBox 基于上游 [FluentRead](https://github.com/FluentRead/FluentRead) 继续开发，感谢原项目及所有贡献者。
+
+如希望支持公益，可前往 [UNICEF](https://www.unicef.org/) 为联合国儿童基金会作贡献。
 
 </div>

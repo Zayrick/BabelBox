@@ -1,4 +1,4 @@
-export const TRANSLATION_SHIMMER_ATTRIBUTE = 'data-fr-translation-shimmer';
+export const TRANSLATION_SHIMMER_ATTRIBUTE = 'data-babelbox-translation-shimmer';
 
 export function applyTranslationShimmer(node: HTMLElement): void {
     node.setAttribute(TRANSLATION_SHIMMER_ATTRIBUTE, 'true');

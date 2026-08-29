@@ -14,8 +14,8 @@ dist
 .wxt
 
 # Dependency-derived extension runtime assets are injected by wxt.config.ts
-/public/fluent-read-ocr/core/
-/public/fluent-read-ocr/worker/
+/public/babelbox-ocr/core/
+/public/babelbox-ocr/worker/
 /public/pdfjs/
 
 # Docs

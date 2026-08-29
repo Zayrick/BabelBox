@@ -181,11 +181,11 @@ describe('translation cache persistence policy', () => {
     vi.spyOn(translationCacheDb.entries, 'get').mockRejectedValueOnce(new Error('blocked read'));
 
     await expect(translationCache.get('read-failure', 1_000)).resolves.toBeNull();
-    expect(warn).toHaveBeenCalledWith('[FluentRead] translation cache read failed:', expect.any(Error));
+    expect(warn).toHaveBeenCalledWith('[BabelBox] translation cache read failed:', expect.any(Error));
 
     vi.spyOn(translationCacheDb, 'transaction').mockRejectedValueOnce(new Error('quota'));
     await expect(translationCache.set('write-failure', '译文', 1_000)).resolves.toBe(false);
-    expect(warn).toHaveBeenCalledWith('[FluentRead] translation cache write failed:', expect.any(Error));
+    expect(warn).toHaveBeenCalledWith('[BabelBox] translation cache write failed:', expect.any(Error));
   });
 
   it('cleanup removes expired records and stale memory entries', async () => {
@@ -216,7 +216,7 @@ describe('translation cache persistence policy', () => {
     });
 
     await expect(translationCache.cleanup(10_000)).resolves.toBeUndefined();
-    expect(warn).toHaveBeenCalledWith('[FluentRead] translation cache cleanup failed:', expect.any(Error));
+    expect(warn).toHaveBeenCalledWith('[BabelBox] translation cache cleanup failed:', expect.any(Error));
   });
 
   it('clear removes memory and IndexedDB entries', async () => {
@@ -233,7 +233,7 @@ describe('translation cache persistence policy', () => {
     vi.spyOn(translationCacheDb.entries, 'clear').mockRejectedValueOnce(new Error('clear blocked'));
 
     await expect(translationCache.clear()).rejects.toThrow('clear blocked');
-    expect(warn).toHaveBeenCalledWith('[FluentRead] translation cache clear failed:', expect.any(Error));
+    expect(warn).toHaveBeenCalledWith('[BabelBox] translation cache clear failed:', expect.any(Error));
   });
 
   it('uses Date.now defaults for ordinary set and get calls', async () => {

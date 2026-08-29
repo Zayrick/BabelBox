@@ -61,40 +61,40 @@
 .style-preview-example { padding: 12px 14px; border-radius: 8px; background: var(--surface-soft); }
 .style-preview-source { margin: 0 0 8px; color: var(--muted); font-size: var(--font-small); }
 .style-preview-text { margin: 0; color: var(--ink); font-size: var(--font-subtitle); line-height: 1.7; transition: all 160ms ease; }
-.style-preview-text.fluent-display-default { color: var(--ink); }
-.style-preview-text.fluent-display-bold { font-weight: var(--weight-bold); }
-.style-preview-text.fluent-display-italic { font-style: italic; }
-.style-preview-text.fluent-display-text-shadow { text-shadow: 1px 2px 3px rgba(23, 32, 51, .22); }
-.style-preview-text.fluent-display-solid-underline { text-decoration: underline; text-decoration-color: #4d8eea; text-decoration-thickness: 2px; text-underline-offset: 4px; }
-.style-preview-text.fluent-display-dot-underline { text-decoration: underline dotted #4d8eea 2px; text-underline-offset: 4px; }
-.style-preview-text.fluent-display-wavy { text-decoration: underline wavy #ef4776 2px; text-underline-offset: 4px; }
-.style-preview-text.fluent-display-card-mode { padding: 8px 10px; border-radius: 8px; background: #f4f6fb; }
-.style-preview-text.fluent-display-modern-card { padding: 8px 10px; border-radius: 8px; background: linear-gradient(90deg, #fff0f4, #f1f4ff); }
-.style-preview-text.fluent-display-paper { padding: 8px 10px; border: 1px solid #eadfca; background: #fffaf0; }
-.style-preview-text.fluent-display-learning-mode { padding: 2px 6px; background: #fff1a8; }
-.style-preview-text.fluent-display-marker { padding: 2px 6px; background: #d6f5b7; }
-.style-preview-text.fluent-display-highlight-fade { padding: 2px 6px; background: linear-gradient(90deg, #fff0b8, transparent); }
-.style-preview-text.fluent-display-lightyellow { padding: 4px 8px; background: #fff7db; }
-.style-preview-text.fluent-display-lightblue { padding: 4px 8px; background: #eaf4ff; }
-.style-preview-text.fluent-display-lightgray { padding: 4px 8px; background: #f1f3f5; }
-.style-preview-text.fluent-display-quote { padding-left: 10px; border-left: 3px solid #ef4776; }
-.style-preview-text.fluent-display-border { padding: 6px 9px; border: 1px solid #bfc8d8; border-radius: 6px; }
-.style-preview-text.fluent-display-focus { padding: 5px 8px; border-radius: 6px; box-shadow: 0 0 0 3px rgba(239, 71, 118, .12); }
-.style-preview-text.fluent-display-clean { border-bottom: 2px solid #ef4776; }
-.style-preview-text.fluent-display-tech { padding: 5px 8px; border-radius: 5px; color: #245070; background: #edf6fb; font-family: ui-monospace, SFMono-Regular, monospace; }
-.style-preview-text.fluent-display-elegant { font-family: Georgia, "Songti SC", serif; letter-spacing: .04em; }
-.style-preview-text.fluent-display-dimmed { opacity: .62; }
-.style-preview-text.fluent-display-transparent-mode { opacity: .82; }
+.style-preview-text.babelbox-display-default { color: var(--ink); }
+.style-preview-text.babelbox-display-bold { font-weight: var(--weight-bold); }
+.style-preview-text.babelbox-display-italic { font-style: italic; }
+.style-preview-text.babelbox-display-text-shadow { text-shadow: 1px 2px 3px rgba(23, 32, 51, .22); }
+.style-preview-text.babelbox-display-solid-underline { text-decoration: underline; text-decoration-color: #4d8eea; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.style-preview-text.babelbox-display-dot-underline { text-decoration: underline dotted #4d8eea 2px; text-underline-offset: 4px; }
+.style-preview-text.babelbox-display-wavy { text-decoration: underline wavy #ef4776 2px; text-underline-offset: 4px; }
+.style-preview-text.babelbox-display-card-mode { padding: 8px 10px; border-radius: 8px; background: #f4f6fb; }
+.style-preview-text.babelbox-display-modern-card { padding: 8px 10px; border-radius: 8px; background: linear-gradient(90deg, #fff0f4, #f1f4ff); }
+.style-preview-text.babelbox-display-paper { padding: 8px 10px; border: 1px solid #eadfca; background: #fffaf0; }
+.style-preview-text.babelbox-display-learning-mode { padding: 2px 6px; background: #fff1a8; }
+.style-preview-text.babelbox-display-marker { padding: 2px 6px; background: #d6f5b7; }
+.style-preview-text.babelbox-display-highlight-fade { padding: 2px 6px; background: linear-gradient(90deg, #fff0b8, transparent); }
+.style-preview-text.babelbox-display-lightyellow { padding: 4px 8px; background: #fff7db; }
+.style-preview-text.babelbox-display-lightblue { padding: 4px 8px; background: #eaf4ff; }
+.style-preview-text.babelbox-display-lightgray { padding: 4px 8px; background: #f1f3f5; }
+.style-preview-text.babelbox-display-quote { padding-left: 10px; border-left: 3px solid #ef4776; }
+.style-preview-text.babelbox-display-border { padding: 6px 9px; border: 1px solid #bfc8d8; border-radius: 6px; }
+.style-preview-text.babelbox-display-focus { padding: 5px 8px; border-radius: 6px; box-shadow: 0 0 0 3px rgba(239, 71, 118, .12); }
+.style-preview-text.babelbox-display-clean { border-bottom: 2px solid #ef4776; }
+.style-preview-text.babelbox-display-tech { padding: 5px 8px; border-radius: 5px; color: #245070; background: #edf6fb; font-family: ui-monospace, SFMono-Regular, monospace; }
+.style-preview-text.babelbox-display-elegant { font-family: Georgia, "Songti SC", serif; letter-spacing: .04em; }
+.style-preview-text.babelbox-display-dimmed { opacity: .62; }
+.style-preview-text.babelbox-display-transparent-mode { opacity: .82; }
 
-.style-preview-text.fluent-display-card-mode,
-.style-preview-text.fluent-display-modern-card,
-.style-preview-text.fluent-display-paper,
-.style-preview-text.fluent-display-learning-mode,
-.style-preview-text.fluent-display-marker,
-.style-preview-text.fluent-display-lightyellow,
-.style-preview-text.fluent-display-lightblue,
-.style-preview-text.fluent-display-lightgray,
-.style-preview-text.fluent-display-tech { color: #172033; }
+.style-preview-text.babelbox-display-card-mode,
+.style-preview-text.babelbox-display-modern-card,
+.style-preview-text.babelbox-display-paper,
+.style-preview-text.babelbox-display-learning-mode,
+.style-preview-text.babelbox-display-marker,
+.style-preview-text.babelbox-display-lightyellow,
+.style-preview-text.babelbox-display-lightblue,
+.style-preview-text.babelbox-display-lightgray,
+.style-preview-text.babelbox-display-tech { color: #172033; }
 
 .disabled-section {
   margin: 12px;

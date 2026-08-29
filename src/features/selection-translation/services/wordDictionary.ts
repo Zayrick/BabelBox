@@ -850,7 +850,7 @@ function createWordDictionaryLookup(options: WordDictionaryLookupOptions = {}): 
                     && hasNonLocalBackup(merged)) break;
             } catch (error) {
                 // 单个公共服务失败不向 UI 泄漏内部错误，继续下一个 provider。
-                warn(`[FluentRead] word provider ${provider.id} unavailable`, error);
+                warn(`[BabelBox] word provider ${provider.id} unavailable`, error);
             }
         }
         return finalizeWordCard(merged);

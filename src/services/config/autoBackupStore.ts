@@ -94,7 +94,7 @@ async function initializeConfigAutoBackups(): Promise<void> {
     } catch (error) {
         initialized = true;
         setBackupState(createBaselineConfigAutoBackups(config), false);
-        console.error('[FluentRead] 自动配置备份读取失败，使用当前配置基线', error);
+        console.error('[BabelBox] 自动配置备份读取失败，使用当前配置基线', error);
     }
 }
 

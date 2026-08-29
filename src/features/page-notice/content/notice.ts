@@ -13,7 +13,7 @@ interface MissingCredentialNotice {
     credentialLabel: string;
 }
 
-const PAGE_NOTICE_HOST_ID = 'fluent-read-page-notice-host';
+const PAGE_NOTICE_HOST_ID = 'babelbox-page-notice-host';
 const NOTICE_EXIT_DURATION = 180;
 let noticeHost: HTMLElement | null = null;
 let noticeStack: HTMLElement | null = null;
@@ -67,10 +67,10 @@ function getNoticeStack(): HTMLElement {
         return noticeStack;
     }
 
-    const host = document.createElement('fluent-read-page-notice');
+    const host = document.createElement('babelbox-page-notice');
     host.id = PAGE_NOTICE_HOST_ID;
-    host.setAttribute('data-fr-page-notice-host', 'true');
-    host.setAttribute('data-fluent-read-ui', '');
+    host.setAttribute('data-babelbox-page-notice-host', 'true');
+    host.setAttribute('data-babelbox-ui', '');
     host.setAttribute('translate', 'no');
     host.setAttribute('aria-live', 'assertive');
     applyHostStyles(host);
@@ -127,20 +127,20 @@ export function showPageNotice(message: string, type: NoticeType): HTMLElement {
     notice.className = `page-notice page-notice-${tone}`;
     const prefersDark = typeof window.matchMedia === 'function'
         && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    notice.classList.toggle('fr-dark-theme', resolvesToDarkTheme(config.theme, prefersDark));
+    notice.classList.toggle('babelbox-dark-theme', resolvesToDarkTheme(config.theme, prefersDark));
     notice.setAttribute('role', 'alert');
     notice.setAttribute('aria-atomic', 'true');
 
     const mark = document.createElement('img');
     mark.className = 'notice-mark';
     mark.src = browser.runtime.getURL('/icon/48.png');
-    mark.alt = '流畅阅读';
+    mark.alt = '翻译机';
 
     const copy = document.createElement('span');
     copy.className = 'notice-copy';
     const heading = document.createElement('span');
     heading.className = 'notice-heading';
-    appendTextElement(heading, 'strong', 'notice-brand', '流畅阅读');
+    appendTextElement(heading, 'strong', 'notice-brand', '翻译机');
     appendTextElement(heading, 'span', 'notice-divider', '·');
     appendTextElement(heading, 'span', 'notice-title', getNoticeTitle(type, credential));
 
@@ -154,7 +154,7 @@ export function showPageNotice(message: string, type: NoticeType): HTMLElement {
         action.textContent = '去设置';
         action.addEventListener('click', () => {
             void browser.runtime.sendMessage({type: 'openOptionsPage'}).catch((error: unknown) => {
-                console.error('[FluentRead] 打开设置页失败', error);
+                console.error('[BabelBox] 打开设置页失败', error);
             });
         });
         body.appendChild(action);

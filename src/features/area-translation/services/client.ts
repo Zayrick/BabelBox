@@ -13,7 +13,7 @@ interface AreaTranslationResponse extends Partial<AreaTranslationResult> {
 }
 
 export async function captureVisibleAreaInExtension(): Promise<string> {
-    const response = await browser.runtime.sendMessage({ type: 'fluentReadAreaCapture' }) as { success?: boolean; image?: string; error?: string } | undefined;
+    const response = await browser.runtime.sendMessage({ type: 'babelboxAreaCapture' }) as { success?: boolean; image?: string; error?: string } | undefined;
     if (!response?.success || !response.image) {
         throw new Error(response?.error || '无法读取当前页面区域');
     }
@@ -27,7 +27,7 @@ export async function translateCapturedAreaInExtension(
     title: string,
 ): Promise<AreaTranslationResult> {
     const response = await browser.runtime.sendMessage({
-        type: 'fluentReadAreaTranslateCapture',
+        type: 'babelboxAreaTranslateCapture',
         image,
         selection,
         sourceLanguage,

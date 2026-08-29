@@ -56,7 +56,7 @@ const LOCAL_BROWSER_FIXTURES = [
         id: 'userscript-smoke',
         label: 'userscript browser smoke regression',
         script: 'scripts/run-userscript-smoke-test.cjs',
-        artifact: '.output/userscript/fluent-read.user.js',
+        artifact: '.output/userscript/babelbox.user.js',
         backgroundArgs: ['--background'],
         supportsHeaded: true,
     },
@@ -83,11 +83,11 @@ function printUsage() {
         '  --dry-run                 输出执行 plan，不启动测试、构建、浏览器或网络。',
         '',
         '浏览器/网络参数：',
-        '  --extension-dir <path>       默认 FLUENTREAD_EXTENSION_DIR 或 .output/chrome-mv3',
+        '  --extension-dir <path>       默认 BABELBOX_EXTENSION_DIR 或 .output/chrome-mv3',
         '  --playwright-root <path>     默认 PLAYWRIGHT_ROOT',
-        '  --browser-path <path>        默认 FLUENTREAD_BROWSER_PATH',
-        '  --focus-safe-helper <path>   默认 FLUENTREAD_FOCUS_SAFE_HELPER；后台浏览器必需',
-        '  --artifacts-dir <path>       默认系统临时目录下的 fluentread-full-regression-*',
+        '  --browser-path <path>        默认 BABELBOX_BROWSER_PATH',
+        '  --focus-safe-helper <path>   默认 BABELBOX_FOCUS_SAFE_HELPER；后台浏览器必需',
+        '  --artifacts-dir <path>       默认系统临时目录下的 babelbox-full-regression-*',
         '  --timeout <ms>               传给支持 timeout 的浏览器脚本',
     ].join('\n'));
 }
@@ -111,13 +111,13 @@ export function parseCli(argv, env = process.env, runtime = {}) {
         headed: false,
         help: false,
         network: false,
-        extensionDir: env.FLUENTREAD_EXTENSION_DIR || '.output/chrome-mv3',
+        extensionDir: env.BABELBOX_EXTENSION_DIR || '.output/chrome-mv3',
         playwrightRoot: env.PLAYWRIGHT_ROOT || '',
-        browserPath: env.FLUENTREAD_BROWSER_PATH || '',
-        focusSafeHelper: env.FLUENTREAD_FOCUS_SAFE_HELPER || '',
-        artifactsDir: env.FLUENTREAD_REGRESSION_ARTIFACTS_DIR ||
-            path.join(os.tmpdir(), `fluentread-full-regression-${process.pid}-${runtime.now ?? Date.now()}`),
-        timeout: env.FLUENTREAD_BROWSER_TIMEOUT || '',
+        browserPath: env.BABELBOX_BROWSER_PATH || '',
+        focusSafeHelper: env.BABELBOX_FOCUS_SAFE_HELPER || '',
+        artifactsDir: env.BABELBOX_REGRESSION_ARTIFACTS_DIR ||
+            path.join(os.tmpdir(), `babelbox-full-regression-${process.pid}-${runtime.now ?? Date.now()}`),
+        timeout: env.BABELBOX_BROWSER_TIMEOUT || '',
     };
 
     for (let index = 0; index < argv.length; index += 1) {
@@ -195,10 +195,10 @@ function normalizeOptions(options) {
         throw new Error('浏览器/网络回归必须传入 --playwright-root 或设置 PLAYWRIGHT_ROOT');
     }
     if ((normalized.browser || normalized.network) && !normalized.browserPath) {
-        throw new Error('浏览器/网络回归必须传入 --browser-path 或设置 FLUENTREAD_BROWSER_PATH');
+        throw new Error('浏览器/网络回归必须传入 --browser-path 或设置 BABELBOX_BROWSER_PATH');
     }
     if ((normalized.browser || normalized.network) && !normalized.focusSafeHelper) {
-        throw new Error('后台浏览器/网络回归必须传入 --focus-safe-helper 或设置 FLUENTREAD_FOCUS_SAFE_HELPER');
+        throw new Error('后台浏览器/网络回归必须传入 --focus-safe-helper 或设置 BABELBOX_FOCUS_SAFE_HELPER');
     }
     return normalized;
 }

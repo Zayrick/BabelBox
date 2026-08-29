@@ -27,8 +27,8 @@ function bundleUserscriptCss(): Plugin {
             if (!entry || entry.type !== 'chunk') throw new Error('Userscript entry chunk was not generated');
 
             const bootstrap = [
-                `globalThis.__FLUENTREAD_ICON_DATA__=${JSON.stringify(iconDataUrl)};`,
-                `globalThis.__fluentReadUserscriptCss=${JSON.stringify(css)};`,
+                `globalThis.__BABELBOX_ICON_DATA__=${JSON.stringify(iconDataUrl)};`,
+                `globalThis.__babelboxUserscriptCss=${JSON.stringify(css)};`,
             ].join('\n');
             entry.code = `${metadata}${bootstrap}\n${entry.code}`;
 
@@ -41,7 +41,7 @@ function bundleUserscriptCss(): Plugin {
         },
         writeBundle(_options, bundle) {
             const files = Object.values(bundle).map((item) => item.fileName);
-            if (files.length !== 1 || files[0] !== 'fluent-read.user.js') {
+            if (files.length !== 1 || files[0] !== 'babelbox.user.js') {
                 throw new Error(`Userscript build must emit one file, received: ${files.join(', ')}`);
             }
         },
@@ -83,14 +83,14 @@ export default defineConfig({
         assetsInlineLimit: Number.MAX_SAFE_INTEGER,
         lib: {
             entry: resolve(root, 'userscript/main.ts'),
-            name: 'FluentReadUserscript',
+            name: 'BabelBoxUserscript',
             formats: ['iife'],
-            fileName: () => 'fluent-read.user.js',
+            fileName: () => 'babelbox.user.js',
         },
         rolldownOptions: {
             output: {
                 codeSplitting: false,
-                entryFileNames: 'fluent-read.user.js',
+                entryFileNames: 'babelbox.user.js',
             },
         },
     },

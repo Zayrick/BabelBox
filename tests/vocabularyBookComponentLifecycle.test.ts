@@ -21,7 +21,7 @@ interface ComponentTestState {
   subscribeConfig: () => () => void;
 }
 
-const TEST_STATE_KEY = '__fluentReadVocabularyLifecycleTest';
+const TEST_STATE_KEY = '__babelboxVocabularyLifecycleTest';
 
 function setComponentTestState(state: ComponentTestState | undefined): void {
   const target = globalThis as typeof globalThis & Record<string, unknown>;

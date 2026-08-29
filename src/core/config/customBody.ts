@@ -26,7 +26,7 @@ export function isValidCustomBody(raw?: unknown): boolean {
 export function mergeCustomBody<T extends Record<string, unknown>>(payload: T, raw?: unknown): T {
     const customBody = parseCustomBody(raw);
     if (customBody === undefined) {
-        console.warn('[FluentRead] 自定义请求体必须是合法的 JSON 对象，已忽略');
+        console.warn('[BabelBox] 自定义请求体必须是合法的 JSON 对象，已忽略');
         return payload;
     }
 

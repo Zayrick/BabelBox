@@ -747,7 +747,13 @@ footer button:hover { color: var(--brand-strong); }
   color: var(--muted);
   font-size: var(--font-small);
 }
-.donation-qr-frame {
+.donation-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+.donation-image-frame {
+  display: block;
   width: 194px;
   height: 194px;
   margin: 0 auto;
@@ -756,12 +762,27 @@ footer button:hover { color: var(--brand-strong); }
   border-radius: 12px;
   background: #fff;
 }
-.donation-qr-frame img {
+.donation-image-frame img {
   display: block;
   width: 100%;
   height: 100%;
   border-radius: 8px;
-  object-fit: cover;
+}
+.donation-visit {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 12px;
+  color: var(--brand-strong);
+  font-size: var(--font-small);
+  font-weight: var(--weight-semibold);
+}
+.donation-visit svg {
+  width: 14px;
+  height: 14px;
+}
+.donation-link:hover .donation-visit {
+  text-decoration: underline;
 }
 .donation-fade-enter-active, .donation-fade-leave-active { transition: opacity 160ms ease; }
 .donation-fade-enter-from, .donation-fade-leave-to { opacity: 0; }

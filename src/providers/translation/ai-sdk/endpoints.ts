@@ -18,7 +18,7 @@ export interface AiSdkEndpointConfig {
 }
 
 export interface OpenAICompatibleEndpointResolution {
-    /** Canonical URL that the current FluentRead adapter would call. */
+    /** Canonical URL that the current BabelBox adapter would call. */
     endpoint: string;
     /** URL prefix passed to an OpenAI-compatible provider before it appends /chat/completions. */
     baseURL: string;

@@ -1,5 +1,5 @@
 /**
- * FluentRead 的轻量 Edge TTS 适配器。
+ * BabelBox 的轻量 Edge TTS 适配器。
  *
  * 只在扩展后台调用 Microsoft 的公开 consumer TTS endpoint。音色按用户
  * 选择和当前语言形成有序候选链；播放端优先交给扩展 Offscreen 文档，

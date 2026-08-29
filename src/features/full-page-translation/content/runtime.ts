@@ -67,8 +67,8 @@ import {
 } from "@/src/features/full-page-translation/content/state";
 
 const TRANSLATION_ARTIFACT_SELECTOR = [
-    '[data-fr-translation-segment="true"]',
-    '[data-fr-translation-owned="true"]',
+    '[data-babelbox-translation-segment="true"]',
+    '[data-babelbox-translation-owned="true"]',
 ].join(",");
 
 type TranslationResult = SnapshotTranslationResult | LiveTextTranslationResult;
@@ -187,7 +187,7 @@ function notifyFullPageTranslationState(isTranslated: boolean): void {
             (typeof CustomEvent !== "undefined" ? CustomEvent : null);
         if (CustomEventConstructor) {
             document.dispatchEvent(new CustomEventConstructor(
-                isTranslated ? "fluentread-translation-started" : "fluentread-translation-ended",
+                isTranslated ? "babelbox-translation-started" : "babelbox-translation-ended",
             ));
         }
     }
@@ -825,7 +825,7 @@ async function translateTarget(
             const firstSourceNode = candidate.nodes?.[0];
             let current = firstSourceNode?.parentElement ?? null;
             while (current) {
-                if (current.matches('[data-fr-translation-segment="true"]') &&
+                if (current.matches('[data-babelbox-translation-segment="true"]') &&
                     getTranslationState(current)) return current;
                 current = current.parentElement;
             }
@@ -848,7 +848,7 @@ async function translateTarget(
     if (current?.phase === "error" && existingNode) {
         if (current.syntheticSegment) {
             const sourceNodes = Array.from(existingNode.childNodes).filter((node) =>
-                !isElementNode(node) || !node.matches('[data-fr-translation-owned="true"]'),
+                !isElementNode(node) || !node.matches('[data-babelbox-translation-owned="true"]'),
             );
             const sourceAnchor = sourceNodes.find((node) =>
                 normalizeComparableText(node.textContent ?? node.nodeValue ?? "").length > 0,
@@ -938,7 +938,7 @@ async function translateTarget(
         queueSession,
     )
         .finally(() => signal.removeEventListener('abort', cancelQueuedRequest));
-    if (synthetic) node.setAttribute('data-fr-translation-segment', 'true');
+    if (synthetic) node.setAttribute('data-babelbox-translation-segment', 'true');
     const spinner = insertLoadingSpinner(node, false, attempt.state.sourceText);
     setSpinner(node, spinner);
     registerSessionStatefulTarget(statefulSession, candidate.element, node);
@@ -1297,16 +1297,16 @@ function isCoreProtectedDescendantMutation(
  * after beginTranslation, while an asynchronous provider is still pending.
  * Accept them only while the exact source ownership, HTML and Text-slot
  * identities captured for this generation remain intact. A host insertion --
- * including a lookalike FluentRead artifact -- necessarily fails one of these
+ * including a lookalike BabelBox artifact -- necessarily fails one of these
  * checks and continues through the stale/restart path.
  */
 function isIntactLoadingSyntheticChildList(
     target: HTMLElement,
     state: TranslationState,
 ): boolean {
-    if (!state.syntheticSegment || !target.matches('[data-fr-translation-segment="true"]')) return false;
+    if (!state.syntheticSegment || !target.matches('[data-babelbox-translation-segment="true"]')) return false;
     const spinner = state.spinner;
-    if (!spinner || spinner.parentNode !== target || !spinner.matches('[data-fr-translation-owned="true"]')) {
+    if (!spinner || spinner.parentNode !== target || !spinner.matches('[data-babelbox-translation-owned="true"]')) {
         return false;
     }
 
@@ -1344,8 +1344,8 @@ function isOwnMutation(
     // 没有宿主正文，才可以直接视为插件自身变化。
     if (mutation.type !== "childList" &&
         isElementNode(mutation.target) &&
-        mutation.target.matches('[data-fr-translation-owned="true"]') &&
-        !mutation.target.matches('.fluent-read-bilingual-content')) return true;
+        mutation.target.matches('[data-babelbox-translation-owned="true"]') &&
+        !mutation.target.matches('.babelbox-bilingual-content')) return true;
     const mutationElement = mutationTargetElement(mutation.target);
     const target = mutationElement ? resolveStatefulMutationTarget(mutationElement) : false;
     const state = target ? getTranslationState(target as HTMLElement) : undefined;
@@ -1511,7 +1511,7 @@ function discardOwnersRemovedByHost(
     let shouldRescan = false;
     removedNodes.forEach((removed) => {
         const syntheticParent = removed.parentElement;
-        const syntheticState = syntheticParent?.matches('[data-fr-translation-segment="true"]')
+        const syntheticState = syntheticParent?.matches('[data-babelbox-translation-segment="true"]')
             ? getTranslationState(syntheticParent as HTMLElement)
             : undefined;
         // materializeCandidate moves a direct inline run into an owned segment
@@ -1829,7 +1829,7 @@ function stopFullPageSession(): void {
 
 /**
  * 恢复全文翻译。全文和悬浮翻译共享同一份节点状态，因此这里无需再用
- * data-fr-node-id + innerHTML 覆盖页面，也能处理 Shadow DOM 和动态节点。
+ * data-babelbox-node-id + innerHTML 覆盖页面，也能处理 Shadow DOM 和动态节点。
  */
 export function restoreOriginalContent(): void {
     cancelPendingHoverTranslation();
@@ -1850,7 +1850,7 @@ export function autoTranslateEnglishPage(): void {
 
     const session = createFullPageSession();
     fullPageSession = session;
-    document.addEventListener('fluentread-open-shadow-root', (event) => {
+    document.addEventListener('babelbox-open-shadow-root', (event) => {
         if (!session.active || fullPageSession !== session) return;
         const host = isElementNode(event.target as Node) ? event.target as Element : null;
         const shadowRoot = host?.shadowRoot;

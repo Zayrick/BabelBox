@@ -73,7 +73,7 @@ function drawTranslatedText(
 
 async function translateTexts(texts: string[], title: string): Promise<string[]> {
     const response = await browser.runtime.sendMessage({
-        type: 'fluentReadImageTranslateTexts',
+        type: 'babelboxImageTranslateTexts',
         texts,
         title,
     }) as {success?: boolean; translations?: unknown; error?: string} | undefined;

@@ -640,8 +640,8 @@ async function renderPdf(
     const binary = document.binary as Extract<NonNullable<ParsedDocument['binary']>, {kind: 'pdf'}>;
     const sourcePdf = await PDFDocument.load(binary.bytes);
     const outputPdf = await PDFDocument.create();
-    outputPdf.setTitle(`${document.fileName} - FluentRead`);
-    outputPdf.setProducer('FluentRead document translation');
+    outputPdf.setTitle(`${document.fileName} - BabelBox`);
+    outputPdf.setProducer('BabelBox document translation');
 
     for (const pageData of binary.pages) {
         const normalizedTranslations = document.segments.map((segment) => translations[segment.id] ?? segment.source);

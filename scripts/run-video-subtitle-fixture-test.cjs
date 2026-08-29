@@ -14,7 +14,7 @@ function loadPlaywright(root) {
   try {
     return require('playwright');
   } catch {
-    const runtimeRequire = createRequire(path.join(path.resolve(root), '__fluentread_video_fixture_test__.cjs'));
+    const runtimeRequire = createRequire(path.join(path.resolve(root), '__babelbox_video_fixture_test__.cjs'));
     return runtimeRequire('playwright');
   }
 }
@@ -119,11 +119,11 @@ const FIXTURE_NATIVE_VIDEO_DATA_URL = [
 async function main() {
   const extensionDir = path.resolve(arg('extension-dir', '.output/chrome-mv3'));
   const playwrightRoot = arg('playwright-root', process.env.PLAYWRIGHT_ROOT);
-  const url = arg('url', 'https://www.youtube.com/watch?v=fluentread-offline-fixture');
-  const artifactsDir = path.resolve(arg('artifacts-dir', path.join(os.tmpdir(), 'fluentread-video-subtitle-fixture')));
+  const url = arg('url', 'https://www.youtube.com/watch?v=babelbox-offline-fixture');
+  const artifactsDir = path.resolve(arg('artifacts-dir', path.join(os.tmpdir(), 'babelbox-video-subtitle-fixture')));
   const browserPath = arg('browser-path', '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge');
-  const focusSafeHelper = arg('focus-safe-helper', process.env.FLUENTREAD_FOCUS_SAFE_HELPER || '');
-  const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'fluentread-edge-video-fixture-'));
+  const focusSafeHelper = arg('focus-safe-helper', process.env.BABELBOX_FOCUS_SAFE_HELPER || '');
+  const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'babelbox-edge-video-fixture-'));
   assertDedicatedTemporaryProfile(profileDir);
   if (!fs.existsSync(path.join(extensionDir, 'manifest.json'))) throw new Error(`找不到扩展构建：${extensionDir}`);
   fs.mkdirSync(artifactsDir, { recursive: true });
@@ -299,7 +299,7 @@ async function main() {
     await page.evaluate(() => {
       const description = document.querySelector('meta[name="description"]') || document.createElement('meta');
       description.setAttribute('name', 'description');
-      description.setAttribute('content', 'FluentRead fixture context: this video explains orbital habitat economics and launch terminology.');
+      description.setAttribute('content', 'BabelBox fixture context: this video explains orbital habitat economics and launch terminology.');
       if (!description.isConnected) document.head.append(description);
     });
 
@@ -325,7 +325,7 @@ async function main() {
       const surface = document.createElement('div');
       surface.style.cssText = 'position:absolute;inset:0;background:linear-gradient(135deg,#111827,#020617);';
       const label = document.createElement('div');
-      label.textContent = 'FluentRead 视频字幕翻译 Fixture';
+      label.textContent = 'BabelBox 视频字幕翻译 Fixture';
       label.style.cssText = 'position:absolute;left:28px;top:24px;color:#94a3b8;font:600 18px/1.4 Arial,sans-serif;';
       surface.appendChild(label);
 
@@ -369,13 +369,13 @@ async function main() {
     }, null, { timeout: 15000 });
 
     await page.waitForFunction(() => {
-      const button = document.querySelector('#fluent-read-video-subtitle-button');
+      const button = document.querySelector('#babelbox-video-subtitle-button');
       return Boolean(button?.closest('.ytp-right-controls'));
     }, null, { timeout: 15000 });
 
     const playerUi = await page.evaluate(() => {
-      const button = document.querySelector('#fluent-read-video-subtitle-button');
-      const icon = document.querySelector('#fluent-read-video-subtitle-button .fluent-read-video-subtitle-button-icon');
+      const button = document.querySelector('#babelbox-video-subtitle-button');
+      const icon = document.querySelector('#babelbox-video-subtitle-button .babelbox-video-subtitle-button-icon');
       const buttonRect = button?.getBoundingClientRect();
       const iconRect = icon?.getBoundingClientRect();
       return {
@@ -396,37 +396,37 @@ async function main() {
       throw new Error(`播放器入口布局校验失败：${JSON.stringify(playerUi)}`);
     }
 
-    await page.locator('#fluent-read-video-subtitle-button').press('Enter');
-    await page.waitForFunction(() => document.querySelector('#fluent-read-video-subtitle-menu')?.hidden === false, null, { timeout: 10000 });
+    await page.locator('#babelbox-video-subtitle-button').press('Enter');
+    await page.waitForFunction(() => document.querySelector('#babelbox-video-subtitle-menu')?.hidden === false, null, { timeout: 10000 });
     const menu = await page.evaluate(() => ({
-      brand: document.querySelector('#fluent-read-video-subtitle-menu .fluent-read-video-menu-brand')?.textContent || '',
-      beta: document.querySelector('#fluent-read-video-subtitle-menu .fluent-read-video-menu-beta')?.textContent || '',
-      service: document.querySelector('#fluent-read-video-subtitle-menu [data-service-label]')?.textContent || '',
-      bilingual: document.querySelector('#fluent-read-video-subtitle-menu [data-mode="bilingual"]')?.getAttribute('aria-checked') === 'true',
-      enableAction: document.querySelector('#fluent-read-video-subtitle-menu [data-action="toggle-translation"]')?.className || '',
-      enableActionState: document.querySelector('#fluent-read-video-subtitle-menu [data-action="toggle-translation"] [data-state]')?.textContent || '',
-      enableActionBackground: document.querySelector('#fluent-read-video-subtitle-menu [data-action="toggle-translation"]')
-        ? getComputedStyle(document.querySelector('#fluent-read-video-subtitle-menu [data-action="toggle-translation"]')).backgroundImage
+      brand: document.querySelector('#babelbox-video-subtitle-menu .babelbox-video-menu-brand')?.textContent || '',
+      beta: document.querySelector('#babelbox-video-subtitle-menu .babelbox-video-menu-beta')?.textContent || '',
+      service: document.querySelector('#babelbox-video-subtitle-menu [data-service-label]')?.textContent || '',
+      bilingual: document.querySelector('#babelbox-video-subtitle-menu [data-mode="bilingual"]')?.getAttribute('aria-checked') === 'true',
+      enableAction: document.querySelector('#babelbox-video-subtitle-menu [data-action="toggle-translation"]')?.className || '',
+      enableActionState: document.querySelector('#babelbox-video-subtitle-menu [data-action="toggle-translation"] [data-state]')?.textContent || '',
+      enableActionBackground: document.querySelector('#babelbox-video-subtitle-menu [data-action="toggle-translation"]')
+        ? getComputedStyle(document.querySelector('#babelbox-video-subtitle-menu [data-action="toggle-translation"]')).backgroundImage
         : '',
-      enableActionBackgroundColor: document.querySelector('#fluent-read-video-subtitle-menu [data-action="toggle-translation"]')
-        ? getComputedStyle(document.querySelector('#fluent-read-video-subtitle-menu [data-action="toggle-translation"]')).backgroundColor
+      enableActionBackgroundColor: document.querySelector('#babelbox-video-subtitle-menu [data-action="toggle-translation"]')
+        ? getComputedStyle(document.querySelector('#babelbox-video-subtitle-menu [data-action="toggle-translation"]')).backgroundColor
         : '',
-      enableActionBorder: document.querySelector('#fluent-read-video-subtitle-menu [data-action="toggle-translation"]')
-        ? getComputedStyle(document.querySelector('#fluent-read-video-subtitle-menu [data-action="toggle-translation"]')).borderTopColor
+      enableActionBorder: document.querySelector('#babelbox-video-subtitle-menu [data-action="toggle-translation"]')
+        ? getComputedStyle(document.querySelector('#babelbox-video-subtitle-menu [data-action="toggle-translation"]')).borderTopColor
         : '',
-      enableActionMinHeight: document.querySelector('#fluent-read-video-subtitle-menu [data-action="toggle-translation"]')
-        ? getComputedStyle(document.querySelector('#fluent-read-video-subtitle-menu [data-action="toggle-translation"]')).minHeight
+      enableActionMinHeight: document.querySelector('#babelbox-video-subtitle-menu [data-action="toggle-translation"]')
+        ? getComputedStyle(document.querySelector('#babelbox-video-subtitle-menu [data-action="toggle-translation"]')).minHeight
         : '',
-      originalDownloadLabel: document.querySelector('#fluent-read-video-subtitle-menu [data-action="download-subtitles"] .fluent-read-video-menu-label')?.textContent || '',
-      translatedDownloadLabel: document.querySelector('#fluent-read-video-subtitle-menu [data-action="download-translated-subtitles"] .fluent-read-video-menu-label')?.textContent || '',
-      originalDownloadStatusLive: document.querySelector('#fluent-read-video-subtitle-menu [data-action="download-subtitles"]')?.getAttribute('aria-live') || '',
-      originalDownloadStatusAtomic: document.querySelector('#fluent-read-video-subtitle-menu [data-action="download-subtitles"]')?.getAttribute('aria-atomic') || '',
-      translatedDownloadStatusLive: document.querySelector('#fluent-read-video-subtitle-menu [data-action="download-translated-subtitles"]')?.getAttribute('aria-live') || '',
-      translatedDownloadStatusAtomic: document.querySelector('#fluent-read-video-subtitle-menu [data-action="download-translated-subtitles"]')?.getAttribute('aria-atomic') || '',
-      rect: document.querySelector('#fluent-read-video-subtitle-menu')?.getBoundingClientRect().toJSON() || null,
+      originalDownloadLabel: document.querySelector('#babelbox-video-subtitle-menu [data-action="download-subtitles"] .babelbox-video-menu-label')?.textContent || '',
+      translatedDownloadLabel: document.querySelector('#babelbox-video-subtitle-menu [data-action="download-translated-subtitles"] .babelbox-video-menu-label')?.textContent || '',
+      originalDownloadStatusLive: document.querySelector('#babelbox-video-subtitle-menu [data-action="download-subtitles"]')?.getAttribute('aria-live') || '',
+      originalDownloadStatusAtomic: document.querySelector('#babelbox-video-subtitle-menu [data-action="download-subtitles"]')?.getAttribute('aria-atomic') || '',
+      translatedDownloadStatusLive: document.querySelector('#babelbox-video-subtitle-menu [data-action="download-translated-subtitles"]')?.getAttribute('aria-live') || '',
+      translatedDownloadStatusAtomic: document.querySelector('#babelbox-video-subtitle-menu [data-action="download-translated-subtitles"]')?.getAttribute('aria-atomic') || '',
+      rect: document.querySelector('#babelbox-video-subtitle-menu')?.getBoundingClientRect().toJSON() || null,
     }));
-    if (menu.brand !== '流畅阅读' || menu.beta !== 'Beta 测试' || menu.service !== '微软翻译' || !menu.bilingual
-      || !menu.enableAction.includes('fluent-read-video-menu-primary-action') || menu.enableActionState !== '已开启'
+    if (menu.brand !== '翻译机' || menu.beta !== 'Beta 测试' || menu.service !== '微软翻译' || !menu.bilingual
+      || !menu.enableAction.includes('babelbox-video-menu-primary-action') || menu.enableActionState !== '已开启'
       || menu.enableActionMinHeight !== '42px' || menu.enableActionBorder === 'rgba(0, 0, 0, 0)'
       || menu.originalDownloadLabel !== '下载原文字幕' || menu.translatedDownloadLabel !== '下载译文字幕'
       || menu.originalDownloadStatusLive !== 'polite' || menu.originalDownloadStatusAtomic !== 'true'
@@ -434,14 +434,14 @@ async function main() {
       || !menu.rect || menu.rect.width <= 0 || menu.rect.height <= 0) {
       throw new Error(`播放器菜单校验失败：${JSON.stringify(menu)}`);
     }
-    await page.locator('#fluent-read-video-subtitle-menu [data-action="toggle-translation"]').press('Enter');
+    await page.locator('#babelbox-video-subtitle-menu [data-action="toggle-translation"]').press('Enter');
     await page.waitForFunction(() => {
-      const action = document.querySelector('#fluent-read-video-subtitle-menu [data-action="toggle-translation"]');
+      const action = document.querySelector('#babelbox-video-subtitle-menu [data-action="toggle-translation"]');
       return action?.getAttribute('aria-checked') === 'false'
         && action.querySelector('[data-state]')?.textContent === '立即开启';
     }, null, { timeout: 10000 });
     const disabledMenu = await page.evaluate(() => {
-      const action = document.querySelector('#fluent-read-video-subtitle-menu [data-action="toggle-translation"]');
+      const action = document.querySelector('#babelbox-video-subtitle-menu [data-action="toggle-translation"]');
       const style = action ? getComputedStyle(action) : null;
       return {
         className: action?.className || '',
@@ -451,14 +451,14 @@ async function main() {
         minHeight: style?.minHeight || '',
       };
     });
-    if (!disabledMenu.className.includes('fluent-read-video-menu-primary-action') || disabledMenu.state !== '立即开启'
+    if (!disabledMenu.className.includes('babelbox-video-menu-primary-action') || disabledMenu.state !== '立即开启'
       || disabledMenu.minHeight !== '42px' || disabledMenu.border === 'rgba(0, 0, 0, 0)') {
       throw new Error(`关闭状态的字幕翻译入口不够醒目：${JSON.stringify(disabledMenu)}`);
     }
-    await page.locator('#fluent-read-video-subtitle-menu').screenshot({ path: path.join(artifactsDir, 'video-subtitle-fixture-menu-disabled.png') });
-    await page.locator('#fluent-read-video-subtitle-menu [data-action="toggle-translation"]').press('Enter');
-    await page.waitForFunction(() => document.querySelector('#fluent-read-video-subtitle-menu [data-action="toggle-translation"] [data-state]')?.textContent === '已开启', null, { timeout: 10000 });
-    await page.locator('#fluent-read-video-subtitle-menu').screenshot({ path: path.join(artifactsDir, 'video-subtitle-fixture-menu.png') });
+    await page.locator('#babelbox-video-subtitle-menu').screenshot({ path: path.join(artifactsDir, 'video-subtitle-fixture-menu-disabled.png') });
+    await page.locator('#babelbox-video-subtitle-menu [data-action="toggle-translation"]').press('Enter');
+    await page.waitForFunction(() => document.querySelector('#babelbox-video-subtitle-menu [data-action="toggle-translation"] [data-state]')?.textContent === '已开启', null, { timeout: 10000 });
+    await page.locator('#babelbox-video-subtitle-menu').screenshot({ path: path.join(artifactsDir, 'video-subtitle-fixture-menu.png') });
 
     const downloadSources = ['Download translated subtitle.', 'Offline viewing stays in sync.'];
     const downloadTimedTextResponse = JSON.stringify({ events: [
@@ -486,7 +486,7 @@ async function main() {
       const script = document.createElement('script');
       const trustedTypesFactory = window.trustedTypes;
       if (trustedTypesFactory) {
-        const policy = trustedTypesFactory.createPolicy(`fluentread-fixture-${Date.now()}`, {
+        const policy = trustedTypesFactory.createPolicy(`babelbox-fixture-${Date.now()}`, {
           createScript: value => value,
         });
         script.text = policy.createScript(source);
@@ -503,19 +503,19 @@ async function main() {
       originalDownloadError = error;
       return null;
     });
-    await page.locator('#fluent-read-video-subtitle-menu [data-action="download-subtitles"]').press('Enter');
+    await page.locator('#babelbox-video-subtitle-menu [data-action="download-subtitles"]').press('Enter');
     try {
       await page.waitForFunction(() => {
-        const button = document.querySelector('#fluent-read-video-subtitle-menu [data-action="download-subtitles"]');
+        const button = document.querySelector('#babelbox-video-subtitle-menu [data-action="download-subtitles"]');
         return button?.getAttribute('aria-busy') === 'true'
           && button.querySelector('[data-state]')?.textContent === '正在获取…';
       }, null, { timeout: 10000 });
     } catch (error) {
       const initialFeedbackDebug = await page.evaluate(() => {
-        const button = document.querySelector('#fluent-read-video-subtitle-menu [data-action="download-subtitles"]');
+        const button = document.querySelector('#babelbox-video-subtitle-menu [data-action="download-subtitles"]');
         return {
           url: location.href,
-          menuHidden: document.querySelector('#fluent-read-video-subtitle-menu')?.hidden,
+          menuHidden: document.querySelector('#babelbox-video-subtitle-menu')?.hidden,
           state: button?.querySelector('[data-state]')?.textContent || '',
           busy: button?.getAttribute('aria-busy') || '',
           disabled: button?.hasAttribute('disabled') || false,
@@ -524,7 +524,7 @@ async function main() {
       throw new Error(`没有观察到原文下载初始状态：${JSON.stringify({ initialFeedbackDebug, slowTimedTextRequests, cause: error instanceof Error ? error.message : String(error) })}`);
     }
     const originalDownloadInitialFeedback = await page.evaluate(() => {
-      const button = document.querySelector('#fluent-read-video-subtitle-menu [data-action="download-subtitles"]');
+      const button = document.querySelector('#babelbox-video-subtitle-menu [data-action="download-subtitles"]');
       const state = button?.querySelector('[data-state]');
       const spinner = state ? getComputedStyle(state, '::before') : null;
       return {
@@ -534,18 +534,18 @@ async function main() {
         spinnerWidth: spinner?.width || '',
       };
     });
-    await page.waitForFunction(() => document.querySelector('#fluent-read-video-subtitle-menu [data-action="download-subtitles"] [data-state]')?.textContent === '仍在读取…', null, { timeout: 5000 });
+    await page.waitForFunction(() => document.querySelector('#babelbox-video-subtitle-menu [data-action="download-subtitles"] [data-state]')?.textContent === '仍在读取…', null, { timeout: 5000 });
     const originalDownloadSlowFeedback = await page.evaluate(() => ({
-      state: document.querySelector('#fluent-read-video-subtitle-menu [data-action="download-subtitles"] [data-state]')?.textContent || '',
-      busy: document.querySelector('#fluent-read-video-subtitle-menu [data-action="download-subtitles"]')?.getAttribute('aria-busy') || '',
+      state: document.querySelector('#babelbox-video-subtitle-menu [data-action="download-subtitles"] [data-state]')?.textContent || '',
+      busy: document.querySelector('#babelbox-video-subtitle-menu [data-action="download-subtitles"]')?.getAttribute('aria-busy') || '',
     }));
     const originalDownload = await originalDownloadPromise;
     if (!originalDownload) {
       const downloadDebug = await page.evaluate(() => {
-        const button = document.querySelector('#fluent-read-video-subtitle-menu [data-action="download-subtitles"]');
-        const translatedButton = document.querySelector('#fluent-read-video-subtitle-menu [data-action="download-translated-subtitles"]');
+        const button = document.querySelector('#babelbox-video-subtitle-menu [data-action="download-subtitles"]');
+        const translatedButton = document.querySelector('#babelbox-video-subtitle-menu [data-action="download-translated-subtitles"]');
         return {
-          menuHidden: document.querySelector('#fluent-read-video-subtitle-menu')?.hidden,
+          menuHidden: document.querySelector('#babelbox-video-subtitle-menu')?.hidden,
           originalDisabled: button?.hasAttribute('disabled'),
           originalState: button?.querySelector('[data-state]')?.textContent || '',
           translatedPresent: Boolean(translatedButton),
@@ -556,9 +556,9 @@ async function main() {
       });
       throw new Error(`原文字幕下载事件超时：${JSON.stringify({ downloadDebug, pageErrors, cause: originalDownloadError instanceof Error ? originalDownloadError.message : String(originalDownloadError) })}`);
     }
-    await page.waitForFunction(() => document.querySelector('#fluent-read-video-subtitle-menu [data-action="download-subtitles"] [data-state]')?.textContent === '已下载 · 2 条', null, { timeout: 10000 });
+    await page.waitForFunction(() => document.querySelector('#babelbox-video-subtitle-menu [data-action="download-subtitles"] [data-state]')?.textContent === '已下载 · 2 条', null, { timeout: 10000 });
     const originalDownloadFeedback = await page.evaluate(() => {
-      const button = document.querySelector('#fluent-read-video-subtitle-menu [data-action="download-subtitles"]');
+      const button = document.querySelector('#babelbox-video-subtitle-menu [data-action="download-subtitles"]');
       const state = button?.querySelector('[data-state]');
       return {
         state: state?.textContent || '',
@@ -575,14 +575,14 @@ async function main() {
       translatedDownloadError = error;
       return null;
     });
-    await page.locator('#fluent-read-video-subtitle-menu [data-action="download-translated-subtitles"]').press('Enter');
+    await page.locator('#babelbox-video-subtitle-menu [data-action="download-translated-subtitles"]').press('Enter');
     await page.waitForFunction(() => {
-      const button = document.querySelector('#fluent-read-video-subtitle-menu [data-action="download-translated-subtitles"]');
+      const button = document.querySelector('#babelbox-video-subtitle-menu [data-action="download-translated-subtitles"]');
       return button?.getAttribute('aria-busy') === 'true'
         && button.querySelector('[data-state]')?.textContent?.startsWith('翻译 ');
     }, null, { timeout: 10000 });
     const translatedDownloadBusyFeedback = await page.evaluate(() => {
-      const button = document.querySelector('#fluent-read-video-subtitle-menu [data-action="download-translated-subtitles"]');
+      const button = document.querySelector('#babelbox-video-subtitle-menu [data-action="download-translated-subtitles"]');
       const state = button?.querySelector('[data-state]');
       const spinner = state ? getComputedStyle(state, '::before') : null;
       return {
@@ -598,7 +598,7 @@ async function main() {
     if (!translatedDownload) {
       throw new Error(`译文字幕下载事件超时：${translatedDownloadError instanceof Error ? translatedDownloadError.message : String(translatedDownloadError)}`);
     }
-    await page.waitForFunction(() => document.querySelector('#fluent-read-video-subtitle-menu [data-action="download-translated-subtitles"] [data-state]')?.textContent === '已下载 · 2 条', null, { timeout: 30000 });
+    await page.waitForFunction(() => document.querySelector('#babelbox-video-subtitle-menu [data-action="download-translated-subtitles"] [data-state]')?.textContent === '已下载 · 2 条', null, { timeout: 30000 });
     const translatedDownloadPath = await translatedDownload.path();
     const translatedDownloadText = translatedDownloadPath ? fs.readFileSync(translatedDownloadPath, 'utf8') : '';
     const downloadEvidence = {
@@ -634,8 +634,8 @@ async function main() {
       throw new Error(`原文或译文字幕下载校验失败：${JSON.stringify(downloadEvidence)}`);
     }
 
-    const overlaySelector = '#fluent-read-video-subtitle';
-    const normalizedCaptionSelector = '#fluent-read-video-subtitle-original';
+    const overlaySelector = '#babelbox-video-subtitle';
+    const normalizedCaptionSelector = '#babelbox-video-subtitle-original';
     const progressiveSource = 'understand from [music] the axioms and the basics.';
     const progressiveExpectedTranslation = '从音乐中理解公理和基础。';
     const progressiveRequestStart = translationSources.filter((source) => source === progressiveSource).length;
@@ -646,8 +646,8 @@ async function main() {
         video.dispatchEvent(new Event('timeupdate'));
       }
       window.postMessage({
-        source: 'fluent-read',
-        type: 'fluent-read-youtube-timedtext',
+        source: 'babelbox',
+        type: 'babelbox-youtube-timedtext',
         url: 'https://www.youtube.com/api/timedtext?v=fixture-progressive&lang=en',
         responseText: JSON.stringify({ events: [{ tStartMs: 0, dDurationMs: 5000, segs: [{ utf8: source }] }] }),
       }, window.location.origin);
@@ -673,22 +673,22 @@ async function main() {
         if (segment) segment.textContent = value;
       }, text);
       await page.waitForFunction(({ expected, expectedTranslation }) => {
-        const original = document.querySelector('#fluent-read-video-subtitle-original')?.textContent?.trim() || '';
-        const translated = document.querySelector('#fluent-read-video-subtitle')?.textContent?.trim() || '';
+        const original = document.querySelector('#babelbox-video-subtitle-original')?.textContent?.trim() || '';
+        const translated = document.querySelector('#babelbox-video-subtitle')?.textContent?.trim() || '';
         const native = document.querySelector('#ytp-caption-window-container .ytp-caption-segment');
         return original === expected
           && translated === expectedTranslation
           && native instanceof HTMLElement
           && getComputedStyle(native).visibility === 'hidden'
-          && document.querySelector('#ytp-caption-window-container')?.classList.contains('fluent-read-video-normalized-caption');
+          && document.querySelector('#ytp-caption-window-container')?.classList.contains('babelbox-video-normalized-caption');
       }, { expected: progressiveSource, expectedTranslation: progressiveExpectedTranslation }, { timeout: 10000 });
       const partialState = await page.evaluate(() => ({
-        original: document.querySelector('#fluent-read-video-subtitle-original')?.textContent?.trim() || '',
-        translation: document.querySelector('#fluent-read-video-subtitle')?.textContent?.trim() || '',
+        original: document.querySelector('#babelbox-video-subtitle-original')?.textContent?.trim() || '',
+        translation: document.querySelector('#babelbox-video-subtitle')?.textContent?.trim() || '',
         nativeVisibility: document.querySelector('#ytp-caption-window-container .ytp-caption-segment')
           ? getComputedStyle(document.querySelector('#ytp-caption-window-container .ytp-caption-segment')).visibility
           : '',
-        panelRect: document.querySelector('#fluent-read-video-subtitle-panel')?.getBoundingClientRect().toJSON() || null,
+        panelRect: document.querySelector('#babelbox-video-subtitle-panel')?.getBoundingClientRect().toJSON() || null,
       }));
       progressiveVisibleTexts.push({
         source: text,
@@ -718,9 +718,9 @@ async function main() {
     const progressiveTranslation = await page.locator(overlaySelector).textContent();
     const translationPlacement = await page.evaluate(() => {
       const native = document.querySelector('#ytp-caption-window-container .ytp-caption-segment');
-      const normalized = document.querySelector('#fluent-read-video-subtitle-original');
-      const overlay = document.querySelector('#fluent-read-video-subtitle');
-      const panel = document.querySelector('#fluent-read-video-subtitle-panel');
+      const normalized = document.querySelector('#babelbox-video-subtitle-original');
+      const overlay = document.querySelector('#babelbox-video-subtitle');
+      const panel = document.querySelector('#babelbox-video-subtitle-panel');
       const player = document.querySelector('#movie_player, .html5-video-player');
       const nativeRect = native?.getBoundingClientRect();
       const normalizedRect = normalized?.getBoundingClientRect();
@@ -773,7 +773,7 @@ async function main() {
     await page.waitForFunction((selector) => document.querySelector(selector)?.textContent === '房地产市场受到了冲击。', overlaySelector, { timeout: 20000 });
     const nativeCaptionPlacement = await page.evaluate(() => {
       const native = document.querySelector('#ytp-caption-window-container .ytp-caption-segment');
-      const panel = document.querySelector('#fluent-read-video-subtitle-panel');
+      const panel = document.querySelector('#babelbox-video-subtitle-panel');
       const player = document.querySelector('#movie_player, .html5-video-player');
       const nativeRect = native?.getBoundingClientRect();
       const panelRect = panel?.getBoundingClientRect();
@@ -801,8 +801,8 @@ async function main() {
     await page.waitForTimeout(180);
     const duringRedraw = await page.evaluate(() => ({
       nativeCaptionEmpty: !(document.querySelector('#ytp-caption-window-container')?.textContent || '').trim(),
-      overlay: document.querySelector('#fluent-read-video-subtitle')?.textContent || '',
-      overlayTop: document.querySelector('#fluent-read-video-subtitle')?.style.top || '',
+      overlay: document.querySelector('#babelbox-video-subtitle')?.textContent || '',
+      overlayTop: document.querySelector('#babelbox-video-subtitle')?.style.top || '',
     }));
     if (!duringRedraw.nativeCaptionEmpty || !duringRedraw.overlay.trim() || Number.parseFloat(duringRedraw.overlayTop) <= 8) {
       throw new Error(`字幕重绘保留校验失败：${JSON.stringify(duringRedraw)}`);
@@ -832,8 +832,8 @@ async function main() {
     await page.waitForTimeout(700);
     const afterDisappearance = await page.evaluate(() => ({
       nativeCaptionEmpty: !(document.querySelector('#ytp-caption-window-container')?.textContent || '').trim(),
-      overlay: document.querySelector('#fluent-read-video-subtitle')?.textContent || '',
-      overlayTop: document.querySelector('#fluent-read-video-subtitle')?.style.top || '',
+      overlay: document.querySelector('#babelbox-video-subtitle')?.textContent || '',
+      overlayTop: document.querySelector('#babelbox-video-subtitle')?.style.top || '',
     }));
     if (!afterDisappearance.nativeCaptionEmpty || afterDisappearance.overlay.trim() || Number.parseFloat(afterDisappearance.overlayTop) <= 8) {
       throw new Error(`字幕完全消失后的译文清理或位置校验失败：${JSON.stringify(afterDisappearance)}`);
@@ -853,10 +853,10 @@ async function main() {
 
     await page.evaluate(() => {
       const segment = document.querySelector('#ytp-caption-window-container .ytp-caption-segment');
-      if (segment) segment.textContent = 'This is a FluentRead fixture subtitle.';
+      if (segment) segment.textContent = 'This is a BabelBox fixture subtitle.';
     });
     await page.waitForFunction((previous) => {
-      const text = document.querySelector('#fluent-read-video-subtitle')?.textContent || '';
+      const text = document.querySelector('#babelbox-video-subtitle')?.textContent || '';
       return Boolean(text.trim() && text !== previous);
     }, afterRedraw, { timeout: 20000 });
     const secondTranslation = await page.locator(overlaySelector).textContent();
@@ -870,8 +870,8 @@ async function main() {
         video.dispatchEvent(new Event('timeupdate'));
       }
       window.postMessage({
-        source: 'fluent-read',
-        type: 'fluent-read-youtube-timedtext',
+        source: 'babelbox',
+        type: 'babelbox-youtube-timedtext',
         url: 'https://www.youtube.com/api/timedtext?v=fixture&lang=en',
         responseText: JSON.stringify({ events: [{ tStartMs: 8000, dDurationMs: 2000, segs: [{ utf8: source }] }] }),
       }, window.location.origin);
@@ -900,7 +900,7 @@ async function main() {
       token: { openai: 'fixture-token' },
       model: { openai: 'fixture-model' },
     });
-    await page.waitForFunction(() => document.querySelector('#fluent-read-video-subtitle-menu [data-service-label]')?.textContent === 'OpenAI', null, { timeout: 10000 });
+    await page.waitForFunction(() => document.querySelector('#babelbox-video-subtitle-menu [data-service-label]')?.textContent === 'OpenAI', null, { timeout: 10000 });
     const aiPretranslatedSource = 'This AI subtitle was translated in advance.';
     await page.evaluate((source) => {
       const video = document.querySelector('video.html5-main-video');
@@ -909,8 +909,8 @@ async function main() {
         video.dispatchEvent(new Event('timeupdate'));
       }
       window.postMessage({
-        source: 'fluent-read',
-        type: 'fluent-read-youtube-timedtext',
+        source: 'babelbox',
+        type: 'babelbox-youtube-timedtext',
         url: 'https://www.youtube.com/api/timedtext?v=fixture-ai&lang=en',
         responseText: JSON.stringify({ events: [{ tStartMs: 20000, dDurationMs: 2000, segs: [{ utf8: source }] }] }),
       }, window.location.origin);
@@ -920,7 +920,7 @@ async function main() {
     if (aiPrefetchRequests.length !== 1) {
       throw new Error(`AI 字幕没有按 30 秒窗口前置翻译：${JSON.stringify({ aiTranslationSources })}`);
     }
-    const aiContextRequests = aiTranslationSources.filter((source) => source.includes('FluentRead fixture context: this video explains orbital habitat economics and launch terminology.'));
+    const aiContextRequests = aiTranslationSources.filter((source) => source.includes('BabelBox fixture context: this video explains orbital habitat economics and launch terminology.'));
     if (aiContextRequests.length === 0) {
       throw new Error(`AI 字幕请求没有注入页面上下文：${JSON.stringify({ aiTranslationSources })}`);
     }
@@ -941,7 +941,7 @@ async function main() {
       videoServiceDefaultMigrated: true,
       useCache: false,
     });
-    await page.waitForFunction(() => document.querySelector('#fluent-read-video-subtitle-menu [data-service-label]')?.textContent === '微软翻译', null, { timeout: 10000 });
+    await page.waitForFunction(() => document.querySelector('#babelbox-video-subtitle-menu [data-service-label]')?.textContent === '微软翻译', null, { timeout: 10000 });
     const timelineOldSource = 'Timeline subtitle is still visible.';
     const timelineNextSource = 'Timeline subtitle catches up.';
     await page.evaluate(({ oldSource, nextSource }) => {
@@ -953,8 +953,8 @@ async function main() {
       const segment = document.querySelector('#ytp-caption-window-container .ytp-caption-segment');
       if (segment) segment.textContent = oldSource;
       window.postMessage({
-        source: 'fluent-read',
-        type: 'fluent-read-youtube-timedtext',
+        source: 'babelbox',
+        type: 'babelbox-youtube-timedtext',
         url: 'https://www.youtube.com/api/timedtext?v=fixture-timeline&lang=en',
         responseText: JSON.stringify({ events: [
           { tStartMs: 0, dDurationMs: 1800, segs: [{ utf8: oldSource }] },
@@ -962,7 +962,7 @@ async function main() {
         ] }),
       }, window.location.origin);
     }, { oldSource: timelineOldSource, nextSource: timelineNextSource });
-    await page.waitForFunction((expected) => document.querySelector('#fluent-read-video-subtitle')?.textContent === `【译文】${expected}`, timelineOldSource, { timeout: 20000 });
+    await page.waitForFunction((expected) => document.querySelector('#babelbox-video-subtitle')?.textContent === `【译文】${expected}`, timelineOldSource, { timeout: 20000 });
     await page.evaluate(() => {
       const video = document.querySelector('video.html5-main-video');
       if (video) {
@@ -971,8 +971,8 @@ async function main() {
       }
     });
     try {
-      await page.waitForFunction(() => document.querySelector('#fluent-read-video-subtitle')?.textContent === '时间轴已追上字幕。'
-        && document.querySelector('#fluent-read-video-subtitle-original')?.textContent === 'Timeline subtitle catches up.', null, { timeout: 20000 });
+      await page.waitForFunction(() => document.querySelector('#babelbox-video-subtitle')?.textContent === '时间轴已追上字幕。'
+        && document.querySelector('#babelbox-video-subtitle-original')?.textContent === 'Timeline subtitle catches up.', null, { timeout: 20000 });
     } catch (error) {
       await page.evaluate(() => {
         const segment = document.querySelector('#ytp-caption-window-container .ytp-caption-segment');
@@ -981,29 +981,29 @@ async function main() {
       await page.waitForTimeout(500);
       const timelineDebug = await page.evaluate((recentTranslationSources) => {
         const video = document.querySelector('video.html5-main-video');
-        const overlay = document.querySelector('#fluent-read-video-subtitle');
-        const normalized = document.querySelector('#fluent-read-video-subtitle-original');
+        const overlay = document.querySelector('#babelbox-video-subtitle');
+        const normalized = document.querySelector('#babelbox-video-subtitle-original');
         const container = document.querySelector('#ytp-caption-window-container');
         return {
           currentTime: video?.currentTime,
           native: container?.textContent || '',
           overlay: overlay?.textContent || '',
           normalized: normalized?.textContent || '',
-          normalizedActive: document.querySelector('#fluent-read-video-subtitle-layer')?.classList.contains('fluent-read-video-normalized-caption-active'),
-          nativeHidden: container?.classList.contains('fluent-read-video-normalized-caption'),
-          recoveredAfterNativeMutation: document.querySelector('#fluent-read-video-subtitle')?.textContent === '时间轴已追上字幕。',
+          normalizedActive: document.querySelector('#babelbox-video-subtitle-layer')?.classList.contains('babelbox-video-normalized-caption-active'),
+          nativeHidden: container?.classList.contains('babelbox-video-normalized-caption'),
+          recoveredAfterNativeMutation: document.querySelector('#babelbox-video-subtitle')?.textContent === '时间轴已追上字幕。',
           recentTranslationSources,
         };
       }, translationSources.slice(-8));
       throw new Error(`时间轴字幕追赶断言失败：${JSON.stringify(timelineDebug)}`);
     }
     const timelineCatchUp = await page.evaluate(() => ({
-      translation: document.querySelector('#fluent-read-video-subtitle')?.textContent || '',
-      normalized: document.querySelector('#fluent-read-video-subtitle-original')?.textContent || '',
+      translation: document.querySelector('#babelbox-video-subtitle')?.textContent || '',
+      normalized: document.querySelector('#babelbox-video-subtitle-original')?.textContent || '',
       native: document.querySelector('#ytp-caption-window-container .ytp-caption-segment')?.textContent || '',
     }));
 
-    await page.locator('#fluent-read-video-subtitle-panel').screenshot({ path: path.join(artifactsDir, 'video-subtitle-panel.png') });
+    await page.locator('#babelbox-video-subtitle-panel').screenshot({ path: path.join(artifactsDir, 'video-subtitle-panel.png') });
     await page.screenshot({ path: path.join(artifactsDir, 'video-subtitle-fixture-player.png'), fullPage: false });
     const evidence = {
       ok: pageErrors.length === 0 && consoleErrors.length === 0 && unexpectedNetworkRequests.length === 0,

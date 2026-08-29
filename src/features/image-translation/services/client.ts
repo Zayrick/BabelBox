@@ -24,7 +24,7 @@ export async function translateImageInExtension(
     title: string,
 ): Promise<{ image: string; lines: ImageTranslationLine[] }> {
     const response = await browser.runtime.sendMessage({
-        type: 'fluentReadImageTranslate',
+        type: 'babelboxImageTranslate',
         image,
         sourceLanguage,
         title,
@@ -39,7 +39,7 @@ export async function translateImageInExtension(
 
 export async function fetchImageInExtension(imageUrl: string): Promise<string> {
     const response = await browser.runtime.sendMessage({
-        type: 'fluentReadImageFetch',
+        type: 'babelboxImageFetch',
         url: imageUrl,
     }) as ImageFetchResponse | undefined;
 

@@ -4,16 +4,16 @@ import {
 } from './filters';
 
 const extensionSelector = [
-    '#fluent-read-floating-ball-container',
-    '#fluent-read-selection-translator-container',
-    '#fluent-read-translation-status-container',
-    '[data-fluent-read-ui]',
-    '.fluent-read-video-ui',
-    '.fluent-read-loading',
-    '.fluent-read-retry-wrapper',
-    '.fluent-read-bilingual-content',
-    '[data-fr-translation-segment="true"]',
-    '[data-fr-translation-owned="true"]',
+    '#babelbox-floating-ball-container',
+    '#babelbox-selection-translator-container',
+    '#babelbox-translation-status-container',
+    '[data-babelbox-ui]',
+    '.babelbox-video-ui',
+    '.babelbox-loading',
+    '.babelbox-retry-wrapper',
+    '.babelbox-bilingual-content',
+    '[data-babelbox-translation-segment="true"]',
+    '[data-babelbox-translation-owned="true"]',
 ].join(',');
 
 export function getComposedParent(element: Element): Element | null {
@@ -62,7 +62,7 @@ export function evaluateElementHardGuard(
     element: Element,
     filterPolicy: TranslationFilterPolicy = defaultTranslationFilterPolicy,
 ): HardGuardResult {
-    if (isExtensionElementSelf(element)) return {prune: true, reason: 'fluentread-owned'};
+    if (isExtensionElementSelf(element)) return {prune: true, reason: 'babelbox-owned'};
     const decision = filterPolicy.evaluateElement(element);
     if (decision.action === 'exclude') return {prune: true, reason: decision.reason};
     return {prune: false};
@@ -71,7 +71,7 @@ export function evaluateElementHardGuard(
 /**
  * Guards are shared by initial discovery, hover resolution, mutations and open
  * Shadow DOM. A site rule may override a global decision on the same element;
- * FluentRead-owned DOM remains an immutable boundary.
+ * BabelBox-owned DOM remains an immutable boundary.
  */
 export function evaluateHardGuard(
     element: Element,

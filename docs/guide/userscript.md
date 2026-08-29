@@ -1,6 +1,6 @@
 # Userscript（油猴脚本）构建
 
-FluentRead 可以从当前 Vue / TypeScript 源码生成一个自包含的 userscript，为 Via、Tampermonkey 和 Violentmonkey 提供核心网页翻译体验。userscript 是实验性构建目标。
+BabelBox 可以从当前 Vue / TypeScript 源码生成一个自包含的 userscript，为 Via、Tampermonkey 和 Violentmonkey 提供核心网页翻译体验。userscript 是实验性构建目标。
 
 ## 本地生成
 
@@ -12,18 +12,18 @@ pnpm build:userscript
 产物位于：
 
 ```text
-.output/userscript/fluent-read.user.js
+.output/userscript/babelbox.user.js
 ```
 
-这是一个经典 IIFE 单文件，metadata 位于文件开头，不使用 CDN `@require`，CSS、图标、Vue 运行时和 FluentRead 翻译核心均已打包。把该文件导入支持 userscript 的脚本管理器即可。不同 Via / Android WebView 版本的导入入口可能不同，请以当前 Via 版本提供的脚本管理界面为准。
+这是一个经典 IIFE 单文件，metadata 位于文件开头，不使用 CDN `@require`，CSS、图标、Vue 运行时和 BabelBox 翻译核心均已打包。把该文件导入支持 userscript 的脚本管理器即可。不同 Via / Android WebView 版本的导入入口可能不同，请以当前 Via 版本提供的脚本管理界面为准。
 
-FluentRead 产品版本与 userscript 更新版本分开管理。设置面板同时显示 `package.json` 中的 `version` 和 `userscriptVersion`，metadata 的 `@version` 使用 `userscriptVersion`。发布 userscript 时单独递增该字段。
+BabelBox 产品版本与 userscript 更新版本分开管理。设置面板同时显示 `package.json` 中的 `version` 和 `userscriptVersion`，metadata 的 `@version` 使用 `userscriptVersion`。发布 userscript 时单独递增该字段。
 
 脚本的 `@name` 与 `@namespace` 保持稳定。如果脚本管理器保留了同一脚本的 GM 存储，首次运行会导入可识别的语言、快捷键、服务、模型、Token、自定义地址和提示词配置。
 
 ## 构建结构
 
-FluentRead 锁定的 WXT 0.21.4 没有 userscript 入口类型。userscript 使用独立 Vite 配置生成 IIFE，并直接复用 `src/` 中的业务模块。参见 [WXT 0.21.4 类型定义](https://github.com/wxt-dev/wxt/blob/wxt-v0.21.4/packages/wxt/src/types.ts) 与 [WXT Entrypoints](https://wxt.dev/guide/essentials/entrypoints)。
+BabelBox 锁定的 WXT 0.21.4 没有 userscript 入口类型。userscript 使用独立 Vite 配置生成 IIFE，并直接复用 `src/` 中的业务模块。参见 [WXT 0.21.4 类型定义](https://github.com/wxt-dev/wxt/blob/wxt-v0.21.4/packages/wxt/src/types.ts) 与 [WXT Entrypoints](https://wxt.dev/guide/essentials/entrypoints)。
 
 共享与适配边界如下：
 
@@ -71,7 +71,7 @@ Via 官方列出的脚本 API 包含 GM 存储、跨域请求和菜单命令；�
 
 ## 权限与隐私
 
-metadata 包含 `@connect *`，因为 FluentRead 支持用户自定义 API / 代理地址，构建时无法穷举目标域名。翻译请求只会发送到用户当前选择的服务；API Key 保存在脚本管理器的 GM 存储中，设置面板使用 closed ShadowRoot，常规页面脚本无法通过宿主元素的 `shadowRoot` 直接读取凭据输入框。真实管理器的 sandbox 隔离强度仍需分别验证。
+metadata 包含 `@connect *`，因为 BabelBox 支持用户自定义 API / 代理地址，构建时无法穷举目标域名。翻译请求只会发送到用户当前选择的服务；API Key 保存在脚本管理器的 GM 存储中，设置面板使用 closed ShadowRoot，常规页面脚本无法通过宿主元素的 `shadowRoot` 直接读取凭据输入框。真实管理器的 sandbox 隔离强度仍需分别验证。
 
 若运行环境没有提供 GM 存储，当前页面会使用只存在于内存中的临时配置，不会回退到网站 `localStorage`，避免污染网站数据。没有 `GM_xmlhttpRequest` 时只能使用原生 fetch，跨域翻译可能被 CORS 阻止。
 
@@ -81,21 +81,21 @@ metadata 包含 `@connect *`，因为 FluentRead 支持用户自定义 API / 代
 
 ```bash
 pnpm test:userscript
-node --check .output/userscript/fluent-read.user.js
+node --check .output/userscript/babelbox.user.js
 ```
 
 隔离 Edge 烟雾测试使用临时 profile、屏幕外窗口和确定性 `GM_xmlhttpRequest` 浏览器 shim：
 
 ```bash
 node scripts/run-userscript-smoke-test.cjs \
-  --artifact .output/userscript/fluent-read.user.js \
+  --artifact .output/userscript/babelbox.user.js \
   --playwright-root <playwright-node_modules> \
-  --focus-safe-helper <fluentread-browser-translation-test>/scripts/focus-safe-browser.cjs \
-  --artifacts-dir /private/tmp/fluentread-userscript-evidence \
+  --focus-safe-helper <babelbox-browser-translation-test>/scripts/focus-safe-browser.cjs \
+  --artifacts-dir /private/tmp/babelbox-userscript-evidence \
   --background
 ```
 
-后台模式必须显式传入 `--focus-safe-helper`，或设置 `FLUENTREAD_FOCUS_SAFE_HELPER`。脚本会创建临时 profile，以 LaunchServices 隐藏 CDP 模式启动正常尺寸、屏幕外的 Edge 窗口；不使用最小化窗口、用户日常 profile 或 `bringToFront()`。成功证据会记录 `launchMode`、`focusPolicy` 和 `windowPlacement`。只有在已明确授权前台观察时才使用 `--headed`。
+后台模式必须显式传入 `--focus-safe-helper`，或设置 `BABELBOX_FOCUS_SAFE_HELPER`。脚本会创建临时 profile，以 LaunchServices 隐藏 CDP 模式启动正常尺寸、屏幕外的 Edge 窗口；不使用最小化窗口、用户日常 profile 或 `bringToFront()`。成功证据会记录 `launchMode`、`focusPolicy` 和 `windowPlacement`。只有在已明确授权前台观察时才使用 `--headed`。
 
 一键回归在确定性 `build:userscript` 与静态验证完成后，会在显式的 `--browser` 门禁下自动运行同一个 smoke：
 
@@ -103,7 +103,7 @@ node scripts/run-userscript-smoke-test.cjs \
 pnpm test:regression:all -- --browser \
   --playwright-root <playwright-node_modules> \
   --browser-path "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge" \
-  --focus-safe-helper <fluentread-browser-translation-test>/scripts/focus-safe-browser.cjs
+  --focus-safe-helper <babelbox-browser-translation-test>/scripts/focus-safe-browser.cjs
 ```
 
 测试通过 `page.addScriptTag` 在 Edge page-world 执行生成产物，验证主要翻译、恢复、动态 DOM、Shadow DOM 和清理路径。它不能代替 Via Android、Tampermonkey 和 Violentmonkey 各自的真实安装与 sandbox 测试。

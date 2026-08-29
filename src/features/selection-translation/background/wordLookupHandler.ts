@@ -112,7 +112,7 @@ export async function translateVisibleWordCardFields(
         }
         return result;
     } catch (error) {
-        warn('[FluentRead] word definition translation unavailable; keeping dictionary text', error);
+        warn('[BabelBox] word definition translation unavailable; keeping dictionary text', error);
         return card;
     }
 }

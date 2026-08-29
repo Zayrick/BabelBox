@@ -7,6 +7,13 @@ function permissionsFor(browser: string, manifestVersion: 2 | 3): string[] {
 }
 
 describe('extension manifest capabilities', () => {
+    it('publishes the BabelBox display identity for every browser target', () => {
+        const chrome = createExtensionManifest({browser: 'chrome', manifestVersion: 3});
+
+        expect(chrome.name).toBe('BabelBox 翻译机');
+        expect(chrome.description).toContain('BabelBox');
+    });
+
     it('declares Offscreen only for supported Chrome and Edge MV3 builds', () => {
         for (const [browser, manifestVersion, expected] of [
             ['chrome', 3, 1],
@@ -23,12 +30,12 @@ describe('extension manifest capabilities', () => {
         }
     });
 
-    it('keeps the published Firefox add-on identity out of Chromium manifests', () => {
+    it('keeps the BabelBox Firefox add-on identity out of Chromium manifests', () => {
         const firefox = createExtensionManifest({browser: 'firefox', manifestVersion: 2});
         const chrome = createExtensionManifest({browser: 'chrome', manifestVersion: 3});
 
         expect(firefox.browser_specific_settings).toEqual({
-            gecko: {id: '{3096bd53-3bda-4556-b076-ebf47442a5c1}'},
+            gecko: {id: '{c3d6b35f-2a87-41cd-a9b8-5fa2e21f129d}'},
         });
         expect(chrome.browser_specific_settings).toBeUndefined();
     });

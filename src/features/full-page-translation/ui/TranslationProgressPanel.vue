@@ -1,32 +1,32 @@
 <template>
-  <Transition name="fr-progress-panel">
+  <Transition name="babelbox-progress-panel">
     <aside
       v-if="isVisible"
-      class="fr-translation-progress"
-      :class="{ 'fr-dark': isDark, 'fr-static': !animationsEnabled }"
+      class="babelbox-translation-progress"
+      :class="{ 'babelbox-dark': isDark, 'babelbox-static': !animationsEnabled }"
       :data-session-id="progress.sessionId"
       :data-running="progress.running"
       :data-remaining="progress.remaining"
       :data-queued="progress.queued"
       :data-offscreen="progress.offscreen"
     >
-      <span class="fr-progress-indicator" aria-hidden="true">
+      <span class="babelbox-progress-indicator" aria-hidden="true">
         <i />
         <i />
         <i />
       </span>
 
       <span
-        class="fr-progress-copy"
+        class="babelbox-progress-copy"
         role="status"
         aria-live="polite"
         aria-atomic="true"
         :aria-label="statusLabel"
       >
         <strong>翻译进度</strong>
-        <span class="fr-progress-counts">
+        <span class="babelbox-progress-counts">
           <span>进行中 <b>{{ progress.running }}</b></span>
-          <span class="fr-progress-divider" aria-hidden="true" />
+          <span class="babelbox-progress-divider" aria-hidden="true" />
           <span>剩余 <b>{{ progress.remaining }}</b></span>
         </span>
         <small v-if="progress.offscreen > 0">
@@ -105,24 +105,24 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.fr-translation-progress {
-  --fr-progress-font-caption: 10px;
-  --fr-progress-font-small: 11px;
-  --fr-progress-font-body: 13px;
-  --fr-progress-weight-semibold: 700;
-  --fr-progress-weight-bold: 800;
-  --fr-progress-border: rgba(229, 88, 139, 0.24);
-  --fr-progress-surface: rgba(255, 252, 253, 0.96);
-  --fr-progress-shadow: 0 12px 32px rgba(68, 38, 52, 0.18), 0 2px 8px rgba(68, 38, 52, 0.08);
-  --fr-progress-ink: #3f3540;
-  --fr-progress-heading: #342b35;
-  --fr-progress-muted: #746875;
-  --fr-progress-caption: #70636e;
-  --fr-progress-brand: #bd2f62;
-  --fr-progress-indicator: linear-gradient(145deg, #fff0f5, #ffe0eb);
-  --fr-progress-divider-color: #e7dce1;
-  --fr-progress-hover: #f8e9ef;
-  --fr-progress-hover-ink: #cf3e73;
+.babelbox-translation-progress {
+  --babelbox-progress-font-caption: 10px;
+  --babelbox-progress-font-small: 11px;
+  --babelbox-progress-font-body: 13px;
+  --babelbox-progress-weight-semibold: 700;
+  --babelbox-progress-weight-bold: 800;
+  --babelbox-progress-border: rgba(229, 88, 139, 0.24);
+  --babelbox-progress-surface: rgba(255, 252, 253, 0.96);
+  --babelbox-progress-shadow: 0 12px 32px rgba(68, 38, 52, 0.18), 0 2px 8px rgba(68, 38, 52, 0.08);
+  --babelbox-progress-ink: #3f3540;
+  --babelbox-progress-heading: #342b35;
+  --babelbox-progress-muted: #746875;
+  --babelbox-progress-caption: #70636e;
+  --babelbox-progress-brand: #bd2f62;
+  --babelbox-progress-indicator: linear-gradient(145deg, #fff0f5, #ffe0eb);
+  --babelbox-progress-divider-color: #e7dce1;
+  --babelbox-progress-hover: #f8e9ef;
+  --babelbox-progress-hover-ink: #cf3e73;
   position: fixed;
   right: max(16px, env(safe-area-inset-right));
   bottom: max(16px, env(safe-area-inset-bottom));
@@ -133,20 +133,20 @@ onBeforeUnmount(() => {
   align-items: center;
   width: min(286px, calc(100vw - 32px));
   padding: 11px 10px 11px 12px;
-  border: 1px solid var(--fr-progress-border);
+  border: 1px solid var(--babelbox-progress-border);
   border-radius: 14px;
-  background: var(--fr-progress-surface);
-  box-shadow: var(--fr-progress-shadow);
-  color: var(--fr-progress-ink);
+  background: var(--babelbox-progress-surface);
+  box-shadow: var(--babelbox-progress-shadow);
+  color: var(--babelbox-progress-ink);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-  font-size: var(--fr-progress-font-small);
+  font-size: var(--babelbox-progress-font-small);
   line-height: 1.35;
   pointer-events: auto;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
 
-.fr-progress-indicator {
+.babelbox-progress-indicator {
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -155,67 +155,67 @@ onBeforeUnmount(() => {
   height: 34px;
   padding: 8px 7px;
   border-radius: 10px;
-  background: var(--fr-progress-indicator);
-  color: var(--fr-progress-brand);
+  background: var(--babelbox-progress-indicator);
+  color: var(--babelbox-progress-brand);
 }
 
-.fr-progress-indicator i {
+.babelbox-progress-indicator i {
   display: block;
   width: 4px;
   height: 8px;
   border-radius: 999px;
   background: currentColor;
-  animation: fr-progress-pulse 0.72s ease-in-out infinite alternate;
+  animation: babelbox-progress-pulse 0.72s ease-in-out infinite alternate;
 }
 
-.fr-progress-indicator i:nth-child(2) {
+.babelbox-progress-indicator i:nth-child(2) {
   height: 14px;
   animation-delay: 0.16s;
 }
 
-.fr-progress-indicator i:nth-child(3) {
+.babelbox-progress-indicator i:nth-child(3) {
   height: 11px;
   animation-delay: 0.32s;
 }
 
-.fr-progress-copy {
+.babelbox-progress-copy {
   display: flex;
   min-width: 0;
   flex-direction: column;
   gap: 2px;
 }
 
-.fr-progress-copy strong {
-  color: var(--fr-progress-heading);
-  font-size: var(--fr-progress-font-body);
-  font-weight: var(--fr-progress-weight-semibold);
+.babelbox-progress-copy strong {
+  color: var(--babelbox-progress-heading);
+  font-size: var(--babelbox-progress-font-body);
+  font-weight: var(--babelbox-progress-weight-semibold);
   letter-spacing: 0.01em;
 }
 
-.fr-progress-counts {
+.babelbox-progress-counts {
   display: flex;
   align-items: center;
   gap: 7px;
-  color: var(--fr-progress-muted);
+  color: var(--babelbox-progress-muted);
   white-space: nowrap;
 }
 
-.fr-progress-counts b {
-  color: var(--fr-progress-brand);
+.babelbox-progress-counts b {
+  color: var(--babelbox-progress-brand);
   font-variant-numeric: tabular-nums;
-  font-weight: var(--fr-progress-weight-bold);
+  font-weight: var(--babelbox-progress-weight-bold);
 }
 
-.fr-progress-divider {
+.babelbox-progress-divider {
   width: 1px;
   height: 10px;
-  background: var(--fr-progress-divider-color);
+  background: var(--babelbox-progress-divider-color);
 }
 
-.fr-progress-copy small {
+.babelbox-progress-copy small {
   overflow: hidden;
-  color: var(--fr-progress-caption);
-  font-size: var(--fr-progress-font-caption);
+  color: var(--babelbox-progress-caption);
+  font-size: var(--babelbox-progress-font-caption);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -230,14 +230,14 @@ button {
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: var(--fr-progress-caption);
+  color: var(--babelbox-progress-caption);
   cursor: pointer;
 }
 
 button:hover,
 button:focus-visible {
-  background: var(--fr-progress-hover);
-  color: var(--fr-progress-hover-ink);
+  background: var(--babelbox-progress-hover);
+  color: var(--babelbox-progress-hover-ink);
   outline: none;
 }
 
@@ -254,48 +254,48 @@ button svg {
   stroke-width: 1.6;
 }
 
-.fr-translation-progress.fr-dark {
-  --fr-progress-border: rgba(242, 116, 162, 0.3);
-  --fr-progress-surface: rgba(38, 31, 39, 0.96);
-  --fr-progress-shadow: 0 14px 36px rgba(0, 0, 0, 0.34), 0 2px 8px rgba(0, 0, 0, 0.2);
-  --fr-progress-ink: #f7edf1;
-  --fr-progress-heading: #fff7fa;
-  --fr-progress-muted: #d1c2c9;
-  --fr-progress-caption: #bfaeb7;
-  --fr-progress-brand: #ff80ae;
-  --fr-progress-indicator: linear-gradient(145deg, #593043, #442635);
-  --fr-progress-divider-color: #5d4c55;
-  --fr-progress-hover: #523242;
-  --fr-progress-hover-ink: #ff91b8;
+.babelbox-translation-progress.babelbox-dark {
+  --babelbox-progress-border: rgba(242, 116, 162, 0.3);
+  --babelbox-progress-surface: rgba(38, 31, 39, 0.96);
+  --babelbox-progress-shadow: 0 14px 36px rgba(0, 0, 0, 0.34), 0 2px 8px rgba(0, 0, 0, 0.2);
+  --babelbox-progress-ink: #f7edf1;
+  --babelbox-progress-heading: #fff7fa;
+  --babelbox-progress-muted: #d1c2c9;
+  --babelbox-progress-caption: #bfaeb7;
+  --babelbox-progress-brand: #ff80ae;
+  --babelbox-progress-indicator: linear-gradient(145deg, #593043, #442635);
+  --babelbox-progress-divider-color: #5d4c55;
+  --babelbox-progress-hover: #523242;
+  --babelbox-progress-hover-ink: #ff91b8;
 }
 
-.fr-progress-panel-enter-active,
-.fr-progress-panel-leave-active {
+.babelbox-progress-panel-enter-active,
+.babelbox-progress-panel-leave-active {
   transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.fr-progress-panel-enter-from,
-.fr-progress-panel-leave-to {
+.babelbox-progress-panel-enter-from,
+.babelbox-progress-panel-leave-to {
   opacity: 0;
   transform: translateY(8px) scale(0.98);
 }
 
-.fr-static .fr-progress-indicator i {
+.babelbox-static .babelbox-progress-indicator i {
   animation: none;
 }
 
-.fr-static.fr-progress-panel-enter-active,
-.fr-static.fr-progress-panel-leave-active {
+.babelbox-static.babelbox-progress-panel-enter-active,
+.babelbox-static.babelbox-progress-panel-leave-active {
   transition: none;
 }
 
-@keyframes fr-progress-pulse {
+@keyframes babelbox-progress-pulse {
   from { transform: scaleY(0.5); opacity: 0.5; }
   to { transform: scaleY(1); opacity: 1; }
 }
 
 @media (max-width: 420px) {
-  .fr-translation-progress {
+  .babelbox-translation-progress {
     right: max(10px, env(safe-area-inset-right));
     bottom: max(10px, env(safe-area-inset-bottom));
     width: min(270px, calc(100vw - 20px));
@@ -303,8 +303,8 @@ button svg {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fr-translation-progress,
-  .fr-progress-indicator i {
+  .babelbox-translation-progress,
+  .babelbox-progress-indicator i {
     animation: none;
     transition: none;
   }

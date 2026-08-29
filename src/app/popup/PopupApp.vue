@@ -11,13 +11,13 @@
       <div class="brand">
         <img src="/icon/128.png" alt="" />
         <div>
-          <strong>流畅阅读</strong>
+          <strong>翻译机</strong>
         </div>
       </div>
       <div class="header-actions">
-        <button class="donation-button" type="button" title="赞赏流畅阅读" aria-label="打开赞赏页" @click="openDonation()">
+        <button class="donation-button" type="button" title="支持联合国儿童基金会" aria-label="打开 UNICEF 公益支持页" @click="openDonation()">
           <Coffee aria-hidden="true" />
-          <span>赞赏</span>
+          <span>公益</span>
         </button>
         <button class="settings-button" type="button" title="完整设置" aria-label="打开完整设置" @click="openOptions()">
           <Settings aria-hidden="true" />
@@ -36,14 +36,17 @@
         @click.self="closeDonation"
       >
         <section class="donation-card">
-          <button class="donation-close" type="button" aria-label="关闭赞赏页" @click="closeDonation">
+          <button class="donation-close" type="button" aria-label="关闭公益支持页" @click="closeDonation">
             <X aria-hidden="true" />
           </button>
-          <h2 id="donation-title">赞赏流畅阅读</h2>
-          <p class="donation-description">微信扫码赞赏</p>
-          <div class="donation-qr-frame">
-            <img src="/misc/approve.jpg" alt="流畅阅读赞赏码" />
-          </div>
+          <h2 id="donation-title">支持联合国儿童基金会</h2>
+          <p class="donation-description">前往 UNICEF，为每一位儿童作贡献。</p>
+          <a class="donation-link" href="https://www.unicef.org/" target="_blank" rel="noreferrer">
+            <span class="donation-image-frame">
+              <img src="/misc/unicef-support.svg" alt="访问 UNICEF 官网并支持联合国儿童基金会" />
+            </span>
+            <span class="donation-visit">前往 UNICEF 官网 <ExternalLink aria-hidden="true" /></span>
+          </a>
         </section>
       </div>
     </Transition>
@@ -316,10 +319,10 @@
     <footer>
       <a
         class="opensource-link"
-        href="https://github.com/Bistutu/FluentRead"
+        href="https://github.com/Zayrick/BabelBox"
         target="_blank"
         rel="noreferrer"
-        aria-label="在 GitHub 查看流畅阅读开源项目"
+        aria-label="在 GitHub 查看翻译机开源项目"
       >
         <svg class="github-mark" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M12 .3a12 12 0 0 0-3.79 23.39c.6.11.82-.26.82-.58v-2.26c-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.75.08-.74.08-.74 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.5.99.11-.77.42-1.3.76-1.6-2.67-.3-5.47-1.34-5.47-5.95 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.17 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.29-1.55 3.3-1.23 3.3-1.23.66 1.65.24 2.87.12 3.17.77.84 1.24 1.91 1.24 3.22 0 4.62-2.81 5.65-5.49 5.95.43.37.81 1.1.81 2.22v3.29c0 .32.22.69.83.57A12 12 0 0 0 12 .3" />
@@ -493,7 +496,7 @@
         </label>
         <small v-if="selectedVideoServiceUnavailableMessage" class="drawer-hint capability-warning">{{ selectedVideoServiceUnavailableMessage }}</small>
         <label class="select-row">
-          <span><strong>字幕字号</strong><small>只调整 FluentRead 显示的原文和译文</small></span>
+          <span><strong>字幕字号</strong><small>只调整 BabelBox 显示的原文和译文</small></span>
           <el-select v-model="config.videoSubtitleFontSize" aria-label="视频字幕字号" :disabled="!config.videoTranslationEnabled">
             <el-option v-for="size in videoSubtitleFontSizeOptions" :key="size" :label="size === 100 ? '默认' : `${size}%`" :value="size" />
           </el-select>
@@ -807,7 +810,7 @@ watch(() => JSON.stringify(config.value), async serialized => {
   } catch (error) {
     // 保存失败后允许下一次交互重试，不能让去重标记永久吞掉同一快照。
     if (lastSerialized === serialized) lastSerialized = '';
-    console.warn('[FluentRead] 保存 popup 设置失败', error);
+    console.warn('[BabelBox] 保存 popup 设置失败', error);
   }
 }, { flush: 'sync' });
 function closeServicePicker(event?: Event) {
@@ -860,8 +863,8 @@ window.addEventListener('pagehide', saveOnPageHide);
 function persistOnPageExit() {
   if (!hydrated.value || pageExitSaveStarted) return;
   pageExitSaveStarted = true;
-  void saveConfig(config.value).catch((error) => console.warn('[FluentRead] popup 关闭前本地保存设置失败', error));
-  void persistConfig(config.value).catch((error) => console.warn('[FluentRead] popup 关闭前后台保存设置失败', error));
+  void saveConfig(config.value).catch((error) => console.warn('[BabelBox] popup 关闭前本地保存设置失败', error));
+  void persistConfig(config.value).catch((error) => console.warn('[BabelBox] popup 关闭前后台保存设置失败', error));
 }
 
 function showNotice(message: string, type: 'success' | 'error' = 'success') {
@@ -893,7 +896,7 @@ async function hydrateCurrentSite() {
       // 当前页面可能尚未注入内容脚本；站点规则仍然可以读取和编辑。
     }
   } catch (error) {
-    console.warn('[FluentRead] 无法读取当前网站', error);
+    console.warn('[BabelBox] 无法读取当前网站', error);
   }
 }
 

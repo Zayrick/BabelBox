@@ -45,12 +45,12 @@ vi.mock("@/src/services/translation/queue", () => ({
 vi.mock('@/src/features/full-page-translation/ui/translationIndicators', () => ({
     insertLoadingSpinner: (node: HTMLElement) => {
         const spinner = node.ownerDocument.createElement("span");
-        spinner.setAttribute("data-fr-translation-owned", "true");
+        spinner.setAttribute("data-babelbox-translation-owned", "true");
         node.appendChild(spinner);
         return spinner;
     },
     removeLoadingSpinner: (node: HTMLElement, spinner?: HTMLElement) => {
-        node.removeAttribute('data-fr-translation-shimmer');
+        node.removeAttribute('data-babelbox-translation-shimmer');
         spinner?.remove();
     },
     insertFailedTip: (node: HTMLElement, _message: string, onRetry: () => void) => {
@@ -61,8 +61,8 @@ vi.mock('@/src/features/full-page-translation/ui/translationIndicators', () => (
 vi.mock("@/src/features/full-page-translation/content/renderer", () => ({
     appendBilingualTranslation: (node: HTMLElement, text: string) => {
         const wrapper = node.ownerDocument.createElement("span");
-        wrapper.className = "fluent-read-bilingual-content";
-        wrapper.setAttribute("data-fr-translation-owned", "true");
+        wrapper.className = "babelbox-bilingual-content";
+        wrapper.setAttribute("data-babelbox-translation-owned", "true");
         wrapper.textContent = text;
         node.appendChild(wrapper);
         return wrapper;
@@ -90,7 +90,7 @@ vi.mock("@/src/core/translation/public", () => {
             const node = current as Text;
             const source = node.nodeValue ?? "";
             if (source.trim() && node.parentElement && !isProtected(node.parentElement) &&
-                !node.parentElement.closest('[data-fr-translation-owned="true"]')) {
+                !node.parentElement.closest('[data-babelbox-translation-owned="true"]')) {
                 slots.push({node, prefix: "", source, suffix: ""});
             }
             current = walker.nextNode();
@@ -125,14 +125,14 @@ vi.mock("@/src/core/translation/public", () => {
             }),
             *discoverSteps() {
                 for (const segment of document.querySelectorAll<HTMLElement>(
-                    '[data-fr-translation-segment="true"]',
+                    '[data-babelbox-translation-segment="true"]',
                 )) {
                     yield {phase: "enter", element: segment};
                 }
                 for (const candidate of runtime.candidates) {
                     if (isProtected(candidate.element)) continue;
-                    if (candidate.element.matches('[data-fr-translation-segment="true"]') ||
-                        candidate.element.querySelector('[data-fr-translation-segment="true"]')) continue;
+                    if (candidate.element.matches('[data-babelbox-translation-segment="true"]') ||
+                        candidate.element.querySelector('[data-babelbox-translation-segment="true"]')) continue;
                     yield {
                         phase: "exit",
                         element: candidate.element,
@@ -279,8 +279,8 @@ describe("全文翻译可见性锚点", () => {
 
     it("全文会话集中发布启动和结束状态事件", () => {
         const states: string[] = [];
-        document.addEventListener("fluentread-translation-started", () => states.push("started"));
-        document.addEventListener("fluentread-translation-ended", () => states.push("ended"));
+        document.addEventListener("babelbox-translation-started", () => states.push("started"));
+        document.addEventListener("babelbox-translation-ended", () => states.push("ended"));
 
         autoTranslateEnglishPage();
         expect(isFullPageTranslationActive()).toBe(true);
@@ -306,7 +306,7 @@ describe("全文翻译可见性锚点", () => {
         await finishScheduledWork();
 
         expect(runtime.requests).toHaveBeenCalledTimes(1);
-        expect(paragraph.querySelectorAll(".fluent-read-bilingual-content")).toHaveLength(1);
+        expect(paragraph.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(1);
 
         // This is the same path used by the real Control hover trigger. It
         // restores the current target while leaving the full-page session alive.
@@ -316,7 +316,7 @@ describe("全文翻译可见性锚点", () => {
         expect(isFullPageTranslationActive()).toBe(true);
         expect(getTranslationState(paragraph)).toBeUndefined();
         expect(paragraph.textContent).toBe("Restore only this paragraph.");
-        expect(paragraph.querySelectorAll(".fluent-read-bilingual-content")).toHaveLength(0);
+        expect(paragraph.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(0);
 
         // The browser delivers the extension restore as a mutation. A rescan
         // must remember the explicit cancellation instead of translating again.
@@ -328,7 +328,7 @@ describe("全文翻译可见性锚点", () => {
         } as unknown as MutationRecord]);
         await finishScheduledWork();
         expect(runtime.requests).toHaveBeenCalledTimes(1);
-        expect(paragraph.querySelectorAll(".fluent-read-bilingual-content")).toHaveLength(0);
+        expect(paragraph.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(0);
 
         // The cancellation is scoped to this session; starting a new full-page
         // session is still allowed to translate the paragraph again.
@@ -440,7 +440,7 @@ describe("全文翻译可见性锚点", () => {
 
         expect(runtime.requests).toHaveBeenCalledTimes(4);
         expect(candidates.map((candidate) => candidate.textContent)).toEqual(["One", "Two", "Three", "Four"]);
-        expect(document.querySelectorAll('[data-fr-translation-owned="true"]')).toHaveLength(0);
+        expect(document.querySelectorAll('[data-babelbox-translation-owned="true"]')).toHaveLength(0);
     });
 
     it("运行中的会话保留启动时模式，修改配置只影响下一次全文翻译", async () => {
@@ -786,7 +786,7 @@ describe("全文翻译可见性锚点", () => {
     it("不会把扩展生成的布局节点当成候选可见性锚点", async () => {
         document.body.innerHTML = `
             <h1 id="title">
-                <span id="owned" data-fr-translation-owned="true">Loading</span>
+                <span id="owned" data-babelbox-translation-owned="true">Loading</span>
                 <span id="host-label">Host title</span>
             </h1>
         `;
@@ -860,7 +860,7 @@ describe("全文翻译可见性锚点", () => {
 
         expect(runtime.requests).toHaveBeenCalledTimes(2);
         expect(getTranslationState(paragraph)).toMatchObject({phase: "translated", mode: "single"});
-        expect(paragraph.querySelector(".fluent-read-bilingual-content")).toBeNull();
+        expect(paragraph.querySelector(".babelbox-bilingual-content")).toBeNull();
         expect(paragraph.textContent).toBe("译:Retry with the latest display mode.");
     });
 
@@ -882,7 +882,7 @@ describe("全文翻译可见性锚点", () => {
 
             const hoverState = getTranslationState(paragraph)!;
             expect(hoverState.phase).toBe("translated");
-            expect(paragraph.querySelectorAll(".fluent-read-bilingual-content")).toHaveLength(1);
+            expect(paragraph.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(1);
             expect(runtime.requests).toHaveBeenCalledTimes(1);
 
             autoTranslateEnglishPage();
@@ -908,7 +908,7 @@ describe("全文翻译可见性锚点", () => {
             expect(hoverState.controller.signal.aborted).toBe(true);
             expect(getTranslationState(paragraph)).toBeUndefined();
             expect(paragraph.textContent).toBe("Hover translation exists before full-page discovery.");
-            expect(paragraph.querySelectorAll('[data-fr-translation-owned="true"]')).toHaveLength(0);
+            expect(paragraph.querySelectorAll('[data-babelbox-translation-owned="true"]')).toHaveLength(0);
             expect(runtime.requests).toHaveBeenCalledTimes(1);
 
             restoreOriginalContent();
@@ -947,7 +947,7 @@ describe("全文翻译可见性锚点", () => {
         await vi.advanceTimersByTimeAsync(1);
         await Promise.resolve();
 
-        const segment = host.querySelector<HTMLElement>('[data-fr-translation-segment="true"]')!;
+        const segment = host.querySelector<HTMLElement>('[data-babelbox-translation-segment="true"]')!;
         const hoverState = getTranslationState(segment)!;
         expect(hoverState.phase).toBe("loading");
         expect(runtime.requests).toHaveBeenCalledTimes(1);
@@ -971,8 +971,8 @@ describe("全文翻译可见性锚点", () => {
         pendingRequest.resolve(runtime.requests.mock.calls[0]![0].map((origin) => `旧译:${origin}`));
         await finishScheduledWork();
 
-        expect(ancestor.querySelectorAll(".fluent-read-bilingual-content")).toHaveLength(0);
-        expect(ancestor.querySelectorAll('[data-fr-translation-owned="true"]')).toHaveLength(0);
+        expect(ancestor.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(0);
+        expect(ancestor.querySelectorAll('[data-babelbox-translation-owned="true"]')).toHaveLength(0);
         expect(runtime.requests).toHaveBeenCalledTimes(1);
     });
 
@@ -1048,8 +1048,8 @@ describe("全文翻译可见性锚点", () => {
         await Promise.resolve();
 
         expect(runtime.requests).toHaveBeenCalledTimes(1);
-        const segment = host.querySelector<HTMLElement>('[data-fr-translation-segment="true"]')!;
-        const spinner = segment.querySelector<HTMLElement>('[data-fr-translation-owned="true"]')!;
+        const segment = host.querySelector<HTMLElement>('[data-babelbox-translation-segment="true"]')!;
+        const spinner = segment.querySelector<HTMLElement>('[data-babelbox-translation-owned="true"]')!;
         expect(Array.from(segment.childNodes).filter((node) => node !== spinner)).toEqual(sourceNodes);
 
         // These are the actual live Node identities produced by materialization:
@@ -1084,7 +1084,7 @@ describe("全文翻译可见性锚点", () => {
 
         expect(runtime.requests).toHaveBeenCalledTimes(1);
         expect(segment.isConnected).toBe(true);
-        expect(segment.querySelectorAll(".fluent-read-bilingual-content")).toHaveLength(1);
+        expect(segment.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(1);
     });
 
     it("in-flight synthetic inline-run 的祖先 hidden 会 abort，旧结果不可覆盖且解除后可翻译", async () => {
@@ -1111,7 +1111,7 @@ describe("全文翻译可见性锚点", () => {
         await vi.advanceTimersByTimeAsync(1);
         await Promise.resolve();
 
-        const firstSegment = host.querySelector<HTMLElement>('[data-fr-translation-segment="true"]')!;
+        const firstSegment = host.querySelector<HTMLElement>('[data-babelbox-translation-segment="true"]')!;
         const firstState = getTranslationState(firstSegment)!;
         expect(runtime.requests).toHaveBeenCalledTimes(1);
         expect(firstState.phase).toBe("loading");
@@ -1128,12 +1128,12 @@ describe("全文翻译可见性锚点", () => {
         expect(firstState.controller.signal.aborted).toBe(true);
         expect(firstSegment.isConnected).toBe(false);
         expect(ancestor.querySelectorAll(
-            '[data-fr-translation-segment="true"], [data-fr-translation-owned="true"]',
+            '[data-babelbox-translation-segment="true"], [data-babelbox-translation-owned="true"]',
         )).toHaveLength(0);
 
         firstRequest.resolve(runtime.requests.mock.calls[0]![0].map((origin) => `旧译:${origin}`));
         await finishScheduledWork();
-        expect(ancestor.querySelectorAll(".fluent-read-bilingual-content")).toHaveLength(0);
+        expect(ancestor.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(0);
         expect(runtime.requests).toHaveBeenCalledTimes(1);
 
         ancestor.hidden = false;
@@ -1149,8 +1149,8 @@ describe("全文翻译可见性锚点", () => {
         await finishScheduledWork();
 
         expect(runtime.requests).toHaveBeenCalledTimes(2);
-        expect(host.querySelectorAll('[data-fr-translation-segment="true"]')).toHaveLength(1);
-        expect(host.querySelectorAll(".fluent-read-bilingual-content")).toHaveLength(1);
+        expect(host.querySelectorAll('[data-babelbox-translation-segment="true"]')).toHaveLength(1);
+        expect(host.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(1);
         expect(host.textContent).not.toContain("旧译:");
     });
 
@@ -1240,9 +1240,9 @@ describe("全文翻译可见性锚点", () => {
         await finishScheduledWork();
 
         expect(runtime.requests).toHaveBeenCalledTimes(1);
-        const firstWrapper = paragraph.querySelector<HTMLElement>(".fluent-read-bilingual-content")!;
+        const firstWrapper = paragraph.querySelector<HTMLElement>(".babelbox-bilingual-content")!;
         expect(firstWrapper?.isConnected).toBe(true);
-        expect(paragraph.querySelectorAll(".fluent-read-bilingual-content")).toHaveLength(1);
+        expect(paragraph.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(1);
 
         const mathText = math.firstChild as Text;
         mathText.nodeValue = "host math churn";
@@ -1266,7 +1266,7 @@ describe("全文翻译可见性锚点", () => {
 
         expect(runtime.requests).toHaveBeenCalledTimes(1);
         expect(firstWrapper.isConnected).toBe(true);
-        expect(paragraph.querySelectorAll(".fluent-read-bilingual-content")).toHaveLength(1);
+        expect(paragraph.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(1);
 
         lead.firstChild!.nodeValue = "Updated readable prose before protected renderers. ";
         TestMutationObserver.instances.at(-1)!.emit([{
@@ -1281,7 +1281,7 @@ describe("全文翻译可见性锚点", () => {
 
         expect(runtime.requests).toHaveBeenCalledTimes(2);
         expect(firstWrapper.isConnected).toBe(false);
-        expect(paragraph.querySelectorAll(".fluent-read-bilingual-content")).toHaveLength(1);
+        expect(paragraph.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(1);
     });
 
     it("离屏 MathJax v2 父 P staging 事务保留 wrapper，真实 prose/slot 变化仍重启", async () => {
@@ -1311,7 +1311,7 @@ describe("全文翻译可见性锚点", () => {
         expect(runtime.requests.mock.calls[0]![0].join(" ")).not.toMatch(
             /FORMULA_PREVIEW_SECRET|FORMULA_TEX_SECRET/u,
         );
-        const firstWrapper = paragraph.querySelector<HTMLElement>(".fluent-read-bilingual-content")!;
+        const firstWrapper = paragraph.querySelector<HTMLElement>(".babelbox-bilingual-content")!;
         expect(firstWrapper.isConnected).toBe(true);
 
         // The candidate has left IO. MathJax v2 first inserts an unclassified,
@@ -1352,7 +1352,7 @@ describe("全文翻译可见性锚点", () => {
 
         expect(runtime.requests).toHaveBeenCalledTimes(1);
         expect(firstWrapper.isConnected).toBe(true);
-        expect(paragraph.querySelectorAll(".fluent-read-bilingual-content")).toHaveLength(1);
+        expect(paragraph.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(1);
 
         // A real source edit uses the existing restart path. Lazy full-page
         // scheduling still waits for visibility; once re-entered it requests
@@ -1393,7 +1393,7 @@ describe("全文翻译可见性锚点", () => {
         await finishScheduledWork();
         expect(runtime.requests).toHaveBeenCalledTimes(1);
 
-        const firstWrapper = paragraph.querySelector<HTMLElement>(".fluent-read-bilingual-content")!;
+        const firstWrapper = paragraph.querySelector<HTMLElement>(".babelbox-bilingual-content")!;
         const translatedText = firstWrapper.firstChild as Text;
         translatedText.nodeValue = "Host overwrote the extension translation.";
         TestMutationObserver.instances.at(-1)!.emit([{
@@ -1408,7 +1408,7 @@ describe("全文翻译可见性锚点", () => {
 
         expect(runtime.requests).toHaveBeenCalledTimes(2);
         expect(firstWrapper.isConnected).toBe(false);
-        expect(paragraph.querySelectorAll(".fluent-read-bilingual-content")).toHaveLength(1);
+        expect(paragraph.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(1);
     });
 
     it("宿主向译文 wrapper append 文本后会恢复并重译", async () => {
@@ -1425,7 +1425,7 @@ describe("全文翻译可见性锚点", () => {
             await finishScheduledWork();
             expect(runtime.requests).toHaveBeenCalledTimes(1);
 
-            const firstWrapper = paragraph.querySelector<HTMLElement>(".fluent-read-bilingual-content")!;
+            const firstWrapper = paragraph.querySelector<HTMLElement>(".babelbox-bilingual-content")!;
             const mutationObserver = TestMutationObserver.instances.at(-1)!;
 
             // MutationObserver delivers the extension's own wrapper insertion
@@ -1454,7 +1454,7 @@ describe("全文翻译可见性锚点", () => {
 
             expect(runtime.requests).toHaveBeenCalledTimes(2);
             expect(firstWrapper.isConnected).toBe(false);
-            expect(paragraph.querySelectorAll(".fluent-read-bilingual-content")).toHaveLength(1);
+            expect(paragraph.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(1);
     });
 
     it("普通后代新增 translate=no 会重启，且新 payload 排除受保护文本", async () => {
@@ -1479,7 +1479,7 @@ describe("全文翻译可见性锚点", () => {
         expect(runtime.requests).toHaveBeenCalledTimes(1);
         expect(runtime.requests.mock.calls[0]![0].join(" ")).toContain("This text becomes protected.");
 
-        const firstWrapper = paragraph.querySelector<HTMLElement>(".fluent-read-bilingual-content")!;
+        const firstWrapper = paragraph.querySelector<HTMLElement>(".babelbox-bilingual-content")!;
         dynamic.setAttribute("translate", "no");
         TestMutationObserver.instances.at(-1)!.emit([{
             type: "attributes",
@@ -1495,7 +1495,7 @@ describe("全文翻译可见性锚点", () => {
         expect(runtime.requests).toHaveBeenCalledTimes(2);
         expect(runtime.requests.mock.calls[1]![0].join(" ")).not.toContain("This text becomes protected.");
         expect(firstWrapper.isConnected).toBe(false);
-        expect(paragraph.querySelectorAll(".fluent-read-bilingual-content")).toHaveLength(1);
+        expect(paragraph.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(1);
     });
 
 });

@@ -32,7 +32,7 @@ export function createImageTranslationOffscreenAdapter(client: OffscreenClient =
     return {
         async recognizeImage(image: string, sourceLanguage: string): Promise<OcrLine[]> {
             const response = await client.send<OffscreenResponse>({
-                type: 'FLUENT_READ_IMAGE_OCR_OFFSCREEN',
+                type: 'BABELBOX_IMAGE_OCR_OFFSCREEN',
                 image,
                 sourceLanguage,
             });
@@ -48,7 +48,7 @@ export function createImageTranslationOffscreenAdapter(client: OffscreenClient =
             title: string,
         ): Promise<OffscreenImageTranslationResult> {
             const response = await client.send<OffscreenResponse>({
-                type: 'FLUENT_READ_IMAGE_TRANSLATE_OFFSCREEN',
+                type: 'BABELBOX_IMAGE_TRANSLATE_OFFSCREEN',
                 image,
                 sourceLanguage,
                 title,
@@ -58,7 +58,7 @@ export function createImageTranslationOffscreenAdapter(client: OffscreenClient =
 
         async downloadLanguages(languages: ImageOcrLanguageCode[]): Promise<void> {
             const response = await client.send<OffscreenResponse>({
-                type: 'FLUENT_READ_IMAGE_OCR_DOWNLOAD_OFFSCREEN',
+                type: 'BABELBOX_IMAGE_OCR_DOWNLOAD_OFFSCREEN',
                 languages,
             });
             if (!response?.success) throw new Error(errorMessage(response, '图片 OCR 语言包下载失败'));

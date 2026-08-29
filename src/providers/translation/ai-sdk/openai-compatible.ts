@@ -78,8 +78,8 @@ function providerHeaders(service: string, apiKey: string): Record<string, string
   const headers: Record<string, string> = {};
   if (service === services.azureOpenai && apiKey) headers['api-key'] = apiKey;
   if (service === services.openrouter) {
-    headers['HTTP-Referer'] = 'https://fluent.thinkstu.com';
-    headers['X-Title'] = 'FluentRead';
+    headers['HTTP-Referer'] = 'https://github.com/Zayrick/BabelBox';
+    headers['X-Title'] = 'BabelBox';
   }
   return Object.keys(headers).length > 0 ? headers : undefined;
 }
@@ -96,7 +96,7 @@ async function normalizeSuccessfulTextResponse(response: Response): Promise<Resp
     const finishReason = choice?.finish_reason;
     if (typeof content !== 'string') return response;
 
-    // FluentRead only consumes text. Rebuild the minimal response shape the
+    // BabelBox only consumes text. Rebuild the minimal response shape the
     // legacy adapters accepted so non-standard optional metadata (for example
     // string token counts) cannot make the SDK reject an otherwise valid
     // translation.
@@ -187,7 +187,7 @@ async function translateSingle(
   // cannot switch a generateText call to SSE behind the parser's back.
   const requestBody: Record<string, unknown> = {...payload, stream: false};
   const provider = createOpenAICompatible({
-    name: 'fluentread',
+    name: 'babelbox',
     baseURL: endpoint.baseURL,
     apiKey: service === services.azureOpenai ? undefined : apiKey || undefined,
     headers: providerHeaders(service, apiKey),
@@ -206,7 +206,7 @@ async function translateSingle(
       // transformRequestBody supplies the actual provider payload. A fixed,
       // SDK-valid prompt prevents its ModelMessage schema from rejecting valid
       // OpenAI extensions such as developer roles or image_url content first.
-      prompt: 'FluentRead OpenAI-compatible request',
+      prompt: 'BabelBox OpenAI-compatible request',
       maxRetries: AI_SDK_MAX_RETRIES,
       abortSignal: abortContext.signal,
     });
@@ -238,7 +238,7 @@ export async function translateWithOpenAICompatibleAiSdk(
 
   // Batch messages are uncommon for AI services, but image translation can
   // provide them. Keep one upstream request in flight at a time so a single
-  // background queue lease cannot bypass FluentRead's concurrency limit.
+  // background queue lease cannot bypass BabelBox's concurrency limit.
   const translations: string[] = [];
   const deadline = Date.now() + requestBudget;
   for (const origin of request.origin) {

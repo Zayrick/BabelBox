@@ -65,7 +65,7 @@ def generate_docx(output: Path) -> None:
     header = section.header.paragraphs[0]
     header.alignment = WD_ALIGN_PARAGRAPH.LEFT
     header.paragraph_format.space_after = Pt(0)
-    set_run_font(header.add_run("FLUENTREAD · DOCUMENT TRANSLATION EXAMPLE"), "Calibri", 8.5, "7A8294", True)
+    set_run_font(header.add_run("BABELBOX · DOCUMENT TRANSLATION EXAMPLE"), "Calibri", 8.5, "7A8294", True)
 
     footer = section.footer.paragraphs[0]
     footer.alignment = WD_ALIGN_PARAGRAPH.RIGHT
@@ -118,7 +118,7 @@ def generate_pdf(output: Path) -> None:
     page_width, page_height = letter
     pdf = canvas.Canvas(str(output), pagesize=letter)
     pdf.setTitle("Document Translation Example")
-    pdf.setAuthor("FluentRead")
+    pdf.setAuthor("BabelBox")
 
     def wrapped_lines(text: str, font: str, size: float, width: float) -> list[str]:
         words = text.split()
@@ -154,7 +154,7 @@ def generate_pdf(output: Path) -> None:
         pdf.line(48, 39, page_width - 48, 39)
         pdf.setFont("Helvetica", 7.5)
         pdf.setFillColor(HexColor("#7A8294"))
-        pdf.drawString(48, 25, "FLUENTREAD DOCUMENT LAYOUT REGRESSION")
+        pdf.drawString(48, 25, "BABELBOX DOCUMENT LAYOUT REGRESSION")
         pdf.drawRightString(page_width - 48, 25, str(page_number))
 
     # Page 1 deliberately combines a full-width title, two text columns, and a
@@ -165,7 +165,7 @@ def generate_pdf(output: Path) -> None:
     pdf.drawCentredString(page_width / 2, 742, "Document Translation Example")
     pdf.setFont("Helvetica", 9)
     pdf.setFillColor(HexColor("#647086"))
-    pdf.drawCentredString(page_width / 2, 724, "Layout-preserving bilingual PDF regression · FluentRead Research")
+    pdf.drawCentredString(page_width / 2, 724, "Layout-preserving bilingual PDF regression · BabelBox Research")
     pdf.setFillColor(HexColor("#F7F8FB"))
     pdf.roundRect(48, 652, page_width - 96, 51, 7, fill=1, stroke=0)
     pdf.setFillColor(HexColor("#202533"))
@@ -179,7 +179,7 @@ def generate_pdf(output: Path) -> None:
     left_x, right_x, column_width = 48, 318, 246
     left_y = draw_heading("1  PAGE-AWARE TRANSLATION", left_x, 626)
     left_y = draw_wrapped(
-        "FluentRead parses the PDF text layer into layout blocks with page coordinates. Each translated block is fitted back into its original region instead of being shown as a detached transcript.",
+        "BabelBox parses the PDF text layer into layout blocks with page coordinates. Each translated block is fitted back into its original region instead of being shown as a detached transcript.",
         left_x, left_y, column_width,
     ) - 9
     left_y = draw_heading("2  READING EXPERIENCE", left_x, left_y)
@@ -300,7 +300,7 @@ def generate_epub(output: Path) -> None:
     content_opf = """<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="book-id">
   <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
-    <dc:identifier id="book-id">fluentread-document-example</dc:identifier>
+    <dc:identifier id="book-id">babelbox-document-example</dc:identifier>
     <dc:title>Document Translation Example</dc:title>
     <dc:language>en</dc:language>
   </metadata>
@@ -318,12 +318,12 @@ def generate_epub(output: Path) -> None:
     nav = """<?xml version="1.0" encoding="UTF-8"?>
 <html xmlns="http://www.w3.org/1999/xhtml"><head><title>Contents</title></head>
 <body><nav epub:type="toc" xmlns:epub="http://www.idpf.org/2007/ops"><ol>
-<li><a href="chapter-1.xhtml">Fluent reading</a></li><li><a href="chapter-2.xhtml">Regression</a></li>
+<li><a href="chapter-1.xhtml">BabelBox reading</a></li><li><a href="chapter-2.xhtml">Regression</a></li>
 </ol></nav></body></html>
 """
     chapter_1 = """<?xml version="1.0" encoding="UTF-8"?>
-<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Fluent reading</title></head><body>
-<h1>Fluent reading for local books</h1>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>BabelBox reading</title></head><body>
+<h1>BabelBox reading for local books</h1>
 <p>An ePub translator should preserve chapter order, links, and the original source while placing each translation directly below its paragraph.</p>
 <p>Readers can edit the translation before downloading a bilingual electronic book.</p>
 </body></html>

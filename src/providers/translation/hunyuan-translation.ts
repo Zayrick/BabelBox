@@ -127,7 +127,7 @@ async function hunyuanTranslation(message: any) {
         }
         
         // 转换语言代码
-        // 对于自动检测，使用FluentRead内置的语言检测
+        // 对于自动检测，使用BabelBox内置的语言检测
         const {sourceLanguage, targetLanguage} = getTranslationLanguages(message);
         let sourceLang: string;
         if (sourceLanguage === 'auto') {

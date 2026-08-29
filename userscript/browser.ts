@@ -40,7 +40,7 @@ export async function dispatchContentMessage(message: any): Promise<any> {
 
 function runtimeAssetUrl(path: string): string {
     if (/icon\/(?:32|48|64|128|256|512)\.png$/u.test(path)) {
-        return globalThis.__FLUENTREAD_ICON_DATA__ || '';
+        return globalThis.__BABELBOX_ICON_DATA__ || '';
     }
     return '';
 }
@@ -53,7 +53,7 @@ const runtime = {
     },
     getURL: runtimeAssetUrl,
     async openOptionsPage(): Promise<void> {
-        window.dispatchEvent(new CustomEvent('fluentread-userscript-open-settings'));
+        window.dispatchEvent(new CustomEvent('babelbox-userscript-open-settings'));
     },
     onMessage: {
         addListener(listener: RuntimeListener): void {

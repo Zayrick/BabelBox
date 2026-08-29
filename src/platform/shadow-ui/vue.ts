@@ -78,7 +78,7 @@ export async function createVueShadowUi(
   });
 
   ui.shadowHost.id = options.hostId;
-  ui.shadowHost.setAttribute('data-fluent-read-ui', options.name);
+  ui.shadowHost.setAttribute('data-babelbox-ui', options.name);
   ui.mount();
   return ui;
 }

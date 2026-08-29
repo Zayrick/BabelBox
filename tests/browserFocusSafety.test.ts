@@ -6,7 +6,7 @@ const PROJECT_ROOT = resolve(__dirname, '..');
 const require = createRequire(import.meta.url);
 const USER_SCRIPT_RUNNER = 'scripts/run-userscript-smoke-test.cjs';
 const REQUIRED_ARGS = [
-    '--artifact', '.output/userscript/fluent-read.user.js',
+    '--artifact', '.output/userscript/babelbox.user.js',
     '--playwright-root', '/tmp/playwright-runtime',
     '--artifacts-dir', '/tmp/userscript-artifacts',
 ];
@@ -34,13 +34,13 @@ describe('browser regression focus safety', () => {
 
     it('requires a focus-safe helper in background mode', () => {
         const {parseArgs} = require(resolve(PROJECT_ROOT, USER_SCRIPT_RUNNER));
-        expect(() => parseArgs(REQUIRED_ARGS, {})).toThrow(/--focus-safe-helper|FLUENTREAD_FOCUS_SAFE_HELPER/);
+        expect(() => parseArgs(REQUIRED_ARGS, {})).toThrow(/--focus-safe-helper|BABELBOX_FOCUS_SAFE_HELPER/);
     });
 
     it('accepts an explicit helper, environment helper, or headed mode', () => {
         const {parseArgs} = require(resolve(PROJECT_ROOT, USER_SCRIPT_RUNNER));
         const explicit = parseArgs([...REQUIRED_ARGS, '--focus-safe-helper', '/tmp/focus-safe-browser.cjs'], {});
-        const fromEnv = parseArgs(REQUIRED_ARGS, {FLUENTREAD_FOCUS_SAFE_HELPER: '/tmp/focus-safe-browser.cjs'});
+        const fromEnv = parseArgs(REQUIRED_ARGS, {BABELBOX_FOCUS_SAFE_HELPER: '/tmp/focus-safe-browser.cjs'});
         const headed = parseArgs([...REQUIRED_ARGS, '--headed'], {});
 
         expect(explicit).toMatchObject({background: true, focusSafeHelper: '/tmp/focus-safe-browser.cjs'});

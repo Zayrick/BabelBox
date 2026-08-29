@@ -212,7 +212,7 @@ function withMandatoryHeadingCoverage(rules) {
   ];
 }
 
-const COVERAGE_TRACKER_KEY = '__fluentReadSiteCoverageTrackerV1';
+const COVERAGE_TRACKER_KEY = '__babelboxSiteCoverageTrackerV1';
 const COVERAGE_EXCLUDED_SELECTOR_LIST = [
   '[hidden]',
   '[aria-hidden="true"]',
@@ -256,9 +256,9 @@ async function waitForCoverageReady(page, rules, timeout) {
       const sourceText = (node) => {
         const clone = node.cloneNode(true);
         clone.querySelectorAll(
-          '.fluent-read-bilingual-content, .fluent-read-loading, .fluent-read-retry-wrapper, [data-fr-translation-owned="true"]',
+          '.babelbox-bilingual-content, .babelbox-loading, .babelbox-retry-wrapper, [data-babelbox-translation-owned="true"]',
         ).forEach((owned) => owned.remove());
-        clone.querySelectorAll('[data-fr-translation-segment="true"]').forEach((segment) => {
+        clone.querySelectorAll('[data-babelbox-translation-segment="true"]').forEach((segment) => {
           segment.replaceWith(...segment.childNodes);
         });
         clone.querySelectorAll(protectedSelector).forEach((protectedNode) => protectedNode.remove());
@@ -266,7 +266,7 @@ async function waitForCoverageReady(page, rules, timeout) {
       };
       const eligible = (node, rule) => {
         if (!(node instanceof HTMLElement) || node.closest(excludedSelector)) return false;
-        if (node.closest('.fluent-read-bilingual-content, [data-fr-translation-owned="true"]')) return false;
+        if (node.closest('.babelbox-bilingual-content, [data-babelbox-translation-owned="true"]')) return false;
         const rect = node.getBoundingClientRect();
         const style = getComputedStyle(node);
         const text = sourceText(node);
@@ -300,12 +300,12 @@ async function installCoverageTracker(page, rules) {
   await page.evaluate(({coverageRules, trackerKey, excludedSelector, protectedSelector, technicalWords}) => {
     window[trackerKey]?.stop?.();
     const ownedSelector = [
-      '.fluent-read-bilingual-content',
-      '.fluent-read-loading',
-      '.fluent-read-retry-wrapper',
-      '[data-fr-translation-owned="true"]',
+      '.babelbox-bilingual-content',
+      '.babelbox-loading',
+      '.babelbox-retry-wrapper',
+      '[data-babelbox-translation-owned="true"]',
     ].join(', ');
-    const artifactSelector = `${ownedSelector}, [data-fr-translation-segment="true"]`;
+    const artifactSelector = `${ownedSelector}, [data-babelbox-translation-segment="true"]`;
     const normalizeText = (value) => String(value || '').replace(/\s+/gu, ' ').trim();
     const technicalWordSet = new Set(technicalWords);
     const naturalLanguage = (text) => {
@@ -335,7 +335,7 @@ async function installCoverageTracker(page, rules) {
       metrics.canonicalSnapshotCalls += 1;
       const clone = node.cloneNode(true);
       clone.querySelectorAll(ownedSelector).forEach((owned) => owned.remove());
-      clone.querySelectorAll('[data-fr-translation-segment="true"]').forEach((segment) => {
+      clone.querySelectorAll('[data-babelbox-translation-segment="true"]').forEach((segment) => {
         segment.replaceWith(...segment.childNodes);
       });
       clone.querySelectorAll(protectedSelector).forEach((protectedNode) => protectedNode.remove());
@@ -374,7 +374,7 @@ async function installCoverageTracker(page, rules) {
         return false;
       }
     };
-    const translationWrapper = (node, selector) => [...node.querySelectorAll('.fluent-read-bilingual-content')]
+    const translationWrapper = (node, selector) => [...node.querySelectorAll('.babelbox-bilingual-content')]
       .find((wrapper) => ownedByRuleNode(wrapper, node, selector) &&
         /[\u3400-\u9fff]/u.test(wrapper.textContent || '')) || null;
     const states = coverageRules.map((rule, ruleIndex) => ({
@@ -596,8 +596,8 @@ async function installCoverageTracker(page, rules) {
         connected: true,
         eligible,
         translated: eligible && recordCurrentlyTranslated(state, record),
-        loading: eligible && owns('.fluent-read-loading[data-fr-translation-owned="true"]'),
-        retry: eligible && owns('.fluent-read-retry-wrapper[data-fr-translation-owned="true"]'),
+        loading: eligible && owns('.babelbox-loading[data-babelbox-translation-owned="true"]'),
+        retry: eligible && owns('.babelbox-retry-wrapper[data-babelbox-translation-owned="true"]'),
       };
     };
     const findToken = (token) => {
@@ -832,7 +832,7 @@ function loadPlaywright(root) {
   try {
     return require('playwright');
   } catch {
-    const loader = createRequire(path.join(path.resolve(root), '__fluentread_site_loader__.cjs'));
+    const loader = createRequire(path.join(path.resolve(root), '__babelbox_site_loader__.cjs'));
     return loader('playwright');
   }
 }
@@ -990,18 +990,18 @@ async function capturePageContract(
   return page.evaluate(({required, forbidden, interactions, dynamicForbidden, optionalForbidden, mutableForbidden}) => {
     const normalizeText = (value) => String(value || '').replace(/\s+/gu, ' ').trim();
     const ownedSelector = [
-      '.fluent-read-bilingual-content',
-      '.fluent-read-loading',
-      '.fluent-read-retry-wrapper',
-      '[data-fr-translation-owned="true"]',
+      '.babelbox-bilingual-content',
+      '.babelbox-loading',
+      '.babelbox-retry-wrapper',
+      '[data-babelbox-translation-owned="true"]',
     ].join(', ');
     const semanticSnapshot = (node) => {
       if (!node) return {sourceText: '', structure: ''};
       const clone = node.cloneNode(true);
       clone.querySelectorAll(
-        '.fluent-read-bilingual-content, .fluent-read-loading, .fluent-read-retry-wrapper, [data-fr-translation-owned="true"]',
+        '.babelbox-bilingual-content, .babelbox-loading, .babelbox-retry-wrapper, [data-babelbox-translation-owned="true"]',
       ).forEach((owned) => owned.remove());
-      clone.querySelectorAll('[data-fr-translation-segment="true"]').forEach((segment) => {
+      clone.querySelectorAll('[data-babelbox-translation-segment="true"]').forEach((segment) => {
         segment.replaceWith(...segment.childNodes);
       });
       const visit = (current) => {
@@ -1036,7 +1036,7 @@ async function capturePageContract(
     };
     const forbiddenState = forbidden.map((selector) => {
       const nodes = [...document.querySelectorAll(selector)]
-        .filter((node) => !node.closest('.fluent-read-bilingual-content'));
+        .filter((node) => !node.closest('.babelbox-bilingual-content'));
       return {
         selector,
         dynamic: dynamicForbidden.includes(selector),
@@ -1044,7 +1044,7 @@ async function capturePageContract(
         mutable: mutableForbidden.includes(selector),
         count: nodes.length,
         translatedDescendants: nodes.reduce((count, node) =>
-          count + node.querySelectorAll('.fluent-read-bilingual-content').length, 0),
+          count + node.querySelectorAll('.babelbox-bilingual-content').length, 0),
         ownedDescendants: nodes.reduce((count, node) => count +
           (node.matches(ownedSelector) ? 1 : 0) + node.querySelectorAll(ownedSelector).length, 0),
         // Contract decisions compare every forbidden node. These snapshots are
@@ -1059,7 +1059,7 @@ async function capturePageContract(
     });
     const interactionState = interactions.map((selector) => {
       const nodes = [...document.querySelectorAll(selector)]
-        .filter((node) => !node.closest('.fluent-read-bilingual-content'));
+        .filter((node) => !node.closest('.babelbox-bilingual-content'));
       const node = nodes.find((candidate) => {
         const rect = candidate.getBoundingClientRect();
         return rect.width > 0 && rect.height > 0;
@@ -1146,10 +1146,10 @@ async function assertPageContract(page, baseline, requiredSelectors, expectedUrl
   const state = await page.evaluate(({baselineState, required, url}) => {
     const normalizeText = (value) => String(value || '').replace(/\s+/gu, ' ').trim();
     const ownedSelector = [
-      '.fluent-read-bilingual-content',
-      '.fluent-read-loading',
-      '.fluent-read-retry-wrapper',
-      '[data-fr-translation-owned="true"]',
+      '.babelbox-bilingual-content',
+      '.babelbox-loading',
+      '.babelbox-retry-wrapper',
+      '[data-babelbox-translation-owned="true"]',
     ].join(', ');
     const firstVisibleTextNode = (selector) => [...document.querySelectorAll(selector)].find((node) => {
       if (node.closest('[hidden], [aria-hidden="true"], [inert]')) return false;
@@ -1176,7 +1176,7 @@ async function assertPageContract(page, baseline, requiredSelectors, expectedUrl
     };
     const forbiddenState = baselineState.forbiddenState.map(({selector, dynamic, optional, mutable}) => {
       const nodes = [...document.querySelectorAll(selector)]
-        .filter((node) => !node.closest('.fluent-read-bilingual-content'));
+        .filter((node) => !node.closest('.babelbox-bilingual-content'));
       return {
         selector,
         dynamic,
@@ -1184,7 +1184,7 @@ async function assertPageContract(page, baseline, requiredSelectors, expectedUrl
         mutable,
         count: nodes.length,
         translatedDescendants: nodes.reduce((count, node) =>
-          count + node.querySelectorAll('.fluent-read-bilingual-content').length, 0),
+          count + node.querySelectorAll('.babelbox-bilingual-content').length, 0),
         ownedDescendants: nodes.reduce((count, node) => count +
           (node.matches(ownedSelector) ? 1 : 0) + node.querySelectorAll(ownedSelector).length, 0),
         signatures: nodes.map(forbiddenSignature),
@@ -1197,7 +1197,7 @@ async function assertPageContract(page, baseline, requiredSelectors, expectedUrl
     }));
     const interactionState = baselineState.interactionState.map(({selector}) => {
       const nodes = [...document.querySelectorAll(selector)]
-        .filter((node) => !node.closest('.fluent-read-bilingual-content'));
+        .filter((node) => !node.closest('.babelbox-bilingual-content'));
       const initial = baselineState.interactionState.find((item) => item.selector === selector);
       const matchesInitialIdentity = (candidate) => {
         const href = candidate instanceof HTMLAnchorElement ? candidate.href : '';
@@ -1268,9 +1268,9 @@ async function assertRequiredRestored(page, baseline, phase) {
       if (!node) return {sourceText: '', structure: ''};
       const clone = node.cloneNode(true);
       clone.querySelectorAll(
-        '.fluent-read-bilingual-content, .fluent-read-loading, .fluent-read-retry-wrapper, [data-fr-translation-owned="true"]',
+        '.babelbox-bilingual-content, .babelbox-loading, .babelbox-retry-wrapper, [data-babelbox-translation-owned="true"]',
       ).forEach((owned) => owned.remove());
-      clone.querySelectorAll('[data-fr-translation-segment="true"]').forEach((segment) => {
+      clone.querySelectorAll('[data-babelbox-translation-segment="true"]').forEach((segment) => {
         segment.replaceWith(...segment.childNodes);
       });
       const visit = (current) => {
@@ -1294,7 +1294,7 @@ async function assertRequiredRestored(page, baseline, phase) {
 
 async function assertWrapperUniqueness(page, expectedTotal, phase) {
   const state = await page.evaluate(() => {
-    const wrappers = [...document.querySelectorAll('.fluent-read-bilingual-content')];
+    const wrappers = [...document.querySelectorAll('.babelbox-bilingual-content')];
     const parentCounts = new Map();
     for (const wrapper of wrappers) {
       parentCounts.set(wrapper.parentElement, (parentCounts.get(wrapper.parentElement) || 0) + 1);
@@ -1302,7 +1302,7 @@ async function assertWrapperUniqueness(page, expectedTotal, phase) {
     return {
       total: wrappers.length,
       duplicateParents: [...parentCounts.values()].filter((count) => count > 1).length,
-      nested: document.querySelectorAll('.fluent-read-bilingual-content .fluent-read-bilingual-content').length,
+      nested: document.querySelectorAll('.babelbox-bilingual-content .babelbox-bilingual-content').length,
     };
   });
   if ((expectedTotal !== null && state.total !== expectedTotal) || state.duplicateParents !== 0 || state.nested !== 0) {
@@ -1314,7 +1314,7 @@ async function assertWrapperUniqueness(page, expectedTotal, phase) {
 async function readTargetState(page, selector) {
   return page.evaluate((targetSelector) => {
     const target = document.querySelector(targetSelector);
-    const wrappers = [...(target?.querySelectorAll('.fluent-read-bilingual-content') || [])];
+    const wrappers = [...(target?.querySelectorAll('.babelbox-bilingual-content') || [])];
     return {
       exists: Boolean(target),
       text: target?.textContent?.trim() || '',
@@ -1325,9 +1325,9 @@ async function readTargetState(page, selector) {
 }
 
 async function waitForTranslationIdle(page, timeout, phase, minimumRetryBudget = 210000) {
-  const ownedLoading = '.fluent-read-loading[data-fr-translation-owned="true"]';
-  const ownedRetry = '.fluent-read-retry-wrapper[data-fr-translation-owned="true"]';
-  const idleKey = `__fluentReadIdleSince${Date.now()}${Math.random().toString(36).slice(2)}`;
+  const ownedLoading = '.babelbox-loading[data-babelbox-translation-owned="true"]';
+  const ownedRetry = '.babelbox-retry-wrapper[data-babelbox-translation-owned="true"]';
+  const idleKey = `__babelboxIdleSince${Date.now()}${Math.random().toString(36).slice(2)}`;
   // One provider request may consume 4 x 45s attempts plus retry backoff.
   const idleTimeout = Math.max(timeout, minimumRetryBudget);
   try {
@@ -1484,7 +1484,7 @@ async function scrollAndWaitFullPage(page, timeout, scrollContainerSelector, tar
   // state; otherwise a valid intermediate state looks like a lost translation.
   await revealFullPageTarget(page, targetSelector);
   await page.waitForFunction(
-    (selector) => (document.querySelector(selector)?.querySelectorAll('.fluent-read-bilingual-content').length || 0) >= 1,
+    (selector) => (document.querySelector(selector)?.querySelectorAll('.babelbox-bilingual-content').length || 0) >= 1,
     targetSelector,
     {timeout},
   );
@@ -1511,7 +1511,7 @@ async function revealFullPageTarget(page, selector) {
 
 async function readFullPageState(page, selector, requiredSelectors, controlSelector) {
   return page.evaluate(({targetSelector, required, buttonSelector}) => {
-    const wrappers = [...document.querySelectorAll('.fluent-read-bilingual-content')];
+    const wrappers = [...document.querySelectorAll('.babelbox-bilingual-content')];
     const parents = new Set(wrappers.map((wrapper) => wrapper.parentElement));
     const target = document.querySelector(targetSelector);
     const requiredBilingual = required.map((requiredSelector) => {
@@ -1522,7 +1522,7 @@ async function readFullPageState(page, selector, requiredSelectors, controlSelec
         return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden' &&
           Boolean(candidate.textContent?.trim());
       });
-      const translations = [...(node?.querySelectorAll('.fluent-read-bilingual-content') || [])];
+      const translations = [...(node?.querySelectorAll('.babelbox-bilingual-content') || [])];
       return {
         selector: requiredSelector,
         exists: Boolean(node),
@@ -1533,7 +1533,7 @@ async function readFullPageState(page, selector, requiredSelectors, controlSelec
     return {
       totalBilingual: wrappers.length,
       uniqueWrapperParents: parents.size,
-      targetBilingual: target?.querySelectorAll('.fluent-read-bilingual-content').length || 0,
+      targetBilingual: target?.querySelectorAll('.babelbox-bilingual-content').length || 0,
       requiredBilingual,
       controlTexts: buttonSelector
         ? [...document.querySelectorAll(buttonSelector)].map((node) => node.textContent?.trim() || '')
@@ -1564,7 +1564,7 @@ async function toggleHover(page, target, targetConfig, expectedCount, timeout) {
     await page.waitForFunction(
       ({targetSelector, targetIndex, count}) =>
         (document.querySelectorAll(targetSelector)[targetIndex]
-          ?.querySelectorAll('.fluent-read-bilingual-content').length || 0) === count,
+          ?.querySelectorAll('.babelbox-bilingual-content').length || 0) === count,
       {targetSelector: selector, targetIndex: index, count: expectedCount},
       {timeout},
     );
@@ -1574,16 +1574,16 @@ async function toggleHover(page, target, targetConfig, expectedCount, timeout) {
       return {
         url: location.href,
         text: target?.textContent?.trim() || '',
-        bilingualCount: target?.querySelectorAll('.fluent-read-bilingual-content').length || 0,
-        loadingCount: target?.querySelectorAll('.fluent-read-loading').length || 0,
-        retryCount: target?.querySelectorAll('.fluent-read-retry-wrapper').length || 0,
+        bilingualCount: target?.querySelectorAll('.babelbox-bilingual-content').length || 0,
+        loadingCount: target?.querySelectorAll('.babelbox-loading').length || 0,
+        retryCount: target?.querySelectorAll('.babelbox-retry-wrapper').length || 0,
         hitStack: document.elementsFromPoint(point.x, point.y).slice(0, 8).map((element) => ({
           tag: element.tagName,
           id: element.id,
           className: typeof element.className === 'string' ? element.className : '',
           text: (element.textContent || '').trim().slice(0, 120),
         })),
-        translatedParents: [...document.querySelectorAll('.fluent-read-bilingual-content')].map((wrapper) =>
+        translatedParents: [...document.querySelectorAll('.babelbox-bilingual-content')].map((wrapper) =>
           (wrapper.parentElement?.textContent || '').trim().slice(0, 160)),
       };
     }, {targetSelector: selector, targetIndex: index, point: {x, y}});
@@ -1616,8 +1616,8 @@ function findHoverTargetInPage({
   const sourceText = (node) => {
     const clone = node.cloneNode(true);
     clone.querySelectorAll(
-      `.fluent-read-bilingual-content, .fluent-read-loading, .fluent-read-retry-wrapper, ` +
-      `[data-fr-translation-owned="true"], ${protectedSelector}`,
+      `.babelbox-bilingual-content, .babelbox-loading, .babelbox-retry-wrapper, ` +
+      `[data-babelbox-translation-owned="true"], ${protectedSelector}`,
     ).forEach((protectedNode) => protectedNode.remove());
     return normalizeText(clone.textContent);
   };
@@ -1726,10 +1726,10 @@ async function runInteractionScenarios(page, scenarios, timeout, phase) {
     const dialog = await page.locator(scenario.dialogSelector).first().evaluate((node, selectors) => {
       const rect = node.getBoundingClientRect();
       const ownedSelector = [
-        '.fluent-read-bilingual-content',
-        '.fluent-read-loading',
-        '.fluent-read-retry-wrapper',
-        '[data-fr-translation-owned="true"]',
+        '.babelbox-bilingual-content',
+        '.babelbox-loading',
+        '.babelbox-retry-wrapper',
+        '[data-babelbox-translation-owned="true"]',
       ].join(', ');
       const controls = [...node.querySelectorAll(selectors.combobox)];
       const listboxes = [...node.querySelectorAll(selectors.listbox)];
@@ -1815,9 +1815,9 @@ async function runHoverCase(page, hoverTargets, requiredSelectors, pageContract,
 
     for (const expected of [1, 0, 1]) {
       await toggleHover(page, target, runtimeTargetConfig, expected, timeout);
-      counts.push(await target.locator('.fluent-read-bilingual-content').count());
+      counts.push(await target.locator('.babelbox-bilingual-content').count());
       const neighborCount = await targets.evaluateAll((nodes, activeIndex) => nodes.reduce((count, node, index) =>
-        count + (index === activeIndex ? 0 : node.querySelectorAll('.fluent-read-bilingual-content').length), 0), runtimeTargetConfig.index);
+        count + (index === activeIndex ? 0 : node.querySelectorAll('.babelbox-bilingual-content').length), 0), runtimeTargetConfig.index);
       neighborCounts.push(neighborCount);
       if (neighborCount !== 0) {
         throw new Error(`${targetConfig.name} 悬浮误翻译相邻节点：${JSON.stringify(neighborCounts)}`);
@@ -1837,7 +1837,7 @@ async function runHoverCase(page, hoverTargets, requiredSelectors, pageContract,
       }
     }
 
-    const translationText = (await target.locator('.fluent-read-bilingual-content').first().textContent() || '').trim();
+    const translationText = (await target.locator('.babelbox-bilingual-content').first().textContent() || '').trim();
     if (!/[\u3400-\u9fff]/u.test(translationText)) {
       throw new Error(`${targetConfig.name} 悬浮译文没有中文：${translationText}`);
     }
@@ -1891,7 +1891,7 @@ async function runFullTranslationPass(context, pass) {
   try {
     await page.waitForFunction(
       (targetSelector) => (document.querySelector(targetSelector)
-        ?.querySelectorAll('.fluent-read-bilingual-content').length || 0) >= 1,
+        ?.querySelectorAll('.babelbox-bilingual-content').length || 0) >= 1,
       selector,
       {timeout},
     );
@@ -1900,12 +1900,12 @@ async function runFullTranslationPass(context, pass) {
     const diagnostics = await page.evaluate((targetSelector) => {
       const targetNode = document.querySelector(targetSelector);
       return {
-        totalBilingual: document.querySelectorAll('.fluent-read-bilingual-content').length,
+        totalBilingual: document.querySelectorAll('.babelbox-bilingual-content').length,
         targetText: targetNode?.textContent?.trim() || '',
-        targetBilingual: targetNode?.querySelectorAll('.fluent-read-bilingual-content').length || 0,
-        targetLoading: targetNode?.querySelectorAll('.fluent-read-loading').length || 0,
-        targetRetry: targetNode?.querySelectorAll('.fluent-read-retry-wrapper').length || 0,
-        translatedNodes: [...document.querySelectorAll('.fluent-read-bilingual-content')].map((node) => ({
+        targetBilingual: targetNode?.querySelectorAll('.babelbox-bilingual-content').length || 0,
+        targetLoading: targetNode?.querySelectorAll('.babelbox-loading').length || 0,
+        targetRetry: targetNode?.querySelectorAll('.babelbox-retry-wrapper').length || 0,
+        translatedNodes: [...document.querySelectorAll('.babelbox-bilingual-content')].map((node) => ({
           text: node.textContent?.trim() || '',
           parent: node.parentElement?.outerHTML.slice(0, 500) || '',
         })),
@@ -1991,7 +1991,7 @@ async function runFullCase(
   await toggleFull(page);
   reportProgress('已触发全文恢复');
   await page.waitForFunction(
-    () => document.querySelectorAll('.fluent-read-bilingual-content').length === 0,
+    () => document.querySelectorAll('.babelbox-bilingual-content').length === 0,
     undefined,
     {timeout},
   );
@@ -2035,7 +2035,7 @@ async function main() {
   assertFreshProductionExtension(extensionDir);
   if (!fs.existsSync(args.browserPath)) throw new Error(`浏览器不存在：${args.browserPath}`);
 
-  const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'fluentread-site-case-'));
+  const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'babelbox-site-case-'));
   assertDedicatedProfile(profileDir);
   const artifactsDir = args.artifactsDir ? path.resolve(args.artifactsDir) : null;
   if (artifactsDir) fs.mkdirSync(artifactsDir, {recursive: true});

@@ -97,7 +97,7 @@ function scheduleTranslationCountSave(): void {
     translationCountSaveTimer = undefined;
     const delta = pendingTranslationCount;
     pendingTranslationCount = 0;
-    void persistCountIncrement(delta).catch((error) => console.error('[FluentRead] 保存翻译计数失败:', error));
+    void persistCountIncrement(delta).catch((error) => console.error('[BabelBox] 保存翻译计数失败:', error));
   }, TRANSLATION_COUNT_SAVE_INTERVAL);
 }
 
@@ -107,7 +107,7 @@ function flushTranslationCountSave(): void {
   translationCountSaveTimer = undefined;
   const delta = pendingTranslationCount;
   pendingTranslationCount = 0;
-  void persistCountIncrement(delta).catch((error) => console.error('[FluentRead] 保存翻译计数失败:', error));
+  void persistCountIncrement(delta).catch((error) => console.error('[BabelBox] 保存翻译计数失败:', error));
 }
 
 function scheduleVideoCountSave(): void {
@@ -119,7 +119,7 @@ function scheduleVideoCountSave(): void {
     videoCountSaveTimer = undefined;
     const delta = pendingVideoCount;
     pendingVideoCount = 0;
-    void persistCountIncrement(delta).catch((error) => console.error('[FluentRead] 保存视频翻译计数失败:', error));
+    void persistCountIncrement(delta).catch((error) => console.error('[BabelBox] 保存视频翻译计数失败:', error));
   }, VIDEO_COUNT_SAVE_INTERVAL);
 }
 

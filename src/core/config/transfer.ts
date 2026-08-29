@@ -58,7 +58,7 @@ export function sanitizeConfigForExport(value: unknown): ConfigRecord {
   const sanitized = sanitizeConfigCredentials(
     JSON.parse(JSON.stringify(value)),
   ) as ConfigRecord
-  delete sanitized.__fluentConfigRevision
+  delete sanitized.__babelboxConfigRevision
   delete sanitized.count
   delete sanitized.persistCredentials
   removeDefaultEntries(sanitized, 'system_role', defaultOption.system_role)

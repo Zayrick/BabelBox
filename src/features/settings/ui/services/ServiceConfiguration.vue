@@ -47,7 +47,7 @@
               allow-create
               default-first-option
               fit-input-width
-              popper-class="fluentread-model-catalog-popper"
+              popper-class="babelbox-model-catalog-popper"
               :loading="modelCatalogLoading"
               placeholder="输入或选择模型 ID"
               @visible-change="onModelCatalogVisible"
@@ -318,7 +318,7 @@ const presentation = toRef(props, 'presentation')
 const options = toRef(props, 'options')
 const isValidAzureEndpoint = toRef(props, 'isValidAzureEndpoint')
 
-const MODEL_CATALOG_FAILURE_VALUE = '__fluentread_model_catalog_failure__'
+const MODEL_CATALOG_FAILURE_VALUE = '__babelbox_model_catalog_failure__'
 const modelCatalogModels = ref<string[]>([])
 const modelCatalogLoading = ref(false)
 const modelCatalogError = ref('')
@@ -736,7 +736,7 @@ onBeforeUnmount(() => {
   white-space: normal;
 }
 
-:global(.fluentread-model-catalog-popper .el-select-dropdown__item) {
+:global(.babelbox-model-catalog-popper .el-select-dropdown__item) {
   height: auto;
   min-width: 0;
   min-height: var(--control-height-small);
@@ -755,10 +755,10 @@ onBeforeUnmount(() => {
 }
 
 .is-spinning {
-  animation: fluentread-icon-spin 900ms linear infinite;
+  animation: babelbox-icon-spin 900ms linear infinite;
 }
 
-@keyframes fluentread-icon-spin {
+@keyframes babelbox-icon-spin {
   to { transform: rotate(360deg); }
 }
 

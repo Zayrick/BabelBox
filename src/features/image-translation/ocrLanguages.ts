@@ -8,7 +8,7 @@ export type ImageOcrLanguagePack = {
     recommended: boolean;
 };
 
-export const IMAGE_OCR_LANGUAGE_STATE_KEY = 'fluentReadImageOcrLanguages';
+export const IMAGE_OCR_LANGUAGE_STATE_KEY = 'babelboxImageOcrLanguages';
 
 export const IMAGE_OCR_LANGUAGE_PACKS: ImageOcrLanguagePack[] = [
     {

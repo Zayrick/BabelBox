@@ -48,10 +48,10 @@ function shouldAutomaticallyTranslateCurrentPage(nextConfig: typeof config): boo
     });
 }
 function installPageStyles(ctx: ContentScriptContext): () => void {
-    const existing = document.getElementById('fluent-read-page-styles');
+    const existing = document.getElementById('babelbox-page-styles');
     if (existing) return () => undefined;
     const style = document.createElement('style');
-    style.id = 'fluent-read-page-styles';
+    style.id = 'babelbox-page-styles';
     style.textContent = pageStyles;
     (document.head ?? document.documentElement).appendChild(style);
     const remove = () => style.remove();
@@ -81,7 +81,7 @@ export async function startContentApp(ctx: ContentScriptContext,
     let inputBoxConfigGeneration = 0;
     let previousInputBoxConfigKey = inputBoxTranslationConfigKey(config);
     const pageEventController = new AbortController();
-    document.addEventListener('fluentread-route-change', resetPageTranslationContextCache, {signal: pageEventController.signal});
+    document.addEventListener('babelbox-route-change', resetPageTranslationContextCache, {signal: pageEventController.signal});
     const hotkeys = createContentHotkeyRuntime(() => currentPageSiteDisabled);
     const inputTranslationFeature = createInputTranslationContentFeature({
         context: ctx,
@@ -153,14 +153,14 @@ export async function startContentApp(ctx: ContentScriptContext,
                 isEnabled: () => config.on && config.disableFloatingBall !== true,
                 mount: () => mountFloatingBall(ctx),
                 unmount: unmountFloatingBall,
-                isMounted: () => Boolean(document.getElementById('fluent-read-floating-ball-container')),
+                isMounted: () => Boolean(document.getElementById('babelbox-floating-ball-container')),
             },
             {
                 id: 'selection-translator',
                 isEnabled: () => config.on && config.disableSelectionTranslator !== true,
                 mount: () => mountSelectionTranslator(ctx),
                 unmount: unmountSelectionTranslator,
-                isMounted: () => Boolean(document.getElementById('fluent-read-selection-translator-container')),
+                isMounted: () => Boolean(document.getElementById('babelbox-selection-translator-container')),
             },
             {
                 id: 'selection-area-translator',
@@ -180,7 +180,7 @@ export async function startContentApp(ctx: ContentScriptContext,
         ], {
             capabilities,
             onError: (featureId, phase, error) => {
-                console.error(`[FluentRead] 内容功能 ${featureId} ${phase} 失败:`, error);
+                console.error(`[BabelBox] 内容功能 ${featureId} ${phase} 失败:`, error);
             },
         });
         activePageFeatureRegistry = pageFeatureRegistry;

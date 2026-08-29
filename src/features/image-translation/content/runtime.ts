@@ -4,9 +4,9 @@ import type { OcrLine } from '@/src/features/image-translation/core';
 import { Languages, LoaderCircle, RotateCcw, TriangleAlert } from 'lucide';
 import { replaceLucideIcon } from '@/src/ui/icons/lucideDom';
 
-const IMAGE_TRANSLATION_OVERLAY = 'fluent-read-image-translation-overlay';
-const IMAGE_TRANSLATION_ROOT = 'fluent-read-image-translation-root';
-const IMAGE_TRANSLATION_BUTTON = 'fluent-read-image-translation-button';
+const IMAGE_TRANSLATION_OVERLAY = 'babelbox-image-translation-overlay';
+const IMAGE_TRANSLATION_ROOT = 'babelbox-image-translation-root';
+const IMAGE_TRANSLATION_BUTTON = 'babelbox-image-translation-button';
 const MIN_IMAGE_WIDTH = 80;
 const MIN_IMAGE_HEIGHT = 40;
 const IMAGE_READ_TIMEOUT_MS = 15_000;
@@ -43,7 +43,7 @@ function ensureImageOverlayRoot(): HTMLDivElement {
 
     const host = document.createElement('div');
     host.id = IMAGE_TRANSLATION_ROOT;
-    host.setAttribute('data-fluent-read-ui', 'image-translation');
+    host.setAttribute('data-babelbox-ui', 'image-translation');
     host.style.cssText = [
         'all: initial !important',
         'position: fixed !important',
@@ -73,11 +73,11 @@ function ensureImageOverlayRoot(): HTMLDivElement {
       }
       .${IMAGE_TRANSLATION_BUTTON}:hover, .${IMAGE_TRANSLATION_BUTTON}:focus-visible { background: rgba(20,20,20,.9) !important; opacity: 1 !important; outline: none !important; transform: scale(1.06); }
       .${IMAGE_TRANSLATION_BUTTON} svg { display: block !important; width: 15px !important; height: 15px !important; margin: auto !important; stroke-width: 2 !important; }
-      .${IMAGE_TRANSLATION_BUTTON}[data-animation-mode]:not([data-animation-mode="static"])[data-phase="loading"] { animation: fluent-read-image-translation-pulse 1.1s ease-in-out infinite; }
-      .${IMAGE_TRANSLATION_BUTTON}[data-animation-mode]:not([data-animation-mode="static"])[data-phase="loading"] svg { animation: fluent-read-image-translation-spin .9s linear infinite; }
+      .${IMAGE_TRANSLATION_BUTTON}[data-animation-mode]:not([data-animation-mode="static"])[data-phase="loading"] { animation: babelbox-image-translation-pulse 1.1s ease-in-out infinite; }
+      .${IMAGE_TRANSLATION_BUTTON}[data-animation-mode]:not([data-animation-mode="static"])[data-phase="loading"] svg { animation: babelbox-image-translation-spin .9s linear infinite; }
       .${IMAGE_TRANSLATION_BUTTON}[data-phase="error"] { background: rgba(185,28,28,.88) !important; }
-      @keyframes fluent-read-image-translation-pulse { 0%,100% { opacity:.52; } 50% { opacity:1; } }
-      @keyframes fluent-read-image-translation-spin { to { transform: rotate(360deg); } }
+      @keyframes babelbox-image-translation-pulse { 0%,100% { opacity:.52; } 50% { opacity:1; } }
+      @keyframes babelbox-image-translation-spin { to { transform: rotate(360deg); } }
       @media (prefers-reduced-motion: reduce) {
         .${IMAGE_TRANSLATION_BUTTON} { animation: none !important; transition: none !important; }
         .${IMAGE_TRANSLATION_BUTTON} svg { animation: none !important; }
@@ -150,7 +150,7 @@ function createState(image: HTMLImageElement): ImageTranslationState {
     const overlayContainer = ensureImageOverlayRoot();
     const overlay = document.createElement('div');
     overlay.className = IMAGE_TRANSLATION_OVERLAY;
-    overlay.dataset.fluentReadImageTranslation = 'true';
+    overlay.dataset.babelboxImageTranslation = 'true';
 
     const button = document.createElement('button');
     button.type = 'button';
@@ -180,7 +180,7 @@ function createState(image: HTMLImageElement): ImageTranslationState {
     });
 
     const canvas = document.createElement('canvas');
-    canvas.className = 'fluent-read-image-translation-canvas';
+    canvas.className = 'babelbox-image-translation-canvas';
     canvas.setAttribute('aria-hidden', 'true');
     overlay.append(canvas, button);
     overlayContainer.appendChild(overlay);
@@ -408,7 +408,7 @@ async function translateImage(state: ImageTranslationState): Promise<void> {
         window.setTimeout(() => {
             if (state.phase === 'error') setButtonState(state, 'idle', '翻译图片');
         }, 3000);
-        console.warn('[FluentRead] 图片翻译失败:', error);
+        console.warn('[BabelBox] 图片翻译失败:', error);
     } finally {
         if (state.abortController === controller) state.abortController = null;
     }

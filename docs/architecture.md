@@ -1,6 +1,6 @@
-# FluentRead 架构设计
+# BabelBox 架构设计
 
-FluentRead 使用 WXT 0.21、Vue 3 和 TypeScript。目录按运行时入口、业务能力和外部边界划分。
+BabelBox 使用 WXT 0.21、Vue 3 和 TypeScript。目录按运行时入口、业务能力和外部边界划分。
 
 ## 目录职责
 
@@ -93,7 +93,7 @@ feature
 - 设置页和 popup 每个视图只保留一个主标题；同一组设置只使用一层 surface，组内通过分隔线表达关系，不重复套卡片。
 - 装饰性渐变不用于页面背景、普通按钮或设置容器；阴影仅用于需要脱离页面层级的弹窗、抽屉和浮层。译文效果等用户主动选择的内容预览不受此限制。
 - 页面间距优先使用 4、8、12、16、24、32px，普通控件圆角使用 8px，分组容器使用 12px，避免为单个页面引入新的视觉尺度。
-- content overlay 使用 FluentRead 专属命名，并通过 Shadow DOM 或 WXT UI 隔离宿主页面。
+- content overlay 使用 BabelBox 专属命名，并通过 Shadow DOM 或 WXT UI 隔离宿主页面。
 - 复用组件进入 `src/ui/components`；只服务一个 feature 的组件留在该 feature 的 `ui/`。
 - Vue 页面负责组合和交互，翻译、存储与消息规则放在对应 service、feature 或 platform 模块。
 

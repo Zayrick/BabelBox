@@ -16,7 +16,7 @@ export const DOCUMENT_EXAMPLES = [
 
 export const DOCUMENT_BINARY_EXAMPLES = [
     {fileName: 'sample.pdf', format: 'pdf', marker: 'Document Translation Example'},
-    {fileName: 'sample.epub', format: 'epub', marker: 'Fluent reading for local books'},
+    {fileName: 'sample.epub', format: 'epub', marker: 'BabelBox reading for local books'},
     {fileName: 'sample.docx', format: 'docx', marker: 'Document Translation Example'},
 ] as const;
 

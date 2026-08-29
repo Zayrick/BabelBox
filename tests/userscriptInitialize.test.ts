@@ -131,8 +131,8 @@ describe('legacy userscript migration', () => {
     });
 
     it('does not rewrite an already-safe config only because it has an internal revision', async () => {
-        const safe = normalizeUserscriptConfig(new Config()) as Config & {__fluentConfigRevision?: number};
-        safe.__fluentConfigRevision = 7;
+        const safe = normalizeUserscriptConfig(new Config()) as Config & {__babelboxConfigRevision?: number};
+        safe.__babelboxConfigRevision = 7;
         const storage = installLegacyStorage([
             ['local:config', JSON.stringify(safe)],
         ]);

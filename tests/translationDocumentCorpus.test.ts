@@ -356,7 +356,7 @@ describe('minimal candidate-boundary constructions', () => {
                 </nav>
                 <main>
                     <h1 data-testid="control-heading">
-                        Install FluentRead <button data-testid="copy-control">Copy command</button> after verifying settings.
+                        Install BabelBox <button data-testid="copy-control">Copy command</button> after verifying settings.
                     </h1>
                     <section data-testid="semantic-boundary" style="display: contents">
                         Leading semantic overview.
@@ -390,7 +390,7 @@ describe('minimal candidate-boundary constructions', () => {
         expect(
             headingRuns.map((candidate) => candidate.nodes?.map((node) => node.textContent).join('').trim()),
             'A direct button must split, not consume, the readable H1 text on both sides',
-        ).toEqual(['Install FluentRead', 'after verifying settings.']);
+        ).toEqual(['Install BabelBox', 'after verifying settings.']);
         expect(
             candidates.find((candidate) => candidate.element === copyControl),
             'The direct button must remain a separate control candidate',

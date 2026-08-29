@@ -122,7 +122,7 @@ export function createOffscreenMessageListener(dependencies: OffscreenMessageDep
             case 'CHROME_TRANSLATE_OFFSCREEN':
                 respondWith(() => dependencies.translate(message.data), sendResponse);
                 return true;
-            case 'FLUENT_READ_IMAGE_OCR_OFFSCREEN':
+            case 'BABELBOX_IMAGE_OCR_OFFSCREEN':
                 respondWith(
                     () => dependencies.recognizeImage(
                         requiredImage(message.image),
@@ -135,7 +135,7 @@ export function createOffscreenMessageListener(dependencies: OffscreenMessageDep
                     },
                 );
                 return true;
-            case 'FLUENT_READ_IMAGE_TRANSLATE_OFFSCREEN':
+            case 'BABELBOX_IMAGE_TRANSLATE_OFFSCREEN':
                 respondWith(
                     () => dependencies.translateImage(
                         requiredImage(message.image),
@@ -146,7 +146,7 @@ export function createOffscreenMessageListener(dependencies: OffscreenMessageDep
                     (result) => ({...resultRecord(result, '图片翻译'), success: true}),
                 );
                 return true;
-            case 'FLUENT_READ_AREA_TRANSLATE_OFFSCREEN':
+            case 'BABELBOX_AREA_TRANSLATE_OFFSCREEN':
                 respondWith(
                     () => dependencies.translateArea(
                         requiredImage(message.image),
@@ -158,7 +158,7 @@ export function createOffscreenMessageListener(dependencies: OffscreenMessageDep
                     (result) => ({...resultRecord(result, '区域翻译'), success: true}),
                 );
                 return true;
-            case 'FLUENT_READ_IMAGE_OCR_DOWNLOAD_OFFSCREEN':
+            case 'BABELBOX_IMAGE_OCR_DOWNLOAD_OFFSCREEN':
                 respondWith(
                     () => dependencies.downloadOcrLanguages(parseOcrLanguages(message.languages)),
                     sendResponse,

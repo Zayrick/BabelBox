@@ -140,7 +140,7 @@
           <div class="data-heading"><div><h3>独立备份与迁移</h3><p>不会混入普通配置 JSON，也不会被清除翻译缓存。</p></div></div>
           <label class="privacy-export"><input v-model="includePrivateContext" type="checkbox" /><span><strong>导出上下文和来源</strong><small>可能包含浏览过的页面标题、文本片段与去参数后的网址，默认不导出。</small></span></label>
           <div class="data-actions">
-            <button type="button" :disabled="actionBusy || entries.length === 0" @click="exportJson"><Download class="button-icon" aria-hidden="true" />导出 FluentRead JSON</button>
+            <button type="button" :disabled="actionBusy || entries.length === 0" @click="exportJson"><Download class="button-icon" aria-hidden="true" />导出 BabelBox JSON</button>
             <button type="button" :disabled="actionBusy || entries.length === 0" @click="exportAnki"><Download class="button-icon" aria-hidden="true" />导出 Anki TSV</button>
             <button type="button" :disabled="actionBusy" @click="importInput?.click()"><Upload class="button-icon" aria-hidden="true" />合并导入 JSON</button>
             <button type="button" class="danger" :disabled="actionBusy || entries.length === 0" @click="clearAll"><Trash2 class="button-icon" aria-hidden="true" />清空单词本</button>
@@ -517,7 +517,7 @@ async function exportJson(): Promise<void> {
       action: 'exportData',
       options: { includePrivateContext: includePrivateContext.value },
     });
-    downloadFile(`fluentread-vocabulary-${dateStamp()}.json`, JSON.stringify(data, null, 2), 'application/json;charset=utf-8');
+    downloadFile(`babelbox-vocabulary-${dateStamp()}.json`, JSON.stringify(data, null, 2), 'application/json;charset=utf-8');
     showToast(`已导出 ${data.entries.length} 个词条`);
   } catch (cause) { showToast(cause instanceof Error ? cause.message : '导出失败'); }
   finally { actionBusy.value = false; }
@@ -532,11 +532,11 @@ function exportAnki(): void {
       entryTranslation(entry),
       context?.text || '',
       context?.sourceUrl || '',
-      `fluentread ${entry.status}`,
+      `babelbox ${entry.status}`,
     ];
   });
   const body = buildAnkiTsv(header, rows);
-  downloadFile(`fluentread-anki-${dateStamp()}.tsv`, `\uFEFF${body}`, 'text/tab-separated-values;charset=utf-8');
+  downloadFile(`babelbox-anki-${dateStamp()}.tsv`, `\uFEFF${body}`, 'text/tab-separated-values;charset=utf-8');
   showToast(`已导出 ${rows.length} 个 Anki 词条`);
 }
 

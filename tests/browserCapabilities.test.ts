@@ -109,7 +109,7 @@ describe('browser capability contract', () => {
             offscreenDocument: false,
             chromeTranslation: false,
         });
-        expect(browserCapabilityBuildMarker).toBe('__FLUENTREAD_BROWSER_CAPABILITY_BUILD__:undefined:mvundefined__');
+        expect(browserCapabilityBuildMarker).toBe('__BABELBOX_BROWSER_CAPABILITY_BUILD__:undefined:mvundefined__');
         expect(browserCapabilities.buildTargetMarker).toBe(browserCapabilityBuildMarker);
         expect(Object.isFrozen(browserCapabilities)).toBe(true);
     });

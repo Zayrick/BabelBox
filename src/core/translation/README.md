@@ -1,13 +1,13 @@
 # Translation core
 
-This directory owns FluentRead's DOM-to-translation-candidate policy. Callers
+This directory owns BabelBox's DOM-to-translation-candidate policy. Callers
 outside the directory import `public.ts`; WXT treats a directory-level
 `index.ts` as an entrypoint, so this package intentionally has no `index.ts`.
 
 ## Pipeline
 
 1. `filters.ts` normalizes editable global/site rules and resolves the current URL policy.
-2. `dom.ts` applies the policy plus FluentRead DOM ownership guards.
+2. `dom.ts` applies the policy plus BabelBox DOM ownership guards.
 3. `registry.ts` selects runtime-only site adapters for the current URL.
 4. `engine.ts` resolves configured include rules, adapter decisions and generic layout boundaries.
 5. `text.ts` extracts readable source text and rejects identifiers/target text.
@@ -24,7 +24,7 @@ or `include` actions. A matching site rule wins on the same element, then the
 global rule list and hidden/editable switches apply. A child include cannot reopen an
 excluded ancestor. Scripts/styles, form inputs, code, `translate=no`, SVG/math,
 and the supported-site selectors are stored as editable defaults rather than
-engine constants. FluentRead-owned DOM is always excluded.
+engine constants. BabelBox-owned DOM is always excluded.
 
 Runtime adapters can still return `pass`, `skip-self`, `prune-subtree` or
 `force-target`, but default translation filtering does not live in adapters.

@@ -22,7 +22,7 @@ export function createAreaTranslationOffscreenAdapter(client: OffscreenClient = 
             selection: AreaTranslationSelection,
         ): Promise<OffscreenImageTranslationResult> {
             const response = await client.send<AreaOffscreenResponse>({
-                type: 'FLUENT_READ_AREA_TRANSLATE_OFFSCREEN',
+                type: 'BABELBOX_AREA_TRANSLATE_OFFSCREEN',
                 image,
                 sourceLanguage,
                 title,

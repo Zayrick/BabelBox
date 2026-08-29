@@ -50,7 +50,7 @@ export function createContentHotkeyRuntime(isSiteDisabled: () => boolean): Conte
         if (isSiteDisabled()) return false;
         const selection = window.getSelection();
         if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return false;
-        const selectionHost = document.getElementById('fluent-read-selection-translator-container');
+        const selectionHost = document.getElementById('babelbox-selection-translator-container');
         if (selectionHost && selection.containsNode(selectionHost, true)) return false;
 
         const text = normalizeSelectionText(selection.toString());
@@ -132,7 +132,7 @@ export function createContentHotkeyRuntime(isSiteDisabled: () => boolean): Conte
         };
 
         if (isDev) {
-            console.log(`[FluentRead] 设置悬浮球快捷键: ${config.floatingBallHotkey}, 系统: ${isMac ? 'macOS' : '其他'}`);
+            console.log(`[BabelBox] 设置悬浮球快捷键: ${config.floatingBallHotkey}, 系统: ${isMac ? 'macOS' : '其他'}`);
         }
 
         document.addEventListener('keydown', (event) => {
@@ -170,7 +170,7 @@ export function createContentHotkeyRuntime(isSiteDisabled: () => boolean): Conte
                 const activeHotkey = config.floatingBallHotkey === 'custom'
                     ? config.customFloatingBallHotkey
                     : config.floatingBallHotkey;
-                console.log(`[FluentRead] 触发悬浮球翻译，快捷键: ${activeHotkey}`);
+                console.log(`[BabelBox] 触发悬浮球翻译，快捷键: ${activeHotkey}`);
             }
         }, {signal, capture: true});
 

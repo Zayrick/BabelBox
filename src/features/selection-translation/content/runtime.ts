@@ -25,8 +25,8 @@ export function mountSelectionTranslator(ctx?: ContentScriptContext) {
 
   const requestId = ++mountRequestId;
   mountingPromise = createVueShadowUi(contentScriptContext, {
-    name: 'fluent-read-selection-translator-ui',
-    hostId: 'fluent-read-selection-translator-container',
+    name: 'babelbox-selection-translator-ui',
+    hostId: 'babelbox-selection-translator-container',
     component: SelectionTranslator,
     zIndex: 2_147_483_646,
     // The card exposes copy, speech, and translation actions. A closed root

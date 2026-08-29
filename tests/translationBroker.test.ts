@@ -699,7 +699,7 @@ describe('translation broker', () => {
         await expect(translateWithCache({origin: 'Failed summary', pageContext: 'Failed context'})).resolves.toBe('Failed summary-译文');
         expect(mocks.service).toHaveBeenLastCalledWith(expect.objectContaining({pageContext: 'Failed context'}));
         expect(summaryWarn).toHaveBeenCalledWith(
-            '[FluentRead] page context summary failed; using extracted context:',
+            '[BabelBox] page context summary failed; using extracted context:',
             expect.any(Error),
         );
         summaryWarn.mockRestore();

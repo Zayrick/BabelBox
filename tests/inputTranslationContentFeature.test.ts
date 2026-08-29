@@ -180,7 +180,7 @@ describe('input translation content feature', () => {
         });
         expect(input.value).toBe('你好');
         expect(tooltipRecords.map(record => record.options.mode)).toEqual(['closed', 'closed']);
-        expect(tooltipRecords.at(-1).ui.shadowHost.setAttribute).toHaveBeenCalledWith('data-fluent-read-ui', 'input-tooltip');
+        expect(tooltipRecords.at(-1).ui.shadowHost.setAttribute).toHaveBeenCalledWith('data-babelbox-ui', 'input-tooltip');
     });
 
     it('三连击只在同一输入目标连续命中时触发，并清理触发符号', async () => {
@@ -262,7 +262,7 @@ describe('input translation content feature', () => {
         await harness.fakeDocument.emit('keydown', trustedKey({key: 'Enter', ctrlKey: true}));
 
         expect(input.value).toBe('Changed');
-        expect(input.classList.remove).toHaveBeenCalledWith('fluent-input-translating');
+        expect(input.classList.remove).toHaveBeenCalledWith('babelbox-input-translating');
     });
 
     it('旧请求返回时不能清理新请求拥有的视觉状态', async () => {
@@ -348,7 +348,7 @@ describe('input translation content feature', () => {
 
         expect(harness.logger.error).toHaveBeenCalledWith('输入框提示创建失败:', expect.any(Error));
         expect(harness.sendMessage).not.toHaveBeenCalled();
-        expect(input.classList.remove).toHaveBeenCalledWith('fluent-input-translating');
+        expect(input.classList.remove).toHaveBeenCalledWith('babelbox-input-translating');
     });
 
     it('invalidate 只清理当前请求拥有的样式和 tooltip', async () => {
@@ -362,7 +362,7 @@ describe('input translation content feature', () => {
         feature.invalidate();
         vi.advanceTimersByTime(1000);
 
-        expect(input.classList.remove).toHaveBeenCalledWith('fluent-input-translating');
+        expect(input.classList.remove).toHaveBeenCalledWith('babelbox-input-translating');
         expect(tooltipRecords.length).toBeGreaterThan(0);
     });
 
@@ -376,7 +376,7 @@ describe('input translation content feature', () => {
         await fakeDocument.emit('keydown', trustedKey({key: 'Enter', ctrlKey: true}));
         vi.advanceTimersByTime(1000);
 
-        expect(input.classList.remove).toHaveBeenCalledWith('fluent-input-success');
+        expect(input.classList.remove).toHaveBeenCalledWith('babelbox-input-success');
     });
 
     it('动画开启时错误状态会在所有权仍有效时自动清理', async () => {
@@ -392,6 +392,6 @@ describe('input translation content feature', () => {
         await fakeDocument.emit('keydown', trustedKey({key: 'Enter', ctrlKey: true}));
         vi.advanceTimersByTime(600);
 
-        expect(input.classList.remove).toHaveBeenCalledWith('fluent-input-error');
+        expect(input.classList.remove).toHaveBeenCalledWith('babelbox-input-error');
     });
 });

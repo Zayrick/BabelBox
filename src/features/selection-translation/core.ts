@@ -208,12 +208,12 @@ const selectionExcludedRoles = new Set([
 ]);
 
 const selectionExcludedSelector = [
-    '.fluent-read-bilingual-content',
-    '.fluent-read-loading',
-    '.fluent-read-retry-wrapper',
+    '.babelbox-bilingual-content',
+    '.babelbox-loading',
+    '.babelbox-retry-wrapper',
     '.notranslate',
     '[aria-hidden="true"]',
-    '[data-fluent-read-ui]',
+    '[data-babelbox-ui]',
     '[data-notranslate="true"]',
     '[role="button"]',
     '[role="checkbox"]',

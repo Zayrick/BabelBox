@@ -2,11 +2,11 @@
 <template>
   <div class="document-app">
     <header class="document-header">
-      <a class="document-brand" href="#" aria-label="流畅阅读文档翻译" @click.prevent="resetDocument">
+      <a class="document-brand" href="#" aria-label="翻译机文档翻译" @click.prevent="resetDocument">
         <img src="/icon/128.png" alt="" />
         <span>
-          <strong>流畅阅读</strong>
-          <small>FluentRead · 文档翻译 Beta</small>
+          <strong>翻译机</strong>
+          <small>BabelBox · 文档翻译 Beta</small>
         </span>
       </a>
       <span v-if="parsedDocument" class="document-status" :class="{ complete: hasTranslation }">
@@ -26,7 +26,7 @@
     <main class="document-main">
       <section v-if="!parsedDocument" class="landing-section">
         <div class="landing-copy">
-          <span class="eyebrow">流畅阅读 · 文档翻译 Beta</span>
+          <span class="eyebrow">翻译机 · 文档翻译 Beta</span>
           <h1>把本地文件变成双语阅读体验</h1>
           <p>保留原有结构、时间轴和格式标记，在浏览器中完成翻译并下载结果。</p>
         </div>
@@ -56,7 +56,7 @@
             {{ openingFile ? '正在解析文件…' : '打开文件' }}
           </button>
           <p>点击打开文件，或把本地文件拖到这里</p>
-          <small>支持单个文件，最大 {{ maxFileSizeLabel }} · 文件不会上传到 FluentRead 服务器</small>
+          <small>支持单个文件，最大 {{ maxFileSizeLabel }} · 文件不会上传到 BabelBox 服务器</small>
         </div>
 
         <p v-if="errorMessage" class="notice error" role="alert">{{ errorMessage }}</p>
@@ -413,8 +413,8 @@
     </main>
 
     <footer class="document-footer">
-      <span>流畅阅读文档翻译 Beta · PDF / ePub / HTML / JSON / TXT / DOCX / Markdown / 字幕</span>
-      <a href="https://github.com/Bistutu/FluentRead" target="_blank" rel="noreferrer">
+      <span>翻译机文档翻译 Beta · PDF / ePub / HTML / JSON / TXT / DOCX / Markdown / 字幕</span>
+      <a href="https://github.com/Zayrick/BabelBox" target="_blank" rel="noreferrer">
         开源项目
         <ExternalLink :size="13" :stroke-width="1.9" aria-hidden="true" focusable="false" />
       </a>
@@ -741,7 +741,7 @@ watch(config, (value) => {
   if (serialized === lastSerialized) return;
   lastSerialized = serialized;
   void requestConfigSave(value, browser.runtime.sendMessage.bind(browser.runtime)).catch((error) => {
-    console.warn('[FluentRead] 保存文档翻译设置失败', error);
+    console.warn('[BabelBox] 保存文档翻译设置失败', error);
   });
 }, {deep: true, flush: 'sync'});
 

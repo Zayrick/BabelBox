@@ -12,8 +12,8 @@ export async function openUserscriptSettings(ctx: unknown): Promise<void> {
         if (settingsUi === ui) settingsUi = null;
     };
     ui = await createVueShadowUi(ctx as never, {
-        name: 'fluent-read-userscript-settings-ui',
-        hostId: 'fluent-read-userscript-settings-container',
+        name: 'babelbox-userscript-settings-ui',
+        hostId: 'babelbox-userscript-settings-container',
         component: SettingsPanel,
         props: {onClose: close},
         zIndex: 2_147_483_647,

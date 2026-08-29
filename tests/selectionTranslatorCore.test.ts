@@ -196,7 +196,7 @@ describe('selection translator text and speech language normalization', () => {
         expect(resolveSelectionDictionaryFallback('ja', ['常见'])).toBe('');
     });
 
-    it('忽略交互、可编辑和 FluentRead 自身 UI 内的选区', () => {
+    it('忽略交互、可编辑和 BabelBox 自身 UI 内的选区', () => {
         expect(shouldIgnoreSelection(mockRange(
             new MockElement({tagName: 'IMG'}) as unknown as Node,
             new MockElement() as unknown as Node,

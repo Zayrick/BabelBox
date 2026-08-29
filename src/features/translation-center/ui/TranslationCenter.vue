@@ -393,7 +393,7 @@ function persistTranslationCenterConfig(): void {
   config.translationCenterSourceLanguage = sourceLanguage.value
   config.translationCenterTargetLanguage = targetLanguage.value
   void requestConfigSave(config, browser.runtime.sendMessage.bind(browser.runtime)).catch(error => {
-    console.warn('[FluentRead] 翻译中心配置保存失败', error)
+    console.warn('[BabelBox] 翻译中心配置保存失败', error)
   })
 }
 
@@ -552,7 +552,7 @@ async function copyText(text: string, copiedKey: string): Promise<void> {
     await navigator.clipboard.writeText(text)
     resetCopiedState(copiedKey)
   } catch (error) {
-    console.warn('[FluentRead] 翻译中心复制失败', error)
+    console.warn('[BabelBox] 翻译中心复制失败', error)
   }
 }
 
@@ -575,7 +575,7 @@ async function translateCard(card: TranslationCard, text: string, runId: number,
   card.run = run
 
   try {
-    const result = await translateText(text, 'FluentRead 翻译中心', {
+    const result = await translateText(text, 'BabelBox 翻译中心', {
       timeout: 30_000,
       useCache: false,
       serviceOverride: card.service,

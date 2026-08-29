@@ -1,14 +1,14 @@
 <template>
   <div
     ref="floatingBall"
-    class="fr-floating-ball"
+    class="babelbox-floating-ball"
     :class="{
       'floating-ball-expanded': isExpanded,
       dragging: isDragging,
       'is-translating': isTranslating,
       animating: isAnimating && animationsEnabled,
       'static-mode': !animationsEnabled,
-      'fr-dark-theme': isDarkTheme,
+      'babelbox-dark-theme': isDarkTheme,
     }"
     :data-position="currentDisplayPosition"
     :style="positionStyle"
@@ -34,7 +34,7 @@
     <div
       class="floating-ball-main floating-ball-item"
       role="img"
-      aria-label="FluentRead"
+      aria-label="BabelBox"
       title="按住拖动调整位置"
       @pointerdown="startDrag"
       @pointerup="finishPointerInteraction"
@@ -50,7 +50,7 @@
       v-if="showMenu"
       class="floating-ball-tool floating-ball-settings floating-ball-item"
       type="button"
-      aria-label="打开 FluentRead 设置"
+      aria-label="打开 BabelBox 设置"
       title="打开设置"
       @pointerdown.stop
       @click.stop="handleSettingsClick"
@@ -321,19 +321,19 @@ watch(() => props.initialTranslating, (nextState) => {
 </script>
 
 <style scoped>
-.fr-floating-ball {
-  --fr-floating-ink: #596273;
-  --fr-floating-tool-border: rgba(217, 222, 231, .96);
-  --fr-floating-tool-surface: rgba(255, 255, 255, .94);
-  --fr-floating-tool-ink: #626b79;
-  --fr-floating-hover-border: #f06a92;
-  --fr-floating-hover-surface: #fff7fa;
-  --fr-floating-hover-ink: #ec4d7d;
-  --fr-floating-success: #22c55e;
-  --fr-floating-on-brand: #fff;
-  --fr-floating-tooltip-surface: rgba(17, 24, 39, .9);
-  --fr-floating-tooltip-ink: #fff;
-  --fr-floating-font-small: 11px;
+.babelbox-floating-ball {
+  --babelbox-floating-ink: #596273;
+  --babelbox-floating-tool-border: rgba(217, 222, 231, .96);
+  --babelbox-floating-tool-surface: rgba(255, 255, 255, .94);
+  --babelbox-floating-tool-ink: #626b79;
+  --babelbox-floating-hover-border: #f06a92;
+  --babelbox-floating-hover-surface: #fff7fa;
+  --babelbox-floating-hover-ink: #ec4d7d;
+  --babelbox-floating-success: #22c55e;
+  --babelbox-floating-on-brand: #fff;
+  --babelbox-floating-tooltip-surface: rgba(17, 24, 39, .9);
+  --babelbox-floating-tooltip-ink: #fff;
+  --babelbox-floating-font-small: 11px;
   position: fixed;
   z-index: 2147483647;
   display: flex;
@@ -341,7 +341,7 @@ watch(() => props.initialTranslating, (nextState) => {
   flex-direction: column;
   align-items: flex-end;
   gap: 8px;
-  color: var(--fr-floating-ink);
+  color: var(--babelbox-floating-ink);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   transition: transform 0.46s cubic-bezier(0.22, 1, 0.36, 1);
   user-select: none;
@@ -349,28 +349,28 @@ watch(() => props.initialTranslating, (nextState) => {
   will-change: transform;
 }
 
-.fr-floating-ball.fr-dark-theme {
-  --fr-floating-ink: #d8dbe2;
-  --fr-floating-tool-border: rgba(90, 94, 108, .96);
-  --fr-floating-tool-surface: rgba(40, 40, 48, .96);
-  --fr-floating-tool-ink: #e5e7ec;
-  --fr-floating-hover-border: #ff80aa;
-  --fr-floating-hover-surface: #4b2e3a;
-  --fr-floating-hover-ink: #ffc3d6;
+.babelbox-floating-ball.babelbox-dark-theme {
+  --babelbox-floating-ink: #d8dbe2;
+  --babelbox-floating-tool-border: rgba(90, 94, 108, .96);
+  --babelbox-floating-tool-surface: rgba(40, 40, 48, .96);
+  --babelbox-floating-tool-ink: #e5e7ec;
+  --babelbox-floating-hover-border: #ff80aa;
+  --babelbox-floating-hover-surface: #4b2e3a;
+  --babelbox-floating-hover-ink: #ffc3d6;
 }
 
-.fr-floating-ball[data-position="left"] {
+.babelbox-floating-ball[data-position="left"] {
   left: 0;
   align-items: flex-start;
   transform: translateY(-50%);
 }
 
-.fr-floating-ball[data-position="right"] {
+.babelbox-floating-ball[data-position="right"] {
   right: 0;
   transform: translateY(-50%);
 }
 
-.fr-floating-ball-expanded {
+.babelbox-floating-ball-expanded {
   transform: translateY(-50%) !important;
 }
 
@@ -382,11 +382,11 @@ watch(() => props.initialTranslating, (nextState) => {
   will-change: transform;
 }
 
-.fr-floating-ball[data-position="left"] .floating-ball-item {
+.babelbox-floating-ball[data-position="left"] .floating-ball-item {
   transform: translateX(-48px);
 }
 
-.fr-floating-ball.floating-ball-expanded .floating-ball-item {
+.babelbox-floating-ball.floating-ball-expanded .floating-ball-item {
   opacity: 1;
   transform: translateX(0) !important;
 }
@@ -412,15 +412,15 @@ watch(() => props.initialTranslating, (nextState) => {
   overflow: visible;
 }
 
-.fr-floating-ball:not(.floating-ball-expanded)[data-position="right"] .floating-ball-main {
+.babelbox-floating-ball:not(.floating-ball-expanded)[data-position="right"] .floating-ball-main {
   transform: translateX(50%);
 }
 
-.fr-floating-ball:not(.floating-ball-expanded)[data-position="left"] .floating-ball-main {
+.babelbox-floating-ball:not(.floating-ball-expanded)[data-position="left"] .floating-ball-main {
   transform: translateX(-50%);
 }
 
-.fr-floating-ball-expanded .floating-ball-main {
+.babelbox-floating-ball-expanded .floating-ball-main {
   filter: drop-shadow(0 8px 10px rgba(15, 23, 42, 0.16));
 }
 
@@ -453,15 +453,15 @@ watch(() => props.initialTranslating, (nextState) => {
   align-items: center;
   justify-content: center;
   padding: 0;
-  border: 1px solid var(--fr-floating-tool-border);
+  border: 1px solid var(--babelbox-floating-tool-border);
   border-radius: 50%;
-  background: var(--fr-floating-tool-surface);
-  color: var(--fr-floating-tool-ink);
+  background: var(--babelbox-floating-tool-surface);
+  color: var(--babelbox-floating-tool-ink);
   cursor: pointer;
   opacity: 0;
 }
 
-.fr-floating-ball.floating-ball-expanded .floating-ball-tool {
+.babelbox-floating-ball.floating-ball-expanded .floating-ball-tool {
   opacity: 1;
 }
 
@@ -472,9 +472,9 @@ watch(() => props.initialTranslating, (nextState) => {
 .floating-ball-tool:hover,
 .floating-ball-tool:focus-visible {
   outline: none;
-  border-color: var(--fr-floating-hover-border);
-  background: var(--fr-floating-hover-surface);
-  color: var(--fr-floating-hover-ink);
+  border-color: var(--babelbox-floating-hover-border);
+  background: var(--babelbox-floating-hover-surface);
+  color: var(--babelbox-floating-hover-ink);
   box-shadow: 0 8px 22px rgba(240, 106, 146, 0.2);
 }
 
@@ -494,9 +494,9 @@ watch(() => props.initialTranslating, (nextState) => {
   bottom: -1px;
   width: 9px;
   height: 9px;
-  border: 1px solid var(--fr-floating-on-brand);
+  border: 1px solid var(--babelbox-floating-on-brand);
   border-radius: 50%;
-  background: var(--fr-floating-success);
+  background: var(--babelbox-floating-success);
 }
 
 .check-mark::after {
@@ -505,8 +505,8 @@ watch(() => props.initialTranslating, (nextState) => {
   left: 2px;
   width: 3px;
   height: 5px;
-  border-right: 1px solid var(--fr-floating-on-brand);
-  border-bottom: 1px solid var(--fr-floating-on-brand);
+  border-right: 1px solid var(--babelbox-floating-on-brand);
+  border-bottom: 1px solid var(--babelbox-floating-on-brand);
   content: '';
   transform: rotate(45deg);
 }
@@ -523,9 +523,9 @@ watch(() => props.initialTranslating, (nextState) => {
   z-index: 2;
   padding: 5px 8px;
   border-radius: 6px;
-  background: var(--fr-floating-tooltip-surface);
-  color: var(--fr-floating-tooltip-ink);
-  font-size: var(--fr-floating-font-small);
+  background: var(--babelbox-floating-tooltip-surface);
+  color: var(--babelbox-floating-tooltip-ink);
+  font-size: var(--babelbox-floating-font-small);
   white-space: nowrap;
   pointer-events: none;
   transform: translateY(-50%);
@@ -540,7 +540,7 @@ watch(() => props.initialTranslating, (nextState) => {
   transform: none !important;
   opacity: 1;
   cursor: grabbing;
-  border-color: var(--fr-floating-hover-border);
+  border-color: var(--babelbox-floating-hover-border);
   box-shadow: 0 8px 25px rgba(240, 106, 146, 0.28);
 }
 
@@ -562,7 +562,7 @@ watch(() => props.initialTranslating, (nextState) => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fr-floating-ball,
+  .babelbox-floating-ball,
   .floating-ball-item,
   .floating-ball-main,
   .floating-ball-tool {

@@ -97,8 +97,8 @@ describe('悬浮球 content runtime', () => {
     await expect(runtime.mountFloatingBall(context)).resolves.toEqual({toggleTranslation});
     const [, options] = mocks.createVueShadowUi.mock.calls[0];
     expect(options).toEqual(expect.objectContaining({
-      name: 'fluent-read-floating-ball-ui',
-      hostId: 'fluent-read-floating-ball-container',
+      name: 'babelbox-floating-ball-ui',
+      hostId: 'babelbox-floating-ball-container',
       mode: 'closed',
     }));
     expect(options.props).toEqual(expect.objectContaining({
@@ -154,8 +154,8 @@ describe('悬浮球 content runtime', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(consoleError).toHaveBeenCalledWith('[FluentRead] 悬浮球挂载失败', expect.any(Error));
-    expect(consoleError).toHaveBeenCalledWith('[FluentRead] 打开设置页失败', expect.any(Error));
+    expect(consoleError).toHaveBeenCalledWith('[BabelBox] 悬浮球挂载失败', expect.any(Error));
+    expect(consoleError).toHaveBeenCalledWith('[BabelBox] 打开设置页失败', expect.any(Error));
     expect(consoleError).toHaveBeenCalledWith('Failed to save config:', expect.any(Error));
     runtime.unmountFloatingBall();
     consoleError.mockRestore();
@@ -203,8 +203,8 @@ describe('全文翻译进度面板 content runtime', () => {
     mocks.createVueShadowUi.mockResolvedValue(mountedUi);
     await expect(runtime.mountTranslationProgressPanel()).resolves.toEqual({panel: true});
     expect(mocks.createVueShadowUi).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
-      name: 'fluent-read-translation-progress-ui',
-      hostId: 'fluent-read-translation-status-container',
+      name: 'babelbox-translation-progress-ui',
+      hostId: 'babelbox-translation-status-container',
       zIndex: 2_147_483_645,
     }));
     expect(runtime.mountTranslationProgressPanel()).toBeNull();
@@ -222,7 +222,7 @@ describe('全文翻译进度面板 content runtime', () => {
 
     await expect(runtime.mountTranslationProgressPanel({} as never)).resolves.toBeNull();
     await expect(runtime.mountTranslationProgressPanel()).resolves.toEqual({panel: true});
-    expect(consoleError).toHaveBeenCalledWith('[FluentRead] 翻译进度面板挂载失败', expect.any(Error));
+    expect(consoleError).toHaveBeenCalledWith('[BabelBox] 翻译进度面板挂载失败', expect.any(Error));
     runtime.unmountTranslationProgressPanel();
     consoleError.mockRestore();
   });

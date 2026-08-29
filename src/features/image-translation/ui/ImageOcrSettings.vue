@@ -65,7 +65,7 @@ async function downloadLanguages(languages: ImageOcrLanguageCode[]) {
   downloadingCodes.value = [...new Set([...downloadingCodes.value, ...pending])];
   try {
     const response = await browser.runtime.sendMessage({
-      type: 'fluentReadImageOcrDownload', languages: pending,
+      type: 'babelboxImageOcrDownload', languages: pending,
     }) as {success?: boolean; languages?: unknown; error?: string} | undefined;
     if (!response?.success) throw new Error(response?.error || '语言包下载失败');
     downloadedCodes.value = normalizeImageOcrLanguageCodes(response.languages);

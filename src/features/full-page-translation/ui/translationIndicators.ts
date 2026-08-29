@@ -19,22 +19,22 @@ export function insertFailedTip(
 ): HTMLElement {
   // 创建包装元素
   const wrapper = document.createElement("span");
-  wrapper.classList.add("fluent-read-retry-wrapper");
-  wrapper.setAttribute("data-fr-translation-owned", "true");
+  wrapper.classList.add("babelbox-retry-wrapper");
+  wrapper.setAttribute("data-babelbox-translation-owned", "true");
 
   // 创建重试按钮
   const retryBtn = document.createElement("span");
   retryBtn.textContent = '重试';
-  retryBtn.classList.add("fluent-read-retry");
+  retryBtn.classList.add("babelbox-retry");
   retryBtn.addEventListener("click", handleRetryClick(node, wrapper, onRetry));
 
   // 添加失败标记
-  node.classList.add("fluent-read-failure");
+  node.classList.add("babelbox-failure");
 
   // 创建错误信息提示按钮
   const errorTip = document.createElement("span");
   errorTip.textContent = '错误原因';
-  errorTip.classList.add("fluent-read-reason");
+  errorTip.classList.add("babelbox-reason");
   errorTip.addEventListener("click", handleErrorClick(errMsg));
 
   // 创建图标元素
@@ -54,7 +54,7 @@ function handleRetryClick(node: HTMLElement, wrapper: HTMLElement, onRetry: () =
     event.stopPropagation();
 
     wrapper.remove(); // 移除错误提示元素，重新翻译
-    node.classList.remove("fluent-read-failure"); // 移除失败标记
+    node.classList.remove("babelbox-failure"); // 移除失败标记
 
     onRetry();
   };
@@ -79,7 +79,7 @@ function resolveErrorMessage(errMsg: string): string {
 // 创建图标元素
 function createIconElement(icon: IconNode): HTMLElement {
   const iconElement = document.createElement('span');
-  iconElement.className = 'fluent-read-feedback-icon';
+  iconElement.className = 'babelbox-feedback-icon';
   const svg = createLucideIconElement(icon, {color: '#428ADF'});
   svg.style.width = '1em';
   svg.style.height = '1em';
@@ -96,8 +96,8 @@ export function insertLoadingSpinner(
   sourceText: string = node.textContent ?? '',
 ): HTMLElement {
   const spinner = document.createElement("span");
-  spinner.className = "fluent-read-loading";
-  spinner.setAttribute("data-fr-translation-owned", "true");
+  spinner.className = "babelbox-loading";
+  spinner.setAttribute("data-babelbox-translation-owned", "true");
   const animationMode = config.animationMode === 'shimmer' && sourceText.trim() === ''
     ? 'default'
     : config.animationMode;

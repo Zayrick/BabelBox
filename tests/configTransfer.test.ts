@@ -80,13 +80,13 @@ describe('configuration transfer helpers', () => {
       tencentSecretId: secret,
       tencentSecretKey: secret,
       extra: {jwt: secret},
-      __fluentConfigRevision: 42,
+      __babelboxConfigRevision: 42,
     })
 
     expect(JSON.stringify(sanitized)).not.toContain(secret)
     for (const field of [
       'token', 'ak', 'sk', 'appid', 'key', 'youdaoAppKey', 'youdaoAppSecret',
-      'tencentSecretId', 'tencentSecretKey', 'extra', '__fluentConfigRevision',
+      'tencentSecretId', 'tencentSecretKey', 'extra', '__babelboxConfigRevision',
     ]) {
       expect(sanitized).not.toHaveProperty(field)
     }

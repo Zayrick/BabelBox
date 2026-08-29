@@ -61,7 +61,7 @@ export function createContentRuntimeMessageHandler(ctx: ContentScriptContext, st
             config.selectionTranslatorMode = mode;
             config.disableSelectionTranslator = mode === 'disabled';
             if (mode === 'disabled') unmountSelectionTranslator();
-            else if (!document.getElementById('fluent-read-selection-translator-container')) {
+            else if (!document.getElementById('babelbox-selection-translator-container')) {
                 void mountSelectionTranslator(ctx);
             }
             sendResponse();

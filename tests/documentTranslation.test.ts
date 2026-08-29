@@ -131,13 +131,13 @@ describe('document translation parser', () => {
         const markdownPreview = createDocumentPreviewHtml(markdown, ['# 安装', '使用', '现在。'], 'bilingual');
         expect(markdownPreview).toContain('class="reader-unit heading"');
         expect(markdownPreview).toContain('<h1 class="reader-source">Install</h1>');
-        expect(markdownPreview).toContain('<h1 class="reader-translation fluentread-translation">安装</h1>');
+        expect(markdownPreview).toContain('<h1 class="reader-translation babelbox-translation">安装</h1>');
         expect(markdownPreview).toContain('<code>npm install</code>');
 
         const html = parseDocument('page.html', '<article><h1>Hello</h1><script>alert(1)</script><p>World</p></article>');
         const htmlPreview = createDocumentPreviewHtml(html, ['你好', '世界'], 'bilingual');
         expect(htmlPreview).toContain('Content-Security-Policy');
-        expect(htmlPreview).toContain('data-fluent-read-document-translation="true"');
+        expect(htmlPreview).toContain('data-babelbox-document-translation="true"');
         expect(htmlPreview).not.toContain('alert(1)');
 
         const text = parseDocument('notes.txt', 'First paragraph\n\nSecond paragraph');
@@ -150,8 +150,8 @@ describe('document translation parser', () => {
         const document = parseDocument('guide.md', '# One\n\nTwo');
         const preview = createDocumentPreviewHtml(document, ['# 一\n额外行', '二'], 'translated');
 
-        expect(preview).toContain('<h1 class="reader-translation fluentread-translation">一<br>额外行</h1>');
-        expect(preview).toContain('<p class="reader-translation fluentread-translation">二</p>');
+        expect(preview).toContain('<h1 class="reader-translation babelbox-translation">一<br>额外行</h1>');
+        expect(preview).toContain('<p class="reader-translation babelbox-translation">二</p>');
         expect(preview).not.toContain('>Two<');
     });
 
@@ -159,8 +159,8 @@ describe('document translation parser', () => {
         const document = parseDocument('notes.txt', 'First\n\nSecond');
         const preview = createDocumentPreviewHtml(document, ['第一\n\n补充', '第二'], 'translated');
 
-        expect(preview).toContain('<p class="reader-translation fluentread-translation">第一<br><br>补充</p>');
-        expect(preview).toContain('<p class="reader-translation fluentread-translation">第二</p>');
+        expect(preview).toContain('<p class="reader-translation babelbox-translation">第一<br><br>补充</p>');
+        expect(preview).toContain('<p class="reader-translation babelbox-translation">第二</p>');
         expect(preview).not.toContain('>First<');
         expect(preview).not.toContain('>Second<');
     });

@@ -10,7 +10,7 @@ function parseArgs(argv, env = process.env) {
   const args = {
     browserPath: '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
     background: true,
-    focusSafeHelper: env.FLUENTREAD_FOCUS_SAFE_HELPER || '',
+    focusSafeHelper: env.BABELBOX_FOCUS_SAFE_HELPER || '',
     timeout: 60000,
   };
   for (let index = 0; index < argv.length; index += 1) {
@@ -32,7 +32,7 @@ function parseArgs(argv, env = process.env) {
   if (!args.playwrightRoot) throw new Error('必须传入 --playwright-root');
   if (!args.artifactsDir) throw new Error('必须传入 --artifacts-dir');
   if (args.background && !args.focusSafeHelper) {
-    throw new Error('后台模式必须传入 --focus-safe-helper 或设置 FLUENTREAD_FOCUS_SAFE_HELPER');
+    throw new Error('后台模式必须传入 --focus-safe-helper 或设置 BABELBOX_FOCUS_SAFE_HELPER');
   }
   if (args.focusSafeHelper) args.focusSafeHelper = path.resolve(args.focusSafeHelper);
   return args;
@@ -42,7 +42,7 @@ function loadPlaywright(root) {
   try {
     return require('playwright');
   } catch {
-    return createRequire(path.join(path.resolve(root), '__fluentread_userscript_loader__.cjs'))('playwright');
+    return createRequire(path.join(path.resolve(root), '__babelbox_userscript_loader__.cjs'))('playwright');
   }
 }
 
@@ -74,12 +74,12 @@ function assertDedicatedProfile(profileDir) {
 
 async function startFixtureServer() {
   const html = `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>FluentRead userscript fixture</title></head>
+<html lang="en"><head><meta charset="utf-8"><title>BabelBox userscript fixture</title></head>
 <body>
   <nav id="forbidden-nav">Navigation should remain original</nav>
   <main>
     <h1 id="heading">Userscript translation fixture</h1>
-    <p id="target">FluentRead keeps the original paragraph and adds a safe bilingual translation.</p>
+    <p id="target">BabelBox keeps the original paragraph and adds a safe bilingual translation.</p>
     <p id="adjacent">This adjacent paragraph must stay untouched during hover translation.</p>
     <img id="unsupported-image" width="24" height="24" alt="" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==">
     <div id="dynamic-root"></div>
@@ -105,7 +105,7 @@ async function startFixtureServer() {
 async function waitForCount(page, selector, expected, timeout) {
   await page.waitForFunction(
     ({selector: targetSelector, expected: count}) =>
-      document.querySelector(targetSelector)?.querySelectorAll('.fluent-read-bilingual-content').length === count,
+      document.querySelector(targetSelector)?.querySelectorAll('.babelbox-bilingual-content').length === count,
     {selector, expected},
     {timeout},
   );
@@ -115,7 +115,7 @@ async function waitForShadowCount(page, hostSelector, targetSelector, expected, 
   await page.waitForFunction(
     ({hostSelector: host, targetSelector: target, expected: count}) =>
       document.querySelector(host)?.shadowRoot?.querySelector(target)
-        ?.querySelectorAll('.fluent-read-bilingual-content').length === count,
+        ?.querySelectorAll('.babelbox-bilingual-content').length === count,
     {hostSelector, targetSelector, expected},
     {timeout},
   );
@@ -147,19 +147,19 @@ async function fullPageToggle(page, targetCount, adjacentCount, timeout) {
 async function readState(page) {
   return page.evaluate(() => ({
     url: location.href,
-    injected: Boolean(document.querySelector('#fluent-read-page-styles')),
-    floatingBall: Boolean(document.querySelector('#fluent-read-floating-ball-container')),
-    settings: Boolean(document.querySelector('#fluent-read-userscript-settings-container')),
-    target: document.querySelector('#target')?.querySelectorAll('.fluent-read-bilingual-content').length || 0,
-    adjacent: document.querySelector('#adjacent')?.querySelectorAll('.fluent-read-bilingual-content').length || 0,
-    heading: document.querySelector('#heading')?.querySelectorAll('.fluent-read-bilingual-content').length || 0,
-    nav: document.querySelector('#forbidden-nav')?.querySelectorAll('.fluent-read-bilingual-content').length || 0,
-    dynamic: document.querySelector('#dynamic-paragraph')?.querySelectorAll('.fluent-read-bilingual-content').length || 0,
+    injected: Boolean(document.querySelector('#babelbox-page-styles')),
+    floatingBall: Boolean(document.querySelector('#babelbox-floating-ball-container')),
+    settings: Boolean(document.querySelector('#babelbox-userscript-settings-container')),
+    target: document.querySelector('#target')?.querySelectorAll('.babelbox-bilingual-content').length || 0,
+    adjacent: document.querySelector('#adjacent')?.querySelectorAll('.babelbox-bilingual-content').length || 0,
+    heading: document.querySelector('#heading')?.querySelectorAll('.babelbox-bilingual-content').length || 0,
+    nav: document.querySelector('#forbidden-nav')?.querySelectorAll('.babelbox-bilingual-content').length || 0,
+    dynamic: document.querySelector('#dynamic-paragraph')?.querySelectorAll('.babelbox-bilingual-content').length || 0,
     shadow: document.querySelector('#shadow-host')?.shadowRoot?.querySelector('#shadow-paragraph')
-      ?.querySelectorAll('.fluent-read-bilingual-content').length || 0,
+      ?.querySelectorAll('.babelbox-bilingual-content').length || 0,
     dynamicShadow: document.querySelector('#dynamic-shadow-host')?.shadowRoot?.querySelector('#dynamic-shadow-paragraph')
-      ?.querySelectorAll('.fluent-read-bilingual-content').length || 0,
-    targetTranslation: document.querySelector('#target .fluent-read-bilingual-content')?.textContent?.trim() || '',
+      ?.querySelectorAll('.babelbox-bilingual-content').length || 0,
+    targetTranslation: document.querySelector('#target .babelbox-bilingual-content')?.textContent?.trim() || '',
   }));
 }
 
@@ -180,7 +180,7 @@ async function main() {
 
   const {chromium} = loadPlaywright(args.playwrightRoot);
   const fixture = await startFixtureServer();
-  const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'fluentread-userscript-edge-'));
+  const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'babelbox-userscript-edge-'));
   assertDedicatedProfile(profileDir);
   let context;
   let closeBrowser = async () => { if (context) await context.close().catch(() => undefined); };
@@ -234,11 +234,11 @@ async function main() {
         disableImageTranslator: false,
         videoTranslationEnabled: true,
       }));
-      Object.defineProperty(window, '__fluentReadSmokeStore', {value: store});
-      Object.defineProperty(window, '__fluentReadOriginalAttachShadow', {value: Element.prototype.attachShadow});
-      Object.defineProperty(window, '__fluentReadSmokeBridgeEvents', {value: {shadow: 0, route: 0}});
-      document.addEventListener('fluentread-open-shadow-root', () => { window.__fluentReadSmokeBridgeEvents.shadow += 1; });
-      document.addEventListener('fluentread-route-change', () => { window.__fluentReadSmokeBridgeEvents.route += 1; });
+      Object.defineProperty(window, '__babelboxSmokeStore', {value: store});
+      Object.defineProperty(window, '__babelboxOriginalAttachShadow', {value: Element.prototype.attachShadow});
+      Object.defineProperty(window, '__babelboxSmokeBridgeEvents', {value: {shadow: 0, route: 0}});
+      document.addEventListener('babelbox-open-shadow-root', () => { window.__babelboxSmokeBridgeEvents.shadow += 1; });
+      document.addEventListener('babelbox-route-change', () => { window.__babelboxSmokeBridgeEvents.route += 1; });
       window.GM_getValue = (key, fallback) => store.has(key) ? store.get(key) : fallback;
       window.GM_setValue = (key, value) => { store.set(key, value); };
       window.GM_deleteValue = (key) => { store.delete(key); };
@@ -282,35 +282,35 @@ async function main() {
     });
     await page.goto(fixture.url, {waitUntil: 'domcontentloaded', timeout: args.timeout});
     await page.evaluate(() => {
-      Object.defineProperty(window, '__fluentReadBrowserBeforeInjection', {value: window.browser});
-      Object.defineProperty(window, '__fluentReadChromeBeforeInjection', {value: window.chrome});
+      Object.defineProperty(window, '__babelboxBrowserBeforeInjection', {value: window.browser});
+      Object.defineProperty(window, '__babelboxChromeBeforeInjection', {value: window.chrome});
     });
     try {
       await page.addScriptTag({path: artifact});
-      await page.waitForSelector('#fluent-read-page-styles', {state: 'attached', timeout: args.timeout});
+      await page.waitForSelector('#babelbox-page-styles', {state: 'attached', timeout: args.timeout});
     } catch (error) {
       const bootstrapState = page.isClosed()
         ? {pageClosed: true}
         : await page.evaluate(() => ({
           pageClosed: false,
-          bootstrapped: window.__fluentReadUserscriptBootstrapped,
+          bootstrapped: window.__babelboxUserscriptBootstrapped,
           readyState: document.readyState,
-          stylePresent: Boolean(document.querySelector('#fluent-read-page-styles')),
+          stylePresent: Boolean(document.querySelector('#babelbox-page-styles')),
           bodyText: document.body?.innerText?.slice(0, 200) || '',
         })).catch((cause) => ({diagnosticError: String(cause)}));
       throw new Error(`${error.message}\nuserscript 启动诊断：${JSON.stringify({bootstrapState, consoleErrors})}`);
     }
-    await page.waitForSelector('#fluent-read-floating-ball-container', {state: 'attached', timeout: args.timeout});
+    await page.waitForSelector('#babelbox-floating-ball-container', {state: 'attached', timeout: args.timeout});
     const pageGlobalsPreserved = await page.evaluate(() => ({
-      browser: window.browser === window.__fluentReadBrowserBeforeInjection,
-      chrome: window.chrome === window.__fluentReadChromeBeforeInjection,
+      browser: window.browser === window.__babelboxBrowserBeforeInjection,
+      chrome: window.chrome === window.__babelboxChromeBeforeInjection,
     }));
     if (!pageGlobalsPreserved.browser || !pageGlobalsPreserved.chrome) {
       throw new Error(`页面 browser/chrome 全局被 userscript 覆盖：${JSON.stringify(pageGlobalsPreserved)}`);
     }
 
-    await page.evaluate(() => window.dispatchEvent(new CustomEvent('fluentread-userscript-open-settings')));
-    const settingsHost = page.locator('#fluent-read-userscript-settings-container');
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent('babelbox-userscript-open-settings')));
+    const settingsHost = page.locator('#babelbox-userscript-settings-container');
     await settingsHost.waitFor({state: 'attached', timeout: args.timeout});
     const settingsSecurity = await settingsHost.evaluate((host) => ({
       closedShadow: host.shadowRoot === null,
@@ -320,14 +320,14 @@ async function main() {
       throw new Error(`设置面板 Shadow DOM 隔离失败：${JSON.stringify(settingsSecurity)}`);
     }
     await page.screenshot({path: path.join(artifactsDir, 'userscript-settings.png'), fullPage: false});
-    await page.evaluate(() => window.dispatchEvent(new CustomEvent('fluentread-userscript-close-settings')));
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent('babelbox-userscript-close-settings')));
     await settingsHost.waitFor({state: 'detached', timeout: args.timeout});
 
     await page.locator('#unsupported-image').hover();
     const unsupportedHosts = await page.evaluate(() => ({
-      area: Boolean(document.querySelector('#fluent-read-area-translator-container')),
-      image: Boolean(document.querySelector('#fluent-read-image-translation-root')),
-      video: Boolean(document.querySelector('#fluent-read-video-subtitle-style')),
+      area: Boolean(document.querySelector('#babelbox-area-translator-container')),
+      image: Boolean(document.querySelector('#babelbox-image-translation-root')),
+      video: Boolean(document.querySelector('#babelbox-video-subtitle-style')),
     }));
     if (unsupportedHosts.area || unsupportedHosts.image || unsupportedHosts.video) {
       throw new Error(`扩展专属能力不应在 userscript 挂载：${JSON.stringify(unsupportedHosts)}`);
@@ -364,7 +364,7 @@ async function main() {
       waitForCount(page, '#dynamic-paragraph', 1, args.timeout),
       waitForShadowCount(page, '#dynamic-shadow-host', '#dynamic-shadow-paragraph', 1, args.timeout),
     ]);
-    const bridgeEvents = await page.evaluate(() => ({...window.__fluentReadSmokeBridgeEvents}));
+    const bridgeEvents = await page.evaluate(() => ({...window.__babelboxSmokeBridgeEvents}));
     if (bridgeEvents.shadow < 1 || bridgeEvents.route < 2) {
       throw new Error(`Shadow/SPA bridge 事件断言失败：${JSON.stringify(bridgeEvents)}`);
     }
@@ -387,7 +387,7 @@ async function main() {
 
     await fullPageToggle(page, 0, 0, args.timeout);
     await page.evaluate(() => {
-      const store = window.__fluentReadSmokeStore;
+      const store = window.__babelboxSmokeStore;
       const nextConfig = JSON.parse(String(store.get('local:config')));
       nextConfig.service = 'openai';
       nextConfig.token = {...nextConfig.token, openai: ''};
@@ -396,7 +396,7 @@ async function main() {
     });
     await page.waitForTimeout(80);
     await hoverToggle(page, 0, args.timeout);
-    const message = page.locator('body > .el-message.fluent-read-message').last();
+    const message = page.locator('body > .el-message.babelbox-message').last();
     let messageStyle;
     if (await message.count() > 0 && await message.isVisible().catch(() => false)) {
       messageStyle = await message.evaluate((element) => {
@@ -417,7 +417,7 @@ async function main() {
         throw new Error(`light-DOM 错误提示样式断言失败：${JSON.stringify(messageStyle)}`);
       }
     } else {
-      const retry = page.locator('#target .fluent-read-retry-wrapper').last();
+      const retry = page.locator('#target .babelbox-retry-wrapper').last();
       await retry.waitFor({state: 'visible', timeout: args.timeout});
       messageStyle = await retry.evaluate((element) => ({
         kind: 'inline-retry-wrapper',
@@ -433,15 +433,15 @@ async function main() {
       const host = document.createElement('div');
       host.id = 'post-dispose-shadow-host';
       document.querySelector('main').appendChild(host);
-      const before = {...window.__fluentReadSmokeBridgeEvents};
-      document.dispatchEvent(new CustomEvent('fluentread-shadow-bridge-dispose'));
-      const prototypeRestored = Element.prototype.attachShadow === window.__fluentReadOriginalAttachShadow;
+      const before = {...window.__babelboxSmokeBridgeEvents};
+      document.dispatchEvent(new CustomEvent('babelbox-shadow-bridge-dispose'));
+      const prototypeRestored = Element.prototype.attachShadow === window.__babelboxOriginalAttachShadow;
       host.attachShadow({mode: 'open'}).innerHTML = '<p>Created after bridge cleanup.</p>';
       history.pushState({disposed: true}, '', `${location.pathname}?after-dispose=1`);
       await new Promise((resolve) => setTimeout(resolve, 50));
       return {
         before,
-        after: {...window.__fluentReadSmokeBridgeEvents},
+        after: {...window.__babelboxSmokeBridgeEvents},
         prototypeRestored,
       };
     });

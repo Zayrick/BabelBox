@@ -7,15 +7,15 @@ import {
 } from '@/wxt.config';
 
 const OCR_RUNTIME_FILES = [
-    'fluent-read-ocr/core/tesseract-core-lstm.wasm.js',
-    'fluent-read-ocr/core/tesseract-core-relaxedsimd-lstm.wasm.js',
-    'fluent-read-ocr/core/tesseract-core-simd-lstm.wasm.js',
-    'fluent-read-ocr/worker/worker.min.js',
+    'babelbox-ocr/core/tesseract-core-lstm.wasm.js',
+    'babelbox-ocr/core/tesseract-core-relaxedsimd-lstm.wasm.js',
+    'babelbox-ocr/core/tesseract-core-simd-lstm.wasm.js',
+    'babelbox-ocr/worker/worker.min.js',
 ];
 const OCR_LICENSE_FILES = [
-    'fluent-read-ocr/core/LICENSE',
-    'fluent-read-ocr/worker/LICENSE.md',
-    'fluent-read-ocr/worker/worker.min.js.LICENSE.txt',
+    'babelbox-ocr/core/LICENSE',
+    'babelbox-ocr/worker/LICENSE.md',
+    'babelbox-ocr/worker/worker.min.js.LICENSE.txt',
 ];
 
 describe('dependency public assets', () => {
@@ -38,7 +38,7 @@ describe('dependency public assets', () => {
         const files: ResolvedPublicFile[] = [
             retained,
             {relativeDest: 'pdfjs/stale.wasm', contents: 'stale'},
-            {relativeDest: 'fluent-read-ocr/core/stale.js', contents: 'stale'},
+            {relativeDest: 'babelbox-ocr/core/stale.js', contents: 'stale'},
         ];
 
         injectDependencyPublicAssets(files);

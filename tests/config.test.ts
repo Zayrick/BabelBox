@@ -106,7 +106,7 @@ describe('统一配置存储', () => {
     it('读取已经去凭据且带版本的规范化对象时不产生初始化回写', async () => {
         const canonicalConfig = {
             ...sanitizeConfigCredentials(normalizeConfig(storedConfig)),
-            __fluentConfigRevision: 5,
+            __babelboxConfigRevision: 5,
         };
         const configStore = await loadConfigModule(canonicalConfig);
 
@@ -133,16 +133,16 @@ describe('统一配置存储', () => {
     });
 
     it('内部 storage revision 不进入运行时配置或历史快照', async () => {
-        const configStore = await loadConfigModule({...storedConfig, __fluentConfigRevision: 5});
+        const configStore = await loadConfigModule({...storedConfig, __babelboxConfigRevision: 5});
         await Promise.all([configStore.configReady, configStore.configHistoryReady]);
 
-        expect((configStore.config as unknown as Record<string, unknown>).__fluentConfigRevision).toBeUndefined();
+        expect((configStore.config as unknown as Record<string, unknown>).__babelboxConfigRevision).toBeUndefined();
         await configStore.saveConfig({ ...configStore.config, to: 'en' }, {recordHistory: true, immediateHistory: true});
 
         const history = configStore.getConfigHistorySnapshot();
         expect(history.entries).toHaveLength(2);
-        expect((history.entries[0].config as unknown as Record<string, unknown>).__fluentConfigRevision).toBeUndefined();
-        expect((history.entries[1].config as unknown as Record<string, unknown>).__fluentConfigRevision).toBeUndefined();
+        expect((history.entries[0].config as unknown as Record<string, unknown>).__babelboxConfigRevision).toBeUndefined();
+        expect((history.entries[1].config as unknown as Record<string, unknown>).__babelboxConfigRevision).toBeUndefined();
     });
 
     it('为旧配置补齐默认关闭的视频字幕 Beta、独立微软翻译服务和默认字号', async () => {
@@ -704,12 +704,12 @@ describe('统一配置存储', () => {
     });
 
     it('迟到的旧版本 storage 快照不会回滚已同步的新版本', async () => {
-        const configStore = await loadConfigModule({ ...storedConfig, __fluentConfigRevision: 5 });
+        const configStore = await loadConfigModule({ ...storedConfig, __babelboxConfigRevision: 5 });
         await configStore.configReady;
         const watchCallback = storageMock.watch.mock.calls[0][1];
 
-        watchCallback({ ...storedConfig, to: 'ja', __fluentConfigRevision: 7 }, storedConfig);
-        watchCallback({ ...storedConfig, to: 'en', __fluentConfigRevision: 6 }, storedConfig);
+        watchCallback({ ...storedConfig, to: 'ja', __babelboxConfigRevision: 7 }, storedConfig);
+        watchCallback({ ...storedConfig, to: 'en', __babelboxConfigRevision: 6 }, storedConfig);
 
         expect(configStore.config.to).toBe('ja');
     });

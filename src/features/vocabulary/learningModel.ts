@@ -1,7 +1,7 @@
-export const VOCABULARY_BOOK_MESSAGE = 'fluentReadVocabularyBook' as const;
-export const VOCABULARY_BOOK_CHANGED_MESSAGE = 'fluentReadVocabularyBookChanged' as const;
+export const VOCABULARY_BOOK_MESSAGE = 'babelboxVocabularyBook' as const;
+export const VOCABULARY_BOOK_CHANGED_MESSAGE = 'babelboxVocabularyBookChanged' as const;
 
-export const VOCABULARY_BOOK_EXPORT_FORMAT = 'fluentread-vocabulary-book' as const;
+export const VOCABULARY_BOOK_EXPORT_FORMAT = 'babelbox-vocabulary-book' as const;
 export const VOCABULARY_BOOK_EXPORT_VERSION = 1 as const;
 export const VOCABULARY_ENTRY_SCHEMA_VERSION = 1 as const;
 

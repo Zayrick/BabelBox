@@ -69,8 +69,8 @@ describe('划词翻译挂载生命周期', () => {
 
         await expect(runtime.mountSelectionTranslator(context)).resolves.toEqual({feature: 'mounted'});
         expect(mocks.createVueShadowUi).toHaveBeenCalledWith(context, expect.objectContaining({
-            name: 'fluent-read-selection-translator-ui',
-            hostId: 'fluent-read-selection-translator-container',
+            name: 'babelbox-selection-translator-ui',
+            hostId: 'babelbox-selection-translator-container',
             zIndex: 2_147_483_646,
             mode: 'closed',
         }));
@@ -129,7 +129,7 @@ describe('圈选翻译挂载生命周期', () => {
     it('通过宿主元素报告挂载状态', async () => {
         const getElementById = vi.fn()
             .mockReturnValueOnce(null)
-            .mockReturnValueOnce({id: 'fluent-read-area-translator-container'});
+            .mockReturnValueOnce({id: 'babelbox-area-translator-container'});
         vi.stubGlobal('document', {getElementById});
         const runtime = await import('@/src/features/area-translation/content/runtime');
 
@@ -155,8 +155,8 @@ describe('圈选翻译挂载生命周期', () => {
 
         await expect(runtime.mountAreaTranslator(context)).resolves.toEqual({feature: 'area'});
         expect(mocks.createVueShadowUi).toHaveBeenNthCalledWith(1, context, expect.objectContaining({
-            name: 'fluent-read-area-translator-ui',
-            hostId: 'fluent-read-area-translator-container',
+            name: 'babelbox-area-translator-ui',
+            hostId: 'babelbox-area-translator-container',
             zIndex: 2_147_483_647,
             mode: 'closed',
         }));

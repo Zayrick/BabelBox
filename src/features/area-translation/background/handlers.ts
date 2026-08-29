@@ -1,7 +1,7 @@
 import type {AreaTranslationSelection} from '@/src/features/area-translation/core';
 
-export const AREA_CAPTURE_MESSAGE_TYPE = 'fluentReadAreaCapture' as const;
-export const AREA_TRANSLATE_CAPTURE_MESSAGE_TYPE = 'fluentReadAreaTranslateCapture' as const;
+export const AREA_CAPTURE_MESSAGE_TYPE = 'babelboxAreaCapture' as const;
+export const AREA_TRANSLATE_CAPTURE_MESSAGE_TYPE = 'babelboxAreaTranslateCapture' as const;
 
 export interface AreaTranslationBackgroundContext {
     sender?: {

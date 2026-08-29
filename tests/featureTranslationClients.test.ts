@@ -23,7 +23,7 @@ describe('圈选翻译内容脚本客户端', () => {
         sendMessage.mockResolvedValue({success: true, image: 'data:image/png;base64,area'});
 
         await expect(captureVisibleAreaInExtension()).resolves.toBe('data:image/png;base64,area');
-        expect(sendMessage).toHaveBeenCalledWith({type: 'fluentReadAreaCapture'});
+        expect(sendMessage).toHaveBeenCalledWith({type: 'babelboxAreaCapture'});
     });
 
     it.each([
@@ -45,7 +45,7 @@ describe('圈选翻译内容脚本客户端', () => {
             lines,
         });
         expect(sendMessage).toHaveBeenCalledWith({
-            type: 'fluentReadAreaTranslateCapture',
+            type: 'babelboxAreaTranslateCapture',
             image: 'capture',
             selection,
             sourceLanguage: 'en',
@@ -78,7 +78,7 @@ describe('图片翻译内容脚本客户端', () => {
 
         await expect(translateImageInExtension('image', 'en', 'Page')).resolves.toEqual({image: 'translated', lines});
         expect(sendMessage).toHaveBeenCalledWith({
-            type: 'fluentReadImageTranslate',
+            type: 'babelboxImageTranslate',
             image: 'image',
             sourceLanguage: 'en',
             title: 'Page',
@@ -100,7 +100,7 @@ describe('图片翻译内容脚本客户端', () => {
 
         await expect(fetchImageInExtension('https://example.com/a.png')).resolves.toBe('data:image/png;base64,remote');
         expect(sendMessage).toHaveBeenCalledWith({
-            type: 'fluentReadImageFetch',
+            type: 'babelboxImageFetch',
             url: 'https://example.com/a.png',
         });
     });

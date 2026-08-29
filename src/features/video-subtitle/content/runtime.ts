@@ -28,26 +28,26 @@ import {
 
 export const VIDEO_CAPTION_CONTAINER_SELECTOR = '#ytp-caption-window-container, .ytp-caption-window-container';
 export const VIDEO_CAPTION_SEGMENT_SELECTOR = '.ytp-caption-segment';
-export const VIDEO_TRANSLATION_OVERLAY_ID = 'fluent-read-video-subtitle';
-export const VIDEO_NORMALIZED_CAPTION_OVERLAY_ID = 'fluent-read-video-subtitle-original';
-export const VIDEO_SUBTITLE_PANEL_ID = 'fluent-read-video-subtitle-panel';
-export const VIDEO_TRANSLATION_LAYER_ID = 'fluent-read-video-subtitle-layer';
-export const VIDEO_TRANSLATION_BUTTON_ID = 'fluent-read-video-subtitle-button';
-export const VIDEO_TRANSLATION_MENU_ID = 'fluent-read-video-subtitle-menu';
+export const VIDEO_TRANSLATION_OVERLAY_ID = 'babelbox-video-subtitle';
+export const VIDEO_NORMALIZED_CAPTION_OVERLAY_ID = 'babelbox-video-subtitle-original';
+export const VIDEO_SUBTITLE_PANEL_ID = 'babelbox-video-subtitle-panel';
+export const VIDEO_TRANSLATION_LAYER_ID = 'babelbox-video-subtitle-layer';
+export const VIDEO_TRANSLATION_BUTTON_ID = 'babelbox-video-subtitle-button';
+export const VIDEO_TRANSLATION_MENU_ID = 'babelbox-video-subtitle-menu';
 
 const VIDEO_PLAYER_SELECTOR = '#movie_player, .html5-video-player';
 const VIDEO_RIGHT_CONTROLS_SELECTOR = '.ytp-right-controls';
-const VIDEO_TRANSLATION_ACTIVE_CLASS = 'fluent-read-video-subtitle-active';
-const VIDEO_DISPLAY_TRANSLATION_ONLY_CLASS = 'fluent-read-video-display-translation-only';
-const VIDEO_DISPLAY_ORIGINAL_ONLY_CLASS = 'fluent-read-video-display-original-only';
-const VIDEO_DISPLAY_HIDDEN_CLASS = 'fluent-read-video-display-hidden';
-const VIDEO_NORMALIZED_CAPTION_CLASS = 'fluent-read-video-normalized-caption';
-const VIDEO_NORMALIZED_CAPTION_ACTIVE_CLASS = 'fluent-read-video-normalized-caption-active';
-const VIDEO_SUBTITLE_PANEL_ACTIVE_CLASS = 'fluent-read-video-subtitle-panel-active';
+const VIDEO_TRANSLATION_ACTIVE_CLASS = 'babelbox-video-subtitle-active';
+const VIDEO_DISPLAY_TRANSLATION_ONLY_CLASS = 'babelbox-video-display-translation-only';
+const VIDEO_DISPLAY_ORIGINAL_ONLY_CLASS = 'babelbox-video-display-original-only';
+const VIDEO_DISPLAY_HIDDEN_CLASS = 'babelbox-video-display-hidden';
+const VIDEO_NORMALIZED_CAPTION_CLASS = 'babelbox-video-normalized-caption';
+const VIDEO_NORMALIZED_CAPTION_ACTIVE_CLASS = 'babelbox-video-normalized-caption-active';
+const VIDEO_SUBTITLE_PANEL_ACTIVE_CLASS = 'babelbox-video-subtitle-panel-active';
 
 const YOUTUBE_HOST_PATTERN = /(^|\.)youtube\.com$/i;
 const YOUTUBE_MOBILE_HOST_PATTERN = /(^|\.)youtube-nocookie\.com$/i;
-const YOUTUBE_TIMED_TEXT_MESSAGE = 'fluent-read-youtube-timedtext';
+const YOUTUBE_TIMED_TEXT_MESSAGE = 'babelbox-youtube-timedtext';
 
 const VIDEO_DISPLAY_MODE_LABELS: Record<VideoSubtitleDisplayMode, string> = {
   bilingual: '双语',
@@ -299,8 +299,8 @@ function getYouTubeVideoPageKey(): string {
 }
 
 function markVideoUi(element: HTMLElement): void {
-  element.classList.add('notranslate', 'fluent-read-video-ui');
-  element.setAttribute('data-fluent-read-ui', 'video-subtitle');
+  element.classList.add('notranslate', 'babelbox-video-ui');
+  element.setAttribute('data-babelbox-ui', 'video-subtitle');
   element.setAttribute('translate', 'no');
 }
 
@@ -320,8 +320,8 @@ function getOrCreateVideoSubtitleLayer(player: HTMLElement): HTMLElement {
   if (!layer) {
     layer = document.createElement('div');
     layer.id = VIDEO_TRANSLATION_LAYER_ID;
-    layer.className = 'fluent-read-video-subtitle-layer fluent-read-video-ui notranslate';
-    layer.setAttribute('data-fluent-read-ui', 'video-subtitle');
+    layer.className = 'babelbox-video-subtitle-layer babelbox-video-ui notranslate';
+    layer.setAttribute('data-babelbox-ui', 'video-subtitle');
     layer.setAttribute('translate', 'no');
     player.appendChild(layer);
   }
@@ -335,10 +335,10 @@ function getOrCreateVideoSubtitlePanel(player: HTMLElement): HTMLElement {
 
   const panel = document.createElement('div');
   panel.id = VIDEO_SUBTITLE_PANEL_ID;
-  panel.className = 'fluent-read-video-subtitle-panel fluent-read-video-ui notranslate';
-  panel.setAttribute('data-fluent-read-ui', 'video-subtitle');
+  panel.className = 'babelbox-video-subtitle-panel babelbox-video-ui notranslate';
+  panel.setAttribute('data-babelbox-ui', 'video-subtitle');
   panel.setAttribute('translate', 'no');
-  panel.setAttribute('aria-label', 'FluentRead 双语视频字幕');
+  panel.setAttribute('aria-label', 'BabelBox 双语视频字幕');
   layer.appendChild(panel);
   return panel;
 }
@@ -354,11 +354,11 @@ function getOrCreateTranslationOverlay(player: HTMLElement): HTMLElement {
 
   const overlay = document.createElement('div');
   overlay.id = VIDEO_TRANSLATION_OVERLAY_ID;
-  overlay.className = 'fluent-read-video-subtitle notranslate';
-  overlay.setAttribute('data-fluent-read-ui', 'video-subtitle');
+  overlay.className = 'babelbox-video-subtitle notranslate';
+  overlay.setAttribute('data-babelbox-ui', 'video-subtitle');
   overlay.setAttribute('translate', 'no');
   overlay.setAttribute('aria-live', 'polite');
-  overlay.setAttribute('aria-label', 'FluentRead 视频字幕译文');
+  overlay.setAttribute('aria-label', 'BabelBox 视频字幕译文');
   panel.appendChild(overlay);
   return overlay;
 }
@@ -373,8 +373,8 @@ function getOrCreateNormalizedCaptionOverlay(player: HTMLElement): HTMLElement {
 
   const overlay = document.createElement('div');
   overlay.id = VIDEO_NORMALIZED_CAPTION_OVERLAY_ID;
-  overlay.className = 'fluent-read-video-subtitle-original notranslate';
-  overlay.setAttribute('data-fluent-read-ui', 'video-subtitle');
+  overlay.className = 'babelbox-video-subtitle-original notranslate';
+  overlay.setAttribute('data-babelbox-ui', 'video-subtitle');
   overlay.setAttribute('translate', 'no');
   overlay.setAttribute('aria-live', 'polite');
   overlay.setAttribute('aria-label', 'YouTube 整段原文字幕');
@@ -408,14 +408,14 @@ function syncTranslationOverlayPosition(container: HTMLElement | null): void {
   const availableWidth = Math.max(playerWidth - 24, 160);
   const baseFontSize = Math.min(Math.max(playerWidth * .022, 16), 30);
   const fontScale = normalizeVideoSubtitleFontSize(config.videoSubtitleFontSize) / 100;
-  panel.style.setProperty('--fluent-read-video-subtitle-font-size', `${baseFontSize * fontScale}px`);
+  panel.style.setProperty('--babelbox-video-subtitle-font-size', `${baseFontSize * fontScale}px`);
 
   // 双语面板固定在播放器底部安全区上方；字幕内容变化只会改变面板向上的高度，
   // 不会把整组字幕重新锚定到不同的 top。
   const active = Boolean(overlay.textContent?.trim() || normalizedOverlay?.textContent?.trim());
   panel.classList.toggle(VIDEO_SUBTITLE_PANEL_ACTIVE_CLASS, active);
   panel.style.width = 'max-content';
-  panel.style.removeProperty('--fluent-read-video-subtitle-bottom');
+  panel.style.removeProperty('--babelbox-video-subtitle-bottom');
   if (!active) return;
 
   // 背景只包住双语文本，并以播放器中心为锚点。长字幕仍受播放器宽度限制，
@@ -440,7 +440,7 @@ function syncTranslationOverlayPosition(container: HTMLElement | null): void {
     const maxBottom = Math.max(12, playerHeight - panelHeight - 12);
     const requestedBottom = playerHeight - nativeCaptionTop + 8;
     const bottom = Math.max(fallbackBottom, Math.min(requestedBottom, maxBottom));
-    panel.style.setProperty('--fluent-read-video-subtitle-bottom', `${bottom}px`);
+    panel.style.setProperty('--babelbox-video-subtitle-bottom', `${bottom}px`);
   }
 }
 
@@ -449,23 +449,23 @@ function applyVideoDisplayState(container: HTMLElement): void {
   container.classList.toggle(VIDEO_DISPLAY_TRANSLATION_ONLY_CLASS, mode === 'translation-only');
   container.classList.toggle(VIDEO_DISPLAY_ORIGINAL_ONLY_CLASS, mode === 'original-only');
   container.classList.toggle(VIDEO_DISPLAY_HIDDEN_CLASS, config.videoSubtitleVisible === false);
-  container.setAttribute('data-fluent-read-video-display-mode', mode);
+  container.setAttribute('data-babelbox-video-display-mode', mode);
   const layer = document.getElementById(VIDEO_TRANSLATION_LAYER_ID);
   layer?.classList.toggle(VIDEO_DISPLAY_ORIGINAL_ONLY_CLASS, mode === 'original-only');
   layer?.classList.toggle(VIDEO_DISPLAY_HIDDEN_CLASS, config.videoSubtitleVisible === false);
-  layer?.setAttribute('data-fluent-read-video-display-mode', mode);
+  layer?.setAttribute('data-babelbox-video-display-mode', mode);
 }
 
 function installVideoSubtitleStyle(): HTMLStyleElement {
-  const existing = document.getElementById('fluent-read-video-subtitle-style');
+  const existing = document.getElementById('babelbox-video-subtitle-style');
   if (existing instanceof HTMLStyleElement) return existing;
 
   const style = document.createElement('style');
-  style.id = 'fluent-read-video-subtitle-style';
+  style.id = 'babelbox-video-subtitle-style';
   style.textContent = `
     #${VIDEO_TRANSLATION_LAYER_ID} {
-      --fr-video-weight-medium: 600;
-      --fr-video-weight-semibold: 700;
+      --babelbox-video-weight-medium: 600;
+      --babelbox-video-weight-semibold: 700;
       position: absolute !important;
       inset: 0 !important;
       z-index: 2147483645 !important;
@@ -479,7 +479,7 @@ function installVideoSubtitleStyle(): HTMLStyleElement {
       z-index: 2 !important;
       box-sizing: border-box !important;
       max-width: calc(100% - 24px) !important;
-      bottom: var(--fluent-read-video-subtitle-bottom, clamp(52px, 10%, 96px)) !important;
+      bottom: var(--babelbox-video-subtitle-bottom, clamp(52px, 10%, 96px)) !important;
       margin: 0 !important;
       padding: 5px 8px 6px !important;
       border: 1px solid rgba(255, 255, 255, .1) !important;
@@ -509,8 +509,8 @@ function installVideoSubtitleStyle(): HTMLStyleElement {
       padding: 0 !important;
       color: #ffe45c !important;
       font-family: Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif !important;
-      font-size: var(--fluent-read-video-subtitle-font-size, clamp(16px, 2.2vw, 30px)) !important;
-      font-weight: var(--fr-video-weight-semibold) !important;
+      font-size: var(--babelbox-video-subtitle-font-size, clamp(16px, 2.2vw, 30px)) !important;
+      font-weight: var(--babelbox-video-weight-semibold) !important;
       line-height: 1.28 !important;
       text-align: center !important;
       -webkit-text-stroke: 1px #000 !important;
@@ -533,8 +533,8 @@ function installVideoSubtitleStyle(): HTMLStyleElement {
       padding: 0 !important;
       color: #fff !important;
       font-family: Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif !important;
-      font-size: var(--fluent-read-video-subtitle-font-size, clamp(16px, 2.2vw, 30px)) !important;
-      font-weight: var(--fr-video-weight-medium) !important;
+      font-size: var(--babelbox-video-subtitle-font-size, clamp(16px, 2.2vw, 30px)) !important;
+      font-weight: var(--babelbox-video-weight-medium) !important;
       line-height: 1.28 !important;
       text-align: center !important;
       text-shadow: 0 1px 2px rgba(0, 0, 0, .9), 0 0 4px rgba(0, 0, 0, .8) !important;
@@ -584,7 +584,7 @@ function installVideoSubtitleStyle(): HTMLStyleElement {
     }
     #${VIDEO_TRANSLATION_BUTTON_ID}:hover,
     #${VIDEO_TRANSLATION_BUTTON_ID}:focus-visible { opacity: 1 !important; }
-    #${VIDEO_TRANSLATION_BUTTON_ID} .fluent-read-video-subtitle-button-icon {
+    #${VIDEO_TRANSLATION_BUTTON_ID} .babelbox-video-subtitle-button-icon {
       display: block !important;
       width: 28px !important;
       height: 28px !important;
@@ -594,24 +594,24 @@ function installVideoSubtitleStyle(): HTMLStyleElement {
       overflow: hidden !important;
       transform: translateY(0) !important;
     }
-    #${VIDEO_TRANSLATION_BUTTON_ID}.${VIDEO_TRANSLATION_ACTIVE_CLASS} .fluent-read-video-subtitle-button-icon {
+    #${VIDEO_TRANSLATION_BUTTON_ID}.${VIDEO_TRANSLATION_ACTIVE_CLASS} .babelbox-video-subtitle-button-icon {
       background: #ec4899 !important;
       box-shadow: 0 0 0 1px rgba(255, 255, 255, .16), 0 2px 8px rgba(236, 72, 153, .42) !important;
     }
-    #${VIDEO_TRANSLATION_BUTTON_ID}:not(.${VIDEO_TRANSLATION_ACTIVE_CLASS}) .fluent-read-video-subtitle-button-icon {
+    #${VIDEO_TRANSLATION_BUTTON_ID}:not(.${VIDEO_TRANSLATION_ACTIVE_CLASS}) .babelbox-video-subtitle-button-icon {
       background: rgba(236, 72, 153, .16) !important;
       box-shadow: 0 0 0 1px rgba(236, 72, 153, .62), 0 2px 8px rgba(236, 72, 153, .2) !important;
     }
     #${VIDEO_TRANSLATION_MENU_ID} {
-      --fr-video-menu-font-caption: 10px;
-      --fr-video-menu-font-small: 11px;
-      --fr-video-menu-font-body: 13px;
-      --fr-video-menu-weight-medium: 600;
-      --fr-video-menu-weight-semibold: 700;
-      --fr-video-menu-weight-bold: 800;
-      --fr-video-menu-control-small: 32px;
-      --fr-video-menu-control-large: 44px;
-      --fr-video-menu-radius-control: 8px;
+      --babelbox-video-menu-font-caption: 10px;
+      --babelbox-video-menu-font-small: 11px;
+      --babelbox-video-menu-font-body: 13px;
+      --babelbox-video-menu-weight-medium: 600;
+      --babelbox-video-menu-weight-semibold: 700;
+      --babelbox-video-menu-weight-bold: 800;
+      --babelbox-video-menu-control-small: 32px;
+      --babelbox-video-menu-control-large: 44px;
+      --babelbox-video-menu-radius-control: 8px;
       position: absolute !important;
       right: 12px !important;
       bottom: 52px !important;
@@ -625,104 +625,104 @@ function installVideoSubtitleStyle(): HTMLStyleElement {
       box-shadow: 0 8px 28px rgba(0, 0, 0, .42) !important;
       color: #fff !important;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
-      font-size: var(--fr-video-menu-font-body) !important;
+      font-size: var(--babelbox-video-menu-font-body) !important;
       line-height: 1.4 !important;
     }
     #${VIDEO_TRANSLATION_MENU_ID}[hidden] { display: none !important; }
-    #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-title {
+    #${VIDEO_TRANSLATION_MENU_ID} .babelbox-video-menu-title {
       display: flex !important;
       align-items: center !important;
       justify-content: space-between !important;
       padding: 4px 8px 8px !important;
       color: rgba(255, 255, 255, .92) !important;
-      font-weight: var(--fr-video-menu-weight-semibold) !important;
+      font-weight: var(--babelbox-video-menu-weight-semibold) !important;
     }
-    #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-heading {
+    #${VIDEO_TRANSLATION_MENU_ID} .babelbox-video-menu-heading {
       display: inline-flex !important;
       align-items: baseline !important;
       gap: 6px !important;
     }
-    #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-brand {
+    #${VIDEO_TRANSLATION_MENU_ID} .babelbox-video-menu-brand {
       color: #ff8fbd !important;
-      font-size: var(--fr-video-menu-font-caption) !important;
+      font-size: var(--babelbox-video-menu-font-caption) !important;
       letter-spacing: .02em !important;
-      font-weight: var(--fr-video-menu-weight-bold) !important;
+      font-weight: var(--babelbox-video-menu-weight-bold) !important;
     }
-    #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-title-text {
+    #${VIDEO_TRANSLATION_MENU_ID} .babelbox-video-menu-title-text {
       color: rgba(255, 255, 255, .92) !important;
     }
-    #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-beta {
+    #${VIDEO_TRANSLATION_MENU_ID} .babelbox-video-menu-beta {
       color: #ff8fbd !important;
-      font-size: var(--fr-video-menu-font-caption) !important;
-      font-weight: var(--fr-video-menu-weight-semibold) !important;
+      font-size: var(--babelbox-video-menu-font-caption) !important;
+      font-weight: var(--babelbox-video-menu-weight-semibold) !important;
     }
-    #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-item,
-    #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-mode {
+    #${VIDEO_TRANSLATION_MENU_ID} .babelbox-video-menu-item,
+    #${VIDEO_TRANSLATION_MENU_ID} .babelbox-video-menu-mode {
       display: flex !important;
       align-items: center !important;
       width: 100% !important;
-      min-height: var(--fr-video-menu-control-small) !important;
+      min-height: var(--babelbox-video-menu-control-small) !important;
       box-sizing: border-box !important;
       margin: 1px 0 !important;
       padding: 6px 8px !important;
       border: 0 !important;
-      border-radius: var(--fr-video-menu-radius-control) !important;
+      border-radius: var(--babelbox-video-menu-radius-control) !important;
       background: transparent !important;
       color: rgba(255, 255, 255, .9) !important;
       cursor: pointer !important;
       font: inherit !important;
       text-align: left !important;
     }
-    #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-item:hover,
-    #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-mode:hover,
-    #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-item:focus-visible,
-    #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-mode:focus-visible {
+    #${VIDEO_TRANSLATION_MENU_ID} .babelbox-video-menu-item:hover,
+    #${VIDEO_TRANSLATION_MENU_ID} .babelbox-video-menu-mode:hover,
+    #${VIDEO_TRANSLATION_MENU_ID} .babelbox-video-menu-item:focus-visible,
+    #${VIDEO_TRANSLATION_MENU_ID} .babelbox-video-menu-mode:focus-visible {
       background: rgba(255, 255, 255, .12) !important;
       outline: none !important;
     }
-    #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-item:disabled {
+    #${VIDEO_TRANSLATION_MENU_ID} .babelbox-video-menu-item:disabled {
       cursor: not-allowed !important;
       opacity: .55 !important;
     }
-    #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-primary-action {
-      min-height: var(--fr-video-menu-control-large) !important;
+    #${VIDEO_TRANSLATION_MENU_ID} .babelbox-video-menu-primary-action {
+      min-height: var(--babelbox-video-menu-control-large) !important;
       margin: 4px 0 8px !important;
       border: 1px solid rgba(236, 72, 153, .42) !important;
       background: linear-gradient(135deg, rgba(236, 72, 153, .26), rgba(236, 72, 153, .12)) !important;
       color: #fff !important;
-      font-weight: var(--fr-video-menu-weight-bold) !important;
+      font-weight: var(--babelbox-video-menu-weight-bold) !important;
       box-shadow: 0 4px 12px rgba(236, 72, 153, .16) !important;
     }
-    #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-primary-action[aria-checked="true"] {
+    #${VIDEO_TRANSLATION_MENU_ID} .babelbox-video-menu-primary-action[aria-checked="true"] {
       border-color: rgba(92, 211, 163, .42) !important;
       background: rgba(36, 180, 126, .16) !important;
       box-shadow: none !important;
     }
-    #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-primary-action:not([aria-checked="true"]) .fluent-read-video-menu-check {
+    #${VIDEO_TRANSLATION_MENU_ID} .babelbox-video-menu-primary-action:not([aria-checked="true"]) .babelbox-video-menu-check {
       color: #ff8fbd !important;
     }
-    #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-check {
+    #${VIDEO_TRANSLATION_MENU_ID} .babelbox-video-menu-check {
       display: inline-flex !important;
       align-items: center !important;
       width: 20px !important;
       color: #ff8fbd !important;
-      font-weight: var(--fr-video-menu-weight-bold) !important;
+      font-weight: var(--babelbox-video-menu-weight-bold) !important;
     }
-    #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-check svg {
+    #${VIDEO_TRANSLATION_MENU_ID} .babelbox-video-menu-check svg {
       width: 14px !important;
       height: 14px !important;
       stroke-width: 2.4 !important;
     }
-    #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-label { flex: 1 !important; }
-    #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-value {
+    #${VIDEO_TRANSLATION_MENU_ID} .babelbox-video-menu-label { flex: 1 !important; }
+    #${VIDEO_TRANSLATION_MENU_ID} .babelbox-video-menu-value {
       display: inline-flex !important;
       align-items: center !important;
       gap: 5px !important;
       color: rgba(255, 255, 255, .58) !important;
-      font-size: var(--fr-video-menu-font-small) !important;
+      font-size: var(--babelbox-video-menu-font-small) !important;
       white-space: nowrap !important;
     }
-    #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-item[aria-busy="true"] .fluent-read-video-menu-value::before {
+    #${VIDEO_TRANSLATION_MENU_ID} .babelbox-video-menu-item[aria-busy="true"] .babelbox-video-menu-value::before {
       content: "" !important;
       display: inline-block !important;
       flex: 0 0 auto !important;
@@ -732,39 +732,39 @@ function installVideoSubtitleStyle(): HTMLStyleElement {
       border: 1.5px solid rgba(255, 255, 255, .28) !important;
       border-top-color: #ff8fbd !important;
       border-radius: 50% !important;
-      animation: fluent-read-video-download-spin .72s linear infinite !important;
+      animation: babelbox-video-download-spin .72s linear infinite !important;
     }
-    @keyframes fluent-read-video-download-spin {
+    @keyframes babelbox-video-download-spin {
       to { transform: rotate(360deg); }
     }
     @media (prefers-reduced-motion: reduce) {
-      #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-item[aria-busy="true"] .fluent-read-video-menu-value::before {
+      #${VIDEO_TRANSLATION_MENU_ID} .babelbox-video-menu-item[aria-busy="true"] .babelbox-video-menu-value::before {
         animation: none !important;
       }
     }
-    #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-divider {
+    #${VIDEO_TRANSLATION_MENU_ID} .babelbox-video-menu-divider {
       height: 1px !important;
       margin: 7px 8px !important;
       background: rgba(255, 255, 255, .12) !important;
     }
-    #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-caption {
+    #${VIDEO_TRANSLATION_MENU_ID} .babelbox-video-menu-caption {
       display: block !important;
       padding: 4px 8px 2px !important;
       color: rgba(255, 255, 255, .52) !important;
-      font-size: var(--fr-video-menu-font-small) !important;
+      font-size: var(--babelbox-video-menu-font-small) !important;
     }
-    #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-mode {
+    #${VIDEO_TRANSLATION_MENU_ID} .babelbox-video-menu-mode {
       width: auto !important;
       flex: 1 !important;
       justify-content: center !important;
       padding: 5px 7px !important;
       color: rgba(255, 255, 255, .65) !important;
     }
-    #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-mode[aria-checked="true"] {
+    #${VIDEO_TRANSLATION_MENU_ID} .babelbox-video-menu-mode[aria-checked="true"] {
       background: rgba(236, 72, 153, .24) !important;
       color: #fff !important;
     }
-    #${VIDEO_TRANSLATION_MENU_ID} .fluent-read-video-menu-mode-group {
+    #${VIDEO_TRANSLATION_MENU_ID} .babelbox-video-menu-mode-group {
       display: flex !important;
       gap: 3px !important;
       padding: 2px 4px 4px !important;
@@ -1117,7 +1117,7 @@ export function mountVideoSubtitleTranslation(): () => void {
       renderProgressiveCaption(currentSource, overlay, currentContainer);
     }).catch((error) => {
       if (!destroyed && requestGeneration === generation) {
-        console.warn('[FluentRead] 视频字幕前置翻译失败', error);
+        console.warn('[BabelBox] 视频字幕前置翻译失败', error);
       }
     });
 
@@ -1278,13 +1278,13 @@ export function mountVideoSubtitleTranslation(): () => void {
     const visible = config.videoSubtitleVisible !== false;
     const status = config.on
       ? (config.videoTranslationEnabled ? '已开启' : '已关闭')
-      : 'FluentRead 总开关已关闭';
+      : 'BabelBox 总开关已关闭';
 
     button.classList.toggle(VIDEO_TRANSLATION_ACTIVE_CLASS, enabled);
     button.setAttribute('aria-pressed', String(enabled));
     button.setAttribute('aria-expanded', String(!menu.hidden));
-    button.setAttribute('aria-label', `FluentRead 字幕翻译：${status}`);
-    button.title = `FluentRead 字幕翻译：${status}`;
+    button.setAttribute('aria-label', `BabelBox 字幕翻译：${status}`);
+    button.title = `BabelBox 字幕翻译：${status}`;
 
     const toggle = menu.querySelector<HTMLButtonElement>('[data-action="toggle-translation"]');
     if (toggle) {
@@ -1315,7 +1315,7 @@ export function mountVideoSubtitleTranslation(): () => void {
       nextConfig,
       browser.runtime.sendMessage.bind(browser.runtime),
     ).catch((error) => {
-      console.warn('[FluentRead] 视频字幕设置保存失败', error);
+      console.warn('[BabelBox] 视频字幕设置保存失败', error);
     });
   };
 
@@ -1329,7 +1329,7 @@ export function mountVideoSubtitleTranslation(): () => void {
   const handleTimedTextMessage = (event: MessageEvent) => {
     if (event.source !== window || event.origin !== window.location.origin) return;
     const data = event.data as { source?: unknown; type?: unknown; url?: unknown; responseText?: unknown } | null;
-    if (data?.source !== 'fluent-read' || data.type !== YOUTUBE_TIMED_TEXT_MESSAGE) return;
+    if (data?.source !== 'babelbox' || data.type !== YOUTUBE_TIMED_TEXT_MESSAGE) return;
     if (typeof data.url !== 'string' || typeof data.responseText !== 'string') return;
 
     const cues = finalizeVideoSubtitleCues(parseYoutubeTimedTextResponse(data.responseText));
@@ -1416,7 +1416,7 @@ export function mountVideoSubtitleTranslation(): () => void {
         if (state) state.textContent = message;
         downloadButton.title = message;
         feedbackDelay = 3200;
-        console.warn('[FluentRead] 字幕下载失败', error);
+        console.warn('[BabelBox] 字幕下载失败', error);
       } finally {
         window.clearTimeout(slowFeedbackTimer);
         downloadButton.removeAttribute('aria-busy');
@@ -1462,7 +1462,7 @@ export function mountVideoSubtitleTranslation(): () => void {
       } catch (error) {
         const aborted = error instanceof Error && error.name === 'AbortError';
         if (state) state.textContent = aborted ? '已取消' : '翻译失败，请重试';
-        if (!aborted) console.warn('[FluentRead] 译文字幕下载失败', error);
+        if (!aborted) console.warn('[BabelBox] 译文字幕下载失败', error);
       } finally {
         if (subtitleDownloadAbortController === controller) subtitleDownloadAbortController = undefined;
         downloadButton.removeAttribute('aria-busy');
@@ -1486,18 +1486,18 @@ export function mountVideoSubtitleTranslation(): () => void {
   const createMenuItem = (action: string, label: string, icon: IconNode | null = null): HTMLButtonElement => {
     const item = document.createElement('button');
     item.type = 'button';
-    item.className = `fluent-read-video-menu-item${action === 'toggle-translation' ? ' fluent-read-video-menu-primary-action' : ''}`;
+    item.className = `babelbox-video-menu-item${action === 'toggle-translation' ? ' babelbox-video-menu-primary-action' : ''}`;
     item.dataset.action = action;
     item.setAttribute('role', action === 'toggle-translation' || action === 'toggle-visible' ? 'menuitemcheckbox' : 'menuitem');
     if (action === 'download-subtitles' || action === 'download-translated-subtitles') {
       item.setAttribute('aria-live', 'polite');
       item.setAttribute('aria-atomic', 'true');
     }
-    const check = createTextElement('span', 'fluent-read-video-menu-check', '');
+    const check = createTextElement('span', 'babelbox-video-menu-check', '');
     check.dataset.check = 'true';
     replaceLucideIcon(check, icon);
-    const labelElement = createTextElement('span', 'fluent-read-video-menu-label', label);
-    const state = createTextElement('span', 'fluent-read-video-menu-value', '');
+    const labelElement = createTextElement('span', 'babelbox-video-menu-label', label);
+    const state = createTextElement('span', 'babelbox-video-menu-value', '');
     state.dataset.state = 'true';
     item.append(check, labelElement, state);
     return item;
@@ -1506,45 +1506,45 @@ export function mountVideoSubtitleTranslation(): () => void {
   const createPlayerMenu = (player: HTMLElement): HTMLElement => {
     const menu = document.createElement('div');
     menu.id = VIDEO_TRANSLATION_MENU_ID;
-    menu.className = 'fluent-read-video-subtitle-menu fluent-read-video-ui notranslate';
+    menu.className = 'babelbox-video-subtitle-menu babelbox-video-ui notranslate';
     menu.hidden = true;
     menu.setAttribute('role', 'menu');
-    menu.setAttribute('aria-label', '流畅阅读视频字幕翻译菜单');
+    menu.setAttribute('aria-label', '翻译机视频字幕翻译菜单');
     markVideoUi(menu);
 
     const title = document.createElement('div');
-    title.className = 'fluent-read-video-menu-title';
+    title.className = 'babelbox-video-menu-title';
     const heading = document.createElement('span');
-    heading.className = 'fluent-read-video-menu-heading';
+    heading.className = 'babelbox-video-menu-heading';
     heading.append(
-      createTextElement('span', 'fluent-read-video-menu-brand', '流畅阅读'),
-      createTextElement('span', 'fluent-read-video-menu-title-text', '视频字幕翻译'),
+      createTextElement('span', 'babelbox-video-menu-brand', '翻译机'),
+      createTextElement('span', 'babelbox-video-menu-title-text', '视频字幕翻译'),
     );
     title.append(
       heading,
-      createTextElement('span', 'fluent-read-video-menu-beta', 'Beta 测试'),
+      createTextElement('span', 'babelbox-video-menu-beta', 'Beta 测试'),
     );
     menu.appendChild(title);
 
     menu.appendChild(createMenuItem('toggle-translation', '开启字幕翻译'));
-    const serviceCaption = createTextElement('span', 'fluent-read-video-menu-caption', '翻译服务');
-    const serviceValue = createTextElement('span', 'fluent-read-video-menu-value', '');
+    const serviceCaption = createTextElement('span', 'babelbox-video-menu-caption', '翻译服务');
+    const serviceValue = createTextElement('span', 'babelbox-video-menu-value', '');
     serviceValue.dataset.serviceLabel = 'true';
     serviceCaption.append('：', serviceValue);
     menu.appendChild(serviceCaption);
 
-    const divider = createTextElement('div', 'fluent-read-video-menu-divider', '');
+    const divider = createTextElement('div', 'babelbox-video-menu-divider', '');
     divider.setAttribute('aria-hidden', 'true');
     menu.appendChild(divider);
 
-    const modeCaption = createTextElement('span', 'fluent-read-video-menu-caption', '字幕显示模式');
+    const modeCaption = createTextElement('span', 'babelbox-video-menu-caption', '字幕显示模式');
     menu.appendChild(modeCaption);
     const modeGroup = document.createElement('div');
-    modeGroup.className = 'fluent-read-video-menu-mode-group';
+    modeGroup.className = 'babelbox-video-menu-mode-group';
     modeGroup.setAttribute('role', 'radiogroup');
     modeGroup.setAttribute('aria-label', '字幕显示模式');
     (Object.keys(VIDEO_DISPLAY_MODE_LABELS) as VideoSubtitleDisplayMode[]).forEach((mode) => {
-      const item = createTextElement('button', 'fluent-read-video-menu-mode', VIDEO_DISPLAY_MODE_LABELS[mode]);
+      const item = createTextElement('button', 'babelbox-video-menu-mode', VIDEO_DISPLAY_MODE_LABELS[mode]);
       item.type = 'button';
       item.dataset.mode = mode;
       item.setAttribute('role', 'menuitemradio');
@@ -1580,29 +1580,29 @@ export function mountVideoSubtitleTranslation(): () => void {
   };
 
   const bindButtonClick = (button: HTMLButtonElement) => {
-    if (button.dataset.fluentReadClickBound === 'true') return;
-    button.dataset.fluentReadClickBound = 'true';
+    if (button.dataset.babelboxClickBound === 'true') return;
+    button.dataset.babelboxClickBound = 'true';
     button.addEventListener('click', handleButtonClick);
   };
 
   const bindMenuClick = (menu: HTMLElement) => {
-    if (menu.dataset.fluentReadClickBound === 'true') return;
-    menu.dataset.fluentReadClickBound = 'true';
+    if (menu.dataset.babelboxClickBound === 'true') return;
+    menu.dataset.babelboxClickBound = 'true';
     menu.addEventListener('click', handleMenuClick);
   };
 
   const createPlayerButton = (): HTMLButtonElement => {
     const button = document.createElement('button');
     button.id = VIDEO_TRANSLATION_BUTTON_ID;
-    button.className = 'ytp-button fluent-read-video-subtitle-button fluent-read-video-ui notranslate';
+    button.className = 'ytp-button babelbox-video-subtitle-button babelbox-video-ui notranslate';
     button.type = 'button';
     button.setAttribute('role', 'button');
     button.setAttribute('aria-pressed', 'false');
     button.setAttribute('aria-expanded', 'false');
-    button.setAttribute('aria-label', 'FluentRead 字幕翻译：已关闭');
-    button.title = 'FluentRead 字幕翻译：已关闭';
+    button.setAttribute('aria-label', 'BabelBox 字幕翻译：已关闭');
+    button.title = 'BabelBox 字幕翻译：已关闭';
     const icon = document.createElement('img');
-    icon.className = 'fluent-read-video-subtitle-button-icon';
+    icon.className = 'babelbox-video-subtitle-button-icon';
     icon.src = browser.runtime.getURL('/icon/128.png');
     icon.alt = '';
     icon.setAttribute('aria-hidden', 'true');
@@ -1679,7 +1679,7 @@ export function mountVideoSubtitleTranslation(): () => void {
             syncTranslationOverlayPosition(currentContainer);
           } catch (error) {
             if (!destroyed && requestGeneration === generation) {
-              console.warn('[FluentRead] 视频字幕翻译失败', error);
+              console.warn('[BabelBox] 视频字幕翻译失败', error);
             }
           }
         }
@@ -1904,7 +1904,7 @@ export function mountVideoSubtitleTranslation(): () => void {
     removeTranslationOverlay();
     document.querySelectorAll(VIDEO_CAPTION_CONTAINER_SELECTOR).forEach((node) => {
       node.classList.remove('notranslate', VIDEO_DISPLAY_TRANSLATION_ONLY_CLASS, VIDEO_DISPLAY_ORIGINAL_ONLY_CLASS, VIDEO_DISPLAY_HIDDEN_CLASS, VIDEO_NORMALIZED_CAPTION_CLASS);
-      node.removeAttribute('data-fluent-read-video-display-mode');
+      node.removeAttribute('data-babelbox-video-display-mode');
     });
     style.remove();
   };

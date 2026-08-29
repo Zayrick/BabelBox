@@ -346,11 +346,11 @@ function prepareUpsert(input: VocabularyUpsertInput, now: number) {
   };
 }
 
-export class FluentReadVocabularyBookDatabase extends Dexie {
+export class BabelBoxVocabularyBookDatabase extends Dexie {
   entries!: Table<VocabularyEntry, string>;
   reviewLogs!: Table<VocabularyReviewLog, string>;
 
-  constructor(name = 'FluentReadVocabularyBook') {
+  constructor(name = 'BabelBoxVocabularyBook') {
     super(name);
     this.version(1).stores({
       entries:
@@ -360,10 +360,10 @@ export class FluentReadVocabularyBookDatabase extends Dexie {
   }
 }
 
-export const vocabularyBookDb = new FluentReadVocabularyBookDatabase();
+export const vocabularyBookDb = new BabelBoxVocabularyBookDatabase();
 
 export class VocabularyBookRepository {
-  constructor(private readonly db: FluentReadVocabularyBookDatabase = vocabularyBookDb) {}
+  constructor(private readonly db: BabelBoxVocabularyBookDatabase = vocabularyBookDb) {}
 
   async list(options: VocabularyListOptions = {}): Promise<VocabularyEntry[]> {
     return this.db.transaction('r', this.db.entries, async () => {

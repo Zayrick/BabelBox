@@ -4,11 +4,11 @@ import {
     type ImageOcrLanguageCode,
 } from '@/src/features/image-translation/ocrLanguages';
 
-export const IMAGE_OCR_MESSAGE_TYPE = 'fluentReadImageOcr' as const;
-export const IMAGE_TRANSLATE_MESSAGE_TYPE = 'fluentReadImageTranslate' as const;
-export const IMAGE_TRANSLATE_TEXTS_MESSAGE_TYPE = 'fluentReadImageTranslateTexts' as const;
-export const IMAGE_OCR_DOWNLOAD_MESSAGE_TYPE = 'fluentReadImageOcrDownload' as const;
-export const IMAGE_FETCH_MESSAGE_TYPE = 'fluentReadImageFetch' as const;
+export const IMAGE_OCR_MESSAGE_TYPE = 'babelboxImageOcr' as const;
+export const IMAGE_TRANSLATE_MESSAGE_TYPE = 'babelboxImageTranslate' as const;
+export const IMAGE_TRANSLATE_TEXTS_MESSAGE_TYPE = 'babelboxImageTranslateTexts' as const;
+export const IMAGE_OCR_DOWNLOAD_MESSAGE_TYPE = 'babelboxImageOcrDownload' as const;
+export const IMAGE_FETCH_MESSAGE_TYPE = 'babelboxImageFetch' as const;
 
 export interface ImageOcrMessage {
     type: typeof IMAGE_OCR_MESSAGE_TYPE;

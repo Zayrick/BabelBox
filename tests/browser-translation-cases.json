@@ -16,12 +16,12 @@
     "fullPageHotkey": "Alt+T",
     "service": "freeTranslation"
   },
-  "github-fluentread-pr": {
-    "url": "https://github.com/FluentRead/FluentRead/pull/292",
+  "github-babelbox-repository": {
+    "url": "https://github.com/Zayrick/BabelBox",
     "hoverSelector": "main h1",
     "requiredSelectors": ["main h1"],
     "coverageRules": [
-      {"name": "pull-request-title", "selector": "main h1", "kind": "heading", "minInitial": 1, "trackDynamic": true}
+      {"name": "repository-title", "selector": "main h1", "kind": "heading", "minInitial": 1, "trackDynamic": true}
     ],
     "forbiddenSelectors": ["main svg.octicon"],
     "interactionSelectors": ["main a[href]"],

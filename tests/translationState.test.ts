@@ -250,7 +250,7 @@ describe("指定节点翻译状态机", () => {
         const attempt = beginTranslation(target, 'bilingual');
         expect(attempt).not.toBeNull();
         const wrapper = document.createElement('span');
-        wrapper.setAttribute('data-fr-translation-owned', 'true');
+        wrapper.setAttribute('data-babelbox-translation-owned', 'true');
         target.appendChild(wrapper);
         setBilingualContent(target, wrapper);
         wrapper.remove();
@@ -266,9 +266,9 @@ describe("指定节点翻译状态机", () => {
         const attempt = beginTranslation(target, 'bilingual')!;
         expect(markTranslationError(target, attempt.state, attempt.generation)).toBe(true);
         const retryWrapper = document.createElement('span');
-        retryWrapper.setAttribute('data-fr-translation-owned', 'true');
+        retryWrapper.setAttribute('data-babelbox-translation-owned', 'true');
         target.appendChild(retryWrapper);
-        target.classList.add('fluent-read-failure');
+        target.classList.add('babelbox-failure');
         setRetryWrapper(target, retryWrapper);
         setRenderedStyleAttribute(target);
         retryWrapper.remove();
@@ -381,9 +381,9 @@ describe("指定节点翻译状态机", () => {
             remove: vi.fn(() => target.setAttribute("class", "")),
         };
         beginTranslation(target as unknown as HTMLElement, "bilingual");
-        target.setAttribute("class", "fluent-read-bilingual");
+        target.setAttribute("class", "babelbox-bilingual");
         setRenderedStyleAttribute(target as unknown as HTMLElement);
-        target.setAttribute("class", "fluent-read-bilingual fluent-read-failure");
+        target.setAttribute("class", "babelbox-bilingual babelbox-failure");
 
         expect(restoreTranslation(target as unknown as HTMLElement)).toBe(true);
         expect(target.getAttribute("class")).toBeNull();

@@ -1,5 +1,5 @@
-export const VOCABULARY_BOOK_MESSAGE = 'fluentReadVocabularyBook' as const;
-export const VOCABULARY_BOOK_CHANGED_MESSAGE = 'fluentReadVocabularyBookChanged' as const;
+export const VOCABULARY_BOOK_MESSAGE = 'babelboxVocabularyBook' as const;
+export const VOCABULARY_BOOK_CHANGED_MESSAGE = 'babelboxVocabularyBookChanged' as const;
 
 export type VocabularyStatus = 'new' | 'learning' | 'mastered';
 export type VocabularyReviewRating = 'again' | 'good' | 'manual-mastered' | 'relearn';

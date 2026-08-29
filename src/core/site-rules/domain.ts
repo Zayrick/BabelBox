@@ -151,10 +151,10 @@ export function getFullPageContextMenuPresentation(
     isSiteDisabled: boolean,
 ): FullPageContextMenuPresentation {
     if (isSiteDisabled) {
-        return {enabled: false, title: '流畅阅读（当前网站已禁用）'};
+        return {enabled: false, title: '翻译机（当前网站已禁用）'};
     }
     return {
         enabled: true,
-        title: isTranslated ? '流畅阅读取消翻译' : '流畅阅读翻译',
+        title: isTranslated ? '翻译机取消翻译' : '翻译机翻译',
     };
 }

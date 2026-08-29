@@ -5,8 +5,6 @@
   --vp-c-brand-soft: rgba(233, 72, 114, 0.12);
   --vp-home-hero-name-color: transparent;
   --vp-home-hero-name-background: linear-gradient(120deg, #c92f61 15%, #ef6385 55%, #f6a06e);
-  --vp-home-hero-image-background-image: linear-gradient(-45deg, #ffe0e8 35%, #fff1dc);
-  --vp-home-hero-image-filter: blur(44px);
 }
 
 .dark {
@@ -14,7 +12,6 @@
   --vp-c-brand-2: #ff789b;
   --vp-c-brand-3: #ffb0c2;
   --vp-c-brand-soft: rgba(255, 142, 171, 0.14);
-  --vp-home-hero-image-background-image: linear-gradient(-45deg, #542139 35%, #473421);
 }
 
 .VPHero .name,
@@ -58,35 +55,6 @@
   color: var(--vp-c-text-2);
 }
 
-.showcase-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-  margin-top: 1.25rem;
-}
-
-.showcase-card {
-  overflow: hidden;
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 18px;
-  background: var(--vp-c-bg-soft);
-  box-shadow: 0 10px 28px rgba(83, 35, 50, 0.05);
-}
-
-.showcase-card img {
-  display: block;
-  width: 100%;
-  aspect-ratio: 16 / 10;
-  object-fit: cover;
-  object-position: top;
-}
-
-.showcase-card figcaption {
-  padding: 0.8rem 1rem 1rem;
-  color: var(--vp-c-text-2);
-  font-size: 0.9rem;
-}
-
 .link-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -122,26 +90,7 @@
   font-size: 0.9rem;
 }
 
-.doc-screenshot {
-  display: block;
-  width: auto;
-  max-width: 100%;
-  height: auto;
-  margin: 1.4rem auto 1.8rem;
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 16px;
-  box-shadow: 0 16px 38px rgba(83, 35, 50, 0.09);
-}
-
-.doc-screenshot + em {
-  display: block;
-  margin-top: -1.2rem;
-  color: var(--vp-c-text-2);
-  text-align: center;
-}
-
 @media (max-width: 760px) {
-  .showcase-grid,
   .link-grid {
     grid-template-columns: 1fr;
   }

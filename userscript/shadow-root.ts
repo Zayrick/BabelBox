@@ -20,10 +20,10 @@ export interface ShadowRootContentScriptUi<T> {
 }
 
 function installStyles(shadow: ShadowRoot, localCss = ''): void {
-    const css = [globalThis.__fluentReadUserscriptCss || '', localCss].filter(Boolean).join('\n');
+    const css = [globalThis.__babelboxUserscriptCss || '', localCss].filter(Boolean).join('\n');
     if (!css) return;
     const style = document.createElement('style');
-    style.setAttribute('data-fluent-read-userscript-styles', 'true');
+    style.setAttribute('data-babelbox-userscript-styles', 'true');
     style.textContent = css;
     shadow.appendChild(style);
 }
@@ -34,7 +34,7 @@ export async function createShadowRootUi<T>(
     options: ShadowRootUiOptions<T>,
 ): Promise<ShadowRootContentScriptUi<T>> {
     const shadowHost = document.createElement('div');
-    shadowHost.setAttribute('data-fluent-read-userscript-host', options.name);
+    shadowHost.setAttribute('data-babelbox-userscript-host', options.name);
     shadowHost.style.cssText = [
         'all: initial !important',
         'position: fixed !important',
@@ -50,7 +50,7 @@ export async function createShadowRootUi<T>(
     const shadow = shadowHost.attachShadow({mode: options.mode || 'open'});
     installStyles(shadow, options.css);
     const container = document.createElement('div');
-    container.setAttribute('data-fluent-read-userscript-container', options.name);
+    container.setAttribute('data-babelbox-userscript-container', options.name);
     container.style.cssText = 'all: initial; width: 0; height: 0; overflow: visible; pointer-events: auto;';
     shadow.appendChild(container);
 

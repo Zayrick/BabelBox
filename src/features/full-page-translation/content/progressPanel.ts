@@ -22,9 +22,9 @@ export function mountTranslationProgressPanel(ctx?: ContentScriptContext) {
   const requestId = ++mountRequestId;
   let retryAfterStaleMount = false;
   mountingPromise = createVueShadowUi(contentScriptContext, {
-    name: 'fluent-read-translation-progress-ui',
+    name: 'babelbox-translation-progress-ui',
     // host id 同时属于全文翻译的扩展 DOM 排除规则。
-    hostId: 'fluent-read-translation-status-container',
+    hostId: 'babelbox-translation-status-container',
     component: TranslationProgressPanel,
     zIndex: 2_147_483_645,
   }).then((ui) => {
@@ -37,7 +37,7 @@ export function mountTranslationProgressPanel(ctx?: ContentScriptContext) {
     progressPanelInstance = ui.mounted?.instance ?? null;
     return progressPanelInstance;
   }).catch((error) => {
-    console.error('[FluentRead] 翻译进度面板挂载失败', error);
+    console.error('[BabelBox] 翻译进度面板挂载失败', error);
     return null;
   }).finally(() => {
     mountingPromise = null;

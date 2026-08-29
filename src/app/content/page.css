@@ -1,56 +1,56 @@
-/* 内容脚本注入到宿主页面的 FluentRead 专属样式。 */
-@keyframes fluent-read-loading-spin {
+/* 内容脚本注入到宿主页面的 BabelBox 专属样式。 */
+@keyframes babelbox-loading-spin {
     0% { transform: rotate(-1deg); }
     100% { transform: rotate(360deg); }
 }
-.fluent-read-loading {
+.babelbox-loading {
     border: 3px solid rgba(239, 71, 118, .2);
     border-top: 3px solid #ef4776;
     border-radius: 50%;
     width: 12px;
     height: 12px;
-    animation: fluent-read-loading-spin 1s linear infinite;
+    animation: babelbox-loading-spin 1s linear infinite;
     display: inline-block;
 }
 
 :root {
-    --fluent-read-shimmer-duration: 2000ms;
-    --fluent-read-shimmer-base-opacity: 0.42;
-    --fluent-read-shimmer-band: 400%;
-    --fluent-read-shimmer-easing: linear;
-    --fluent-read-shimmer-mask: linear-gradient(
+    --babelbox-shimmer-duration: 2000ms;
+    --babelbox-shimmer-base-opacity: 0.42;
+    --babelbox-shimmer-band: 400%;
+    --babelbox-shimmer-easing: linear;
+    --babelbox-shimmer-mask: linear-gradient(
         90deg,
-        rgba(0, 0, 0, var(--fluent-read-shimmer-base-opacity)) 0%,
-        rgba(0, 0, 0, var(--fluent-read-shimmer-base-opacity)) 40%,
+        rgba(0, 0, 0, var(--babelbox-shimmer-base-opacity)) 0%,
+        rgba(0, 0, 0, var(--babelbox-shimmer-base-opacity)) 40%,
         #000 50%,
-        rgba(0, 0, 0, var(--fluent-read-shimmer-base-opacity)) 60%,
-        rgba(0, 0, 0, var(--fluent-read-shimmer-base-opacity)) 100%
+        rgba(0, 0, 0, var(--babelbox-shimmer-base-opacity)) 60%,
+        rgba(0, 0, 0, var(--babelbox-shimmer-base-opacity)) 100%
     );
 }
 
 /* 文字流光只改变现有像素的透明度，不覆盖宿主页面的文字颜色。 */
-[data-fr-translation-shimmer="true"] {
-    mask-image: var(--fluent-read-shimmer-mask);
+[data-babelbox-translation-shimmer="true"] {
+    mask-image: var(--babelbox-shimmer-mask);
     mask-repeat: no-repeat;
-    mask-size: var(--fluent-read-shimmer-band) 100%;
-    -webkit-mask-image: var(--fluent-read-shimmer-mask);
+    mask-size: var(--babelbox-shimmer-band) 100%;
+    -webkit-mask-image: var(--babelbox-shimmer-mask);
     -webkit-mask-repeat: no-repeat;
-    -webkit-mask-size: var(--fluent-read-shimmer-band) 100%;
-    animation: fluent-read-translation-shimmer var(--fluent-read-shimmer-duration) var(--fluent-read-shimmer-easing) infinite;
+    -webkit-mask-size: var(--babelbox-shimmer-band) 100%;
+    animation: babelbox-translation-shimmer var(--babelbox-shimmer-duration) var(--babelbox-shimmer-easing) infinite;
 }
 
-.fluent-read-loading[data-animation-mode="shimmer"] {
+.babelbox-loading[data-animation-mode="shimmer"] {
     display: none;
     animation: none;
 }
 
-@keyframes fluent-read-translation-shimmer {
+@keyframes babelbox-translation-shimmer {
     0% { mask-position: 100% 0; -webkit-mask-position: 100% 0; }
     100% { mask-position: 0% 0; -webkit-mask-position: 0% 0; }
 }
 
 /* 静态加载样式（禁用动画时） */
-.fluent-read-loading.static {
+.babelbox-loading.static {
     animation: none;
     background: radial-gradient(circle, rgb(230, 151, 171) 30%, rgba(230, 151, 171, 0.6) 70%);
     border: 2px solid rgb(200, 121, 141);
@@ -59,7 +59,7 @@
 }
 
 /* 添加一个微妙的内阴影效果 */
-.fluent-read-loading.static::before {
+.babelbox-loading.static::before {
     content: '';
     position: absolute;
     top: 2px;
@@ -72,18 +72,18 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    [data-fr-translation-shimmer="true"] {
+    [data-babelbox-translation-shimmer="true"] {
         animation: none !important;
         mask-image: none;
         -webkit-mask-image: none;
     }
 }
 
-.fluent-read-retry-wrapper {
+.babelbox-retry-wrapper {
     display: inline-flex;
     align-items: center;
 }
-.fluent-read-retry, .fluent-read-reason {
+.babelbox-retry, .babelbox-reason {
     color: #428ADF;
     text-decoration: underline;
     text-underline-offset: 0.2em;
@@ -134,48 +134,48 @@
     }
 }
 
-.fluent-input-translating {
+.babelbox-input-translating {
     animation: inputBoxTranslating 3s infinite ease-in-out;
     transition: all 0.3s ease;
 }
 
-.fluent-input-success {
+.babelbox-input-success {
     animation: inputBoxSuccess 1.5s ease-out;
 }
 
-.fluent-input-error {
+.babelbox-input-error {
     animation: inputBoxError 0.5s ease-out;
 }
 
 /* display 译文显示样式*/
 
 /* 弱化 */
-.fluent-display-dimmed {
+.babelbox-display-dimmed {
     opacity: 0.7;
 }
 
 /* 实线下划线 */
-.fluent-display-solid-underline {
+.babelbox-display-solid-underline {
     border-bottom: 2px solid #409eff;
 }
 
 /* 虚线下划线 */
-.fluent-display-dot-underline {
+.babelbox-display-dot-underline {
     border-bottom: 2px dotted #409eff;
 }
 
 /* 学习模式 */
-.fluent-display-learning-mode {
+.babelbox-display-learning-mode {
     background: linear-gradient(transparent 60%, #ffd700 40%);
 }
 
 /* 透明模式 */
-.fluent-display-transparent-mode {
+.babelbox-display-transparent-mode {
     opacity: 0.85;
 }
 
 /* 阴影效果 */
-.fluent-display-card-mode {
+.babelbox-display-card-mode {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
     padding: 4px 8px;
     border-radius: 4px;
@@ -183,19 +183,19 @@
 }
 
 /* 引用 */
-.fluent-display-quote {
+.babelbox-display-quote {
     border-left: 4px solid #409eff;
     padding-left: 8px;
     font-style: italic;
 }
 
 /* 加粗 */
-.fluent-display-bold {
+.babelbox-display-bold {
     font-weight: bold;
 }
 
 /* 双语模式，block 强制换行、inline-block 自适应换行 */
-.fluent-read-bilingual-content {
+.babelbox-bilingual-content {
     display: block; /* 设置为块级元素，强制换行 */
     word-break: break-word; /* 允许在单词内断行，避免超出容器边界 */
     margin: 8px 0 !important; /* 上下边距设置为8px，并强制覆盖其他样式 */
@@ -206,7 +206,7 @@
 }
 
 /* 马克笔 */
-.fluent-display-marker {
+.babelbox-display-marker {
     background: #ffeb3b;
     padding: 0;
     line-height: 1.6;
@@ -214,34 +214,34 @@
     box-decoration-break: clone;
 }
 
-.fluent-display-lightyellow {
+.babelbox-display-lightyellow {
     background-color: rgba(255, 235, 59, 0.2);
 }
 
-.fluent-display-lightblue {
+.babelbox-display-lightblue {
     background-color: rgba(64, 158, 255, 0.1);
 }
 
-.fluent-display-lightgray {
+.babelbox-display-lightgray {
     background-color: rgba(158, 158, 158, 0.1);
 }
 
-.fluent-display-italic {
+.babelbox-display-italic {
     font-style: italic;
 }
 
-.fluent-display-border {
+.babelbox-display-border {
     border: 1px solid #409eff;
     border-radius: 4px;
     padding: 2px 6px;
 }
 
-.fluent-display-text-shadow {
+.babelbox-display-text-shadow {
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* 新增的双语翻译样式 */
-.fluent-display-modern-card {
+.babelbox-display-modern-card {
     background: linear-gradient(135deg, #f5f7fa 0%, #e4e7ed 100%);
     border-radius: 8px;
     padding: 6px 12px;
@@ -249,31 +249,31 @@
     margin: 4px 0;
 }
 
-.fluent-display-wavy {
+.babelbox-display-wavy {
     text-decoration: wavy underline #409eff;
     text-underline-offset: 4px;
 }
 
-.fluent-display-highlight-fade {
+.babelbox-display-highlight-fade {
     background: linear-gradient(104deg, rgba(64,158,255,0) 0.9%, rgba(64,158,255,0.1) 2.4%, rgba(64,158,255,0.15) 5.8%, rgba(64,158,255,0.1) 93%, rgba(64,158,255,0.1) 96%);
     padding: 0.5em 0.8em;
     border-radius: 4px;
 }
 
-.fluent-display-elegant {
+.babelbox-display-elegant {
     font-family: "Georgia", serif;
     color: #666;
     line-height: 1.6;
     letter-spacing: 0.3px;
 }
 
-.fluent-display-focus {
+.babelbox-display-focus {
     background: linear-gradient(to right, transparent, rgba(64,158,255,0.1) 4%, rgba(64,158,255,0.1) 96%, transparent);
     padding: 4px 12px;
     border-radius: 3px;
 }
 
-.fluent-display-paper {
+.babelbox-display-paper {
     background-color: #fff;
     box-shadow: 0 1px 3px rgba(0,0,0,0.12);
     border: 1px solid #eee;
@@ -281,13 +281,13 @@
     border-radius: 6px;
 }
 
-.fluent-display-clean {
+.babelbox-display-clean {
     border-bottom: 1px solid #e4e7ed;
     padding-bottom: 2px;
     margin-bottom: 2px;
 }
 
-.fluent-display-tech {
+.babelbox-display-tech {
     font-family: "Consolas", monospace;
     background: #f8f9fa;
     padding: 2px 6px;

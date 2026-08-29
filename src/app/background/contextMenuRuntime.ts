@@ -79,7 +79,7 @@ export function installBackgroundContextMenus(
 
                 await browser.contextMenus.create({
                     id: CONTEXT_MENU_IDS.TRANSLATE_FULL_PAGE,
-                    title: '流畅阅读翻译',
+                    title: '翻译机翻译',
                     contexts: ['page', 'selection'],
                 });
                 if (requestedEnabled !== contextMenuEnabled) {

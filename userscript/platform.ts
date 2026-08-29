@@ -122,8 +122,8 @@ export function createPlatformMessageHandler(openSettings: () => void) {
         if (typeof message.type === 'string' && (
             message.type === 'toggleSelectionAreaTranslator' ||
             message.type === 'toggleImageTranslator' ||
-            message.type.startsWith('fluentReadImage') ||
-            message.type.startsWith('fluentReadArea')
+            message.type.startsWith('babelboxImage') ||
+            message.type.startsWith('babelboxArea')
         )) {
             return {success: false, error: UNSUPPORTED_CAPABILITY_MESSAGE};
         }

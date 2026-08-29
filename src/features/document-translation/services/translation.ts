@@ -104,7 +104,7 @@ export function createDocumentSegmentTranslator(
 
         if (segments.length === 0) return [];
         const translations = new Array<string>(segments.length);
-        const context = options.fileName || 'FluentRead 文档';
+        const context = options.fileName || 'BabelBox 文档';
         const pageContext = buildDocumentContext(segments, context, options.pageContext);
         // 一次文档任务固定语言对，不能被设置页同步更新或用户中途改选污染后续批次。
         const sourceLanguage = options.sourceLanguage;

@@ -46,18 +46,18 @@ describe('全文翻译节点状态指示', () => {
 
     const wrapper = insertFailedTip(target, 'quota exceeded', retry);
 
-    expect(target.classList.contains('fluent-read-failure')).toBe(true);
-    expect(wrapper.getAttribute('data-fr-translation-owned')).toBe('true');
+    expect(target.classList.contains('babelbox-failure')).toBe(true);
+    expect(wrapper.getAttribute('data-babelbox-translation-owned')).toBe('true');
     expect(wrapper.querySelectorAll('svg')).toHaveLength(2);
-    wrapper.querySelector<HTMLElement>('.fluent-read-reason')!.click();
+    wrapper.querySelector<HTMLElement>('.babelbox-reason')!.click();
     expect(mocks.sendErrorMessage).toHaveBeenCalledWith(
       '你的请求频率过高，被【DeepSeek】拒绝了，请稍后再试吧~',
     );
 
-    wrapper.querySelector<HTMLElement>('.fluent-read-retry')!.click();
+    wrapper.querySelector<HTMLElement>('.babelbox-retry')!.click();
     expect(retry).toHaveBeenCalledOnce();
     expect(wrapper.isConnected).toBe(false);
-    expect(target.classList.contains('fluent-read-failure')).toBe(false);
+    expect(target.classList.contains('babelbox-failure')).toBe(false);
   });
 
   it('加载指示区分缓存命中，并尊重动画配置', async () => {
@@ -65,7 +65,7 @@ describe('全文翻译节点状态指示', () => {
     const cached = insertLoadingSpinner(target, true);
     await Promise.resolve();
 
-    expect(cached.getAttribute('data-fr-translation-owned')).toBe('true');
+    expect(cached.getAttribute('data-babelbox-translation-owned')).toBe('true');
     expect(cached.dataset.animationMode).toBe('default');
     expect(cached.style.getPropertyValue('border-top')).toBe('3px solid green');
     expect(cached.classList.contains('static')).toBe(false);
@@ -81,10 +81,10 @@ describe('全文翻译节点状态指示', () => {
     const shimmer = insertLoadingSpinner(target, false, 'Source');
     await Promise.resolve();
     expect(shimmer.dataset.animationMode).toBe('shimmer');
-    expect(target.getAttribute('data-fr-translation-shimmer')).toBe('true');
+    expect(target.getAttribute('data-babelbox-translation-shimmer')).toBe('true');
 
     removeLoadingSpinner(target, shimmer);
     expect(shimmer.isConnected).toBe(false);
-    expect(target.hasAttribute('data-fr-translation-shimmer')).toBe(false);
+    expect(target.hasAttribute('data-babelbox-translation-shimmer')).toBe(false);
   });
 });

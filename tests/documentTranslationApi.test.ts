@@ -139,7 +139,7 @@ describe('document translation API', () => {
             fileName: '',
             pageContext: '  supplied context  ',
         });
-        expect(mocks.translateText).toHaveBeenCalledWith('Source', 'FluentRead 文档', expect.objectContaining({
+        expect(mocks.translateText).toHaveBeenCalledWith('Source', 'BabelBox 文档', expect.objectContaining({
             pageContext: 'supplied context',
         }));
 

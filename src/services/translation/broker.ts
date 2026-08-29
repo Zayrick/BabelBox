@@ -264,7 +264,7 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
                 if (useCache) await writeCacheIfCurrent(requestGeneration, key, summarizedContext);
                 return summarizedContext;
             } catch (error) {
-                console.warn('[FluentRead] page context summary failed; using extracted context:', error);
+                console.warn('[BabelBox] page context summary failed; using extracted context:', error);
                 if (useCache && requestGeneration === cacheGeneration) cachePageSummary(key, pageContext);
                 return pageContext;
             }

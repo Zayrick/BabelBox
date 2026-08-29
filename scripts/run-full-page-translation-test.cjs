@@ -125,7 +125,7 @@ function loadPlaywright(root) {
     return require('playwright');
   } catch {
     const resolvedRoot = path.resolve(root);
-    const loader = createRequire(path.join(resolvedRoot, '__fluentread_full_page_loader__.cjs'));
+    const loader = createRequire(path.join(resolvedRoot, '__babelbox_full_page_loader__.cjs'));
     return loader('playwright');
   }
 }
@@ -199,9 +199,9 @@ async function toggleFullPage(page, activatePage) {
 
 async function installShortcutDiagnostics(page) {
   await page.evaluate(() => {
-    window.__fluentReadFullPageDebug = { keydowns: [], toggleEvents: 0 };
+    window.__babelboxFullPageDebug = { keydowns: [], toggleEvents: 0 };
     document.addEventListener('keydown', (event) => {
-      window.__fluentReadFullPageDebug.keydowns.push({
+      window.__babelboxFullPageDebug.keydowns.push({
         key: event.key,
         code: event.code,
         altKey: event.altKey,
@@ -209,18 +209,18 @@ async function installShortcutDiagnostics(page) {
         defaultPrevented: event.defaultPrevented,
       });
     });
-    document.addEventListener('fluentread-toggle-translation', () => {
-      window.__fluentReadFullPageDebug.toggleEvents += 1;
+    document.addEventListener('babelbox-toggle-translation', () => {
+      window.__babelboxFullPageDebug.toggleEvents += 1;
     });
   });
 }
 
 async function readShortcutDiagnostics(page) {
   return page.evaluate(() => ({
-    debug: window.__fluentReadFullPageDebug || null,
-    bilingualCount: document.querySelectorAll('.fluent-read-bilingual-content').length,
-    loadingCount: document.querySelectorAll('.fluent-read-loading').length,
-    retryCount: document.querySelectorAll('.fluent-read-retry-wrapper').length,
+    debug: window.__babelboxFullPageDebug || null,
+    bilingualCount: document.querySelectorAll('.babelbox-bilingual-content').length,
+    loadingCount: document.querySelectorAll('.babelbox-loading').length,
+    retryCount: document.querySelectorAll('.babelbox-retry-wrapper').length,
     buttonTexts: {
       save: document.querySelector('#save-button')?.textContent?.trim() || '',
       cancel: document.querySelector('#cancel-button')?.textContent?.trim() || '',
@@ -228,12 +228,12 @@ async function readShortcutDiagnostics(page) {
     targetStates: ['#paragraph-one', '#paragraph-two', '#model-description', '#save-button', '#cancel-button']
       .map((selector) => ({
         selector,
-        bilingual: document.querySelector(selector)?.querySelectorAll('.fluent-read-bilingual-content').length || 0,
-        loading: document.querySelector(selector)?.querySelectorAll('.fluent-read-loading').length || 0,
+        bilingual: document.querySelector(selector)?.querySelectorAll('.babelbox-bilingual-content').length || 0,
+        loading: document.querySelector(selector)?.querySelectorAll('.babelbox-loading').length || 0,
       })),
     shadowState: (() => {
       const shadow = document.querySelector('#shadow-host')?.shadowRoot?.querySelector('#shadow-paragraph');
-      return { bilingual: shadow?.querySelectorAll('.fluent-read-bilingual-content').length || 0, loading: shadow?.querySelectorAll('.fluent-read-loading').length || 0 };
+      return { bilingual: shadow?.querySelectorAll('.babelbox-bilingual-content').length || 0, loading: shadow?.querySelectorAll('.babelbox-loading').length || 0 };
     })(),
   }));
 }
@@ -241,16 +241,16 @@ async function readShortcutDiagnostics(page) {
 async function pageState(page) {
   return page.evaluate(() => {
     const get = (selector) => document.querySelector(selector);
-    const count = (selector) => get(selector)?.querySelectorAll('.fluent-read-bilingual-content').length || 0;
+    const count = (selector) => get(selector)?.querySelectorAll('.babelbox-bilingual-content').length || 0;
     const clampState = (clampSelector, targetSelector) => {
       const clamp = get(clampSelector);
       const target = get(targetSelector);
-      const wrapper = target?.querySelector('.fluent-read-bilingual-content');
+      const wrapper = target?.querySelector('.babelbox-bilingual-content');
       if (!clamp || !target) return null;
       const clampRect = clamp.getBoundingClientRect();
       const wrapperRect = wrapper?.getBoundingClientRect();
       return {
-        bilingual: target.querySelectorAll('.fluent-read-bilingual-content').length,
+        bilingual: target.querySelectorAll('.babelbox-bilingual-content').length,
         lineClamp: getComputedStyle(clamp).webkitLineClamp,
         inlineStyle: clamp.getAttribute('style'),
         clientHeight: clamp.clientHeight,
@@ -271,17 +271,17 @@ async function pageState(page) {
       dynamic: count('#dynamic-paragraph'),
       staticClamp: clampState('#model-description-clamp', '#model-description'),
       dynamicClamp: clampState('#dynamic-model-description-clamp', '#dynamic-paragraph'),
-      shadow: shadowParagraph?.querySelectorAll('.fluent-read-bilingual-content').length || 0,
+      shadow: shadowParagraph?.querySelectorAll('.babelbox-bilingual-content').length || 0,
       header: count('header'),
       nav: count('nav'),
       footer: count('footer'),
-      buttonBilingualCount: button?.querySelectorAll('.fluent-read-bilingual-content').length || 0,
+      buttonBilingualCount: button?.querySelectorAll('.babelbox-bilingual-content').length || 0,
       buttonText: button?.textContent?.trim() || '',
       cancelButtonText: cancelButton?.textContent?.trim() || '',
-      cancelButtonBilingualCount: cancelButton?.querySelectorAll('.fluent-read-bilingual-content').length || 0,
+      cancelButtonBilingualCount: cancelButton?.querySelectorAll('.babelbox-bilingual-content').length || 0,
       buttonIconPresent: Boolean(button?.querySelector('[aria-hidden="true"]')),
-      codePreserved: Boolean(get('#paragraph-one .fluent-read-bilingual-content code')?.textContent.includes('const value = 42')),
-      linkPreserved: get('#paragraph-one .fluent-read-bilingual-content a')?.getAttribute('href') || null,
+      codePreserved: Boolean(get('#paragraph-one .babelbox-bilingual-content code')?.textContent.includes('const value = 42')),
+      linkPreserved: get('#paragraph-one .babelbox-bilingual-content a')?.getAttribute('href') || null,
     };
   });
 }
@@ -335,7 +335,7 @@ async function main() {
   if (!fs.existsSync(path.join(extensionDir, 'manifest.json'))) throw new Error('插件 manifest.json 不存在');
   if (!fs.existsSync(args.browserPath)) throw new Error(`浏览器不存在：${args.browserPath}`);
 
-  const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'fluentread-full-page-'));
+  const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'babelbox-full-page-'));
   assertDedicatedProfile(profileDir);
   const artifactsDir = args.artifactsDir ? path.resolve(args.artifactsDir) : null;
   if (artifactsDir) fs.mkdirSync(artifactsDir, { recursive: true });
@@ -483,9 +483,9 @@ async function main() {
     await installShortcutDiagnostics(page);
     await toggleFullPage(page, activateTestPage);
     try {
-      await waitFor(page, () => document.querySelector('#paragraph-one .fluent-read-bilingual-content') &&
-        document.querySelector('#model-description .fluent-read-bilingual-content') &&
-        document.querySelector('#shadow-host')?.shadowRoot?.querySelector('#shadow-paragraph .fluent-read-bilingual-content') &&
+      await waitFor(page, () => document.querySelector('#paragraph-one .babelbox-bilingual-content') &&
+        document.querySelector('#model-description .babelbox-bilingual-content') &&
+        document.querySelector('#shadow-host')?.shadowRoot?.querySelector('#shadow-paragraph .babelbox-bilingual-content') &&
         /[\u3400-\u9fff]/u.test(document.querySelector('#save-button')?.textContent || '') &&
         /[\u3400-\u9fff]/u.test(document.querySelector('#cancel-button')?.textContent || ''), args.timeout);
     } catch (error) {
@@ -505,7 +505,7 @@ async function main() {
       clamp.appendChild(paragraph);
       container.appendChild(clamp);
     });
-    await waitFor(page, () => document.querySelector('#dynamic-paragraph .fluent-read-bilingual-content'), args.timeout);
+    await waitFor(page, () => document.querySelector('#dynamic-paragraph .babelbox-bilingual-content'), args.timeout);
 
     // React/Vue 页面可能在译文已插入后重建原文节点。确认全文观察器不会把
     // 这次宿主 characterData/childList mutation 当成插件自身写入而留下旧译文。
@@ -516,23 +516,23 @@ async function main() {
     await waitFor(page, () => {
       const paragraph = document.querySelector('#paragraph-two');
       return paragraph?.textContent?.includes('changed after full-page translation') &&
-        Boolean(paragraph.querySelector('.fluent-read-bilingual-content'));
+        Boolean(paragraph.querySelector('.babelbox-bilingual-content'));
     }, args.timeout);
     const translated = await pageState(page);
     assertTranslated(translated, '第一次全文翻译');
     if (artifactsDir) await page.screenshot({ path: path.join(artifactsDir, 'full-page-translated.png'), fullPage: true });
 
     await toggleFullPage(page, activateTestPage);
-    await waitFor(page, () => !document.querySelector('.fluent-read-bilingual-content'), args.timeout);
+    await waitFor(page, () => !document.querySelector('.babelbox-bilingual-content'), args.timeout);
     const restored = await pageState(page);
     assertRestored(restored);
     if (artifactsDir) await page.screenshot({ path: path.join(artifactsDir, 'full-page-restored.png'), fullPage: true });
 
     await toggleFullPage(page, activateTestPage);
-    await waitFor(page, () => document.querySelector('#paragraph-one .fluent-read-bilingual-content') &&
-      document.querySelector('#model-description .fluent-read-bilingual-content') &&
-      document.querySelector('#dynamic-paragraph .fluent-read-bilingual-content') &&
-      document.querySelector('#shadow-host')?.shadowRoot?.querySelector('#shadow-paragraph .fluent-read-bilingual-content') &&
+    await waitFor(page, () => document.querySelector('#paragraph-one .babelbox-bilingual-content') &&
+      document.querySelector('#model-description .babelbox-bilingual-content') &&
+      document.querySelector('#dynamic-paragraph .babelbox-bilingual-content') &&
+      document.querySelector('#shadow-host')?.shadowRoot?.querySelector('#shadow-paragraph .babelbox-bilingual-content') &&
       /[\u3400-\u9fff]/u.test(document.querySelector('#save-button')?.textContent || '') &&
       /[\u3400-\u9fff]/u.test(document.querySelector('#cancel-button')?.textContent || ''), args.timeout);
     const retranslated = await pageState(page);

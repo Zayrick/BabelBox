@@ -1,4 +1,4 @@
-FluentRead bundles the following open-source OCR assets for local image text recognition:
+BabelBox bundles the following open-source OCR assets for local image text recognition:
 
 - Tesseract.js 7.0.0, Apache-2.0
 - tesseract.js-core 7.0.0, Apache-2.0

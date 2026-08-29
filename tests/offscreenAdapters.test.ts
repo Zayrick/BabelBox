@@ -28,7 +28,7 @@ describe('area translation Offscreen adapter', () => {
             lines: [{text: 'line'}],
         });
         expect(send).toHaveBeenCalledWith({
-            type: 'FLUENT_READ_AREA_TRANSLATE_OFFSCREEN',
+            type: 'BABELBOX_AREA_TRANSLATE_OFFSCREEN',
             image: 'data:image/png,area',
             sourceLanguage: 'en',
             title: 'Page',
@@ -58,7 +58,7 @@ describe('image translation Offscreen adapter', () => {
         send.mockResolvedValueOnce({success: true, lines: [{text: 'hello'}]});
         await expect(adapter.recognizeImage('data:image/png,image', 'eng')).resolves.toEqual([{text: 'hello'}]);
         expect(send).toHaveBeenCalledWith({
-            type: 'FLUENT_READ_IMAGE_OCR_OFFSCREEN',
+            type: 'BABELBOX_IMAGE_OCR_OFFSCREEN',
             image: 'data:image/png,image',
             sourceLanguage: 'eng',
         });
@@ -77,7 +77,7 @@ describe('image translation Offscreen adapter', () => {
             image: 'translated', lines: [],
         });
         expect(send).toHaveBeenCalledWith({
-            type: 'FLUENT_READ_IMAGE_TRANSLATE_OFFSCREEN',
+            type: 'BABELBOX_IMAGE_TRANSLATE_OFFSCREEN',
             image: 'data:image/png,image',
             sourceLanguage: 'en',
             title: 'Page',
@@ -95,7 +95,7 @@ describe('image translation Offscreen adapter', () => {
         send.mockResolvedValueOnce({success: true});
         await expect(adapter.downloadLanguages(['eng', 'jpn'])).resolves.toBeUndefined();
         expect(send).toHaveBeenCalledWith({
-            type: 'FLUENT_READ_IMAGE_OCR_DOWNLOAD_OFFSCREEN',
+            type: 'BABELBOX_IMAGE_OCR_DOWNLOAD_OFFSCREEN',
             languages: ['eng', 'jpn'],
         });
 

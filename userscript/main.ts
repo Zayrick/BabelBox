@@ -7,7 +7,7 @@ import {ensureUserscriptConfig} from './initialize';
 
 declare global {
     // Sandbox-local idempotency guard for managers that reinject on SPA state changes.
-    var __fluentReadUserscriptBootstrapped: boolean | undefined;
+    var __babelboxUserscriptBootstrapped: boolean | undefined;
 }
 
 let disposeShadowAndRouteBridge: (() => void) | undefined;
@@ -23,8 +23,8 @@ function registerMenu(label: string, listener: () => void): void {
 }
 
 async function bootstrap(): Promise<void> {
-    if (globalThis.__fluentReadUserscriptBootstrapped) return;
-    globalThis.__fluentReadUserscriptBootstrapped = true;
+    if (globalThis.__babelboxUserscriptBootstrapped) return;
+    globalThis.__babelboxUserscriptBootstrapped = true;
 
     disposeShadowAndRouteBridge = installShadowAndRouteBridge();
     setRuntimeFetch(userscriptFetch);
@@ -41,8 +41,8 @@ async function bootstrap(): Promise<void> {
     const openSettings = () => void settingsModule.openUserscriptSettings(ctx);
     const closeSettings = () => settingsModule.closeUserscriptSettings();
     setPlatformMessageHandler(platformModule.createPlatformMessageHandler(openSettings));
-    window.addEventListener('fluentread-userscript-open-settings', openSettings);
-    window.addEventListener('fluentread-userscript-close-settings', closeSettings);
+    window.addEventListener('babelbox-userscript-open-settings', openSettings);
+    window.addEventListener('babelbox-userscript-close-settings', closeSettings);
 
     browser.runtime.onMessage.addListener((message: any, _sender: unknown, sendResponse: (response?: unknown) => void) => {
         if (message?.type !== 'userscriptTogglePageTranslation') return false;
@@ -52,12 +52,12 @@ async function bootstrap(): Promise<void> {
         return true;
     });
 
-    registerMenu('流畅阅读：打开设置', openSettings);
-    registerMenu('流畅阅读：翻译 / 恢复当前网页', () => {
+    registerMenu('翻译机：打开设置', openSettings);
+    registerMenu('翻译机：翻译 / 恢复当前网页', () => {
         if (translationModule.isFullPageTranslationActive()) translationModule.restoreOriginalContent();
         else void translationModule.autoTranslateEnglishPage();
     });
-    registerMenu('流畅阅读：启用 / 暂停', () => {
+    registerMenu('翻译机：启用 / 暂停', () => {
         const enabled = !configModule.config.on;
         configModule.config.on = enabled;
         void configModule.saveConfig().then(async () => {
@@ -72,7 +72,7 @@ async function bootstrap(): Promise<void> {
             if (!enabled) translationModule.restoreOriginalContent();
         });
     });
-    registerMenu('流畅阅读：清空翻译缓存', () => {
+    registerMenu('翻译机：清空翻译缓存', () => {
         void browser.runtime.sendMessage({type: 'clearTranslationCache'});
     });
 
@@ -81,8 +81,8 @@ async function bootstrap(): Promise<void> {
     void browser.runtime.sendMessage({type: 'userscriptCacheMaintenance'}).catch(() => undefined);
 
     window.addEventListener('beforeunload', () => {
-        window.removeEventListener('fluentread-userscript-open-settings', openSettings);
-        window.removeEventListener('fluentread-userscript-close-settings', closeSettings);
+        window.removeEventListener('babelbox-userscript-open-settings', openSettings);
+        window.removeEventListener('babelbox-userscript-close-settings', closeSettings);
         closeSettings();
         ctx.invalidate();
         disposeShadowAndRouteBridge?.();
@@ -93,6 +93,6 @@ async function bootstrap(): Promise<void> {
 void bootstrap().catch((error) => {
     disposeShadowAndRouteBridge?.();
     disposeShadowAndRouteBridge = undefined;
-    globalThis.__fluentReadUserscriptBootstrapped = false;
-    console.error('[FluentRead userscript] 初始化失败', error);
+    globalThis.__babelboxUserscriptBootstrapped = false;
+    console.error('[BabelBox userscript] 初始化失败', error);
 });

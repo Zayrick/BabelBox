@@ -8,7 +8,7 @@ export type TranslationErrorKind =
   | 'response'
   | 'unknown';
 
-export const TRANSLATION_ERROR_MARKER = 'fluentread-translation-error-v1' as const;
+export const TRANSLATION_ERROR_MARKER = 'babelbox-translation-error-v1' as const;
 
 export interface SerializedTranslationError {
   marker: typeof TRANSLATION_ERROR_MARKER;

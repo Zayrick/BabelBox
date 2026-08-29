@@ -69,11 +69,11 @@ function getByteSize(value: string): number {
   return value.length * 2;
 }
 
-class FluentReadCacheDatabase extends Dexie {
+class BabelBoxCacheDatabase extends Dexie {
   entries!: Table<TranslationCacheRecord, string>;
 
   constructor() {
-    super('FluentReadTranslationCache');
+    super('BabelBoxTranslationCache');
     this.version(1).stores({
       entries: '&key, createdAt, expiresAt, lastAccessedAt',
     });
@@ -83,7 +83,7 @@ class FluentReadCacheDatabase extends Dexie {
   }
 }
 
-export const translationCacheDb = new FluentReadCacheDatabase();
+export const translationCacheDb = new BabelBoxCacheDatabase();
 
 function isExpired(record: TranslationCacheRecord, now: number): boolean {
   return record.expiresAt <= now || record.createdAt + TRANSLATION_CACHE_TTL_MS <= now;
@@ -144,7 +144,7 @@ class TranslationCache {
       return record.translation;
     } catch (error) {
       // 缓存不可用时只按未命中处理，不能阻断真实翻译。
-      console.warn('[FluentRead] translation cache read failed:', error);
+      console.warn('[BabelBox] translation cache read failed:', error);
       return null;
     }
   }
@@ -194,7 +194,7 @@ class TranslationCache {
       this.remember(record);
       return true;
     } catch (error) {
-      console.warn('[FluentRead] translation cache write failed:', error);
+      console.warn('[BabelBox] translation cache write failed:', error);
       return false;
     }
   }
@@ -212,7 +212,7 @@ class TranslationCache {
         if (isExpired(record, now)) this.memory.delete(key);
       }
     } catch (error) {
-      console.warn('[FluentRead] translation cache cleanup failed:', error);
+      console.warn('[BabelBox] translation cache cleanup failed:', error);
     }
   }
 
@@ -223,7 +223,7 @@ class TranslationCache {
       // 再清空 IndexedDB；失败时向调用方报告，避免 UI 误报已清除。
       await translationCacheDb.entries.clear();
     } catch (error) {
-      console.warn('[FluentRead] translation cache clear failed:', error);
+      console.warn('[BabelBox] translation cache clear failed:', error);
       throw error;
     }
   }

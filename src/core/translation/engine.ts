@@ -477,11 +477,11 @@ export class TranslationCandidateCore {
             : isElementNode(start) ? start : null;
 
         while (current && !isDocumentSurface(current)) {
-            if (current.matches('[data-fr-translation-segment="true"]')) {
+            if (current.matches('[data-babelbox-translation-segment="true"]')) {
                 return {element: current as HTMLElement, kind: 'content', reason: 'owned-inline-run'};
             }
             // A hit inside our bilingual wrapper maps back to the host source.
-            if (current.matches('.fluent-read-bilingual-content')) {
+            if (current.matches('.babelbox-bilingual-content')) {
                 current = current.parentElement;
                 continue;
             }

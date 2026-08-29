@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-labelledby="title description">
+  <title id="title">Support UNICEF</title>
+  <desc id="description">Visit unicef.org to support the United Nations Children's Fund.</desc>
+  <rect width="640" height="640" rx="48" fill="#1cabe2"/>
+  <circle cx="320" cy="238" r="122" fill="none" stroke="#fff" stroke-width="18"/>
+  <path d="M198 238h244M320 116c-40 38-64 80-64 122s24 84 64 122m0-244c40 38 64 80 64 122s-24 84-64 122" fill="none" stroke="#fff" stroke-linecap="round" stroke-width="14"/>
+  <path d="M223 171c27 18 61 28 97 28s70-10 97-28M223 305c27-18 61-28 97-28s70 10 97 28" fill="none" stroke="#fff" stroke-linecap="round" stroke-width="12"/>
+  <text x="320" y="430" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="58" font-weight="700" text-anchor="middle">Support UNICEF</text>
+  <text x="320" y="492" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="34" text-anchor="middle">unicef.org</text>
+  <text x="320" y="545" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="25" text-anchor="middle">For every child</text>
+</svg>

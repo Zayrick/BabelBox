@@ -9,7 +9,7 @@ import {
 } from '@/src/core/config/translationServices';
 
 /** 内部 symbol 无法由 content runtime 消息伪造，也不会进入网络 JSON。 */
-export const TRANSLATION_PROVIDER_CONFIG = Symbol('fluentread.translation-provider-config');
+export const TRANSLATION_PROVIDER_CONFIG = Symbol('babelbox.translation-provider-config');
 
 export type TranslationProviderRequestContext = {
     readonly [TRANSLATION_PROVIDER_CONFIG]?: TranslationProviderConfigSnapshot;

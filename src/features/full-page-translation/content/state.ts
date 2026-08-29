@@ -300,7 +300,7 @@ function removeExtensionNode(node: Node | undefined): void {
 }
 
 function removeRetryArtifacts(node: HTMLElement): void {
-    node.querySelectorAll('[data-fr-translation-owned="true"]')
+    node.querySelectorAll('[data-babelbox-translation-owned="true"]')
         .forEach((child) => child.remove());
 }
 
@@ -338,7 +338,7 @@ function restoreOriginalClass(node: HTMLElement, state: TranslationState): void 
         return;
     }
 
-    node.classList.remove("fluent-read-bilingual", "fluent-read-failure");
+    node.classList.remove("babelbox-bilingual", "babelbox-failure");
     if (state.originalClassAttribute === null && node.getAttribute("class") === "") {
         node.removeAttribute("class");
     }

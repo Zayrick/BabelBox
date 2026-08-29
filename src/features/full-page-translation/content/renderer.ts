@@ -75,11 +75,11 @@ function createSafeTranslationFragment(text: string): DocumentFragment {
  * 但具体节点由状态机保存，恢复时只移除这一份 wrapper。
  */
 export function appendBilingualTranslation(node: HTMLElement, text: string): HTMLElement {
-    node.classList.add("fluent-read-bilingual");
+    node.classList.add("babelbox-bilingual");
 
     const content = document.createElement("span");
-    content.classList.add("fluent-read-bilingual-content");
-    content.setAttribute("data-fr-translation-owned", "true");
+    content.classList.add("babelbox-bilingual-content");
+    content.setAttribute("data-babelbox-translation-owned", "true");
     content.setAttribute("translate", "no");
     content.lang = config.to;
     content.dir = "auto";

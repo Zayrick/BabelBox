@@ -92,52 +92,52 @@ describe('Offscreen 消息静态路由', () => {
 
     it('OCR 校验图片与语言并拒绝非数组结果', async () => {
         await expect(dispatch({
-            type: 'FLUENT_READ_IMAGE_OCR_OFFSCREEN', image: 'data:image/png,x', sourceLanguage: 'en',
+            type: 'BABELBOX_IMAGE_OCR_OFFSCREEN', image: 'data:image/png,x', sourceLanguage: 'en',
         })).resolves.toEqual({handled: true, response: {success: true, lines: [{text: 'hello'}]}});
         expect(mocks.recognizeImage).toHaveBeenCalledWith('data:image/png,x', 'en');
 
         for (const message of [
-            {type: 'FLUENT_READ_IMAGE_OCR_OFFSCREEN', image: null, sourceLanguage: 'en'},
-            {type: 'FLUENT_READ_IMAGE_OCR_OFFSCREEN', image: ' ', sourceLanguage: 'en'},
-            {type: 'FLUENT_READ_IMAGE_OCR_OFFSCREEN', image: 'data:image/png,x', sourceLanguage: ' '},
-            {type: 'FLUENT_READ_IMAGE_OCR_OFFSCREEN', image: 'data:image/png,x', sourceLanguage: 'bad!'},
-            {type: 'FLUENT_READ_IMAGE_OCR_OFFSCREEN', image: 'https://host/image.png', sourceLanguage: 'en'},
+            {type: 'BABELBOX_IMAGE_OCR_OFFSCREEN', image: null, sourceLanguage: 'en'},
+            {type: 'BABELBOX_IMAGE_OCR_OFFSCREEN', image: ' ', sourceLanguage: 'en'},
+            {type: 'BABELBOX_IMAGE_OCR_OFFSCREEN', image: 'data:image/png,x', sourceLanguage: ' '},
+            {type: 'BABELBOX_IMAGE_OCR_OFFSCREEN', image: 'data:image/png,x', sourceLanguage: 'bad!'},
+            {type: 'BABELBOX_IMAGE_OCR_OFFSCREEN', image: 'https://host/image.png', sourceLanguage: 'en'},
         ]) {
             expect((await dispatch(message)).response).toMatchObject({success: false});
         }
         mocks.recognizeImage.mockResolvedValueOnce({bad: true} as never);
         await expect(dispatch({
-            type: 'FLUENT_READ_IMAGE_OCR_OFFSCREEN', image: 'data:image/png,x', sourceLanguage: 'en',
+            type: 'BABELBOX_IMAGE_OCR_OFFSCREEN', image: 'data:image/png,x', sourceLanguage: 'en',
         })).resolves.toEqual({handled: true, response: {success: false, error: '图片 OCR 结果无效'}});
     });
 
     it('图片翻译规范化缺省 title 并校验结果对象', async () => {
         await expect(dispatch({
-            type: 'FLUENT_READ_IMAGE_TRANSLATE_OFFSCREEN', image: 'data:image/png,image', sourceLanguage: 'en',
+            type: 'BABELBOX_IMAGE_TRANSLATE_OFFSCREEN', image: 'data:image/png,image', sourceLanguage: 'en',
         })).resolves.toEqual({handled: true, response: {success: true, image: 'translated', lines: []}});
         expect(mocks.translateImage).toHaveBeenCalledWith('data:image/png,image', 'en', '');
         await dispatch({
-            type: 'FLUENT_READ_IMAGE_TRANSLATE_OFFSCREEN', image: 'data:image/png,image', sourceLanguage: 'en', title: 'Page',
+            type: 'BABELBOX_IMAGE_TRANSLATE_OFFSCREEN', image: 'data:image/png,image', sourceLanguage: 'en', title: 'Page',
         });
         expect(mocks.translateImage).toHaveBeenLastCalledWith('data:image/png,image', 'en', 'Page');
 
         expect((await dispatch({
-            type: 'FLUENT_READ_IMAGE_TRANSLATE_OFFSCREEN', image: 'data:image/png,image', sourceLanguage: 'en', title: 1,
+            type: 'BABELBOX_IMAGE_TRANSLATE_OFFSCREEN', image: 'data:image/png,image', sourceLanguage: 'en', title: 1,
         })).response).toEqual({success: false, error: 'Offscreen title 必须是字符串'});
         mocks.translateImage.mockResolvedValueOnce([] as never);
         expect((await dispatch({
-            type: 'FLUENT_READ_IMAGE_TRANSLATE_OFFSCREEN', image: 'data:image/png,image', sourceLanguage: 'en',
+            type: 'BABELBOX_IMAGE_TRANSLATE_OFFSCREEN', image: 'data:image/png,image', sourceLanguage: 'en',
         })).response).toEqual({success: false, error: '图片翻译结果无效'});
         mocks.translateImage.mockResolvedValueOnce({image: 'safe', lines: [], success: false} as never);
         expect((await dispatch({
-            type: 'FLUENT_READ_IMAGE_TRANSLATE_OFFSCREEN', image: 'data:image/png,image', sourceLanguage: 'en',
+            type: 'BABELBOX_IMAGE_TRANSLATE_OFFSCREEN', image: 'data:image/png,image', sourceLanguage: 'en',
         })).response).toEqual({image: 'safe', lines: [], success: true});
     });
 
     it('区域翻译验证六个有限坐标和正尺寸', async () => {
         const selection = {left: 0, top: 1, width: 2, height: 3, viewportWidth: 100, viewportHeight: 80};
         await expect(dispatch({
-            type: 'FLUENT_READ_AREA_TRANSLATE_OFFSCREEN',
+            type: 'BABELBOX_AREA_TRANSLATE_OFFSCREEN',
             image: 'data:image/png,image',
             sourceLanguage: 'auto',
             title: 'Area',
@@ -146,12 +146,12 @@ describe('Offscreen 消息静态路由', () => {
         expect(mocks.translateArea).toHaveBeenCalledWith('data:image/png,image', 'auto', 'Area', selection);
 
         expect((await dispatch({
-            type: 'FLUENT_READ_AREA_TRANSLATE_OFFSCREEN', image: 'data:image/png,image', sourceLanguage: 'en', selection: null,
+            type: 'BABELBOX_AREA_TRANSLATE_OFFSCREEN', image: 'data:image/png,image', sourceLanguage: 'en', selection: null,
         })).response).toEqual({success: false, error: 'Offscreen selection 必须是对象'});
         for (const field of Object.keys(selection)) {
             const invalid = {...selection, [field]: Number.NaN};
             expect((await dispatch({
-                type: 'FLUENT_READ_AREA_TRANSLATE_OFFSCREEN', image: 'data:image/png,image', sourceLanguage: 'en', selection: invalid,
+                type: 'BABELBOX_AREA_TRANSLATE_OFFSCREEN', image: 'data:image/png,image', sourceLanguage: 'en', selection: invalid,
             })).response).toEqual({success: false, error: `Offscreen selection.${field} 必须是有限数字`});
         }
         for (const invalid of [
@@ -163,26 +163,26 @@ describe('Offscreen 消息静态路由', () => {
             {...selection, viewportHeight: 0},
         ]) {
             expect((await dispatch({
-                type: 'FLUENT_READ_AREA_TRANSLATE_OFFSCREEN', image: 'data:image/png,image', sourceLanguage: 'en', selection: invalid,
+                type: 'BABELBOX_AREA_TRANSLATE_OFFSCREEN', image: 'data:image/png,image', sourceLanguage: 'en', selection: invalid,
             })).response).toEqual({success: false, error: 'Offscreen selection 尺寸无效'});
         }
         mocks.translateArea.mockResolvedValueOnce(null as never);
         expect((await dispatch({
-            type: 'FLUENT_READ_AREA_TRANSLATE_OFFSCREEN', image: 'data:image/png,image', sourceLanguage: 'en', selection,
+            type: 'BABELBOX_AREA_TRANSLATE_OFFSCREEN', image: 'data:image/png,image', sourceLanguage: 'en', selection,
         })).response).toEqual({success: false, error: '区域翻译结果无效'});
     });
 
     it('OCR 下载拒绝非数组和未知语言，并去重有效语言', async () => {
-        await expect(dispatch({type: 'FLUENT_READ_IMAGE_OCR_DOWNLOAD_OFFSCREEN', languages: ['eng', 'eng', 'jpn']}))
+        await expect(dispatch({type: 'BABELBOX_IMAGE_OCR_DOWNLOAD_OFFSCREEN', languages: ['eng', 'eng', 'jpn']}))
             .resolves.toEqual({handled: true, response: {success: true}});
         expect(mocks.downloadOcrLanguages).toHaveBeenCalledWith(['eng', 'jpn']);
-        expect((await dispatch({type: 'FLUENT_READ_IMAGE_OCR_DOWNLOAD_OFFSCREEN', languages: null})).response)
+        expect((await dispatch({type: 'BABELBOX_IMAGE_OCR_DOWNLOAD_OFFSCREEN', languages: null})).response)
             .toEqual({success: false, error: 'Offscreen OCR languages 必须是非空数组'});
-        expect((await dispatch({type: 'FLUENT_READ_IMAGE_OCR_DOWNLOAD_OFFSCREEN', languages: []})).response)
+        expect((await dispatch({type: 'BABELBOX_IMAGE_OCR_DOWNLOAD_OFFSCREEN', languages: []})).response)
             .toEqual({success: false, error: 'Offscreen OCR languages 必须是非空数组'});
-        expect((await dispatch({type: 'FLUENT_READ_IMAGE_OCR_DOWNLOAD_OFFSCREEN', languages: ['fra']})).response)
+        expect((await dispatch({type: 'BABELBOX_IMAGE_OCR_DOWNLOAD_OFFSCREEN', languages: ['fra']})).response)
             .toEqual({success: false, error: 'Offscreen OCR languages 包含不支持的语言'});
-        expect((await dispatch({type: 'FLUENT_READ_IMAGE_OCR_DOWNLOAD_OFFSCREEN', languages: [1]})).response)
+        expect((await dispatch({type: 'BABELBOX_IMAGE_OCR_DOWNLOAD_OFFSCREEN', languages: [1]})).response)
             .toEqual({success: false, error: 'Offscreen OCR languages 包含不支持的语言'});
     });
 });

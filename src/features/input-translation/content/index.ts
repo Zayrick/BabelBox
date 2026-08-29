@@ -143,7 +143,7 @@ export function createInputTranslationContentFeature(
 
     const invalidate = (): void => {
         activeInputTranslationRequestId += 1;
-        activeInputTranslationElement?.classList.remove('fluent-input-translating');
+        activeInputTranslationElement?.classList.remove('babelbox-input-translating');
         activeInputTranslationElement = null;
         removeExistingTooltip();
     };
@@ -155,13 +155,13 @@ export function createInputTranslationContentFeature(
     ): void => {
         if (!animationsEnabled()) return;
 
-        element.classList.remove('fluent-input-translating', 'fluent-input-success', 'fluent-input-error');
-        element.classList.add(`fluent-input-${animationType}`);
+        element.classList.remove('babelbox-input-translating', 'babelbox-input-success', 'babelbox-input-error');
+        element.classList.add(`babelbox-input-${animationType}`);
 
         if (animationType !== 'translating') {
             setTimeout(() => {
                 if (ownerRequestId !== activeInputTranslationRequestId) return;
-                element.classList.remove(`fluent-input-${animationType}`);
+                element.classList.remove(`babelbox-input-${animationType}`);
             }, animationType === 'success' ? 1000 : 600);
         }
     };
@@ -179,7 +179,7 @@ export function createInputTranslationContentFeature(
         let ui: ShadowRootContentScriptUi<HTMLElement> | null = null;
         try {
             ui = await createUi<HTMLElement>(deps.context, {
-                name: 'fluent-read-input-tooltip-ui',
+                name: 'babelbox-input-tooltip-ui',
                 position: 'overlay',
                 alignment: 'top-left',
                 zIndex: 2_147_483_647,
@@ -187,8 +187,8 @@ export function createInputTranslationContentFeature(
                 inheritStyles: false,
                 css: `
                     :host {
-                        --fr-input-font-small: 11px;
-                        --fr-input-weight-medium: 600;
+                        --babelbox-input-font-small: 11px;
+                        --babelbox-input-weight-medium: 600;
                         all: initial !important;
                         display: block !important;
                         position: relative !important;
@@ -203,7 +203,7 @@ export function createInputTranslationContentFeature(
                         padding: 0 !important;
                         overflow: visible !important;
                     }
-                    .fluent-input-tooltip {
+                    .babelbox-input-tooltip {
                         display: inline-flex;
                         align-items: center;
                         gap: 6px;
@@ -215,8 +215,8 @@ export function createInputTranslationContentFeature(
                         border: 0;
                         border-radius: 8px;
                         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-                        font-size: var(--fr-input-font-small);
-                        font-weight: var(--fr-input-weight-medium);
+                        font-size: var(--babelbox-input-font-small);
+                        font-weight: var(--babelbox-input-weight-medium);
                         line-height: 1.4;
                         white-space: nowrap;
                         z-index: 2147483647;
@@ -225,25 +225,25 @@ export function createInputTranslationContentFeature(
                         backdrop-filter: blur(8px);
                         box-shadow: 0 8px 24px rgba(15, 23, 42, 0.2);
                     }
-                    .fluent-input-tooltip.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-                    .fluent-input-tooltip.hide { opacity: 0; transform: translateX(-50%) translateY(-5px); }
-                    .fluent-input-tooltip.translating { background: rgba(59, 130, 246, 0.9); }
-                    .fluent-input-tooltip.success { background: rgba(34, 197, 94, 0.9); }
-                    .fluent-input-tooltip.error { background: rgba(239, 68, 68, 0.9); }
-                    .fluent-input-tooltip-icon { width: 14px; height: 14px; flex: 0 0 auto; stroke-width: 2; }
-                    ${animationsEnabled() ? '.fluent-input-tooltip.translating .fluent-input-tooltip-icon { animation: fluent-read-input-icon-spin .9s linear infinite; }' : ''}
-                    @keyframes fluent-read-input-icon-spin { to { transform: rotate(360deg); } }
+                    .babelbox-input-tooltip.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+                    .babelbox-input-tooltip.hide { opacity: 0; transform: translateX(-50%) translateY(-5px); }
+                    .babelbox-input-tooltip.translating { background: rgba(59, 130, 246, 0.9); }
+                    .babelbox-input-tooltip.success { background: rgba(34, 197, 94, 0.9); }
+                    .babelbox-input-tooltip.error { background: rgba(239, 68, 68, 0.9); }
+                    .babelbox-input-tooltip-icon { width: 14px; height: 14px; flex: 0 0 auto; stroke-width: 2; }
+                    ${animationsEnabled() ? '.babelbox-input-tooltip.translating .babelbox-input-tooltip-icon { animation: babelbox-input-icon-spin .9s linear infinite; }' : ''}
+                    @keyframes babelbox-input-icon-spin { to { transform: rotate(360deg); } }
                     @media (prefers-reduced-motion: reduce) {
-                        .fluent-input-tooltip { transition: none; }
-                        .fluent-input-tooltip-icon { animation: none !important; }
+                        .babelbox-input-tooltip { transition: none; }
+                        .babelbox-input-tooltip-icon { animation: none !important; }
                     }
                 `,
                 onMount(container) {
                     const tooltip = rootDocument.createElement('div');
-                    tooltip.className = `fluent-input-tooltip ${type}`;
-                    tooltip.id = 'fluent-input-translation-tooltip';
+                    tooltip.className = `babelbox-input-tooltip ${type}`;
+                    tooltip.id = 'babelbox-input-translation-tooltip';
                     const icon = createLucideIconElement(getTooltipIcon(type), {}, rootDocument);
-                    icon.classList.add('fluent-input-tooltip-icon');
+                    icon.classList.add('babelbox-input-tooltip-icon');
                     const messageElement = rootDocument.createElement('span');
                     messageElement.textContent = message;
                     tooltip.appendChild(icon);
@@ -268,8 +268,8 @@ export function createInputTranslationContentFeature(
             }
 
             inputTooltipUi = ui;
-            ui.shadowHost.id = 'fluent-input-translation-tooltip-host';
-            ui.shadowHost.setAttribute('data-fluent-read-ui', 'input-tooltip');
+            ui.shadowHost.id = 'babelbox-input-translation-tooltip-host';
+            ui.shadowHost.setAttribute('data-babelbox-ui', 'input-tooltip');
             ui.mount();
 
             const tooltip = ui.mounted!;
@@ -315,7 +315,7 @@ export function createInputTranslationContentFeature(
             });
         const clearOwnedVisuals = () => {
             if (requestId !== activeInputTranslationRequestId) return;
-            element.classList.remove('fluent-input-translating');
+            element.classList.remove('babelbox-input-translating');
             if (activeInputTranslationElement === element) activeInputTranslationElement = null;
             removeExistingTooltip(requestId);
         };
@@ -351,7 +351,7 @@ export function createInputTranslationContentFeature(
                     clearOwnedVisuals();
                     return;
                 }
-                element.classList.remove('fluent-input-translating');
+                element.classList.remove('babelbox-input-translating');
                 addInputBoxAnimation(element, 'error', requestId);
                 removeExistingTooltip(requestId);
                 await createTranslationTooltip(element, '微软翻译失败', 'error', requestId, signal);
@@ -366,7 +366,7 @@ export function createInputTranslationContentFeature(
                 return;
             }
 
-            element.classList.remove('fluent-input-translating');
+            element.classList.remove('babelbox-input-translating');
             removeExistingTooltip(requestId);
             if (translatedText && translatedText !== cleanedText) {
                 setInputBoxText(element, translatedText);

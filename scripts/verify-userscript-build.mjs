@@ -4,13 +4,13 @@ import process from 'node:process';
 
 const root = process.cwd();
 const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
-const artifactPath = path.join(root, '.output/userscript/fluent-read.user.js');
+const artifactPath = path.join(root, '.output/userscript/babelbox.user.js');
 const source = fs.readFileSync(artifactPath, 'utf8');
 
 const assertions = [
   [source.startsWith('// ==UserScript==\n'), 'metadata header must be the first bytes'],
   [source.includes(`// @version      ${packageJson.userscriptVersion}`), 'metadata must use userscriptVersion'],
-  [source.includes(`FluentRead V${packageJson.version} · Userscript V${packageJson.userscriptVersion}`), 'settings must distinguish the FluentRead and userscript versions'],
+  [source.includes(`BabelBox V${packageJson.version} · Userscript V${packageJson.userscriptVersion}`), 'settings must distinguish the BabelBox and userscript versions'],
   [source.includes('// @grant        GM_xmlhttpRequest'), 'GM_xmlhttpRequest grant is required'],
   [source.includes('// @connect      *'), 'provider requests require @connect'],
   [!source.includes('// @require'), 'the artifact must be self-contained'],

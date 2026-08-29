@@ -23,7 +23,7 @@ function parseArgs(argv) {
   const args = {
     extensionDir: readArg(argv, 'extension-dir', '.output/chrome-mv3'),
     playwrightRoot: readArg(argv, 'playwright-root', process.env.PLAYWRIGHT_ROOT),
-    artifactsDir: readArg(argv, 'artifacts-dir', path.join(os.tmpdir(), 'fluentread-selection-trigger-test')),
+    artifactsDir: readArg(argv, 'artifacts-dir', path.join(os.tmpdir(), 'babelbox-selection-trigger-test')),
     browserPath: readArg(argv, 'browser-path', '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge'),
     focusSafeHelper: readArg(argv, 'focus-safe-helper', ''),
     headed: argv.includes('--headed'),
@@ -49,7 +49,7 @@ function loadPlaywright(root) {
   try {
     return require('playwright');
   } catch {
-    const runtimeRequire = createRequire(path.join(path.resolve(root), '__fluentread_selection_trigger_test__.cjs'));
+    const runtimeRequire = createRequire(path.join(path.resolve(root), '__babelbox_selection_trigger_test__.cjs'));
     return runtimeRequire('playwright');
   }
 }
@@ -104,7 +104,7 @@ async function patchStoredConfig(extensionPage, patch) {
 async function assertBackgroundRoundTrip(extensionPage) {
   const response = await extensionPage.evaluate(() => new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('后台消息 round-trip 超时')), 10000);
-    chrome.runtime.sendMessage({type: 'FLUENT_READ_BROWSER_FIXTURE_PING'}, (message) => {
+    chrome.runtime.sendMessage({type: 'BABELBOX_BROWSER_FIXTURE_PING'}, (message) => {
       const lastError = chrome.runtime.lastError?.message;
       clearTimeout(timer);
       if (lastError) reject(new Error(lastError));
@@ -116,7 +116,7 @@ async function assertBackgroundRoundTrip(extensionPage) {
 }
 
 async function waitForContentScript(page) {
-  await page.locator('#fluent-read-page-styles').waitFor({ state: 'attached', timeout: 60000 });
+  await page.locator('#babelbox-page-styles').waitFor({ state: 'attached', timeout: 60000 });
   await page.waitForTimeout(700);
 }
 
@@ -400,12 +400,12 @@ async function readSelectionUi(page) {
       targetText: document.querySelector('#target')?.textContent || '',
     })),
   ]);
-  const host = findCdpNode(root, node => cdpAttribute(node, 'id') === 'fluent-read-selection-translator-container');
-  const translatorRoot = findCdpNode(host, node => hasCdpClass(node, 'fr-selection-translator-root'));
-  const indicator = findCdpNode(host, node => hasCdpClass(node, 'fr-selection-indicator'));
-  const tooltip = findCdpNode(host, node => hasCdpClass(node, 'fr-translation-tooltip'));
-  const original = findCdpNode(host, node => hasCdpClass(node, 'fr-original-text'));
-  const translation = findCdpNode(host, node => hasCdpClass(node, 'fr-translation-result'));
+  const host = findCdpNode(root, node => cdpAttribute(node, 'id') === 'babelbox-selection-translator-container');
+  const translatorRoot = findCdpNode(host, node => hasCdpClass(node, 'babelbox-selection-translator-root'));
+  const indicator = findCdpNode(host, node => hasCdpClass(node, 'babelbox-selection-indicator'));
+  const tooltip = findCdpNode(host, node => hasCdpClass(node, 'babelbox-translation-tooltip'));
+  const original = findCdpNode(host, node => hasCdpClass(node, 'babelbox-original-text'));
+  const translation = findCdpNode(host, node => hasCdpClass(node, 'babelbox-translation-result'));
   const originalPre = findCdpDescendantByName(original, 'PRE');
   const translationPre = findCdpDescendantByName(translation, 'PRE');
   return {
@@ -480,10 +480,10 @@ async function clearPageSelection(page) {
 }
 
 async function waitForHoverTranslation(page) {
-  await page.waitForFunction(() => document.querySelectorAll('#target .fluent-read-bilingual-content').length === 1, undefined, { timeout: 10000 });
+  await page.waitForFunction(() => document.querySelectorAll('#target .babelbox-bilingual-content').length === 1, undefined, { timeout: 10000 });
   const pageState = await page.evaluate(() => ({
-    count: document.querySelectorAll('#target .fluent-read-bilingual-content').length,
-    text: document.querySelector('#target .fluent-read-bilingual-content')?.textContent?.trim() || '',
+    count: document.querySelectorAll('#target .babelbox-bilingual-content').length,
+    text: document.querySelector('#target .babelbox-bilingual-content')?.textContent?.trim() || '',
   }));
   const selectionState = await readSelectionUi(page);
   return { ...pageState, selectionTooltip: selectionState.tooltip };
@@ -506,7 +506,7 @@ async function waitForSelectionUi(page, expected, description) {
 async function clickSelectionIndicator(page) {
   await activateInputPage(page);
   const { session, root } = await getSelectionUiTree(page);
-  const indicator = findCdpNode(root, node => hasCdpClass(node, 'fr-selection-indicator'));
+  const indicator = findCdpNode(root, node => hasCdpClass(node, 'babelbox-selection-indicator'));
   if (!indicator) throw new Error('找不到划词翻译入口');
   const { model } = await session.send('DOM.getBoxModel', { nodeId: indicator.nodeId });
   const quad = model.border || model.content;
@@ -534,7 +534,7 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   fs.mkdirSync(args.artifactsDir, { recursive: true });
   const { chromium } = loadPlaywright(args.playwrightRoot);
-  const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'fluentread-selection-trigger-edge-'));
+  const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'babelbox-selection-trigger-edge-'));
   assertDedicatedProfile(profileDir);
   let context;
   let closeBrowser = async () => { if (context) await context.close().catch(() => {}); };
@@ -603,7 +603,7 @@ async function main() {
       await route.fulfill({
         status: 200,
         contentType: 'text/html',
-        body: '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>FluentRead selection fixture</title></head><body><main></main></body></html>',
+        body: '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>BabelBox selection fixture</title></head><body><main></main></body></html>',
       });
     });
     await context.route('https://edge.microsoft.com/translate/translatetext**', async (route) => {
@@ -646,7 +646,7 @@ async function main() {
 
     const drawer = await openSelectionDrawer(popup);
     await setSelectionEnabled(popup, drawer, true);
-    await page.locator('#fluent-read-selection-translator-container').waitFor({ state: 'attached', timeout: 10000 });
+    await page.locator('#babelbox-selection-translator-container').waitFor({ state: 'attached', timeout: 10000 });
     await setSelectionMode(popup, drawer, '双语显示');
 
     const initialDelayConfig = await readStoredConfig(popup);
@@ -813,8 +813,8 @@ async function main() {
 
     // 视觉触发方式：Popup 改设置后不刷新页面，真实鼠标划词仍应反映新模式。
     for (const mode of [
-      { label: '显示图标', className: 'fr-selection-indicator fr-selection-indicator--icon' },
-      { label: '显示小点', className: 'fr-selection-indicator fr-selection-indicator--dot' },
+      { label: '显示图标', className: 'babelbox-selection-indicator babelbox-selection-indicator--icon' },
+      { label: '显示小点', className: 'babelbox-selection-indicator babelbox-selection-indicator--dot' },
     ]) {
       await closeSelectionUi(page);
       const popupState = await setSelectionTrigger(popup, drawer, popup, mode.label);
@@ -868,10 +868,10 @@ async function main() {
     // 关闭/重新启用：关闭后不再挂载划词 UI，重新启用后恢复。
     await closeSelectionUi(page);
     await setSelectionEnabled(popup, drawer, false);
-    await page.locator('#fluent-read-selection-translator-container').waitFor({ state: 'detached', timeout: 10000 });
+    await page.locator('#babelbox-selection-translator-container').waitFor({ state: 'detached', timeout: 10000 });
     result.cases.push({ id: 'selection.disabled', status: 'passed' });
     await setSelectionEnabled(popup, drawer, true);
-    await page.locator('#fluent-read-selection-translator-container').waitFor({ state: 'attached', timeout: 10000 });
+    await page.locator('#babelbox-selection-translator-container').waitFor({ state: 'attached', timeout: 10000 });
     result.cases.push({ id: 'selection.re-enabled', status: 'passed' });
 
     // 预设快捷键：选区旁不显示图标/小点，按对应键后直接打开翻译框。
@@ -905,9 +905,9 @@ async function main() {
     await triggerShortcut(page, 'Ctrl');
     await waitForSelectionUi(page, { tooltip: true, indicator: false, translation: true }, '快捷键冲突时优先打开划词翻译');
     const conflictUi = await readSelectionUi(page);
-    const conflictHoverCount = await page.locator('#target .fluent-read-bilingual-content').count();
+    const conflictHoverCount = await page.locator('#target .babelbox-bilingual-content').count();
     assert(conflictHoverCount === 0, `快捷键冲突时同时触发了鼠标悬浮翻译：${conflictHoverCount}`);
-    const conflictPageTranslationCount = await page.locator('.fluent-read-bilingual-content').count();
+    const conflictPageTranslationCount = await page.locator('.babelbox-bilingual-content').count();
     assert(conflictPageTranslationCount === 0, `快捷键冲突时同时触发了全文翻译：${conflictPageTranslationCount}`);
     const requestsAfterOpen = translationRequestCount;
     const configBeforeRefresh = await readStoredConfig(popup);
@@ -946,7 +946,7 @@ async function main() {
     await page.keyboard.press('Control');
     const hoverFallback = await waitForHoverTranslation(page);
     assert(!hoverFallback.selectionTooltip && hoverFallback.count === 1, `无选区时没有回退到鼠标悬浮翻译：${JSON.stringify(hoverFallback)}`);
-    assert(await page.locator('#neighbor .fluent-read-bilingual-content').count() === 0, '无选区悬浮回退时同时触发了全文翻译');
+    assert(await page.locator('#neighbor .babelbox-bilingual-content').count() === 0, '无选区悬浮回退时同时触发了全文翻译');
     result.cases.push({ id: 'conflict.hover-fallback-without-selection', status: 'passed', ui: hoverFallback });
 
     // 划词与全文共享快捷键、但悬浮不共享时：没有选区应在 keyup 回退全文翻译。
@@ -957,16 +957,16 @@ async function main() {
     await clearPageSelection(page);
     await activateInputPage(page);
     await page.keyboard.press('Control');
-    await page.waitForFunction(() => document.querySelectorAll('#selection-test-fixture .fluent-read-bilingual-content').length >= 2, undefined, { timeout: 10000 });
+    await page.waitForFunction(() => document.querySelectorAll('#selection-test-fixture .babelbox-bilingual-content').length >= 2, undefined, { timeout: 10000 });
     const fullPageDomState = await page.evaluate(() => ({
-      translatedCount: document.querySelectorAll('#selection-test-fixture .fluent-read-bilingual-content').length,
+      translatedCount: document.querySelectorAll('#selection-test-fixture .babelbox-bilingual-content').length,
     }));
     const fullPageSelectionState = await readSelectionUi(page);
     const fullPageFallback = { ...fullPageDomState, selectionTooltip: fullPageSelectionState.tooltip };
     assert(!fullPageFallback.selectionTooltip, `无选区全文回退时误开划词翻译：${JSON.stringify(fullPageFallback)}`);
     result.cases.push({ id: 'conflict.full-page-fallback-without-selection-or-hover', status: 'passed', ui: fullPageFallback });
     await page.keyboard.press('Control');
-    await page.waitForFunction(() => document.querySelectorAll('.fluent-read-bilingual-content').length === 0, undefined, { timeout: 10000 });
+    await page.waitForFunction(() => document.querySelectorAll('.babelbox-bilingual-content').length === 0, undefined, { timeout: 10000 });
 
     await closeSelectionUi(page);
     const customPopupState = await setSelectionTrigger(popup, drawer, popup, '自定义');
@@ -1000,8 +1000,8 @@ async function main() {
     await page.keyboard.up('F9');
     await waitForSelectionUi(page, { tooltip: true, indicator: false, translation: true }, '长按自定义快捷键后拖选仍触发划词翻译');
     const heldCustomUi = await readSelectionUi(page);
-    assert(await page.locator('#target .fluent-read-bilingual-content').count() === 0, '长按自定义键拖选时同时触发了悬浮翻译');
-    assert(await page.locator('#neighbor .fluent-read-bilingual-content').count() === 0, '长按自定义键拖选时全文翻译抢先触发');
+    assert(await page.locator('#target .babelbox-bilingual-content').count() === 0, '长按自定义键拖选时同时触发了悬浮翻译');
+    assert(await page.locator('#neighbor .babelbox-bilingual-content').count() === 0, '长按自定义键拖选时全文翻译抢先触发');
     result.cases.push({
       id: 'shortcut.custom-held-before-selection',
       status: 'passed',
@@ -1023,7 +1023,7 @@ async function main() {
       await triggerShortcut(page, conflictCase.label);
       await waitForSelectionUi(page, { tooltip: true, indicator: false, translation: true }, `${conflictCase.label} 冲突时优先划词翻译`);
       const priorityUi = await readSelectionUi(page);
-      const hoverCount = await page.locator('#target .fluent-read-bilingual-content').count();
+      const hoverCount = await page.locator('#target .babelbox-bilingual-content').count();
       assert(hoverCount === 0, `${conflictCase.label} 冲突时同时触发悬浮翻译：${hoverCount}`);
       result.cases.push({ id: `conflict.${conflictCase.label}.selection-priority`, status: 'passed', popupState, ui: priorityUi });
 

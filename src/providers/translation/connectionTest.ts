@@ -7,7 +7,7 @@ import {
     resolveTranslationServiceConfig,
 } from '@/src/services/translation/requestSnapshot';
 
-export const CONNECTION_TEST_ORIGIN = 'Hello from FluentRead.';
+export const CONNECTION_TEST_ORIGIN = 'Hello from BabelBox.';
 
 function isNonEmptyText(value: unknown): value is string {
     return typeof value === 'string' && value.trim().length > 0;

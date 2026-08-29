@@ -110,8 +110,8 @@ export function createTranslationModelCatalogRequest(
             url.searchParams.set('sub_type', 'chat');
         }
         if (provider === services.openrouter) {
-            headers.set('HTTP-Referer', 'https://fluent.thinkstu.com');
-            headers.set('X-Title', 'FluentRead');
+            headers.set('HTTP-Referer', 'https://github.com/Zayrick/BabelBox');
+            headers.set('X-Title', 'BabelBox');
         }
     }
 

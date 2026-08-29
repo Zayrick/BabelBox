@@ -96,7 +96,7 @@ export const navigationGroups: NavigationGroup[] = [
     label: '关于',
     items: [
       {
-        id: 'settings-about', icon: 'about', label: '关于流畅阅读', group: '关于', title: '关于',
+        id: 'settings-about', icon: 'about', label: '关于翻译机', group: '关于', title: '关于',
         searchDescription: '版本、开源项目、使用文档与问题反馈',
       },
     ],

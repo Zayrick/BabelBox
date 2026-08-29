@@ -50,9 +50,9 @@ describe('page error notice', () => {
         const notice = showPageNotice('Failed to fetch', 'error');
         await Promise.resolve();
 
-        const host = document.getElementById('fluent-read-page-notice-host')!;
+        const host = document.getElementById('babelbox-page-notice-host')!;
         expect(host.parentElement).toBe(document.documentElement);
-        expect(host.hasAttribute('data-fluent-read-ui')).toBe(true);
+        expect(host.hasAttribute('data-babelbox-ui')).toBe(true);
         expect(host.getAttribute('translate')).toBe('no');
         expect(host.style.getPropertyValue('position')).toBe('fixed');
         expect(host.style.getPropertyValue('z-index')).toBe('2147483647');
@@ -69,7 +69,7 @@ describe('page error notice', () => {
         showPageNotice('DeepSeek 需要 API Key（访问令牌），当前尚未配置', 'error');
         await Promise.resolve();
 
-        const host = document.getElementById('fluent-read-page-notice-host')!;
+        const host = document.getElementById('babelbox-page-notice-host')!;
         const shadow = host.shadowRoot!;
         const action = shadow.querySelector<HTMLButtonElement>('.notice-action')!;
         expect(shadow.querySelector('.notice-detail')?.textContent).toContain('为 DeepSeek 填写 API Key');
@@ -85,7 +85,7 @@ describe('page error notice', () => {
         showPageNotice(message, 'error');
         await Promise.resolve();
 
-        const shadow = document.getElementById('fluent-read-page-notice-host')!.shadowRoot!;
+        const shadow = document.getElementById('babelbox-page-notice-host')!.shadowRoot!;
         expect(shadow.querySelector('.notice-detail')?.textContent).toContain(credentialLabel);
         const action = shadow.querySelector<HTMLButtonElement>('.notice-action')!;
         action.click();
@@ -97,7 +97,7 @@ describe('page error notice', () => {
         showPageNotice(message, 'error');
         await Promise.resolve();
 
-        const shadow = document.getElementById('fluent-read-page-notice-host')!.shadowRoot!;
+        const shadow = document.getElementById('babelbox-page-notice-host')!.shadowRoot!;
         expect(shadow.querySelector('.notice-detail')?.textContent).toBe(message);
         expect(shadow.querySelector('.notice-action')).toBeNull();
     });
@@ -106,10 +106,10 @@ describe('page error notice', () => {
         showPageNotice('Provider unavailable', 'error');
         await Promise.resolve();
 
-        const host = document.getElementById('fluent-read-page-notice-host')!;
+        const host = document.getElementById('babelbox-page-notice-host')!;
         host.shadowRoot!.querySelector<HTMLButtonElement>('.notice-close')!.click();
         await vi.advanceTimersByTimeAsync(180);
 
-        expect(document.getElementById('fluent-read-page-notice-host')).toBeNull();
+        expect(document.getElementById('babelbox-page-notice-host')).toBeNull();
     });
 });

@@ -243,8 +243,8 @@ describe('translation truncation layout', () => {
             try {
                 Object.assign(config, {style: 7, to: ''});
                 options.styles = [
-                    {value: 7, class: 'fr-rendered-style'},
-                    {value: 7, class: 'fr-disabled-style', disabled: true},
+                    {value: 7, class: 'babelbox-rendered-style'},
+                    {value: 7, class: 'babelbox-disabled-style', disabled: true},
                 ] as typeof options.styles;
 
                 const attempt = beginTranslation(owner, 'bilingual')!;
@@ -258,8 +258,8 @@ describe('translation truncation layout', () => {
                     '<!--ignored comment-->',
                 ].join(''));
 
-                expect(wrapper.classList.contains('fr-rendered-style')).toBe(true);
-                expect(wrapper.classList.contains('fr-disabled-style')).toBe(false);
+                expect(wrapper.classList.contains('babelbox-rendered-style')).toBe(true);
+                expect(wrapper.classList.contains('babelbox-disabled-style')).toBe(false);
                 expect(wrapper.lang).toBe('');
                 expect(wrapper.querySelector('script')).toBeNull();
                 expect(wrapper.querySelector('div')).toBeNull();

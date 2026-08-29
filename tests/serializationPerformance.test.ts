@@ -25,7 +25,7 @@ describe('translation snapshot mapping performance', () => {
         noTranslate.textContent = 'PROTECTED_LABEL';
         target.appendChild(noTranslate);
         const artifact = document.createElement('span');
-        artifact.className = 'fluent-read-bilingual-content';
+        artifact.className = 'babelbox-bilingual-content';
         artifact.textContent = 'OLD_TRANSLATION';
         target.appendChild(artifact);
 
@@ -64,7 +64,7 @@ describe('translation snapshot mapping performance', () => {
         expect(snapshot.slots[0]?.node).not.toBe(target.querySelector('span')?.firstChild);
         expect(snapshot.clone.querySelector('code')?.textContent).toBe('PROTECTED_CODE');
         expect(snapshot.clone.querySelector('[translate="no"]')?.textContent).toBe('PROTECTED_LABEL');
-        expect(snapshot.clone.querySelector('.fluent-read-bilingual-content')).toBeNull();
+        expect(snapshot.clone.querySelector('.babelbox-bilingual-content')).toBeNull();
 
         const rendered = applyTranslationsToSnapshot(
             snapshot,

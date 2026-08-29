@@ -2,10 +2,10 @@ import {isTranslationTextNodeProtected} from './text';
 import {getComposedParent} from './dom';
 
 const translationArtifactSelector = [
-    '.fluent-read-bilingual-content',
-    '.fluent-read-loading',
-    '.fluent-read-retry-wrapper',
-    '[data-fr-translation-owned="true"]',
+    '.babelbox-bilingual-content',
+    '.babelbox-loading',
+    '.babelbox-retry-wrapper',
+    '[data-babelbox-translation-owned="true"]',
 ].join(',');
 
 export interface TranslationTextSlot {
@@ -63,15 +63,15 @@ export function serializeTranslationSlots(
     let nonce = requestedNonce.replace(/[^a-z0-9_-]/giu, '') || 'slots';
     let collision = 0;
     const hasCollision = (candidate: string) => sources.some((source, index) =>
-        source.includes(`___FLUENTREAD_${candidate}_${index}_BEGIN___`) ||
-        source.includes(`___FLUENTREAD_${candidate}_${index}_END___`));
+        source.includes(`___BABELBOX_${candidate}_${index}_BEGIN___`) ||
+        source.includes(`___BABELBOX_${candidate}_${index}_END___`));
     while (hasCollision(nonce)) {
         collision += 1;
         nonce = `${requestedNonce}_${collision}`.replace(/[^a-z0-9_-]/giu, '');
     }
 
-    const starts = sources.map((_, index) => `___FLUENTREAD_${nonce}_${index}_BEGIN___`);
-    const ends = sources.map((_, index) => `___FLUENTREAD_${nonce}_${index}_END___`);
+    const starts = sources.map((_, index) => `___BABELBOX_${nonce}_${index}_BEGIN___`);
+    const ends = sources.map((_, index) => `___BABELBOX_${nonce}_${index}_END___`);
     const payload = sources.map((source, index) => `${starts[index]}${source}${ends[index]}`).join('\n');
     return {payload, starts, ends};
 }

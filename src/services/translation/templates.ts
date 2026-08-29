@@ -279,7 +279,7 @@ export function cozeTemplate(
 
     const payload: any = {
         bot_id: current.robot_id[service],
-        user: "FluentRead",
+        user: "BabelBox",
         query: system + user,
         stream: false
     };

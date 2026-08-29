@@ -468,51 +468,51 @@ export const options = {
     styles: [
         // 基础样式
         {value: "basic", label: "基础样式", disabled: true},
-        {value: 0, label: "朴素模式", class: "fluent-display-default", group: "basic"},
-        {value: 1, label: "加粗显示", class: "fluent-display-bold", group: "basic"},
-        {value: 2, label: "优雅斜体", class: "fluent-display-italic", group: "basic"},
-        {value: 3, label: "立体阴影", class: "fluent-display-text-shadow", group: "basic"},
+        {value: 0, label: "朴素模式", class: "babelbox-display-default", group: "basic"},
+        {value: 1, label: "加粗显示", class: "babelbox-display-bold", group: "basic"},
+        {value: 2, label: "优雅斜体", class: "babelbox-display-italic", group: "basic"},
+        {value: 3, label: "立体阴影", class: "babelbox-display-text-shadow", group: "basic"},
 
         // 下划线系列
         {value: "underline", label: "下划线系列", disabled: true},
-        {value: 4, label: "蓝色实线", class: "fluent-display-solid-underline", group: "underline"},
-        {value: 5, label: "优雅虚线", class: "fluent-display-dot-underline", group: "underline"},
-        {value: 6, label: "活泼波浪", class: "fluent-display-wavy", group: "underline"},
+        {value: 4, label: "蓝色实线", class: "babelbox-display-solid-underline", group: "underline"},
+        {value: 5, label: "优雅虚线", class: "babelbox-display-dot-underline", group: "underline"},
+        {value: 6, label: "活泼波浪", class: "babelbox-display-wavy", group: "underline"},
 
         // 卡片系列
         {value: "card", label: "卡片系列", disabled: true},
-        {value: 7, label: "简约卡片", class: "fluent-display-card-mode", group: "card"},
-        {value: 8, label: "渐变卡片", class: "fluent-display-modern-card", group: "card"},
-        {value: 9, label: "纸张卡片", class: "fluent-display-paper", group: "card"},
+        {value: 7, label: "简约卡片", class: "babelbox-display-card-mode", group: "card"},
+        {value: 8, label: "渐变卡片", class: "babelbox-display-modern-card", group: "card"},
+        {value: 9, label: "纸张卡片", class: "babelbox-display-paper", group: "card"},
 
         // 高亮系列
         {value: "highlight", label: "高亮系列", disabled: true},
-        {value: 10, label: "学习标记", class: "fluent-display-learning-mode", group: "highlight"},
-        {value: 11, label: "荧光标记", class: "fluent-display-marker", group: "highlight"},
-        {value: 12, label: "柔和渐变", class: "fluent-display-highlight-fade", group: "highlight"},
+        {value: 10, label: "学习标记", class: "babelbox-display-learning-mode", group: "highlight"},
+        {value: 11, label: "荧光标记", class: "babelbox-display-marker", group: "highlight"},
+        {value: 12, label: "柔和渐变", class: "babelbox-display-highlight-fade", group: "highlight"},
 
         // 背景色系列
         {value: "background", label: "背景色系列", disabled: true},
-        {value: 13, label: "温暖黄底", class: "fluent-display-lightyellow", group: "background"},
-        {value: 14, label: "清新蓝底", class: "fluent-display-lightblue", group: "background"},
-        {value: 15, label: "素雅灰底", class: "fluent-display-lightgray", group: "background"},
+        {value: 13, label: "温暖黄底", class: "babelbox-display-lightyellow", group: "background"},
+        {value: 14, label: "清新蓝底", class: "babelbox-display-lightblue", group: "background"},
+        {value: 15, label: "素雅灰底", class: "babelbox-display-lightgray", group: "background"},
 
         // 特殊效果
         {value: "special", label: "特殊效果", disabled: true},
-        {value: 16, label: "典雅引用", class: "fluent-display-quote", group: "special"},
-        {value: 17, label: "轻巧边框", class: "fluent-display-border", group: "special"},
-        {value: 18, label: "阅读焦点", class: "fluent-display-focus", group: "special"},
-        {value: 19, label: "简约底线", class: "fluent-display-clean", group: "special"},
+        {value: 16, label: "典雅引用", class: "babelbox-display-quote", group: "special"},
+        {value: 17, label: "轻巧边框", class: "babelbox-display-border", group: "special"},
+        {value: 18, label: "阅读焦点", class: "babelbox-display-focus", group: "special"},
+        {value: 19, label: "简约底线", class: "babelbox-display-clean", group: "special"},
 
         // 专业样式
         {value: "pro", label: "专业样式", disabled: true},
-        {value: 20, label: "代码风格", class: "fluent-display-tech", group: "pro"},
-        {value: 21, label: "书籍风格", class: "fluent-display-elegant", group: "pro"},
+        {value: 20, label: "代码风格", class: "babelbox-display-tech", group: "pro"},
+        {value: 21, label: "书籍风格", class: "babelbox-display-elegant", group: "pro"},
 
         // 透明度
         {value: "transparent", label: "透明效果", disabled: true},
-        {value: 22, label: "半透明弱化", class: "fluent-display-dimmed", group: "transparent"},
-        {value: 23, label: "轻透明感", class: "fluent-display-transparent-mode", group: "transparent"},
+        {value: 22, label: "半透明弱化", class: "babelbox-display-dimmed", group: "transparent"},
+        {value: 23, label: "轻透明感", class: "babelbox-display-transparent-mode", group: "transparent"},
     ],
     // 悬浮球快捷键选项
     floatingBallHotkeys: [

@@ -331,7 +331,7 @@ describe('后台 feature handlers', () => {
             throw failure;
         }, warn)).resolves.toBe(card);
         expect(warn).toHaveBeenCalledWith(
-            '[FluentRead] word definition translation unavailable; keeping dictionary text',
+            '[BabelBox] word definition translation unavailable; keeping dictionary text',
             failure,
         );
 

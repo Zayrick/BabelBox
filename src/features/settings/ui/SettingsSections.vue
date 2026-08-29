@@ -3,7 +3,7 @@
   <!-- 开关 -->
   <el-row class="margin-bottom margin-left-2em settings-status-row">
     <el-col :span="20" class="settings-control-label lightblue rounded-corner">
-      <span class="popup-text popup-vertical-left">启用 FluentRead</span>
+      <span class="popup-text popup-vertical-left">启用 BabelBox</span>
     </el-col>
     <el-col :span="4" class="settings-control-field flex-end">
       <el-switch class="settings-switch" v-model="config.on" aria-label="插件状态" size="large" @change="handlePluginStateChange" />
@@ -161,10 +161,10 @@
 
       <el-row class="settings-control-row">
         <el-col :span="20" class="settings-control-label lightblue rounded-corner">
-          <SettingsHelpLabel content="暂时隐藏 FluentRead 字幕层，不改变字幕翻译总开关和其他显示偏好。">显示 FluentRead 字幕</SettingsHelpLabel>
+          <SettingsHelpLabel content="暂时隐藏 BabelBox 字幕层，不改变字幕翻译总开关和其他显示偏好。">显示 BabelBox 字幕</SettingsHelpLabel>
         </el-col>
         <el-col :span="4" class="settings-control-field flex-end">
-          <el-switch v-model="config.videoSubtitleVisible" aria-label="显示 FluentRead 视频字幕" :disabled="!config.videoTranslationEnabled" />
+          <el-switch v-model="config.videoSubtitleVisible" aria-label="显示 BabelBox 视频字幕" :disabled="!config.videoTranslationEnabled" />
         </el-col>
       </el-row>
 
@@ -183,7 +183,7 @@
 
       <el-row class="settings-control-row">
         <el-col :span="12" class="settings-control-label lightblue rounded-corner">
-          <SettingsHelpLabel content="只调整 FluentRead 在播放器中显示的原文和译文字号，不改变 YouTube 原生字幕设置。">字幕字号</SettingsHelpLabel>
+          <SettingsHelpLabel content="只调整 BabelBox 在播放器中显示的原文和译文字号，不改变 YouTube 原生字幕设置。">字幕字号</SettingsHelpLabel>
         </el-col>
         <el-col :span="12" class="settings-control-field">
           <el-select v-model="config.videoSubtitleFontSize" aria-label="视频字幕字号" :disabled="!config.videoTranslationEnabled" placeholder="请选择字号">
@@ -301,7 +301,7 @@
     <!-- 右键全文翻译开关 -->
     <el-row v-if="config.on" class="settings-control-row">
       <el-col :span="20" class="settings-control-label lightblue rounded-corner">
-        <SettingsHelpLabel content="在网页右键菜单中显示“流畅阅读翻译”或“流畅阅读取消翻译”入口；关闭后不会影响全文翻译快捷键和悬浮球">右键全文翻译</SettingsHelpLabel>
+        <SettingsHelpLabel content="在网页右键菜单中显示“翻译机翻译”或“翻译机取消翻译”入口；关闭后不会影响全文翻译快捷键和悬浮球">右键全文翻译</SettingsHelpLabel>
       </el-col>
       <el-col :span="4" class="settings-control-field flex-end">
         <el-switch v-model="config.contextMenuEnabled" class="settings-toggle" aria-label="右键全文翻译" />
@@ -806,7 +806,7 @@ void configReady
     lastSerialized = JSON.stringify(config.value);
     hydrated = true;
   })
-  .catch((error) => console.warn('[FluentRead] 无法读取本地配置', error));
+  .catch((error) => console.warn('[BabelBox] 无法读取本地配置', error));
 
 watch(() => JSON.stringify(config.value), (serialized) => {
   if (!hydrated || applyingExternalConfig) return;
@@ -816,7 +816,7 @@ watch(() => JSON.stringify(config.value), (serialized) => {
   void persistConfig(snapshot).catch((error) => {
     // 失败时释放去重标记，下一次修改或 pagehide 仍能提交最新快照。
     if (lastSerialized === serialized) lastSerialized = '';
-    console.warn('[FluentRead] 保存设置失败', error);
+    console.warn('[BabelBox] 保存设置失败', error);
   });
 }, { flush: 'sync' });
 
@@ -825,7 +825,7 @@ watch(() => JSON.stringify(config.value), (serialized) => {
 function persistOnPageExit() {
   if (!hydrated || pageExitSaveStarted) return;
   pageExitSaveStarted = true;
-  void persistConfig(config.value).catch((error) => console.warn('[FluentRead] 设置页关闭前后台保存失败', error));
+  void persistConfig(config.value).catch((error) => console.warn('[BabelBox] 设置页关闭前后台保存失败', error));
 }
 
 onUnmounted(() => {
@@ -1011,7 +1011,7 @@ const styleGroups = computed(() => {
 });
 
 const currentStyleClass = computed(() =>
-  options.styles.find(item => item.value === config.value.style && !item.disabled)?.class || 'fluent-display-default'
+  options.styles.find(item => item.value === config.value.style && !item.disabled)?.class || 'babelbox-display-default'
 );
 
 // 恢复默认模板

@@ -8,7 +8,7 @@ import {
   VOCABULARY_REVIEW_LOG_MAX_PER_ENTRY,
   VOCABULARY_REVIEW_AGAIN_DELAY_MS,
   VOCABULARY_REVIEW_GOOD_INTERVALS_MS,
-  FluentReadVocabularyBookDatabase,
+  BabelBoxVocabularyBookDatabase,
   VocabularyBookRepository,
   advanceVocabularyReviewSession,
   buildAnkiTsv,
@@ -27,12 +27,12 @@ import {
 
 const NOW = 1_000_000;
 let databaseSequence = 0;
-let db: FluentReadVocabularyBookDatabase;
+let db: BabelBoxVocabularyBookDatabase;
 let repository: VocabularyBookRepository;
 
 beforeEach(() => {
   databaseSequence += 1;
-  db = new FluentReadVocabularyBookDatabase(`FluentReadVocabularyBookTest-${databaseSequence}`);
+  db = new BabelBoxVocabularyBookDatabase(`BabelBoxVocabularyBookTest-${databaseSequence}`);
   repository = new VocabularyBookRepository(db);
 });
 
@@ -67,14 +67,14 @@ describe('Anki export', () => {
   it('declares column names as metadata instead of emitting a fake header card', () => {
     const output = buildAnkiTsv(
       ['Term', 'Meaning', 'Context', 'Source', 'Tags'],
-      [['common', '常见', 'A\ncommon example.', '', 'fluentread new']],
+      [['common', '常见', 'A\ncommon example.', '', 'babelbox new']],
     );
 
     expect(output.split('\n')).toEqual([
       '#separator:tab',
       '#html:false',
       '#columns:Term\tMeaning\tContext\tSource\tTags',
-      'common\t常见\tA common example.\t\tfluentread new',
+      'common\t常见\tA common example.\t\tbabelbox new',
     ]);
     expect(output).not.toContain('\nTerm\tMeaning\t');
   });

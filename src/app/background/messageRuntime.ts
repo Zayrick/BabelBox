@@ -145,7 +145,7 @@ export function installBackgroundMessageRuntime(options: BackgroundMessageRuntim
                 queryTabs: () => browser.tabs.query({}) as Promise<Array<{id?: number}>>,
                 sendTabMessage: (tabId, message) => browser.tabs.sendMessage(tabId, message),
             }),
-            logOperationFailure: (error) => console.error('[FluentRead] vocabulary book operation failed:', error),
+            logOperationFailure: (error) => console.error('[BabelBox] vocabulary book operation failed:', error),
         }),
     ];
     const router = createBackgroundMessageRouter(handlers);

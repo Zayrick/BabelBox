@@ -654,7 +654,7 @@ function formatBilingualTranslation(document: ParsedDocument, part: SegmentPart,
         ? preserveSubtitleMarkup(part.source, translation)
         : translation;
     if (document.format === 'html') {
-        return `${part.prefix}${source}${part.suffix}<br><span data-fluent-read-document-translation="true">${escapeHtml(translation)}</span>`;
+        return `${part.prefix}${source}${part.suffix}<br><span data-babelbox-document-translation="true">${escapeHtml(translation)}</span>`;
     }
     if (document.format === 'markdown') {
         return `${part.prefix}${source}${part.suffix}\n> ${translation}`;

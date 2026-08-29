@@ -37,8 +37,8 @@ declare global {
     var GM_registerMenuCommand: undefined | ((label: string, listener: () => void) => unknown);
     var GM_addStyle: undefined | ((css: string) => unknown);
     var unsafeWindow: Window | undefined;
-    var __FLUENTREAD_ICON_DATA__: string | undefined;
-    var __fluentReadUserscriptCss: string | undefined;
+    var __BABELBOX_ICON_DATA__: string | undefined;
+    var __babelboxUserscriptCss: string | undefined;
     var browser: any;
     var chrome: any;
 }

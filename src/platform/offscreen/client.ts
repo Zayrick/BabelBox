@@ -4,7 +4,7 @@ export interface OffscreenMessage {
     readonly type: string;
 }
 
-export const OFFSCREEN_READY_MESSAGE_TYPE = 'FLUENT_READ_OFFSCREEN_READY' as const;
+export const OFFSCREEN_READY_MESSAGE_TYPE = 'BABELBOX_OFFSCREEN_READY' as const;
 
 export interface OffscreenRuntimeApi {
     readonly lastError?: {readonly message?: string};
@@ -102,7 +102,7 @@ export function createOffscreenClient(dependencies: OffscreenClientDependencies)
             creatingDocument = offscreen.createDocument({
                 url: dependencies.documentUrl || 'offscreen.html',
                 reasons: ['DOM_SCRAPING', 'AUDIO_PLAYBACK'],
-                justification: 'FluentRead needs an extension-owned DOM for Translation API, OCR, and CSP-independent TTS playback',
+                justification: 'BabelBox needs an extension-owned DOM for Translation API, OCR, and CSP-independent TTS playback',
             }).finally(() => {
                 creatingDocument = null;
             });

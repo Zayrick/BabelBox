@@ -11,7 +11,7 @@ let mountRequestId = 0;
 let contentScriptContext: ContentScriptContext | null = null;
 
 export function isAreaTranslatorMounted(): boolean {
-  return Boolean(document.getElementById('fluent-read-area-translator-container'));
+  return Boolean(document.getElementById('babelbox-area-translator-container'));
 }
 
 export function mountAreaTranslator(ctx?: ContentScriptContext) {
@@ -21,8 +21,8 @@ export function mountAreaTranslator(ctx?: ContentScriptContext) {
 
   const requestId = ++mountRequestId;
   mountingPromise = createVueShadowUi(contentScriptContext, {
-    name: 'fluent-read-area-translator-ui',
-    hostId: 'fluent-read-area-translator-container',
+    name: 'babelbox-area-translator-ui',
+    hostId: 'babelbox-area-translator-container',
     component: AreaTranslator,
     zIndex: 2_147_483_647,
     // The translated bitmap may contain pixels captured from cross-origin

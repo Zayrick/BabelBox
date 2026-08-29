@@ -1,8 +1,6 @@
 # 翻译服务
 
-FluentRead 不把翻译能力锁定在单一供应商上。新安装的服务列表默认只包含现有的机器翻译服务；AI 服务按需添加。你可以同时启用多个服务，并根据质量、速度、成本和隐私要求选择当前使用的实例。
-
-<img class="doc-screenshot" src="/screenshots/settings-services.png" alt="FluentRead translation service settings" />
+BabelBox 不把翻译能力锁定在单一供应商上。新安装的服务列表默认只包含现有的机器翻译服务；AI 服务按需添加。你可以同时启用多个服务，并根据质量、速度、成本和隐私要求选择当前使用的实例。
 
 ## 如何选择
 
@@ -26,7 +24,7 @@ FluentRead 不把翻译能力锁定在单一供应商上。新安装的服务列
 5. [Wiktionary REST API](https://en.wiktionary.org/api/rest_v1/)：官方 Wiktionary 英文释义回退。
 6. [WiktApi](https://wiktapi.dev/)：基于 Wiktionary/Kaikki 的结构化释义、例句和发音数据，作为最后 Backup；中国境内不可用时会快速超时并继续后备链。
 
-当前词典卡片链路不要求用户在 FluentRead 中配置凭据；公共服务的可用性、频率限制、数据质量和许可条款仍由各自维护者决定。词典卡片会显示数据来源链接；Wiktionary 内容遵循其页面标注的开放许可，使用或再分发时请保留相应署名。Datamuse 官方说明当前免费额度将于 2027 年 1 月 1 日调整为需要凭据，因此它不是唯一依赖。
+当前词典卡片链路不要求用户在 BabelBox 中配置凭据；公共服务的可用性、频率限制、数据质量和许可条款仍由各自维护者决定。词典卡片会显示数据来源链接；Wiktionary 内容遵循其页面标注的开放许可，使用或再分发时请保留相应署名。Datamuse 官方说明当前免费额度将于 2027 年 1 月 1 日调整为需要凭据，因此它不是唯一依赖。
 
 ## 通用配置流程
 
@@ -63,7 +61,7 @@ AI 翻译更适合需要上下文、术语一致性或风格控制的内容。�
 - 模型 ID；
 - 目标语言和可选的高级参数。
 
-不同供应商对兼容接口的实现并不完全相同。如果请求失败，先用服务商官方示例验证地址、模型和密钥，再回到 FluentRead 检查对应的服务实例。
+不同供应商对兼容接口的实现并不完全相同。如果请求失败，先用服务商官方示例验证地址、模型和密钥，再回到 BabelBox 检查对应的服务实例。
 
 ### 自定义接口
 
@@ -75,13 +73,13 @@ AI 翻译更适合需要上下文、术语一致性或风格控制的内容。�
 
 ## MiniMax
 
-MiniMax 同时提供按量付费 API 和 Token Plan 两类权益。两类 Key 不能互换；Token Plan Key 通常以 `sk-cp-` 开头，并且要求对应订阅仍然有效。在 MiniMax 服务配置中分别选择“按量付费（API）”或“Token Plan（套餐/积分）”，再选择 Key 所属的“中国版”或“全球版”（默认中国版）。FluentRead 会根据区域使用对应的 OpenAI 兼容 Chat Completions 地址，并在页面显示当前地址。
+MiniMax 同时提供按量付费 API 和 Token Plan 两类权益。两类 Key 不能互换；Token Plan Key 通常以 `sk-cp-` 开头，并且要求对应订阅仍然有效。在 MiniMax 服务配置中分别选择“按量付费（API）”或“Token Plan（套餐/积分）”，再选择 Key 所属的“中国版”或“全球版”（默认中国版）。BabelBox 会根据区域使用对应的 OpenAI 兼容 Chat Completions 地址，并在页面显示当前地址。
 
 如果看到 `401` 或错误码 `2049`，优先检查计费方式、区域和 Key 是否来自同一套 MiniMax 账户权益；不要把截图或完整 Key 发到 Issue、聊天记录或仓库。
 
 ## 小米 MiMo
 
-小米 MiMo 提供独立的按量付费 API 和 Token Plan。按量付费 Key 通常以 `sk-` 开头，Token Plan Key 以 `tp-` 开头，两类 Key 不能互换。FluentRead 会在 MiMo 服务配置中分别保存计费方式和集群，避免误用 MiniMax 的配置。
+小米 MiMo 提供独立的按量付费 API 和 Token Plan。按量付费 Key 通常以 `sk-` 开头，Token Plan Key 以 `tp-` 开头，两类 Key 不能互换。BabelBox 会在 MiMo 服务配置中分别保存计费方式和集群，避免误用 MiniMax 的配置。
 
 - 按量付费：使用 `https://api.xiaomimimo.com/v1/chat/completions`。
 - Token Plan：中国集群使用 `token-plan-cn.xiaomimimo.com`，新加坡集群使用 `token-plan-sgp.xiaomimimo.com`，欧洲集群使用 `token-plan-ams.xiaomimimo.com`；应以 Token Plan 页面实际提供的 Base URL 为准。

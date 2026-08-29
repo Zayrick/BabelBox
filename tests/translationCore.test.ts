@@ -452,7 +452,7 @@ describe('translation candidate core', () => {
 
     it('can re-evaluate a synthetic owner without disabling descendant safety guards', () => {
         const {document, core} = page(`
-            <span id="synthetic" data-fr-translation-segment="true">
+            <span id="synthetic" data-babelbox-translation-segment="true">
                 Visible source
                 <span hidden>HIDDEN_TEXT</span>
                 <span translate="no">PROTECTED_TEXT</span>
@@ -524,18 +524,18 @@ describe('translation candidate core', () => {
             translated,
         )).toBeNull();
         expect(serializeTranslationSlots([
-            '___FLUENTREAD_test_nonce_0_BEGIN___ collision',
-        ], 'test_nonce').starts[0]).toBe('___FLUENTREAD_test_nonce_1_0_BEGIN___');
+            '___BABELBOX_test_nonce_0_BEGIN___ collision',
+        ], 'test_nonce').starts[0]).toBe('___BABELBOX_test_nonce_1_0_BEGIN___');
         expect(serializeTranslationSlots(['Plain text'], '!!!').starts[0])
-            .toBe('___FLUENTREAD_slots_0_BEGIN___');
+            .toBe('___BABELBOX_slots_0_BEGIN___');
     });
 
     it('serializes only live readable slots', () => {
         const {document, core} = page(`
             <main><p id="target">
                 Leading source
-                <span class="fluent-read-loading">Loading state</span>
-                <span data-fr-translation-owned="true">Owned output</span>
+                <span class="babelbox-loading">Loading state</span>
+                <span data-babelbox-translation-owned="true">Owned output</span>
                 <span translate="no">Do not translate</span>
                 trailing source
             </p></main>
@@ -545,8 +545,8 @@ describe('translation candidate core', () => {
         const rendered = applyTranslationsToSnapshot(snapshot, ['译:leading']);
 
         expect(snapshot.slots.map((slot) => slot.source)).toEqual(['Leading source', 'trailing source']);
-        expect(snapshot.clone.querySelector('.fluent-read-loading')).toBeNull();
-        expect(snapshot.clone.querySelector('[data-fr-translation-owned="true"]')).toBeNull();
+        expect(snapshot.clone.querySelector('.babelbox-loading')).toBeNull();
+        expect(snapshot.clone.querySelector('[data-babelbox-translation-owned="true"]')).toBeNull();
         expect(rendered).toContain('译:leading');
         expect(rendered).toContain('trailing source');
         expect(rendered).toContain('Do not translate');
@@ -683,7 +683,7 @@ describe('translation candidate core', () => {
         const {document, core} = page(`
             <main><dialog open aria-label="Quick search"><p id="search-result">Search suggestion text.</p></dialog>
             <p id="body-copy">Repository body sentence.</p></main>
-        `, 'https://github.com/FluentRead/FluentRead/pulls');
+        `, 'https://github.com/Zayrick/BabelBox/pulls');
 
         const ids = core.discover(document).map((item) => item.element.id);
         expect(ids).not.toContain('search-result');
@@ -737,7 +737,7 @@ describe('translation candidate core', () => {
     it('keeps heading text beside an interactive control as its own inline run', () => {
         const {document, core} = page(`
             <main>
-                <h1 id="page-heading">Install FluentRead <button id="copy-button">Copy</button></h1>
+                <h1 id="page-heading">Install BabelBox <button id="copy-button">Copy</button></h1>
             </main>
         `, 'https://example.test/docs');
         const headingText = document.querySelector('#page-heading')?.firstChild;
@@ -1034,9 +1034,9 @@ describe('translation candidate core', () => {
         const {document, core} = page(`
             <main><div id="parent">
                 Intro text.
-                <span data-fr-translation-segment="true" id="owned-run">Owned translated run.</span>
-                <span class="fluent-read-bilingual-content" id="bilingual">Existing translation.</span>
-                <span class="fluent-read-loading" id="extension-ui"><span id="extension-child">Loading</span></span>
+                <span data-babelbox-translation-segment="true" id="owned-run">Owned translated run.</span>
+                <span class="babelbox-bilingual-content" id="bilingual">Existing translation.</span>
+                <span class="babelbox-loading" id="extension-ui"><span id="extension-child">Loading</span></span>
             </div></main>
         `);
         const parent = document.querySelector('#parent')!;

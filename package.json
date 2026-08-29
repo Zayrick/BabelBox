@@ -1,10 +1,20 @@
 {
-  "name": "流畅阅读",
-  "description": "一款革命性的浏览器开源翻译插件，让所有人都能够拥有母语般的阅读体验",
+  "name": "babelbox",
+  "description": "BabelBox（翻译机）是一款提供全文双语翻译、划词翻译和多翻译服务支持的开源浏览器扩展",
   "private": true,
   "version": "0.0.31",
   "userscriptVersion": "2.0.0",
   "type": "module",
+  "license": "GPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Zayrick/BabelBox.git"
+  },
+  "homepage": "https://github.com/Zayrick/BabelBox",
+  "bugs": {
+    "url": "https://github.com/Zayrick/BabelBox/issues"
+  },
+  "funding": "https://www.unicef.org/",
   "engines": {
     "node": "^22.13.0 || >=24.0.0"
   },

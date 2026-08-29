@@ -1,11 +1,11 @@
-export const YOUTUBE_TIMED_TEXT_MESSAGE = 'fluent-read-youtube-timedtext';
-export const YOUTUBE_BRIDGE_DISPOSE_EVENT = 'fluentread-youtube-bridge-dispose';
-export const YOUTUBE_BRIDGE_ENABLE_EVENT = 'fluentread-youtube-bridge-enable';
-export const YOUTUBE_BRIDGE_STATE_KEY = '__fluentReadYoutubeTimedTextBridgeState__';
-export const YOUTUBE_BRIDGE_LIFECYCLE_STATE_KEY = '__fluentReadYoutubeTimedTextBridgeLifecycleState__';
+export const YOUTUBE_TIMED_TEXT_MESSAGE = 'babelbox-youtube-timedtext';
+export const YOUTUBE_BRIDGE_DISPOSE_EVENT = 'babelbox-youtube-bridge-dispose';
+export const YOUTUBE_BRIDGE_ENABLE_EVENT = 'babelbox-youtube-bridge-enable';
+export const YOUTUBE_BRIDGE_STATE_KEY = '__babelboxYoutubeTimedTextBridgeState__';
+export const YOUTUBE_BRIDGE_LIFECYCLE_STATE_KEY = '__babelboxYoutubeTimedTextBridgeLifecycleState__';
 
 export interface TimedTextPayload {
-    readonly source: 'fluent-read';
+    readonly source: 'babelbox';
     readonly type: typeof YOUTUBE_TIMED_TEXT_MESSAGE;
     readonly url: string;
     readonly responseText: string;
@@ -91,7 +91,7 @@ export function createYoutubeTimedTextPayload(
 ): TimedTextPayload | null {
     if (typeof responseText !== 'string' || !responseText || !isYoutubeTimedTextUrl(url, baseHref)) return null;
     return {
-        source: 'fluent-read',
+        source: 'babelbox',
         type: YOUTUBE_TIMED_TEXT_MESSAGE,
         url,
         responseText,
@@ -129,7 +129,7 @@ export function installYoutubeTimedTextBridgeCore(
     const previous = environment.stateHost[YOUTUBE_BRIDGE_STATE_KEY] as YoutubeBridgeState | undefined;
     previous?.dispose?.();
 
-    const owner = Symbol('fluentread-youtube-timedtext-bridge');
+    const owner = Symbol('babelbox-youtube-timedtext-bridge');
     const originalFetch = environment.fetch.get();
     const originalOpen = environment.xhrOpen.get();
     const originalSend = environment.xhrSend.get();
@@ -224,7 +224,7 @@ export function installYoutubeTimedTextBridgeLifecycleCore(
     const previous = environment.stateHost[YOUTUBE_BRIDGE_LIFECYCLE_STATE_KEY] as YoutubeBridgeLifecycleState | undefined;
     previous?.dispose?.();
 
-    const owner = Symbol('fluentread-youtube-timedtext-bridge-lifecycle');
+    const owner = Symbol('babelbox-youtube-timedtext-bridge-lifecycle');
     let disposeBridge = installYoutubeTimedTextBridgeCore(environment);
     const disable = () => disposeBridge();
     const enable = () => {

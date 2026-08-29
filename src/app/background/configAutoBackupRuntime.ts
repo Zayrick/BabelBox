@@ -1,6 +1,6 @@
 import type {ConfigAutoBackupState} from '@/src/services/config/autoBackup';
 
-export const CONFIG_AUTO_BACKUP_ALARM = 'fluentread-config-auto-backup' as const;
+export const CONFIG_AUTO_BACKUP_ALARM = 'babelbox-config-auto-backup' as const;
 export const CONFIG_AUTO_BACKUP_INTERVAL_MINUTES = 6 * 60;
 export const CONFIG_AUTO_BACKUP_INTERVAL_MS = CONFIG_AUTO_BACKUP_INTERVAL_MINUTES * 60 * 1000;
 
@@ -61,7 +61,7 @@ export function installConfigAutoBackupRuntime(
     dependencies.alarms.onAlarm.addListener((alarm) => {
         if (alarm.name !== CONFIG_AUTO_BACKUP_ALARM) return;
         void captureIfDue().catch((error) => {
-            dependencies.warn('[FluentRead] 自动配置备份执行失败', error);
+            dependencies.warn('[BabelBox] 自动配置备份执行失败', error);
         });
     });
 
@@ -80,7 +80,7 @@ export function installConfigAutoBackupRuntime(
             });
         }
     })().catch((error) => {
-        dependencies.warn('[FluentRead] 自动配置备份任务安装失败', error);
+        dependencies.warn('[BabelBox] 自动配置备份任务安装失败', error);
     });
 
     return ready;

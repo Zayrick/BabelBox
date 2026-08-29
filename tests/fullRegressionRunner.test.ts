@@ -5,11 +5,11 @@ import {describe, expect, it} from 'vitest';
 const PROJECT_ROOT = resolve(__dirname, '..');
 const RUNNER = resolve(PROJECT_ROOT, 'scripts/testing/run-full-regression.mjs');
 const BROWSER_ARGS = [
-    '--playwright-root', '/tmp/fluentread-playwright-runtime',
+    '--playwright-root', '/tmp/babelbox-playwright-runtime',
     '--browser-path', '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
     '--focus-safe-helper', 'scripts/focus-safe-browser.cjs',
     '--extension-dir', '.output/chrome-mv3',
-    '--artifacts-dir', '/tmp/fluentread-regression-artifacts',
+    '--artifacts-dir', '/tmp/babelbox-regression-artifacts',
 ];
 
 function runRunner(args: string[]) {
@@ -18,10 +18,10 @@ function runRunner(args: string[]) {
         encoding: 'utf8',
         env: {
             ...process.env,
-            FLUENTREAD_BROWSER_PATH: '',
-            FLUENTREAD_EXTENSION_DIR: '',
-            FLUENTREAD_FOCUS_SAFE_HELPER: '',
-            FLUENTREAD_REGRESSION_ARTIFACTS_DIR: '',
+            BABELBOX_BROWSER_PATH: '',
+            BABELBOX_EXTENSION_DIR: '',
+            BABELBOX_FOCUS_SAFE_HELPER: '',
+            BABELBOX_REGRESSION_ARTIFACTS_DIR: '',
             PLAYWRIGHT_ROOT: '',
         },
     });
@@ -35,14 +35,14 @@ function dryRun(args: string[]) {
 
 describe('full regression runner', () => {
     it('accepts the package-manager argument separator before runner flags', () => {
-        const plan = dryRun(['--', '--artifacts-dir', '/tmp/fluentread-pnpm-separator']);
+        const plan = dryRun(['--', '--artifacts-dir', '/tmp/babelbox-pnpm-separator']);
 
         expect(plan.mode).toBe('local');
-        expect(plan.artifactsDir).toBe('/tmp/fluentread-pnpm-separator');
+        expect(plan.artifactsDir).toBe('/tmp/babelbox-pnpm-separator');
     });
 
     it('defaults to the deterministic local plan only', () => {
-        const plan = dryRun(['--artifacts-dir', '/tmp/fluentread-local-only']);
+        const plan = dryRun(['--artifacts-dir', '/tmp/babelbox-local-only']);
 
         expect(plan.mode).toBe('local');
         expect(plan.policies).toMatchObject({
@@ -86,7 +86,7 @@ describe('full regression runner', () => {
             expect(step.args).toContain(resolve(PROJECT_ROOT, 'scripts/focus-safe-browser.cjs'));
             expect(step.args).toContain('--background');
             expect(step.args).toContain('--artifacts-dir');
-            expect(step.artifactsDir).toBe(`/tmp/fluentread-regression-artifacts/${step.id}`);
+            expect(step.artifactsDir).toBe(`/tmp/babelbox-regression-artifacts/${step.id}`);
             expect(step.focusPolicy).toBe('launchservices-no-foreground');
             expect(step.windowPlacement.state).toBe('normal');
         }
@@ -94,7 +94,7 @@ describe('full regression runner', () => {
         const userscriptSmoke = browserSteps.find((step: {id: string}) => step.id === 'userscript-smoke');
         expect(userscriptSmoke).toBeDefined();
         expect(userscriptSmoke!.args).toContain('--artifact');
-        expect(userscriptSmoke!.args).toContain(resolve(PROJECT_ROOT, '.output/userscript/fluent-read.user.js'));
+        expect(userscriptSmoke!.args).toContain(resolve(PROJECT_ROOT, '.output/userscript/babelbox.user.js'));
         expect(userscriptSmoke!.args).not.toContain('--extension-dir');
         const stepIds = plan.steps.map((step: {id: string}) => step.id);
         expect(stepIds.indexOf('userscript-build')).toBeLessThan(stepIds.indexOf('userscript-smoke'));

@@ -71,7 +71,7 @@ describe('Vue Shadow UI 平台适配器', () => {
 
     expect(result).toBe(fixture.ui);
     expect(fixture.host.id).toBe('fixture-host');
-    expect(fixture.attributes.get('data-fluent-read-ui')).toBe('fixture-ui');
+    expect(fixture.attributes.get('data-babelbox-ui')).toBe('fixture-ui');
     expect(fixture.ui.mount).toHaveBeenCalledOnce();
   });
 

@@ -1,23 +1,23 @@
 <template>
-  <div v-show="isSelecting || phase !== 'idle'" class="fr-area-translator-root" @pointerdown.stop>
-    <div v-if="isSelecting && selectionRect" class="fr-area-selection" :style="areaStyle(selectionRect)" aria-hidden="true">
+  <div v-show="isSelecting || phase !== 'idle'" class="babelbox-area-translator-root" @pointerdown.stop>
+    <div v-if="isSelecting && selectionRect" class="babelbox-area-selection" :style="areaStyle(selectionRect)" aria-hidden="true">
       <span>松开鼠标翻译</span>
     </div>
 
-    <div v-else-if="phase === 'loading' && activeRect && !capturePending" class="fr-area-loading" :style="areaStyle(activeRect)" role="status" aria-live="polite">
-      <span class="fr-area-spinner" aria-hidden="true" />
+    <div v-else-if="phase === 'loading' && activeRect && !capturePending" class="babelbox-area-loading" :style="areaStyle(activeRect)" role="status" aria-live="polite">
+      <span class="babelbox-area-spinner" aria-hidden="true" />
       <span>正在识别并翻译…</span>
     </div>
 
-    <section v-else-if="phase === 'translated' && activeRect" class="fr-area-result" :class="{ 'fr-dark-theme': isDarkTheme }" :style="areaStyle(activeRect)" role="dialog" aria-label="圈选翻译结果">
+    <section v-else-if="phase === 'translated' && activeRect" class="babelbox-area-result" :class="{ 'babelbox-dark-theme': isDarkTheme }" :style="areaStyle(activeRect)" role="dialog" aria-label="圈选翻译结果">
       <img :src="translatedImage" alt="圈选翻译结果" draggable="false" />
-      <div class="fr-area-toolbar">
+      <div class="babelbox-area-toolbar">
         <span>圈选翻译</span>
         <button type="button" aria-label="关闭圈选翻译结果" title="关闭" @click="clearResult"><X aria-hidden="true" /></button>
       </div>
     </section>
 
-    <section v-else-if="phase === 'error' && activeRect" class="fr-area-error" :class="{ 'fr-dark-theme': isDarkTheme }" :style="errorStyle(activeRect)" role="alert">
+    <section v-else-if="phase === 'error' && activeRect" class="babelbox-area-error" :class="{ 'babelbox-dark-theme': isDarkTheme }" :style="errorStyle(activeRect)" role="alert">
       <strong>圈选翻译失败</strong>
       <span>{{ errorMessage }}</span>
       <div>
@@ -78,7 +78,7 @@ function updateTheme(): void {
 }
 
 function isInsideExtensionUi(target: EventTarget | null): boolean {
-  const host = document.getElementById('fluent-read-area-translator-container');
+  const host = document.getElementById('babelbox-area-translator-container');
   return Boolean(host && target instanceof Node && host.contains(target));
 }
 
@@ -275,47 +275,47 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.fr-area-translator-root { --fr-area-font-caption: 10px; --fr-area-font-small: 11px; --fr-area-font-body: 13px; --fr-area-weight-semibold: 700; position: fixed; inset: 0; z-index: 2147483647; width: 100vw; height: 100vh; pointer-events: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #25252a; }
-.fr-area-selection { position: fixed; box-sizing: border-box; border: 2px solid #ef4b86; border-radius: 9px; background: rgba(239, 75, 134, .12); box-shadow: 0 0 0 1px rgba(255, 255, 255, .8), 0 8px 26px rgba(163, 35, 91, .2); pointer-events: none; }
-.fr-area-selection span { position: absolute; left: 8px; top: 8px; padding: 4px 8px; border-radius: 999px; background: rgba(44, 35, 43, .88); color: #fff; font-size: var(--fr-area-font-small); white-space: nowrap; }
-.fr-area-loading, .fr-area-error { position: fixed; box-sizing: border-box; pointer-events: auto; }
-.fr-area-loading { display: flex; align-items: center; justify-content: center; gap: 9px; min-width: 190px; min-height: 58px; border: 1px solid rgba(239, 75, 134, .55); border-radius: 12px; background: rgba(38, 31, 39, .8); color: #fff; font-size: var(--fr-area-font-body); box-shadow: 0 12px 30px rgba(35, 25, 38, .24); backdrop-filter: blur(8px); }
-.fr-area-spinner { width: 18px; height: 18px; border: 2px solid rgba(255, 255, 255, .35); border-top-color: #ef4b86; border-radius: 50%; animation: fr-area-spin .7s linear infinite; }
-@keyframes fr-area-spin { to { transform: rotate(360deg); } }
-.fr-area-result,
-.fr-area-error {
-  --fr-area-result-border: rgba(28, 28, 36, .14);
-  --fr-area-result-surface: #fff;
-  --fr-area-error-border: #f0b4c8;
-  --fr-area-error-surface: rgba(255, 248, 250, .98);
-  --fr-area-error-ink: #6c263d;
-  --fr-area-error-button-border: #e6a3ba;
-  --fr-area-error-button-surface: #fff;
-  --fr-area-error-button-ink: #c43b63;
-  --fr-area-error-button-hover: #fff0f5;
+.babelbox-area-translator-root { --babelbox-area-font-caption: 10px; --babelbox-area-font-small: 11px; --babelbox-area-font-body: 13px; --babelbox-area-weight-semibold: 700; position: fixed; inset: 0; z-index: 2147483647; width: 100vw; height: 100vh; pointer-events: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #25252a; }
+.babelbox-area-selection { position: fixed; box-sizing: border-box; border: 2px solid #ef4b86; border-radius: 9px; background: rgba(239, 75, 134, .12); box-shadow: 0 0 0 1px rgba(255, 255, 255, .8), 0 8px 26px rgba(163, 35, 91, .2); pointer-events: none; }
+.babelbox-area-selection span { position: absolute; left: 8px; top: 8px; padding: 4px 8px; border-radius: 999px; background: rgba(44, 35, 43, .88); color: #fff; font-size: var(--babelbox-area-font-small); white-space: nowrap; }
+.babelbox-area-loading, .babelbox-area-error { position: fixed; box-sizing: border-box; pointer-events: auto; }
+.babelbox-area-loading { display: flex; align-items: center; justify-content: center; gap: 9px; min-width: 190px; min-height: 58px; border: 1px solid rgba(239, 75, 134, .55); border-radius: 12px; background: rgba(38, 31, 39, .8); color: #fff; font-size: var(--babelbox-area-font-body); box-shadow: 0 12px 30px rgba(35, 25, 38, .24); backdrop-filter: blur(8px); }
+.babelbox-area-spinner { width: 18px; height: 18px; border: 2px solid rgba(255, 255, 255, .35); border-top-color: #ef4b86; border-radius: 50%; animation: babelbox-area-spin .7s linear infinite; }
+@keyframes babelbox-area-spin { to { transform: rotate(360deg); } }
+.babelbox-area-result,
+.babelbox-area-error {
+  --babelbox-area-result-border: rgba(28, 28, 36, .14);
+  --babelbox-area-result-surface: #fff;
+  --babelbox-area-error-border: #f0b4c8;
+  --babelbox-area-error-surface: rgba(255, 248, 250, .98);
+  --babelbox-area-error-ink: #6c263d;
+  --babelbox-area-error-button-border: #e6a3ba;
+  --babelbox-area-error-button-surface: #fff;
+  --babelbox-area-error-button-ink: #c43b63;
+  --babelbox-area-error-button-hover: #fff0f5;
 }
-.fr-area-result { position: fixed; overflow: hidden; border: 1px solid var(--fr-area-result-border); border-radius: 10px; background: var(--fr-area-result-surface); box-shadow: 0 14px 35px rgba(30, 28, 40, .24); pointer-events: auto; }
-.fr-area-result img { display: block; width: 100%; height: 100%; user-select: none; -webkit-user-drag: none; }
-.fr-area-toolbar { position: absolute; top: 7px; right: 7px; display: flex; align-items: center; gap: 5px; padding: 3px 4px 3px 8px; border-radius: 999px; background: rgba(30, 27, 34, .82); color: #fff; font-size: var(--fr-area-font-caption); line-height: 22px; pointer-events: none; backdrop-filter: blur(6px); }
-.fr-area-toolbar button { width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .14); color: #fff; line-height: 18px; cursor: pointer; pointer-events: auto; }
-.fr-area-toolbar button svg { width: 13px; height: 13px; }
-.fr-area-toolbar button:hover, .fr-area-toolbar button:focus-visible { background: rgba(255, 255, 255, .28); outline: none; }
-.fr-area-error { display: flex; flex-direction: column; gap: 7px; min-width: 230px; max-width: 340px; padding: 13px; border: 1px solid var(--fr-area-error-border); border-radius: 12px; background: var(--fr-area-error-surface); color: var(--fr-area-error-ink); font-size: var(--fr-area-font-small); box-shadow: 0 12px 30px rgba(75, 30, 47, .2); }
-.fr-area-error strong { font-size: var(--fr-area-font-body); font-weight: var(--fr-area-weight-semibold); }
-.fr-area-error span { line-height: 1.45; overflow-wrap: anywhere; }
-.fr-area-error div { display: flex; gap: 7px; }
-.fr-area-error button { padding: 5px 10px; border: 1px solid var(--fr-area-error-button-border); border-radius: 7px; background: var(--fr-area-error-button-surface); color: var(--fr-area-error-button-ink); cursor: pointer; }
-.fr-area-error button:hover, .fr-area-error button:focus-visible { background: var(--fr-area-error-button-hover); outline: none; }
-.fr-dark-theme {
-  --fr-area-result-border: #53535f;
-  --fr-area-result-surface: #2e2e38;
-  --fr-area-error-border: #744356;
-  --fr-area-error-surface: rgba(47, 35, 43, .98);
-  --fr-area-error-ink: #ffd8e4;
-  --fr-area-error-button-border: #9d5871;
-  --fr-area-error-button-surface: #3d2c36;
-  --fr-area-error-button-ink: #ffd8e4;
-  --fr-area-error-button-hover: #513443;
+.babelbox-area-result { position: fixed; overflow: hidden; border: 1px solid var(--babelbox-area-result-border); border-radius: 10px; background: var(--babelbox-area-result-surface); box-shadow: 0 14px 35px rgba(30, 28, 40, .24); pointer-events: auto; }
+.babelbox-area-result img { display: block; width: 100%; height: 100%; user-select: none; -webkit-user-drag: none; }
+.babelbox-area-toolbar { position: absolute; top: 7px; right: 7px; display: flex; align-items: center; gap: 5px; padding: 3px 4px 3px 8px; border-radius: 999px; background: rgba(30, 27, 34, .82); color: #fff; font-size: var(--babelbox-area-font-caption); line-height: 22px; pointer-events: none; backdrop-filter: blur(6px); }
+.babelbox-area-toolbar button { width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .14); color: #fff; line-height: 18px; cursor: pointer; pointer-events: auto; }
+.babelbox-area-toolbar button svg { width: 13px; height: 13px; }
+.babelbox-area-toolbar button:hover, .babelbox-area-toolbar button:focus-visible { background: rgba(255, 255, 255, .28); outline: none; }
+.babelbox-area-error { display: flex; flex-direction: column; gap: 7px; min-width: 230px; max-width: 340px; padding: 13px; border: 1px solid var(--babelbox-area-error-border); border-radius: 12px; background: var(--babelbox-area-error-surface); color: var(--babelbox-area-error-ink); font-size: var(--babelbox-area-font-small); box-shadow: 0 12px 30px rgba(75, 30, 47, .2); }
+.babelbox-area-error strong { font-size: var(--babelbox-area-font-body); font-weight: var(--babelbox-area-weight-semibold); }
+.babelbox-area-error span { line-height: 1.45; overflow-wrap: anywhere; }
+.babelbox-area-error div { display: flex; gap: 7px; }
+.babelbox-area-error button { padding: 5px 10px; border: 1px solid var(--babelbox-area-error-button-border); border-radius: 7px; background: var(--babelbox-area-error-button-surface); color: var(--babelbox-area-error-button-ink); cursor: pointer; }
+.babelbox-area-error button:hover, .babelbox-area-error button:focus-visible { background: var(--babelbox-area-error-button-hover); outline: none; }
+.babelbox-dark-theme {
+  --babelbox-area-result-border: #53535f;
+  --babelbox-area-result-surface: #2e2e38;
+  --babelbox-area-error-border: #744356;
+  --babelbox-area-error-surface: rgba(47, 35, 43, .98);
+  --babelbox-area-error-ink: #ffd8e4;
+  --babelbox-area-error-button-border: #9d5871;
+  --babelbox-area-error-button-surface: #3d2c36;
+  --babelbox-area-error-button-ink: #ffd8e4;
+  --babelbox-area-error-button-hover: #513443;
 }
-@media (prefers-reduced-motion: reduce) { .fr-area-spinner { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .babelbox-area-spinner { animation: none; } }
 </style>

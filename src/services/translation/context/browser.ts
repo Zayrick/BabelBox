@@ -39,8 +39,8 @@ const PAGE_CONTEXT_EXCLUDED_SELECTOR = [
     '[role="textbox"]', '[role="searchbox"]', '[role="combobox"]',
     '[style*="display: none" i]', '[style*="visibility: hidden" i]',
     '[translate="no"]', '[data-notranslate]',
-    '.fluent-read-bilingual-content', '.fluent-read-loading', '.fluent-read-retry-wrapper',
-    '[data-fr-translation-owned="true"]', '[data-fr-temp-style]',
+    '.babelbox-bilingual-content', '.babelbox-loading', '.babelbox-retry-wrapper',
+    '[data-babelbox-translation-owned="true"]', '[data-babelbox-temp-style]',
 ].join(',');
 
 const SENSITIVE_SNAPSHOT_ATTRIBUTE = /^(?:value|checked|selected|name|autocomplete|title|aria-label|aria-description|aria-valuetext|href|src|srcset|action|formaction|poster|style|data-.+|on.+)$/iu;
@@ -175,7 +175,7 @@ function captureReadablePage(): CapturedReadablePage {
     try {
         documentSnapshot = createDefuddleSnapshotDocument();
     } catch (error) {
-        console.warn('[FluentRead] failed to capture detached document snapshot:', error);
+        console.warn('[BabelBox] failed to capture detached document snapshot:', error);
     }
 
     let bodySnapshot: HTMLElement | null = null;
@@ -184,7 +184,7 @@ function captureReadablePage(): CapturedReadablePage {
             bodySnapshot = document.body?.cloneNode(true) as HTMLElement | null;
             if (bodySnapshot) sanitizePageContextSnapshot(bodySnapshot);
         } catch (error) {
-            console.warn('[FluentRead] failed to capture detached body snapshot:', error);
+            console.warn('[BabelBox] failed to capture detached body snapshot:', error);
         }
     }
     return {url, documentSnapshot, bodySnapshot, boundedText: null};
@@ -222,7 +222,7 @@ async function extractReadablePageText(source: CapturedReadablePage): Promise<st
     } catch (error) {
         // Content extraction is an enhancement. A parser/runtime failure must
         // never prevent the normal translation request from being sent.
-        console.warn('[FluentRead] readable page extraction failed; using body text:', error);
+        console.warn('[BabelBox] readable page extraction failed; using body text:', error);
     }
 
     const fallback = source.documentSnapshot?.body || source.bodySnapshot;

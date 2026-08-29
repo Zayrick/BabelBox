@@ -108,7 +108,7 @@ export class Config {
     videoTranslationEnabled: boolean; // 是否启用视频字幕翻译 Beta
     videoService: string; // 视频字幕独立翻译服务
     videoServiceDefaultMigrated: boolean; // 是否已迁移视频字幕默认服务
-    videoSubtitleVisible: boolean; // 是否显示 FluentRead 视频字幕
+    videoSubtitleVisible: boolean; // 是否显示 BabelBox 视频字幕
     videoSubtitleDisplayMode: VideoSubtitleDisplayMode; // 视频字幕显示模式
     videoSubtitleFontSize: number; // 视频字幕字号百分比
     token: IMapping;
@@ -343,9 +343,9 @@ export function normalizeConfig(value: unknown): Config {
             : false;
     }
     delete (normalized as unknown as Record<string, unknown>).translationStatus;
-    // __fluentConfigRevision 只用于 storage 的写入顺序判断，不能进入运行时
+    // __babelboxConfigRevision 只用于 storage 的写入顺序判断，不能进入运行时
     // 配置或历史快照，否则默认配置与同值的页面快照会因内部字段不同而无法去重。
-    delete (normalized as unknown as Record<string, unknown>).__fluentConfigRevision;
+    delete (normalized as unknown as Record<string, unknown>).__babelboxConfigRevision;
 
     normalized.token = normalizeStringMapping(source.token);
     normalized.serviceCredentials = normalizeServiceCredentials(source.serviceCredentials);

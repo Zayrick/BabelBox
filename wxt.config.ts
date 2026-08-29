@@ -13,13 +13,13 @@ import {resolveBrowserCapabilities} from './src/platform/browser/capabilities';
 
 
 const packageJson = JSON.parse(fs.readFileSync(resolve(import.meta.dirname, 'package.json'), 'utf-8'));
-const firefoxRunnerBinary = process.env.FLUENTREAD_FIREFOX_RUNNER_BINARY;
-const firefoxRunnerProfile = process.env.FLUENTREAD_FIREFOX_RUNNER_PROFILE;
-const firefoxRunnerStartUrl = process.env.FLUENTREAD_FIREFOX_RUNNER_START_URL;
+const firefoxRunnerBinary = process.env.BABELBOX_FIREFOX_RUNNER_BINARY;
+const firefoxRunnerProfile = process.env.BABELBOX_FIREFOX_RUNNER_PROFILE;
+const firefoxRunnerStartUrl = process.env.BABELBOX_FIREFOX_RUNNER_START_URL;
 const requireFromConfig = createRequire(import.meta.url);
 const dependencyPublicAssetPrefixes = [
-    'fluent-read-ocr/core/',
-    'fluent-read-ocr/worker/',
+    'babelbox-ocr/core/',
+    'babelbox-ocr/worker/',
     'pdfjs/',
 ];
 
@@ -56,19 +56,19 @@ export function resolveDependencyPublicAssets(): CopiedPublicFile[] {
     return [
         {
             absoluteSrc: resolve(tesseractRoot, 'dist/worker.min.js'),
-            relativeDest: 'fluent-read-ocr/worker/worker.min.js',
+            relativeDest: 'babelbox-ocr/worker/worker.min.js',
         },
         {
             absoluteSrc: resolve(tesseractRoot, 'dist/worker.min.js.LICENSE.txt'),
-            relativeDest: 'fluent-read-ocr/worker/worker.min.js.LICENSE.txt',
+            relativeDest: 'babelbox-ocr/worker/worker.min.js.LICENSE.txt',
         },
         {
             absoluteSrc: resolve(tesseractRoot, 'LICENSE.md'),
-            relativeDest: 'fluent-read-ocr/worker/LICENSE.md',
+            relativeDest: 'babelbox-ocr/worker/LICENSE.md',
         },
         {
             absoluteSrc: resolve(tesseractCoreRoot, 'LICENSE'),
-            relativeDest: 'fluent-read-ocr/core/LICENSE',
+            relativeDest: 'babelbox-ocr/core/LICENSE',
         },
         ...[
             'tesseract-core-lstm.wasm.js',
@@ -76,7 +76,7 @@ export function resolveDependencyPublicAssets(): CopiedPublicFile[] {
             'tesseract-core-simd-lstm.wasm.js',
         ].map((fileName): CopiedPublicFile => ({
             absoluteSrc: resolve(tesseractCoreRoot, fileName),
-            relativeDest: `fluent-read-ocr/core/${fileName}`,
+            relativeDest: `babelbox-ocr/core/${fileName}`,
         })),
         ...['cmaps', 'iccs', 'standard_fonts', 'wasm'].flatMap(directory =>
             copiedDirectoryAssets(resolve(pdfjsRoot, directory), `pdfjs/${directory}`)),
@@ -126,6 +126,8 @@ export function createExtensionManifest(
 ): UserManifest {
     const capabilities = resolveBrowserCapabilities(env);
     return {
+        name: 'BabelBox 翻译机',
+        description: 'BabelBox 提供全文双语翻译、划词翻译和多翻译服务支持。',
         permissions: [
             'storage',
             'alarms',
@@ -151,7 +153,7 @@ export function createExtensionManifest(
         ],
         browser_specific_settings: env.browser === 'firefox' ? {
             gecko: {
-                id: '{3096bd53-3bda-4556-b076-ebf47442a5c1}',
+                id: '{c3d6b35f-2a87-41cd-a9b8-5fa2e21f129d}',
             },
         } : undefined,
         web_accessible_resources: [

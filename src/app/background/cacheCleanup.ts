@@ -1,7 +1,7 @@
 import {browser} from 'wxt/browser';
 import {cleanupTranslationCache} from '@/src/app/translation/runtime';
 
-export const TRANSLATION_CACHE_CLEANUP_ALARM = 'fluentread-translation-cache-cleanup';
+export const TRANSLATION_CACHE_CLEANUP_ALARM = 'babelbox-translation-cache-cleanup';
 
 interface BrowserAlarm {
     name: string;
