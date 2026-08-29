@@ -2,15 +2,11 @@ import {
     evaluateHardGuard,
     getComposedParent,
     isDocumentSurface,
-    maxComposedAncestorDepth,
 } from './dom';
 import {
     hasMeaningfulTranslationTextInNodes,
 } from './text';
 import type {TranslationTextProtectionCache} from './text';
-
-const maxDirectRunNodes = 2048;
-const maxBlockChildrenToProbe = 128;
 
 function shouldKeepElementOriginal(
     element: Element,
@@ -65,7 +61,7 @@ export function isSemanticHeadingElement(element: Element): boolean {
     return semanticHeadingTags.has(element.tagName.toLowerCase());
 }
 
-export function getElementDisplay(element: Element): string {
+function getElementDisplay(element: Element): string {
     try {
         const view = element.ownerDocument?.defaultView;
         return view?.getComputedStyle(element).display.trim().toLowerCase() ?? '';
@@ -96,12 +92,7 @@ function hasComposedAncestor(
     predicate: (ancestor: Element) => boolean,
 ): boolean {
     let current: Element | null = getComposedParent(element);
-    let depth = 0;
     while (current && !isDocumentSurface(current)) {
-        depth += 1;
-        // Do not grant a content-context exception when ancestry is too deep
-        // to classify safely. Discovery applies the same hard depth bound.
-        if (depth > maxComposedAncestorDepth) return false;
         if (predicate(current)) return true;
         current = getComposedParent(current);
     }
@@ -145,12 +136,7 @@ export function isStructuralContainer(element: Element): boolean {
 
 export function hasStructuralAncestor(element: Element): boolean {
     let current: Element | null = getComposedParent(element);
-    let depth = 0;
     while (current && !isDocumentSurface(current)) {
-        depth += 1;
-        // Conservatively treat an adversarially deep subtree as structural.
-        // Full-page discovery will prune it through the same hard depth guard.
-        if (depth > maxComposedAncestorDepth) return true;
         if (isStructuralContainer(current)) return true;
         current = getComposedParent(current);
     }
@@ -164,23 +150,21 @@ export function isTranslationControlElement(element: Element): boolean {
     return role === 'button' || role === 'menuitem';
 }
 
-export function hasDirectReadableText(
+function hasDirectReadableText(
     element: Element,
     shouldStayOriginal?: (element: Element) => boolean,
     protectionCache?: TranslationTextProtectionCache,
 ): boolean {
-    if (element.childNodes.length > maxDirectRunNodes) return false;
     const inlineNodes = Array.from(element.childNodes).filter((child) =>
         child.nodeType === 3 || (child.nodeType === 1 && !isBlockBoundary(child as Element)));
     return hasMeaningfulTranslationTextInNodes(inlineNodes, shouldStayOriginal, protectionCache);
 }
 
-export function hasReadableBlockChild(
+function hasReadableBlockChild(
     element: Element,
     shouldStayOriginal?: (element: Element) => boolean,
     protectionCache?: TranslationTextProtectionCache,
 ): boolean {
-    if (element.children.length > maxBlockChildrenToProbe) return true;
     return Array.from(element.children).some((child) => {
         if (!isBlockBoundary(child)) return false;
         return hasMeaningfulTranslationTextInNodes([child], shouldStayOriginal, protectionCache);
@@ -202,7 +186,6 @@ export function getDirectInlineRuns(
     if (isDocumentSurface(element) || isStructuralContainer(element) ||
         (!skipStructuralAncestorCheck && hasStructuralAncestor(element))) return [];
     if (shouldKeepElementOriginal(element, shouldStayOriginal) || !isBlockBoundary(element)) return [];
-    if (element.childNodes.length > maxDirectRunNodes) return [];
     if (!hasDirectReadableText(element, shouldStayOriginal, protectionCache)) return [];
     const hasBlockBarrier = hasReadableBlockChild(element, shouldStayOriginal, protectionCache);
     const hasAdditionalBarrier = !hasBlockBarrier && isAdditionalBarrier &&

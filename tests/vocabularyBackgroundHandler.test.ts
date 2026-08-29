@@ -73,7 +73,7 @@ describe('vocabulary background message handlers', () => {
         expect(repository.get).toHaveBeenCalledWith('entry-1');
     });
 
-    it('覆盖读取类 action 和 getByTerm 的 term/word 兼容路径', async () => {
+    it('处理读取类 action 和 getByTerm 查询', async () => {
         const {dependencies, repository} = createDependencies();
         const handler = createVocabularyBookHandler(dependencies);
 
@@ -87,17 +87,9 @@ describe('vocabulary background message handlers', () => {
             sourceLanguage: 'en',
             term: 'common',
         }, {})).resolves.toEqual({success: true, data: {method: 'getByTerm', sourceLanguage: 'en', term: 'common'}});
-        await expect(handler.handle({
-            type: VOCABULARY_BOOK_MESSAGE,
-            action: 'getByTerm',
-            sourceLanguage: 'en',
-            word: 'rare',
-        }, {})).resolves.toEqual({success: true, data: {method: 'getByTerm', sourceLanguage: 'en', term: 'rare'}});
-
         expect(repository.list).toHaveBeenCalledWith(undefined);
         expect(repository.list).toHaveBeenCalledWith({status: 'new'});
         expect(repository.getByTerm).toHaveBeenCalledWith('en', 'common');
-        expect(repository.getByTerm).toHaveBeenCalledWith('en', 'rare');
     });
 
     it('执行会广播的写入和复习 action，并保持旧响应结构', async () => {

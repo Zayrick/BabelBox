@@ -1,14 +1,11 @@
-// 消息模板工具
-import {currentModelIds, customModelString, defaultOption, services} from '@/src/core/config/catalog';
+import {customModelString, defaultOption, services} from '@/src/core/config/catalog';
 import {mergeCustomBody} from '@/src/core/config/customBody';
-import {migrateModelIdentifier} from '@/src/core/config/model';
 import {config} from '@/src/services/config/store';
 import type {TranslationProviderConfigSnapshot} from './types';
 
 export {mergeCustomBody};
 export {buildPageSummaryPrompt, buildPageSummarySystemPrompt} from '@/src/core/translation/prompts';
 
-// 读取当前服务的自定义请求体（JSON 字符串）
 function currentCustomBody(current: TranslationProviderConfigSnapshot, service = current.service): string | undefined {
     return current.customBody?.[service];
 }
@@ -37,13 +34,13 @@ function currentConfiguredModel(
     service: string,
     modelOverride?: string,
 ): string {
-    if (modelOverride?.trim()) return migrateModelIdentifier(service, modelOverride);
+    if (modelOverride?.trim()) return modelOverride.trim();
 
     const selectedModel = current.model[service];
     if (selectedModel === customModelString) {
         return current.customModel[service] || '';
     }
-    return migrateModelIdentifier(service, selectedModel || '');
+    return selectedModel || '';
 }
 
 // openai 格式的消息模板（通用模板）
@@ -63,7 +60,7 @@ export function commonMsgTemplate(
     // 删除模型名称中的中文括号及其内容，如"gpt-4（推荐）" -> "gpt-4"
     model = model.replace(/（.*）/g, "");
 
-    let system = systemPrompt?.trim() || current.system_role[service] || defaultOption.system_role;
+    const system = systemPrompt?.trim() || current.system_role[service] || defaultOption.system_role;
     const user = buildUserPrompt(origin, context, prompt, service, targetLanguage, current);
 
     const payload: any = {
@@ -85,25 +82,12 @@ export function getCurrentModel(
 ): string {
     const service = serviceOverride || current.service;
     const selectedModel = currentConfiguredModel(current, service, modelOverride);
-    const normalizedModel = (selectedModel || '').replace(/（.*）/g, "");
-
-    // 运行时兜底：后台脚本若早于配置迁移读取到旧值，仍使用可用的 V4 模型。
-    if (normalizedModel === 'deepseek-chat' || normalizedModel === 'deepseek-reasoner') {
-        return currentModelIds.deepseek;
-    }
-
-    return normalizedModel;
+    return selectedModel.replace(/（.*）/g, "");
 }
 
 function getDeepSeekThinkingMode(
     current: TranslationProviderConfigSnapshot,
-    serviceOverride?: string,
-    modelOverride?: string,
 ): 'enabled' | 'disabled' {
-    const service = serviceOverride || current.service;
-    const selectedModel = modelOverride || current.model[service];
-    if (selectedModel === 'deepseek-reasoner') return 'enabled';
-    if (selectedModel === 'deepseek-chat') return 'disabled';
     return current.deepseekThinkingMode === 'enabled' ? 'enabled' : 'disabled';
 }
 
@@ -158,7 +142,7 @@ export function deepseekMsgTemplate(
 ) {
     const model = getCurrentModel(serviceOverride, modelOverride, current);
     const {system, user} = deepseekPrompt(origin, context, prompt, systemPrompt, serviceOverride, targetLanguage, current);
-    const thinking = getDeepSeekThinkingMode(current, serviceOverride, modelOverride);
+    const thinking = getDeepSeekThinkingMode(current);
     const payload: any = {
         model,
         messages: [
@@ -208,7 +192,7 @@ export function claudeMsgTemplate(
     const service = serviceOverride || services.claude;
     const model = currentConfiguredModel(current, service, modelOverride);
 
-    let system = systemPrompt?.trim() || current.system_role[service] || defaultOption.system_role;
+    const system = systemPrompt?.trim() || current.system_role[service] || defaultOption.system_role;
     const user = buildUserPrompt(origin, context, prompt, service, targetLanguage, current);
 
     const payload: any = {
@@ -238,7 +222,7 @@ export function tongyiMsgTemplate(
     const service = serviceOverride || current.service;
     const model = currentConfiguredModel(current, service, modelOverride);
     const normalTemplate = () => {
-        let system = systemPrompt?.trim() || current.system_role[service] || defaultOption.system_role;
+        const system = systemPrompt?.trim() || current.system_role[service] || defaultOption.system_role;
         const user = buildUserPrompt(origin, context, prompt, service, targetLanguage, current);
 
         const payload: any = {
@@ -261,8 +245,8 @@ export function tongyiMsgTemplate(
             {value: "fr"},
             {value: "ru"},
         ]
-        let targetItem = langMap.find(i => i.value === targetLanguage) || langMap[0]
-        let targetLang = targetItem.target || targetItem.value
+        const targetItem = langMap.find(i => i.value === targetLanguage) || langMap[0]
+        const targetLang = targetItem.target || targetItem.value
         const payload: any = {
             "model": model,
             "messages": [
@@ -290,7 +274,7 @@ export function cozeTemplate(
 ) {
     const service = serviceOverride || current.service;
 
-    let system = systemPrompt?.trim() || current.system_role[service] || defaultOption.system_role;
+    const system = systemPrompt?.trim() || current.system_role[service] || defaultOption.system_role;
     const user = buildUserPrompt(origin, context, prompt, service, targetLanguage, current);
 
     const payload: any = {

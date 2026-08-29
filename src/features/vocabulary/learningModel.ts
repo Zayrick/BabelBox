@@ -10,12 +10,12 @@ export const VOCABULARY_ENTRY_MAX_CONTEXTS = 8;
 export const VOCABULARY_REVIEW_LOG_MAX_PER_ENTRY = 100;
 export const VOCABULARY_LARGE_IMPORT_WARNING_BYTES = 20 * 1024 * 1024;
 
-function sanitizeAnkiTsvCell(value: unknown): string {
-  return String(value ?? '').replace(/[\t\r\n]+/g, ' ').trim();
+function sanitizeAnkiTsvCell(value: string): string {
+  return value.replace(/[\t\r\n]+/g, ' ').trim();
 }
 
 /** Build an Anki text import without turning the column labels into a card. */
-export function buildAnkiTsv(columns: readonly string[], rows: readonly (readonly unknown[])[]): string {
+export function buildAnkiTsv(columns: readonly string[], rows: readonly (readonly string[])[]): string {
   const columnHeader = columns.map(sanitizeAnkiTsvCell).join('\t');
   const dataRows = rows.map(row => row.map(sanitizeAnkiTsvCell).join('\t'));
   return [
@@ -27,7 +27,7 @@ export function buildAnkiTsv(columns: readonly string[], rows: readonly (readonl
 }
 
 export function vocabularyImportNeedsConfirmation(fileSize: number): boolean {
-  return Number.isFinite(fileSize) && fileSize > VOCABULARY_LARGE_IMPORT_WARNING_BYTES;
+  return fileSize > VOCABULARY_LARGE_IMPORT_WARNING_BYTES;
 }
 
 const VOCABULARY_WORD_CONTINUATION_CLASS = "\\p{L}\\p{M}\\p{N}'’‘\\-‐‑‒–—";
@@ -42,8 +42,8 @@ function vocabularyTermPattern(term: string): string {
 
 /** Replace complete word occurrences only; return empty when no cloze can be made safely. */
 export function buildVocabularyCloze(context: string, term: string): string {
-  const source = String(context || '');
-  const normalizedTerm = String(term || '').trim();
+  const source = context;
+  const normalizedTerm = term.trim();
   if (!source || !normalizedTerm) return '';
   const termPattern = vocabularyTermPattern(normalizedTerm);
   const matcher = new RegExp(
@@ -318,9 +318,8 @@ export type VocabularyGetByTermRequest = {
   type: typeof VOCABULARY_BOOK_MESSAGE;
   action: 'getByTerm';
   sourceLanguage: string;
-  /** Kept during the beta message rollout for callers that use word terminology. */
-  targetLanguage?: string;
-} & ({ term: string; word?: never } | { word: string; term?: never });
+  term: string;
+};
 
 export type VocabularyBookRequest =
   | { type: typeof VOCABULARY_BOOK_MESSAGE; action: 'list'; options?: VocabularyListOptions }

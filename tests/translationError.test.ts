@@ -1,7 +1,6 @@
 import {describe, expect, it} from 'vitest';
 
 import {
-  isRetryableTranslationError,
   isSerializedTranslationError,
   serializeTranslationError,
   TranslationRequestError,
@@ -111,12 +110,6 @@ describe('translation error serialization', () => {
         retryAfterMs: 500,
         requestId: 'req-2',
       });
-      expect(isRetryableTranslationError(error)).toBe(false);
     }
-
-    expect(isRetryableTranslationError(new Error('legacy failure'))).toBe(true);
-    expect(isRetryableTranslationError(new TranslationRequestError(
-      serializeTranslationError('network error'),
-    ))).toBe(true);
   });
 });

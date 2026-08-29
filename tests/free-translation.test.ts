@@ -111,8 +111,7 @@ describe("免费翻译服务", () => {
         expect(deeplxMock).toHaveBeenCalledWith("Hello", "deeplx", expected);
     });
 
-    it("拒绝直接调用和消息入口中的非文本值", async () => {
-        await expect(translateFreeText(42 as unknown as string)).rejects.toThrow("仅支持文本输入");
+    it("消息入口拒绝非文本值", async () => {
         await expect(freeTranslation({origin: 42 as unknown as string})).rejects.toThrow("仅支持文本输入");
     });
 

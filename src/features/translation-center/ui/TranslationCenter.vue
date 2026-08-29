@@ -576,7 +576,6 @@ async function translateCard(card: TranslationCard, text: string, runId: number,
 
   try {
     const result = await translateText(text, 'FluentRead 翻译中心', {
-      maxRetries: 0,
       timeout: 30_000,
       useCache: false,
       serviceOverride: card.service,

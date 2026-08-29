@@ -80,10 +80,7 @@ function instanceMapValue(
     return instanceId === provider ? map[provider] || '' : '';
 }
 
-/**
- * Projects one service instance onto the provider-keyed compatibility shape
- * consumed by existing adapters. The projection is immutable and request-local.
- */
+/** Projects one service instance to an immutable, request-local adapter configuration. */
 export function resolveTranslationServiceConfig(
     source: TranslationProviderConfigSnapshot,
     instanceId: string,

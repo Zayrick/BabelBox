@@ -48,15 +48,6 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
     const pendingCacheWrites = new Map<Promise<unknown>, number>();
     let cacheGeneration = 0;
     const now = deps.now ?? (() => Date.now());
-    const logger = deps.logger ?? console;
-
-    function warn(message: string, error: unknown): void {
-        try {
-            logger.warn(message, error);
-        } catch {
-            // 诊断器是旁路依赖；自定义 logger 失败不能中断用户翻译。
-        }
-    }
 
     function config() {
         return deps.getConfig();
@@ -84,12 +75,7 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
 
     function getProviderEndpoint(current: TranslationProviderConfigSnapshot, service: string): string {
         if (deps.serviceTypes.isAiSdk(service)) {
-            try {
-                return deps.endpointResolver.resolveOpenAICompatibleEndpoint(service, current).endpoint;
-            } catch {
-                // 配置校验负责用户可见错误；缓存 key 生成必须在设置缺失时仍可完成。
-                return '';
-            }
+            return deps.endpointResolver.resolveOpenAICompatibleEndpoint(service, current).endpoint;
         }
         if (current.proxy[service]) return current.proxy[service];
         if (service === 'custom') return current.custom;
@@ -98,7 +84,7 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
         if (service === deps.serviceIds.minimax) {
             const plan = current.minimaxBillingPlan === 'token-plan' ? 'token-plan' : 'payg';
             const region = current.minimaxRegion === 'cn' ? 'cn' : 'global';
-            return deps.endpointResolver.minimaxEndpoints[plan]?.[region] || '';
+            return deps.endpointResolver.minimaxEndpoints[plan][region];
         }
         if (service === deps.serviceIds.mimo) {
             return deps.endpointResolver.getMimoEndpoint(current.mimoBillingPlan, current.mimoRegion);
@@ -148,18 +134,17 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
     }
 
     function isCacheableResult(origin: string, result: unknown): result is string {
-        return typeof result === 'string' && result.length > 0 && result !== origin;
+        return typeof result === 'string' && result !== origin;
     }
 
     function requireSingleResult(result: unknown): string {
-        if (typeof result !== 'string') throw new Error('单条翻译返回格式异常');
+        if (typeof result !== 'string' || !result.trim()) throw new Error('单条翻译返回格式异常');
         return result;
     }
 
     function requireBatchResult(result: unknown, expectedLength: number): string[] {
-        if (!Array.isArray(result)) throw new Error('批量翻译返回格式异常');
-        if (result.length !== expectedLength) throw new Error('批量翻译返回数量异常');
-        if (result.some((value) => typeof value !== 'string')) {
+        if (!Array.isArray(result) || result.length !== expectedLength ||
+            result.some((value) => typeof value !== 'string' || !value.trim())) {
             throw new Error('批量翻译返回格式异常');
         }
         return result;
@@ -172,9 +157,8 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
     }
 
     function normalizeRequestTimeoutMs(requestTimeoutMs?: number): number | undefined {
-        return typeof requestTimeoutMs === 'number' && Number.isFinite(requestTimeoutMs)
-            ? Math.max(1_000, Math.floor(requestTimeoutMs))
-            : undefined;
+        if (requestTimeoutMs === undefined) return undefined;
+        return Math.max(1_000, Math.floor(requestTimeoutMs));
     }
 
     function buildPendingRequestKey(cacheKey: string, requestTimeoutMs?: number): string {
@@ -280,14 +264,14 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
                 if (useCache) await writeCacheIfCurrent(requestGeneration, key, summarizedContext);
                 return summarizedContext;
             } catch (error) {
-                warn('[FluentRead] page context summary failed; using extracted context:', error);
+                console.warn('[FluentRead] page context summary failed; using extracted context:', error);
                 if (useCache && requestGeneration === cacheGeneration) cachePageSummary(key, pageContext);
                 return pageContext;
             }
         })();
 
         pendingPageSummaries.set(pendingKey, request);
-        // addPageSummary 内部把 provider/cache/logger 失败都降级为原始上下文，因此该 Promise 只会 fulfilled。
+        // addPageSummary 把摘要与缓存失败降级为原始上下文，因此该 Promise 只会 fulfilled。
         void request.then(() => {
             if (pendingPageSummaries.get(pendingKey) === request) pendingPageSummaries.delete(pendingKey);
         });
@@ -469,8 +453,7 @@ export function createTranslationBroker(deps: TranslationBrokerDependencies): Tr
         const resolvedService = resolveTranslationServiceConfig(sourceConfig, selectedService);
         const current = resolvedService.config;
         const selectedProvider = resolvedService.provider;
-        // 已安装实例的模型由后台当前配置决定。旧 content script 可能携带陈旧的
-        // modelOverride，不能让它覆盖用户刚刚为该实例保存的模型。
+        // 已安装实例的模型以本次配置快照为准；请求级覆盖只用于独立入口。
         const effectiveModelOverride = resolvedService.instance
             ? resolvedService.instance.modelId || undefined
             : message.modelOverride;

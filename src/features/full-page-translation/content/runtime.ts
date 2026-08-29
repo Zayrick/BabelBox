@@ -1,10 +1,7 @@
 import {browser} from 'wxt/browser';
 import {checkConfig} from './configCheck';
 import { services } from "@/src/core/config/catalog";
-import {
-    getTranslationServiceConfigurationKey,
-    getTranslationServiceProvider,
-} from '@/src/core/config/translationServices';
+import {getTranslationServiceProvider} from '@/src/core/config/translationServices';
 import {
     insertFailedTip,
     insertLoadingSpinner,
@@ -17,7 +14,6 @@ import {
     applyTranslationsToSnapshot,
     collectLiveTranslationTextSlots,
     createTranslationSourceSnapshot,
-    evaluateHardGuard,
     getComposedParent,
     getCurrentTranslationCore,
     getOpenShadowRoots,
@@ -48,7 +44,10 @@ import {
 import {
     appendBilingualTranslation,
 } from "@/src/features/full-page-translation/content/renderer";
-import {ensureTranslationTruncationLayout} from "@/src/features/full-page-translation/content/layout";
+import {
+    ensureTranslationTruncationLayout,
+    isTranslationLayoutOverrideMutation,
+} from "@/src/features/full-page-translation/content/layout";
 import {
     beginTranslation,
     detachFailedTranslationUi,
@@ -64,7 +63,6 @@ import {
     setRetryWrapper,
     setSpinner,
     setTextSlotsApplied,
-    isTranslationLayoutOverrideMutation,
     type TranslationState,
 } from "@/src/features/full-page-translation/content/state";
 
@@ -85,17 +83,11 @@ type TranslationTargetOutcome =
         attemptNode?: HTMLElement;
     };
 
-interface FullPageLifecycleRetry {
+interface FullPageCandidateSnapshot {
     owner: HTMLElement;
     source: string;
     kind: TranslationCandidate["kind"];
     reason: string;
-    attempts: number;
-}
-
-interface FullPageTranslationCacheEntry {
-    promise: Promise<string | undefined>;
-    settled: boolean;
 }
 
 interface SnapshotTranslationResult {
@@ -133,10 +125,8 @@ interface FullPageSession {
     statefulTargetsByAncestor: Map<Element, Set<HTMLElement>>;
     /** Active target -> the exact ancestor keys registered above. */
     statefulAncestorsByTarget: WeakMap<HTMLElement, readonly Element[]>;
-    /** Bounded immediate retries for candidates invalidated while a provider request is in flight. */
-    lifecycleRetries: WeakMap<Node, FullPageLifecycleRetry>;
     /** Explicit provider/language no-change decisions, scoped to this full-page session. */
-    unchangedCandidates: WeakMap<Node, FullPageLifecycleRetry>;
+    unchangedCandidates: WeakMap<Node, FullPageCandidateSnapshot>;
     /**
      * Candidate identities explicitly restored by the user during this full-page
      * session. The source snapshot lets a real host edit clear the tombstone,
@@ -145,20 +135,11 @@ interface FullPageSession {
     userCancelledCandidates: Map<Node, string>;
     /** Candidate keys whose translation pipelines have started and not settled. */
     inFlightCandidates: Map<Node, TranslationCandidate>;
-    /**
-     * Translation results already requested by this full-page session. Host
-     * frameworks can remount the same prose after a style/layout mutation;
-     * keep that lifecycle churn from issuing the same provider request again.
-     */
-    translationSlotCache: Map<string, FullPageTranslationCacheEntry>;
     draining: boolean;
     flushTimer: number | null;
     dirtyRoots: Set<Node>;
     mutationFlushTimer: number | null;
     activeDiscovery: {root: Node; steps: Generator<TranslationDiscoveryStep>} | null;
-    broadRescanRoots: WeakSet<Node>;
-    broadRescanCooldowns: WeakMap<Node, number>;
-    dirtyRootsBroadMode: boolean;
     pruneTimer: number | null;
     pruneIterator: Iterator<TranslationCandidate> | null;
     pruneRequested: boolean;
@@ -166,11 +147,8 @@ interface FullPageSession {
     statefulAttributeRescanTargets: WeakSet<HTMLElement>;
 }
 
-const BROAD_RESCAN_COOLDOWN_MS = 1_000;
 const CANDIDATE_PRUNE_BUDGET_MS = 4;
 const STATEFUL_ATTRIBUTE_DEBOUNCE_MS = 500;
-const FULL_PAGE_LIFECYCLE_RETRY_LIMIT = 2;
-const FULL_PAGE_TRANSLATION_CACHE_LIMIT = 512;
 
 let hoverTimer: ReturnType<typeof setTimeout> | undefined;
 let fullPageSession: FullPageSession | null = null;
@@ -336,13 +314,7 @@ function isBatchFriendlyService(): boolean {
 }
 
 function createAbortError(): Error {
-    try {
-        return new DOMException('翻译已取消', 'AbortError');
-    } catch {
-        const error = new Error('翻译已取消');
-        error.name = 'AbortError';
-        return error;
-    }
+    return new DOMException('翻译已取消', 'AbortError');
 }
 
 function throwIfAborted(signal?: AbortSignal): void {
@@ -355,148 +327,30 @@ async function translateSlotsIndividually(
     queueSession?: TranslationQueueSession,
 ): Promise<string[]> {
     throwIfAborted(signal);
-    const translations = new Array<string>(origins.length);
-    let nextIndex = 0;
-    let failed = false;
-    let firstError: unknown;
-    let hasFirstError = false;
-    const siblingController = new AbortController();
-    const abortSiblings = () => {
-        siblingController.abort();
-        if (queueSession) cancelTranslationQueueSession(queueSession, createAbortError());
-    };
-    signal?.addEventListener('abort', abortSiblings, {once: true});
-    const workers = Array.from({length: origins.length}, async () => {
-        while (!failed && nextIndex < origins.length) {
-            throwIfAborted(siblingController.signal);
-            const index = nextIndex;
-            nextIndex += 1;
-            try {
-                translations[index] = await translateText(origins[index] ?? '', document.title, {
-                    signal: siblingController.signal,
-                    queueSession,
-                });
-            } catch (error) {
-                if (!hasFirstError) {
-                    hasFirstError = true;
-                    firstError = error;
-                }
-                failed = true;
-                siblingController.abort();
-                if (queueSession) cancelTranslationQueueSession(queueSession, firstError);
-                throw error;
-            }
-        }
-    });
     try {
-        const outcomes = await Promise.allSettled(workers);
-        if (hasFirstError) throw firstError;
-        const rejected = outcomes.find((outcome): outcome is PromiseRejectedResult => outcome.status === 'rejected');
-        if (rejected) throw rejected.reason;
-        return translations;
-    } finally {
-        signal?.removeEventListener('abort', abortSiblings);
+        return await Promise.all(origins.map((origin) => translateText(origin, document.title, {
+            signal,
+            queueSession,
+        })));
+    } catch (error) {
+        if (queueSession) cancelTranslationQueueSession(queueSession, error);
+        throw error;
     }
-}
-
-function createFullPageTranslationCacheKey(origin: string): string {
-    return JSON.stringify({
-        service: getTranslationServiceConfigurationKey(config, config.service),
-        from: config.from,
-        to: config.to,
-        origin,
-    });
-}
-
-function rememberFullPageTranslation(
-    session: FullPageSession,
-    key: string,
-    result: Promise<string | undefined>,
-): void {
-    if (!session.active) return;
-    const entry: FullPageTranslationCacheEntry = {promise: result, settled: false};
-    session.translationSlotCache.delete(key);
-    session.translationSlotCache.set(key, entry);
-    while (session.translationSlotCache.size > FULL_PAGE_TRANSLATION_CACHE_LIMIT) {
-        const oldestKey = session.translationSlotCache.keys().next().value as string | undefined;
-        if (!oldestKey) break;
-        session.translationSlotCache.delete(oldestKey);
-    }
-    void result.then(
-        () => {
-            if (session.translationSlotCache.get(key) === entry) entry.settled = true;
-        },
-        () => {
-            if (session.translationSlotCache.get(key) === entry) session.translationSlotCache.delete(key);
-        },
-    );
 }
 
 async function translateTextSlots(
     origins: readonly string[],
     signal?: AbortSignal,
     queueSession?: TranslationQueueSession,
-    fullPageSession?: FullPageSession,
 ): Promise<string[]> {
     if (origins.length === 0) return [];
     throwIfAborted(signal);
     if (isBatchFriendlyService()) {
-        if (!fullPageSession?.active) {
-            return translateTextBatch([...origins], document.title, {useCache: false, signal, queueSession});
-        }
-
-        // React/Vue pages can remove a translated subtree and mount the same
-        // prose again after a layout/style pass. Cache each source slot only
-        // for this active full-page session, so that remounts reuse the result
-        // without turning repeated text on different pages into a global cache
-        // hit or changing the user's persistent-cache setting.
-        const resultPromises = new Array<Promise<string | undefined>>(origins.length);
-        const missing = new Map<string, {origin: string; indexes: number[]}>();
-        for (const [index, origin] of origins.entries()) {
-            const key = createFullPageTranslationCacheKey(origin);
-            const cached = fullPageSession.translationSlotCache.get(key);
-            if (cached?.settled) {
-                resultPromises[index] = cached.promise;
-                continue;
-            }
-            const entry = missing.get(key);
-            if (entry) entry.indexes.push(index);
-            else missing.set(key, {origin, indexes: [index]});
-        }
-
-        if (missing.size > 0) {
-            const entries = [...missing.values()];
-            const providerRequest = translateTextBatch(
-                entries.map(({origin}) => origin),
-                document.title,
-                // The session cache handles host remounts immediately; the
-                // normal background cache also prevents a later rescan from
-                // sending an already translated slot back to the provider.
-                {useCache: config.useCache, signal, queueSession},
-            ).then((translations) =>
-                Array.isArray(translations) && translations.length === entries.length &&
-                translations.every((translation) => typeof translation === "string")
-                    ? translations
-                    : null,
-            );
-            entries.forEach(({origin, indexes}, entryIndex) => {
-                const key = createFullPageTranslationCacheKey(origin);
-                const result = providerRequest.then((translations) => {
-                    return translations?.[entryIndex];
-                });
-                rememberFullPageTranslation(fullPageSession, key, result);
-                indexes.forEach((index) => {
-                    resultPromises[index] = result;
-                });
-            });
-        }
-
-        const translations = await Promise.all(resultPromises);
-        if (translations.some((translation) => typeof translation !== "string")) {
-            fullPageSession.translationSlotCache.clear();
-            return [];
-        }
-        return translations as string[];
+        return translateTextBatch([...origins], document.title, {
+            useCache: config.useCache,
+            signal,
+            queueSession,
+        });
     }
     if (origins.length === 1) {
         return [await translateText(origins[0] ?? '', document.title, {signal, queueSession})];
@@ -525,14 +379,13 @@ async function translateElementHTML(
     node: HTMLElement,
     signal?: AbortSignal,
     queueSession?: TranslationQueueSession,
-    fullPageSession?: FullPageSession,
 ): Promise<SnapshotTranslationResult> {
     const core = getCurrentTranslationCore();
     const slots = collectLiveTranslationTextSlots(node, core.shouldStayOriginal);
     if (slots.length === 0) return {kind: "snapshot", sources: [], translations: []};
 
     const origins = slots.map((part) => part.source);
-    const translations = await translateTextSlots(origins, signal, queueSession, fullPageSession);
+    const translations = await translateTextSlots(origins, signal, queueSession);
     return {kind: "snapshot", sources: origins, translations};
 }
 
@@ -544,7 +397,6 @@ async function translateLiveText(
     node: HTMLElement,
     signal?: AbortSignal,
     queueSession?: TranslationQueueSession,
-    fullPageSession?: FullPageSession,
 ): Promise<LiveTextTranslationResult> {
     const parts = collectLiveTranslationTextSlots(node, getCurrentTranslationCore().shouldStayOriginal);
     if (parts.length === 0) return {
@@ -556,7 +408,7 @@ async function translateLiveText(
     };
 
     const origins = parts.map((part) => part.source);
-    const translations = await translateTextSlots(origins, signal, queueSession, fullPageSession);
+    const translations = await translateTextSlots(origins, signal, queueSession);
     const changed = translations.some((translation, index) =>
         normalizeComparableText(translation) !== normalizeComparableText(origins[index] || ""),
     );
@@ -583,12 +435,11 @@ async function createTranslationRequest(
     mode: "bilingual" | "single",
     signal?: AbortSignal,
     queueSession?: TranslationQueueSession,
-    fullPageSession?: FullPageSession,
 ): Promise<TranslationResult> {
     if (kind === "control" || mode === "single") {
-        return translateLiveText(node, signal, queueSession, fullPageSession);
+        return translateLiveText(node, signal, queueSession);
     }
-    return translateElementHTML(node, signal, queueSession, fullPageSession);
+    return translateElementHTML(node, signal, queueSession);
 }
 
 function attemptSourceIsCurrent(node: HTMLElement, state: TranslationState): boolean {
@@ -887,9 +738,7 @@ function registerSessionStatefulTarget(
     unregisterSessionStatefulTarget(session, target);
     const ancestors: Element[] = [];
     let current: Element | null = candidateOwner;
-    let depth = 0;
-    while (current && depth < 512) {
-        depth += 1;
+    while (current) {
         ancestors.push(current);
         let targets = session.statefulTargetsByAncestor.get(current);
         if (!targets) {
@@ -1087,7 +936,6 @@ async function translateTarget(
         displayMode,
         signal,
         queueSession,
-        owner?.active ? owner : undefined,
     )
         .finally(() => signal.removeEventListener('abort', cancelQueuedRequest));
     if (synthetic) node.setAttribute('data-fr-translation-segment', 'true');
@@ -1103,32 +951,26 @@ async function translateTarget(
 }
 
 function candidateLifecycleSource(candidate: TranslationCandidate): string {
-    try {
-        const core = getCurrentTranslationCore();
-        return normalizeComparableText(candidate.nodes?.length
-            ? extractTranslationTextFromNodes(candidate.nodes, core.shouldStayOriginal)
-            : extractTranslationText(candidate.element, core.shouldStayOriginal));
-    } catch {
-        return normalizeComparableText(candidate.element.textContent ?? "");
-    }
+    const core = getCurrentTranslationCore();
+    return normalizeComparableText(candidate.nodes?.length
+        ? extractTranslationTextFromNodes(candidate.nodes, core.shouldStayOriginal)
+        : extractTranslationText(candidate.element, core.shouldStayOriginal));
 }
 
-function createLifecycleRetry(
+function createCandidateSnapshot(
     candidate: TranslationCandidate,
     source: string,
-    attempts: number,
-): FullPageLifecycleRetry {
+): FullPageCandidateSnapshot {
     return {
         owner: candidate.element,
         source: normalizeComparableText(source),
         kind: candidate.kind,
         reason: candidate.reason,
-        attempts,
     };
 }
 
-function sameLifecycleRetry(
-    previous: FullPageLifecycleRetry | undefined,
+function matchesCandidateSnapshot(
+    previous: FullPageCandidateSnapshot | undefined,
     candidate: TranslationCandidate,
     source: string,
 ): boolean {
@@ -1137,26 +979,6 @@ function sameLifecycleRetry(
         previous.source === source &&
         previous.kind === candidate.kind &&
         previous.reason === candidate.reason);
-}
-
-function resolveFullPageRetryCandidate(
-    candidate: TranslationCandidate,
-    retryRoot?: Node,
-): TranslationCandidate | null {
-    const core = getCurrentTranslationCore();
-    const key = getTranslationCandidateKey(candidate);
-    const starts = [retryRoot, key, candidate.element];
-    const visited = new Set<Node>();
-
-    for (const start of starts) {
-        if (!start || visited.has(start) || !start.isConnected) continue;
-        visited.add(start);
-        const fresh = core.resolve(start);
-        if (fresh?.element.isConnected) return fresh;
-    }
-
-    if (!candidate.element.isConnected) return null;
-    return core.inspect(candidate.element).candidate ?? null;
 }
 
 function finalizeFullPageCandidate(
@@ -1172,14 +994,13 @@ function finalizeFullPageCandidate(
     if (!session.active || fullPageSession !== session || session.scheduled.get(originalKey) !== candidate) return;
 
     if (outcome.status !== "stale" && outcome.status !== "not-current" && outcome.status !== "empty") {
-        session.lifecycleRetries.delete(originalKey);
         if (outcome.status === "unchanged") {
             if (outcome.attemptNode && session.statefulAttributeTimers.has(outcome.attemptNode)) {
                 session.statefulAttributeRescanTargets.add(outcome.attemptNode);
             }
             session.unchangedCandidates.set(
                 originalKey,
-                createLifecycleRetry(candidate, outcome.source, 0),
+                createCandidateSnapshot(candidate, outcome.source),
             );
         } else {
             session.unchangedCandidates.delete(originalKey);
@@ -1191,9 +1012,8 @@ function finalizeFullPageCandidate(
     session.unchangedCandidates.delete(originalKey);
 
     // A new hover/full generation owns the same node already. Its own completion
-    // is authoritative, so the stale generation must not issue a duplicate.
+    // is authoritative, so the stale generation only releases its queue entry.
     if (outcome.attemptNode && getTranslationState(outcome.attemptNode)) {
-        session.lifecycleRetries.delete(originalKey);
         forgetCandidate(session, candidate);
         return;
     }
@@ -1206,46 +1026,10 @@ function finalizeFullPageCandidate(
         return;
     }
 
-    const fresh = resolveFullPageRetryCandidate(candidate, outcome.retryRoot);
-    if (fresh && candidate.element.isConnected && (
-        fresh.element !== candidate.element ||
-        fresh.kind !== candidate.kind ||
-        getTranslationCandidateKey(fresh) !== originalKey
-    )) {
-        // The same live DOM subtree changed semantic ownership. This is a
-        // genuine new generation, unlike a disconnected host remount where
-        // the session cache is precisely what prevents a duplicate request.
-        session.translationSlotCache.clear();
-    }
-    const retryCandidate = fresh ?? candidate;
-    const retryKey = fresh ? getTranslationCandidateKey(fresh) : originalKey;
-    const source = candidateLifecycleSource(retryCandidate);
-    const previous = session.lifecycleRetries.get(retryKey) ?? session.lifecycleRetries.get(originalKey);
-    const attempts = sameLifecycleRetry(previous, retryCandidate, source)
-        ? previous!.attempts + 1
-        : 1;
-    const retryState = createLifecycleRetry(retryCandidate, source, attempts);
-
-    if (retryKey !== originalKey) session.lifecycleRetries.delete(originalKey);
-    session.unchangedCandidates.delete(retryKey);
-    session.lifecycleRetries.set(retryKey, retryState);
     forgetCandidate(session, candidate);
-
-    if (attempts > FULL_PAGE_LIFECYCLE_RETRY_LIMIT) return;
-
-    if (fresh) {
-        scheduleDiscoveredCandidate(session, fresh);
-        if (session.scheduled.get(retryKey) === fresh) {
-            // The original candidate has already crossed the visibility gate.
-            // Retry the freshly resolved owner directly; observing it again can
-            // otherwise wait forever when IntersectionObserver does not re-emit.
-            session.pending.set(retryKey, fresh);
-            scheduleFullPageDrain(session);
-        }
-        return;
+    if (outcome.status !== "empty" && outcome.retryRoot?.isConnected) {
+        enqueueFullPageRescan(session, outcome.retryRoot);
     }
-
-    if (outcome.retryRoot?.isConnected) enqueueFullPageRescan(session, outcome.retryRoot);
 }
 
 function scheduleFullPageDrain(session: FullPageSession): void {
@@ -1331,12 +1115,10 @@ function scheduleDiscoveredCandidate(session: FullPageSession, candidate: Transl
         return;
     }
     const unchanged = session.unchangedCandidates.get(key);
-    const cappedRetry = session.lifecycleRetries.get(key);
-    if (unchanged || (cappedRetry && cappedRetry.attempts > FULL_PAGE_LIFECYCLE_RETRY_LIMIT)) {
+    if (unchanged) {
         const source = candidateLifecycleSource(candidate);
-        if (sameLifecycleRetry(unchanged ?? cappedRetry, candidate, source)) return;
+        if (matchesCandidateSnapshot(unchanged, candidate, source)) return;
         session.unchangedCandidates.delete(key);
-        session.lifecycleRetries.delete(key);
     }
 
     // The exact descendant may already have finished while a very large
@@ -1375,19 +1157,7 @@ function scheduleDiscoveredCandidate(session: FullPageSession, candidate: Transl
 }
 
 function nodeContains(ancestor: Node, descendant: Node): boolean {
-    if (ancestor === descendant) return true;
-    try {
-        return typeof ancestor.contains === "function" && ancestor.contains(descendant);
-    } catch {
-        return false;
-    }
-}
-
-function broadRescanRoot(node: Node): Node {
-    const rootNode = node.getRootNode();
-    return rootNode.nodeType === 9
-        ? (rootNode as Document).documentElement
-        : rootNode;
+    return ancestor === descendant || ancestor.contains(descendant);
 }
 
 /**
@@ -1403,33 +1173,11 @@ function enqueueFullPageRescan(session: FullPageSession, changedNode: Node): voi
 
     const dirtyRoot: Node = root;
 
-    // Keep per-record work bounded during React/Reddit mutation storms. Once
-    // enough disjoint roots accumulate, one incremental root scan is cheaper
-    // than quadratic pairwise merging and still preserves correctness.
-    if (session.dirtyRootsBroadMode) {
-        const collapsed = broadRescanRoot(dirtyRoot);
-        session.dirtyRoots.add(collapsed);
-        session.broadRescanRoots.add(collapsed);
-    } else if (session.dirtyRoots.size >= 32) {
-        const collapsedRoots = new Set<Node>(
-            [...session.dirtyRoots, dirtyRoot].map(broadRescanRoot),
-        );
-        session.dirtyRoots.clear();
-        collapsedRoots.forEach((collapsed) => {
-            session.dirtyRoots.add(collapsed);
-            session.broadRescanRoots.add(collapsed);
-        });
-        // Once a burst crosses the merge threshold, keep new mutations O(1)
-        // by adding only their broad Document/ShadowRoot until this batch has
-        // fully drained. Never drop roots from another composed tree.
-        session.dirtyRootsBroadMode = true;
-    } else {
-        for (const existing of session.dirtyRoots) {
-            if (nodeContains(existing, dirtyRoot)) return;
-            if (nodeContains(dirtyRoot, existing)) session.dirtyRoots.delete(existing);
-        }
-        session.dirtyRoots.add(dirtyRoot);
+    for (const existing of session.dirtyRoots) {
+        if (nodeContains(existing, dirtyRoot)) return;
+        if (nodeContains(dirtyRoot, existing)) session.dirtyRoots.delete(existing);
     }
+    session.dirtyRoots.add(dirtyRoot);
     if (session.mutationFlushTimer !== null) return;
     session.mutationFlushTimer = window.setTimeout(() => flushMutationRescans(session), 50);
 }
@@ -1438,8 +1186,6 @@ function flushMutationRescans(session: FullPageSession): void {
     session.mutationFlushTimer = null;
     if (!session.active) return;
     const startedAt = performance.now();
-    let nextDelay = 16;
-
     while (session.activeDiscovery || session.dirtyRoots.size > 0) {
         if (!session.activeDiscovery) {
             const iterator = session.dirtyRoots.values().next();
@@ -1447,12 +1193,6 @@ function flushMutationRescans(session: FullPageSession): void {
             if (!root) break;
             session.dirtyRoots.delete(root);
             if (isElementNode(root) && !root.isConnected) continue;
-            const rescanNotBefore = session.broadRescanCooldowns.get(root) ?? 0;
-            if (session.broadRescanRoots.has(root) && performance.now() < rescanNotBefore) {
-                session.dirtyRoots.add(root);
-                nextDelay = Math.max(16, rescanNotBefore - performance.now());
-                break;
-            }
             session.activeDiscovery = {
                 root,
                 steps: getCurrentTranslationCore().discoverSteps(root),
@@ -1462,9 +1202,6 @@ function flushMutationRescans(session: FullPageSession): void {
         const active = session.activeDiscovery;
         const step = active.steps.next();
         if (step.done) {
-            if (session.broadRescanRoots.has(active.root)) {
-                session.broadRescanCooldowns.set(active.root, performance.now() + BROAD_RESCAN_COOLDOWN_MS);
-            }
             session.activeDiscovery = null;
             continue;
         }
@@ -1494,9 +1231,7 @@ function flushMutationRescans(session: FullPageSession): void {
     }
 
     if (session.activeDiscovery || session.dirtyRoots.size > 0) {
-        session.mutationFlushTimer = window.setTimeout(() => flushMutationRescans(session), nextDelay);
-    } else {
-        session.dirtyRootsBroadMode = false;
+        session.mutationFlushTimer = window.setTimeout(() => flushMutationRescans(session), 16);
     }
     scheduleFullPageDrain(session);
 }
@@ -1546,7 +1281,6 @@ function isCoreProtectedDescendantMutation(
     if (!element || isTranslationArtifact(element)) return false;
     const statefulTarget = resolveStatefulMutationTarget(element);
     if (statefulTarget === element) return false;
-    if (evaluateHardGuard(element, core.filterPolicy).reason === 'ancestor-depth-limit') return true;
 
     let current: Element | null = includeSelf ? element : getComposedParent(element);
     while (current && current !== statefulTarget) {
@@ -1831,9 +1565,6 @@ function restartStatefulTarget(session: FullPageSession, target: HTMLElement): b
     unregisterSessionStatefulTarget(session, target);
     const state = getTranslationState(target);
     if (!state) return false;
-    // An explicit source/structure mutation is a new translation generation;
-    // do not let the remount-dedupe cache hide a real host edit.
-    session.translationSlotCache.clear();
     const rescanRoot = state.syntheticSegment ? target.parentElement : target;
     removeScheduledForStateTarget(session, target);
 
@@ -2009,7 +1740,7 @@ function createFullPageMutationObserver(
     });
 }
 
-function createFullPageSession(root: HTMLElement): FullPageSession {
+function createFullPageSession(): FullPageSession {
     let session!: FullPageSession;
     const observer = new IntersectionObserver((entries) => {
         if (!session.active || fullPageSession !== session) return;
@@ -2044,19 +1775,14 @@ function createFullPageSession(root: HTMLElement): FullPageSession {
         candidateOwnerKeys: new Map(),
         statefulTargetsByAncestor: new Map(),
         statefulAncestorsByTarget: new WeakMap(),
-        lifecycleRetries: new WeakMap(),
         unchangedCandidates: new WeakMap(),
         userCancelledCandidates: new Map(),
         inFlightCandidates: new Map(),
-        translationSlotCache: new Map(),
         draining: false,
         flushTimer: null,
         dirtyRoots: new Set(),
         mutationFlushTimer: null,
         activeDiscovery: null,
-        broadRescanRoots: new WeakSet([root]),
-        broadRescanCooldowns: new WeakMap(),
-        dirtyRootsBroadMode: false,
         pruneTimer: null,
         pruneIterator: null,
         pruneRequested: false,
@@ -2085,9 +1811,7 @@ function disposeFullPageSession(session: FullPageSession): void {
     session.statefulAncestorsByTarget = new WeakMap();
     session.inFlightCandidates.clear();
     session.userCancelledCandidates.clear();
-    session.translationSlotCache.clear();
     session.dirtyRoots.clear();
-    session.dirtyRootsBroadMode = false;
     session.activeDiscovery = null;
     session.pruneIterator = null;
     session.pruneRequested = false;
@@ -2124,7 +1848,7 @@ export function autoTranslateEnglishPage(): void {
     const root = document.documentElement;
     if (!root) return;
 
-    const session = createFullPageSession(root);
+    const session = createFullPageSession();
     fullPageSession = session;
     document.addEventListener('fluentread-open-shadow-root', (event) => {
         if (!session.active || fullPageSession !== session) return;

@@ -25,20 +25,11 @@ function cloneProgress(): FullPageTranslationProgress {
 }
 
 function deliverProgress(listener: FullPageTranslationProgressListener): void {
-  try {
-    // 每个订阅者都获得独立快照，一个 UI 的误修改或异常不会污染其他 UI。
-    listener(cloneProgress());
-  } catch (error) {
-    console.error('[FluentRead] 全文翻译进度订阅者执行失败', error);
-  }
+  listener(cloneProgress());
 }
 
 function notifyProgressListeners(): void {
   listeners.forEach(deliverProgress);
-}
-
-function normalizeCount(value: number): number {
-  return Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0;
 }
 
 export function startFullPageTranslationProgress(): number {
@@ -61,9 +52,7 @@ export function updateFullPageTranslationProgress(
 ): void {
   if (!progress.active || progress.sessionId !== sessionId) return;
 
-  const running = normalizeCount(value.running);
-  const queued = normalizeCount(value.queued);
-  const offscreen = normalizeCount(value.offscreen);
+  const {running, queued, offscreen} = value;
   const remaining = queued + offscreen;
   if (
     progress.running === running &&

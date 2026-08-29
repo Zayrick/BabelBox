@@ -24,7 +24,7 @@ const VOICE_CANDIDATES_BY_LANGUAGE: Readonly<Record<string, readonly string[]>> 
 };
 
 export function normalizeEdgeTtsLanguage(language: string): string {
-    const normalized = String(language || '').replace(/_/gu, '-').trim();
+    const normalized = language.replace(/_/gu, '-').trim();
     if (!normalized || normalized === 'auto' || normalized === 'detect') return 'en-US';
     if (normalized.toLowerCase() === 'zh-hans') return 'zh-CN';
     if (normalized.toLowerCase() === 'zh-hant') return 'zh-TW';

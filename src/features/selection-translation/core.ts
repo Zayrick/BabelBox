@@ -52,11 +52,11 @@ export class SelectionRequestTokenGate {
 }
 
 function normalizeSelectionRequestLanguage(value: string): string {
-    return String(value || '').trim().replace(/_/g, '-').toLowerCase();
+    return value.trim().replace(/_/g, '-').toLowerCase();
 }
 
 /** ECDICT's bundled auxiliary definitions are Simplified Chinese. */
-export function canUseBundledDictionaryFallback(targetLanguage: string): boolean {
+function canUseBundledDictionaryFallback(targetLanguage: string): boolean {
     return ['zh', 'zh-cn', 'zh-hans', 'zh-sg'].includes(normalizeSelectionRequestLanguage(targetLanguage));
 }
 
@@ -142,8 +142,8 @@ const languageAliases: Record<string, string> = {
 
 /** Compare detected and configured languages without depending on region/script details. */
 export function isSameLanguage(detectedLanguage: string | undefined, targetLanguage: string | undefined): boolean {
-    const detected = String(detectedLanguage ?? '').trim().replace(/_/g, '-').toLowerCase();
-    const target = String(targetLanguage ?? '').trim().replace(/_/g, '-').toLowerCase();
+    const detected = (detectedLanguage ?? '').trim().replace(/_/g, '-').toLowerCase();
+    const target = (targetLanguage ?? '').trim().replace(/_/g, '-').toLowerCase();
     if (!detected || !target || ['auto', 'detect', 'unknown', 'und'].includes(detected) || ['auto', 'detect', 'unknown', 'und'].includes(target)) return false;
 
     const detectedBase = languageAliases[detected] || detected.split('-')[0];
@@ -169,8 +169,8 @@ export function summarizeSelectionContext(
     maxLength = 500,
     selectedIndex?: number,
 ): string {
-    const normalized = String(containerText || '').replace(/\s+/gu, ' ').trim();
-    const selected = String(selectedText || '').trim();
+    const normalized = containerText.replace(/\s+/gu, ' ').trim();
+    const selected = selectedText.trim();
     if (!normalized || !selected || maxLength < 16) return '';
     if (normalized.length <= maxLength) return normalized;
     const normalizedLower = normalized.toLocaleLowerCase();
@@ -178,7 +178,7 @@ export function summarizeSelectionContext(
     const firstIndex = normalizedLower.indexOf(selectedLower);
     if (firstIndex < 0) return `${normalized.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
     let matchedIndex = firstIndex;
-    if (typeof selectedIndex === 'number' && Number.isFinite(selectedIndex)) {
+    if (selectedIndex !== undefined) {
         const preferredIndex = Math.max(0, Math.min(normalized.length, selectedIndex));
         const leftIndex = normalizedLower.lastIndexOf(selectedLower, preferredIndex);
         const rightIndex = normalizedLower.indexOf(selectedLower, preferredIndex);
@@ -236,7 +236,7 @@ const selectionExcludedSelector = [
     ...Array.from(selectionExcludedTagNames, (tagName) => tagName),
 ].join(',');
 
-export function isSelectionExcludedTagName(tagName: string): boolean {
+function isSelectionExcludedTagName(tagName: string): boolean {
     return selectionExcludedTagNames.has(tagName.trim().toLowerCase());
 }
 
@@ -280,11 +280,7 @@ export function shouldIgnoreSelection(range: Range): boolean {
     ];
     if (boundaries.some(isSelectionExcludedElement)) return true;
 
-    try {
-        return Boolean(range.cloneContents().querySelector(selectionExcludedSelector));
-    } catch {
-        return false;
-    }
+    return Boolean(range.cloneContents().querySelector(selectionExcludedSelector));
 }
 
 /**
@@ -323,7 +319,7 @@ export function calculateSelectionPopupPosition(
 }
 
 export function normalizeSpeechLanguage(language: string | undefined, fallback = 'en-US'): string {
-    const normalized = String(language ?? '').trim().replace(/_/g, '-');
+    const normalized = (language ?? '').trim().replace(/_/g, '-');
     const lower = normalized.toLowerCase();
     if (!normalized || ['auto', 'detect', 'unknown', 'und'].includes(lower)) return fallback;
 

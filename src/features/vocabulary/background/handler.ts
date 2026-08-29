@@ -82,12 +82,7 @@ function vocabularyEntryId(value: unknown): string {
 }
 
 function validateGetByTermMessage(message: VocabularyBookRuntimeMessage): {sourceLanguage: string; term: string} {
-    // 支持 beta 期间的 term/word 双字段，但必须至少提供一个非空字符串。
-    const term = typeof message.term === 'string'
-        ? requiredText(message.term, '缺少有效的查询单词')
-        : requiredText(message.word, '缺少有效的查询单词');
-
-    // sourceLanguage 是词书 identity 的一部分，后台边界不再接受隐式空值。
+    const term = requiredText(message.term, '缺少有效的查询单词');
     const sourceLanguage = requiredText(message.sourceLanguage, '缺少有效的源语言');
     return {sourceLanguage, term};
 }
@@ -260,7 +255,7 @@ export function createVocabularyBookHandler(
                         throw new VocabularyBookHandlerError('invalid-input', '不支持的单词本操作');
                 }
             } catch (error) {
-                // 保持旧 background 行为：词书错误转为结构化响应，未知错误转为 storage-error。
+                // 词书错误返回结构化响应，未知错误统一归类为 storage-error。
                 return vocabularyFailure(error, dependencies.logOperationFailure);
             }
         },

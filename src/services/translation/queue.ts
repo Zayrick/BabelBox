@@ -6,7 +6,6 @@
 import {config} from '@/src/services/config/store';
 
 const DEFAULT_MAX_CONCURRENT_TRANSLATIONS = 6;
-const COMPACTION_HEAD_THRESHOLD = 1024;
 
 export interface TranslationQueueSession {
   readonly generation: number;
@@ -42,8 +41,7 @@ export class TranslationQueueCancelledError extends Error {
 }
 
 let activeTranslations = 0;
-let pendingTranslations: Array<PendingTranslation | undefined> = [];
-let pendingHead = 0;
+let pendingTranslations: PendingTranslation[] = [];
 let queueGeneration = 0;
 const sessionStates = new WeakMap<TranslationQueueSession, TranslationQueueSessionState>();
 
@@ -73,39 +71,11 @@ function getSessionCancellationError(session: TranslationQueueSession): Translat
   return null;
 }
 
-function compactPendingQueue(force = false): void {
-  if (pendingHead === 0) return;
-  if (pendingHead >= pendingTranslations.length) {
-    pendingTranslations = [];
-    pendingHead = 0;
-    return;
-  }
-  if (force || (pendingHead >= COMPACTION_HEAD_THRESHOLD && pendingHead * 2 >= pendingTranslations.length)) {
-    pendingTranslations = pendingTranslations.slice(pendingHead);
-    pendingHead = 0;
-  }
-}
-
-function dequeuePendingTranslation(): PendingTranslation | undefined {
-  while (pendingHead < pendingTranslations.length) {
-    const entry = pendingTranslations[pendingHead];
-    pendingTranslations[pendingHead] = undefined;
-    pendingHead += 1;
-    compactPendingQueue();
-    if (entry) return entry;
-  }
-  compactPendingQueue(true);
-  return undefined;
-}
-
 function processQueue(): void {
   const maxConcurrent = getMaxConcurrentTranslations();
   while (activeTranslations < maxConcurrent) {
-    const entry = dequeuePendingTranslation();
+    const entry = pendingTranslations.shift();
     if (!entry) return;
-
-    // enqueue 会同步校验会话；取消操作也会在同一事件循环内把等待项移出数组。
-    // 因此能被 dequeue 取出的条目必然仍是有效的 pending 工作。
     activeTranslations += 1;
     void entry.execute().finally(() => {
       activeTranslations -= 1;
@@ -130,13 +100,12 @@ export function cancelTranslationQueueSession(session: TranslationQueueSession, 
 
   const error = normalizeCancellationError(reason);
   sessionStates.set(session, {cancelled: true, cancellationError: error});
-  for (let index = pendingHead; index < pendingTranslations.length; index += 1) {
-    const entry = pendingTranslations[index];
-    if (entry?.session !== session) continue;
-    pendingTranslations[index] = undefined;
-    entry.cancel(error);
+  const remaining: PendingTranslation[] = [];
+  for (const entry of pendingTranslations) {
+    if (entry.session === session) entry.cancel(error);
+    else remaining.push(entry);
   }
-  compactPendingQueue(true);
+  pendingTranslations = remaining;
 }
 
 /**
@@ -163,12 +132,8 @@ export function enqueueTranslation<T>(
       },
       execute: async () => {
         const heldSettlements: Promise<void>[] = [];
-        let acceptsHolds = true;
         const lease: TranslationQueueLease = {
           holdUntil: (settlement) => {
-            if (!acceptsHolds) {
-              throw new Error('翻译队列任务已结束，无法继续占用并发槽');
-            }
             heldSettlements.push(Promise.resolve(settlement).then(
               () => undefined,
               () => undefined,
@@ -180,7 +145,6 @@ export function enqueueTranslation<T>(
         } catch (error) {
           reject(error);
         } finally {
-          acceptsHolds = false;
           // The caller may already have received an AbortError, but the queue
           // slot remains occupied until every transport started by this task
           // has either settled or reached its transport timeout.
@@ -206,13 +170,7 @@ export function clearTranslationQueue(): void {
   }
 
   queueGeneration += 1;
-  for (let index = pendingHead; index < pendingTranslations.length; index += 1) {
-    const entry = pendingTranslations[index];
-    if (!entry) continue;
-    pendingTranslations[index] = undefined;
-    entry.cancel(error);
-  }
+  pendingTranslations.forEach((entry) => entry.cancel(error));
   pendingTranslations = [];
-  pendingHead = 0;
   defaultSession = createSession();
 }

@@ -1,4 +1,3 @@
-import {safeClosest, safeMatches} from '../dom';
 import type {
     AdapterContext,
     AdapterDecision,
@@ -40,42 +39,16 @@ function selectors(value: SelectorList): readonly string[] {
     return typeof value === 'string' ? [value] : value;
 }
 
-const combinedSelectorsByDocument = new WeakMap<Document, Map<string, string | null>>();
-
-function combinedSelector(element: Element, value: SelectorList): string | null {
-    const document = element.ownerDocument;
-    if (!document) return null;
-    const items = selectors(value);
-    const cacheKey = items.join('\u0000');
-    let documentCache = combinedSelectorsByDocument.get(document);
-    if (!documentCache) {
-        documentCache = new Map();
-        combinedSelectorsByDocument.set(document, documentCache);
-    }
-    if (documentCache.has(cacheKey)) return documentCache.get(cacheKey) ?? null;
-
-    const probe = document.createElement('div');
-    const valid = items.filter((item) => {
-        try {
-            probe.matches(item);
-            return true;
-        } catch {
-            return false;
-        }
-    });
-    const combined = valid.length > 0 ? valid.join(',') : null;
-    documentCache.set(cacheKey, combined);
-    return combined;
+function combinedSelector(value: SelectorList): string {
+    return selectors(value).join(',');
 }
 
 function matchesSelector(element: Element, selector: SelectorList): boolean {
-    const combined = combinedSelector(element, selector);
-    return combined ? safeMatches(element, combined) : false;
+    return element.matches(combinedSelector(selector));
 }
 
 function closestSelector(element: Element, selector: SelectorList): Element | null {
-    const combined = combinedSelector(element, selector);
-    return combined ? safeClosest(element, combined) : null;
+    return element.closest(combinedSelector(selector));
 }
 
 function normalizeHostname(hostname: string): string {
@@ -91,20 +64,10 @@ function matchesHost(url: URL, rule: string | DeclarativeHostRule): boolean {
 
 function matchesPathname(pathname: string, patterns: readonly RegExp[] | undefined): boolean {
     if (!patterns?.length) return true;
-    return patterns.some((pattern) => {
-        try {
-            // Avoid observable lastIndex changes on global/sticky expressions.
-            return new RegExp(pattern.source, pattern.flags).test(pathname);
-        } catch {
-            return false;
-        }
-    });
+    return patterns.some((pattern) => new RegExp(pattern.source, pattern.flags).test(pathname));
 }
 
-/**
- * Build a site adapter from inert selector data. Every selector operation is
- * fail-closed, so a stale or unsupported site selector cannot abort discovery.
- */
+/** Build a site adapter from declarative host, path and selector rules. */
 export function createDeclarativeAdapter(
     definition: DeclarativeSiteAdapterDefinition,
 ): TranslationSiteAdapter {

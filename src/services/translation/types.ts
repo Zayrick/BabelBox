@@ -83,7 +83,7 @@ export interface TranslationProviderConfigFields {
 /** 一次 provider 调用使用的完整、不可变配置视图。 */
 export type TranslationProviderConfigSnapshot = Readonly<TranslationConfigSnapshot & TranslationProviderConfigFields>;
 
-/** 测试或迁移期配置源可以省略凭据字段，snapshot factory 会补安全默认值。 */
+/** 配置源可以省略凭据字段，snapshot factory 会补默认值。 */
 export type TranslationConfigSource = TranslationConfigSnapshot & Partial<TranslationProviderConfigFields>;
 
 export interface TranslationServiceIds {
@@ -127,7 +127,6 @@ export interface TranslationBrokerDependencies {
     resolveConfiguredModel: (selected?: string, custom?: string) => string;
     buildTranslationCacheKey: (identity: Record<string, unknown>) => string;
     now?: () => number;
-    logger?: Pick<Console, 'warn'>;
 }
 
 export interface TranslationBroker {

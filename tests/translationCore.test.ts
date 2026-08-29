@@ -1,5 +1,5 @@
 import {parseHTML} from 'linkedom';
-import {describe, expect, it, vi} from 'vitest';
+import {describe, expect, it} from 'vitest';
 
 import {
     applyTranslationsToSnapshot,
@@ -8,18 +8,13 @@ import {
     createTranslationCore,
     createTranslationSourceSnapshot,
     extractTranslationText,
-    extractTranslationTextFromNodes,
-    findTranslationTruncationAncestors,
     getCurrentTranslationCore,
     getOpenShadowRoots,
-    hasActiveTranslationLineClamp,
     isClearlyTargetLanguage,
     isMeaningfulTranslationText,
     parseTranslationSlots,
-    removeTranslationTruncation,
     selectPreferredTranslationCandidate,
     serializeTranslationSlots,
-    TranslationCandidateCore,
     resolveTranslationCandidate,
     resolveTranslationCandidateAtPoint,
 } from '@/src/core/translation/public';
@@ -27,28 +22,7 @@ import {
     evaluateHardGuard,
     findElementsAtPoint,
     findNodeAtPoint,
-    maxComposedAncestorDepth,
-    safeClosest,
-    safeMatches,
 } from '@/src/core/translation/dom';
-import {
-    classifyGenericCandidate,
-    getDirectInlineRuns,
-    hasStructuralAncestor,
-    hasDirectReadableText,
-    isBlockBoundary,
-    isStructuralContainer,
-} from '@/src/core/translation/layout';
-import {
-    hasMeaningfulTranslationTextInNodes,
-    isTranslationTextNodeProtected,
-} from '@/src/core/translation/text';
-import {
-    findAdapterPrunedAncestor,
-    inheritCachedFlag,
-    partitionInlineRunAtBarriers,
-    readCachedFlagOr,
-} from '@/src/core/translation/internal';
 
 function page(html: string, url = 'https://example.test/article') {
     const {document} = parseHTML(`<html><head></head><body>${html}</body></html>`);
@@ -62,59 +36,6 @@ function candidateIds(document: Document, url?: string): string[] {
 }
 
 describe('translation candidate core', () => {
-    it('保留 engine 自身的祖先深度防线，并缓存实际检查过的祖先', () => {
-        const ancestors = ['parent', 'grandparent', 'too-deep'];
-
-        expect(findAdapterPrunedAncestor(
-            ancestors,
-            2,
-            () => ({decision: {kind: 'pass'}}),
-        )).toEqual({
-            result: {reason: 'ancestor-depth-limit'},
-            inspected: ['parent', 'grandparent'],
-        });
-        expect(findAdapterPrunedAncestor(
-            ancestors,
-            4,
-            (ancestor) => ancestor === 'grandparent'
-                ? {decision: {kind: 'prune-subtree', reason: ''}, adapterId: 'bounded-adapter'}
-                : {decision: {kind: 'pass'}},
-        )).toEqual({
-            result: {reason: 'adapter-pruned', adapterId: 'bounded-adapter'},
-            inspected: ['parent', 'grandparent'],
-        });
-        expect(findAdapterPrunedAncestor(
-            ancestors.slice(0, 1),
-            2,
-            () => ({decision: {kind: 'pass'}}),
-        )).toEqual({result: null, inspected: ['parent']});
-    });
-
-    it('直接行内序列在独立候选边界处分段，并跳过连续或首尾边界', () => {
-        const barrier = Symbol('barrier');
-
-        expect(partitionInlineRunAtBarriers(
-            [barrier, 'before', barrier, barrier, 'after', barrier],
-            (node) => node === barrier,
-        )).toEqual([['before'], ['after']]);
-        expect(partitionInlineRunAtBarriers([], () => false)).toEqual([]);
-    });
-
-    it('engine 本轮布尔缓存支持祖先继承，并只在缺失时执行后备计算', () => {
-        const parent = {};
-        const child = {};
-        const flags = new WeakMap<object, boolean>([[parent, true], [child, false]]);
-        const fallback = vi.fn(() => true);
-
-        expect(inheritCachedFlag(parent, flags)).toBe(true);
-        expect(inheritCachedFlag(child, flags)).toBe(false);
-        expect(inheritCachedFlag(null, flags)).toBe(false);
-        expect(readCachedFlagOr(flags, child, fallback)).toBe(false);
-        expect(fallback).not.toHaveBeenCalled();
-        expect(readCachedFlagOr(flags, {}, fallback)).toBe(true);
-        expect(fallback).toHaveBeenCalledOnce();
-    });
-
     it('keeps inline links and emphasis inside one paragraph candidate', () => {
         const {document, core} = page(`
             <main><p id="prose">Read <a id="link">the guide</a> with <strong>care</strong>.</p></main>
@@ -335,35 +256,6 @@ describe('translation candidate core', () => {
         expect(core.resolve(changedText)?.nodes).toEqual(dirtyRun?.nodes);
     });
 
-    it('bounds the hover-only candidate-subtree probe before conservatively splitting a run', () => {
-        const nested = `${'<span>'.repeat(600)}Deep inline text${'</span>'.repeat(600)}`;
-        const {document} = parseHTML(`<html><body><main><div id="parent">
-            Direct parent text <span id="deep-wrapper">${nested}</span>
-        </div></main></body></html>`);
-        let decisions = 0;
-        const core = createTranslationCore({
-            url: new URL('https://example.test'),
-            adapters: [{
-                id: 'hover-budget',
-                matches: () => true,
-                decide: () => {
-                    decisions += 1;
-                    return {kind: 'pass'} as const;
-                },
-            }],
-        });
-        const parent = document.querySelector('#parent')!;
-        const wrapper = document.querySelector('#deep-wrapper')!;
-        const directText = Array.from(parent.childNodes).find((node) =>
-            node.nodeType === 3 && node.textContent?.includes('Direct parent text'))!;
-        const candidate = core.resolve(directText);
-
-        expect(candidate).toMatchObject({element: parent, reason: 'generic-inline-run'});
-        expect(candidate?.nodes).toEqual([directText]);
-        expect(candidate?.nodes).not.toContain(wrapper);
-        expect(decisions).toBeLessThan(400);
-    });
-
     it.each(['main', 'article', 'section', 'div'])('never reparents display:contents <%s> regions', (tag) => {
         const {document, core} = page(`
             <div id="layout">Parent before
@@ -428,115 +320,6 @@ describe('translation candidate core', () => {
             .flatMap((step) => step?.candidate ? [step.candidate.element.id] : []);
         expect(incremental).toEqual(core.discover(document).map((candidate) => candidate.element.id));
         expect(incremental).toHaveLength(200);
-    });
-
-    it('bounds one readability probe on an extremely wide subtree', () => {
-        const {document} = parseHTML(`<html><body><div id="wide">${
-            Array.from({length: 5_000}, () => '<span></span>').join('')
-        }</div></body></html>`);
-        const wide = document.querySelector('#wide')!;
-        let inspectedElements = 0;
-
-        expect(hasMeaningfulTranslationTextInNodes([wide], () => {
-            inspectedElements += 1;
-            return false;
-        })).toBe(false);
-        expect(inspectedElements).toBeLessThanOrEqual(2_100);
-    });
-
-    it('conservatively prunes adversarial ancestor depth without climbing the entire tree', () => {
-        const {document} = parseHTML('<html><body><main id="root"></main></body></html>');
-        const root = document.querySelector('#root')!;
-        let parent = root;
-        for (let index = 0; index < maxComposedAncestorDepth + 100; index += 1) {
-            const child = document.createElement('div');
-            parent.appendChild(child);
-            parent = child;
-        }
-        parent.textContent = 'Readable text at an adversarial depth.';
-        const core = createTranslationCore({url: new URL('https://example.test')});
-
-        expect(evaluateHardGuard(parent)).toMatchObject({
-            prune: true,
-            reason: 'ancestor-depth-limit',
-        });
-        expect(core.resolve(parent.firstChild)).toBeNull();
-    });
-
-    it('shares text ancestor protection across one adversarially deep discovery', () => {
-        const {document} = parseHTML('<html><body><main id="root"></main></body></html>');
-        const depth = maxComposedAncestorDepth + 100;
-        let parent = document.querySelector('#root')!;
-        for (let index = 0; index < depth; index += 1) {
-            const child = document.createElement('div');
-            parent.appendChild(child);
-            parent = child;
-        }
-        parent.textContent = 'Readable text beyond the conservative depth limit.';
-        let protectionChecks = 0;
-        const core = createTranslationCore({
-            url: new URL('https://example.test'),
-            adapters: [{
-                id: 'protection-counter',
-                matches: () => true,
-                decide: () => ({kind: 'pass'}),
-                shouldStayOriginal: () => {
-                    protectionChecks += 1;
-                    return false;
-                },
-            }],
-        });
-
-        expect(core.discover(document)).toEqual([]);
-        expect(protectionChecks).toBeLessThan(depth * 4);
-    });
-
-    it('shares hover guard and adapter ancestry across one deep candidate miss', () => {
-        const depth = 450;
-        const {document} = parseHTML('<html><body><header id="root"></header></body></html>');
-        const view = document.defaultView!;
-        const originalStyleDescriptor = Object.getOwnPropertyDescriptor(view, 'getComputedStyle');
-        let styleChecks = 0;
-        Object.defineProperty(view, 'getComputedStyle', {
-            configurable: true,
-            value: () => {
-                styleChecks += 1;
-                return {display: 'inline', visibility: 'visible'};
-            },
-        });
-
-        let parent = document.querySelector('#root')!;
-        for (let index = 0; index < depth; index += 1) {
-            const child = document.createElement('span');
-            parent.appendChild(child);
-            parent = child;
-        }
-        parent.textContent = 'x';
-
-        let adapterDecisions = 0;
-        const core = createTranslationCore({
-            url: new URL('https://example.test'),
-            adapters: [{
-                id: 'hover-ancestry-counter',
-                matches: () => true,
-                decide: () => {
-                    adapterDecisions += 1;
-                    return {kind: 'pass'} as const;
-                },
-            }],
-        });
-
-        try {
-            expect(core.resolve(parent.firstChild)).toBeNull();
-        } finally {
-            if (originalStyleDescriptor) {
-                Object.defineProperty(view, 'getComputedStyle', originalStyleDescriptor);
-            } else {
-                Reflect.deleteProperty(view, 'getComputedStyle');
-            }
-        }
-        expect(adapterDecisions).toBeLessThanOrEqual(depth + 3);
-        expect(styleChecks).toBeLessThanOrEqual(depth * 2 + 6);
     });
 
     it('does not climb from structural chrome into an app-shell container', () => {
@@ -747,7 +530,7 @@ describe('translation candidate core', () => {
             .toBe('___FLUENTREAD_slots_0_BEGIN___');
     });
 
-    it('keeps snapshot serialization bounded to live readable slots', () => {
+    it('serializes only live readable slots', () => {
         const {document, core} = page(`
             <main><p id="target">
                 Leading source
@@ -758,20 +541,8 @@ describe('translation candidate core', () => {
             </p></main>
         `);
         const target = document.querySelector('#target') as HTMLElement;
-        const originalCreateTreeWalker = document.createTreeWalker;
         const snapshot = createTranslationSourceSnapshot(target, core.shouldStayOriginal);
         const rendered = applyTranslationsToSnapshot(snapshot, ['译:leading']);
-        const truncationHost = document.createElement('section');
-        const clamped = document.createElement('div');
-        const leaf = document.createElement('p');
-        const styleCalls: string[] = [];
-        const getComputedStyle = vi.spyOn(document.defaultView!, 'getComputedStyle').mockImplementation(
-            (element: Element) => ({
-                webkitLineClamp: element === clamped ? '2' : '',
-                getPropertyValue: (property: string) =>
-                    element === clamped && property === '-webkit-line-clamp' ? '2' : '',
-            }) as CSSStyleDeclaration,
-        );
 
         expect(snapshot.slots.map((slot) => slot.source)).toEqual(['Leading source', 'trailing source']);
         expect(snapshot.clone.querySelector('.fluent-read-loading')).toBeNull();
@@ -779,41 +550,6 @@ describe('translation candidate core', () => {
         expect(rendered).toContain('译:leading');
         expect(rendered).toContain('trailing source');
         expect(rendered).toContain('Do not translate');
-
-        Object.defineProperty(document, 'createTreeWalker', {
-            configurable: true,
-            value: undefined,
-        });
-        try {
-            expect(collectLiveTranslationTextSlots(target, core.shouldStayOriginal)).toEqual([]);
-            expect(createTranslationSourceSnapshot(target, core.shouldStayOriginal).slots).toEqual([]);
-        } finally {
-            Object.defineProperty(document, 'createTreeWalker', {
-                configurable: true,
-                value: originalCreateTreeWalker,
-            });
-        }
-
-        truncationHost.append(clamped);
-        clamped.append(leaf);
-        document.body.append(truncationHost);
-        clamped.style.setProperty('-webkit-line-clamp', '2');
-        expect(hasActiveTranslationLineClamp(clamped)).toBe(true);
-        expect(findTranslationTruncationAncestors(
-            leaf,
-            (element) => element === truncationHost,
-        )).toEqual([clamped, truncationHost]);
-
-        removeTranslationTruncation(clamped);
-        for (const property of ['-webkit-line-clamp', 'line-clamp', 'max-height']) {
-            styleCalls.push(`${property}:${clamped.style.getPropertyValue(property)}`);
-        }
-        expect(styleCalls).toEqual([
-            '-webkit-line-clamp:unset',
-            'line-clamp:unset',
-            'max-height:unset',
-        ]);
-        getComputedStyle.mockRestore();
     });
 
     it('discovers readable content in an open shadow root', () => {
@@ -1053,69 +789,8 @@ describe('translation candidate core', () => {
         expect(core.resolve(document.querySelector('#navigation'))).toBeNull();
     });
 
-    it('handles stale or invalid site selectors without aborting discovery', () => {
+    it('preserves registration order for equal adapter priorities', () => {
         const {document} = parseHTML('<html><body><main><p id="safe">Readable fallback prose.</p></main></body></html>');
-        const adapter = createDeclarativeAdapter({
-            id: 'broken-selector',
-            hosts: ['example.test'],
-            prune: [{selector: '[invalid=', reason: 'invalid'}],
-            targets: [{selector: ':not(', reason: 'invalid-target'}],
-        });
-        const core = createTranslationCore({url: new URL('https://example.test'), adapters: [adapter]});
-
-        expect(core.discover(document).map((item) => item.element.id)).toEqual(['safe']);
-    });
-
-    it('drops one invalid selector without disabling valid selectors in the same rule', () => {
-        const {document} = parseHTML('<html><body><main><p id="safe">Readable fallback prose.</p></main></body></html>');
-        const adapter = createDeclarativeAdapter({
-            id: 'partially-broken-selector',
-            hosts: ['example.test'],
-            targets: [{
-                selector: [':not(', '#safe'],
-                reason: 'valid-selector-survives',
-            }],
-        });
-        const core = createTranslationCore({url: new URL('https://example.test'), adapters: [adapter]});
-
-        expect(core.discover(document)[0]).toMatchObject({
-            element: document.querySelector('#safe'),
-            adapterId: 'partially-broken-selector',
-            reason: 'valid-selector-survives',
-        });
-    });
-
-    it('combines selector lists so a generic adapter miss does not repeat ancestor walks', () => {
-        const {document} = parseHTML('<html><body><main><p id="safe">Readable fallback prose.</p></main></body></html>');
-        const adapter = createDeclarativeAdapter({
-            id: 'selector-cost',
-            hosts: ['example.test'],
-            prune: [{
-                selector: Array.from({length: 20}, (_, index) => `.never-prune-${index}`),
-                reason: 'never-prune',
-            }],
-            targets: [{
-                selector: Array.from({length: 20}, (_, index) => `.never-target-${index}`),
-                reason: 'never-target',
-                match: 'closest',
-            }],
-        });
-        const target = document.querySelector('#safe')!;
-        const closest = vi.spyOn(target, 'closest');
-
-        expect(adapter.decide(target, {url: new URL('https://example.test')})).toEqual({kind: 'pass'});
-        expect(closest).toHaveBeenCalledTimes(2);
-    });
-
-    it('isolates faulty adapters and preserves registration order for equal priorities', () => {
-        const {document} = parseHTML('<html><body><main><p id="safe">Readable fallback prose.</p></main></body></html>');
-        const faulty = {
-            id: 'faulty',
-            priority: 100,
-            matches: () => true,
-            decide: () => { throw new Error('adapter failure'); },
-            shouldStayOriginal: () => { throw new Error('adapter failure'); },
-        };
         const first = createDeclarativeAdapter({
             id: 'z-first-registered',
             priority: 50,
@@ -1130,7 +805,7 @@ describe('translation candidate core', () => {
         });
         const core = createTranslationCore({
             url: new URL('https://example.test'),
-            adapters: [faulty, first, second],
+            adapters: [first, second],
         });
 
         expect(core.discover(document)[0]).toMatchObject({
@@ -1187,36 +862,6 @@ describe('translation candidate core', () => {
         expect(core.resolve(document.querySelector('#hit'))?.element.id).toBe('forced');
     });
 
-    it('bounds discovery work for a single huge inline subtree', () => {
-        const {document} = parseHTML('<html><body><main><p id="huge"></p></main></body></html>');
-        const huge = document.querySelector('#huge')!;
-        for (let index = 0; index < 5000; index += 1) {
-            huge.appendChild(document.createTextNode(index === 0 ? 'Readable prose.' : ' ·'));
-        }
-        const core = createTranslationCore({url: new URL('https://example.test')});
-        const steps = core.discoverSteps(document);
-        let candidate: ReturnType<typeof core.discover>[number] | undefined;
-        for (const step of steps) candidate ??= step.candidate;
-
-        expect(candidate?.element.id).toBe('huge');
-    });
-
-    it('walks deeply nested DOM iteratively without overflowing the call stack', () => {
-        const {document} = parseHTML('<html><body><main id="root"></main></body></html>');
-        let parent = document.querySelector('#root')!;
-        for (let index = 0; index < 400; index += 1) {
-            const child = document.createElement('div');
-            parent.appendChild(child);
-            parent = child;
-        }
-        const paragraph = document.createElement('p');
-        paragraph.id = 'deep-prose';
-        paragraph.textContent = 'A readable sentence at the deepest level.';
-        parent.appendChild(paragraph);
-
-        expect(candidateIds(document)).toEqual(['deep-prose']);
-    });
-
     it('filters identifiers and pure numeric metadata', () => {
         const ids = candidateIds(parseHTML(`
             <html><body><main>
@@ -1250,7 +895,7 @@ describe('translation candidate core', () => {
         expect(isMeaningfulTranslationText('Readable article summary')).toBe(true);
     });
 
-    it('exercises URL-scoped current core wrappers without leaking cache across pages', () => {
+    it('scopes current-core wrappers to the page URL', () => {
         const locationDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'location');
         const documentDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'document');
         const {document} = parseHTML('<html><body><main><p id="target">Readable current page text.</p></main></body></html>');
@@ -1271,19 +916,6 @@ describe('translation candidate core', () => {
             });
             expect(getCurrentTranslationCore()).not.toBe(firstCore);
 
-            Reflect.deleteProperty(globalThis, 'location');
-            expect(getCurrentTranslationCore().url.href).toBe('https://invalid.local/');
-            expect(new TranslationCandidateCore().url.href).toBe('https://invalid.local/');
-            Object.defineProperty(globalThis, 'location', {
-                configurable: true,
-                value: {href: 'not a url'},
-            });
-            expect(new TranslationCandidateCore().url.href).toBe('https://invalid.local/');
-
-            if (documentDescriptor) Object.defineProperty(globalThis, 'document', documentDescriptor);
-            else Reflect.deleteProperty(globalThis, 'document');
-            expect(resolveTranslationCandidateAtPoint(1, 2)).toBeNull();
-
             Object.defineProperty(document, 'elementFromPoint', {
                 configurable: true,
                 value: () => target,
@@ -1301,7 +933,7 @@ describe('translation candidate core', () => {
         }
     });
 
-    it('keeps DOM helper fallbacks bounded and fail-closed', () => {
+    it('resolves DOM points across document and open shadow roots', () => {
         const {document} = parseHTML(`
             <html><body><main>
                 <article-card id="host"></article-card>
@@ -1315,24 +947,7 @@ describe('translation candidate core', () => {
         const nested = firstShadow.querySelector('#nested')!;
         const secondShadow = nested.attachShadow({mode: 'open'});
         secondShadow.innerHTML = '<p id="shadow-copy">Nested shadow text.</p>';
-        const duplicateHost = document.createElement('duplicate-card');
-        Object.defineProperty(duplicateHost, 'shadowRoot', {
-            configurable: true,
-            value: firstShadow,
-        });
-        document.body.append(duplicateHost);
-
-        expect(safeMatches(point, ':not(')).toBe(false);
-        expect(safeClosest(point, ':not(')).toBeNull();
         expect(getOpenShadowRoots(document)).toEqual([firstShadow, secondShadow]);
-        expect(getOpenShadowRoots(host)).toEqual([firstShadow, secondShadow]);
-        const documentDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'document');
-        try {
-            Reflect.deleteProperty(globalThis, 'document');
-            expect(getOpenShadowRoots({nodeType: 11, ownerDocument: null} as Node)).toEqual([]);
-        } finally {
-            if (documentDescriptor) Object.defineProperty(globalThis, 'document', documentDescriptor);
-        }
 
         Object.defineProperty(document, 'elementsFromPoint', {
             configurable: true,
@@ -1349,16 +964,6 @@ describe('translation candidate core', () => {
             value: () => point,
         });
         expect(findElementsAtPoint(document, 10, 20)).toEqual([point]);
-        Object.defineProperty(document, 'elementFromPoint', {
-            configurable: true,
-            value: () => null,
-        });
-        expect(findElementsAtPoint(document, 10, 20)).toEqual([]);
-        expect(findElementsAtPoint({} as Document, 10, 20)).toEqual([]);
-        Object.defineProperty(document, 'elementFromPoint', {
-            configurable: true,
-            value: () => point,
-        });
 
         Object.defineProperty(document, 'caretPositionFromPoint', {
             configurable: true,
@@ -1368,19 +973,13 @@ describe('translation candidate core', () => {
 
         Object.defineProperty(document, 'caretPositionFromPoint', {
             configurable: true,
-            value: () => { throw new Error('caret position unavailable'); },
+            value: undefined,
         });
         Object.defineProperty(document, 'caretRangeFromPoint', {
             configurable: true,
             value: () => ({startContainer: point.firstChild}),
         });
         expect(findNodeAtPoint(document, 10, 20)).toBe(point.firstChild);
-
-        Object.defineProperty(document, 'caretRangeFromPoint', {
-            configurable: true,
-            value: () => { throw new Error('caret range unavailable'); },
-        });
-        expect(findNodeAtPoint(document, 10, 20)).toBeNull();
 
         const core = createTranslationCore({url: new URL('https://example.test')});
         const shadowTarget = secondShadow.querySelector('#shadow-copy')!;
@@ -1396,115 +995,14 @@ describe('translation candidate core', () => {
             configurable: true,
             value: () => host,
         });
+        Object.defineProperty(document, 'caretRangeFromPoint', {
+            configurable: true,
+            value: () => ({startContainer: shadowTarget.firstChild}),
+        });
         expect(core.resolveAtPoint(document, 10, 20)?.element).toBe(shadowTarget);
-
-        Object.defineProperty(secondShadow, 'elementFromPoint', {
-            configurable: true,
-            value: () => null,
-        });
-        Object.defineProperty(document, 'elementFromPoint', {
-            configurable: true,
-            value: () => document.querySelector('main'),
-        });
-        expect(core.resolveAtPoint(document, 10, 20)).toBeNull();
-
-        Object.defineProperty(document, 'caretPositionFromPoint', {
-            configurable: true,
-            value: () => ({offsetNode: point.firstChild}),
-        });
-        expect(core.resolveAtPoint(document, 10, 20)?.element).toBe(point);
     });
 
-    it('rejects malformed slot packets and applies truncation style overrides directly', () => {
-        const packet = serializeTranslationSlots([' Alpha ', 'Beta']);
-        const translated = `${packet.starts[0]}一${packet.ends[0]}\n${packet.starts[1]}二${packet.ends[1]}`;
-
-        expect(packet.starts[0]).toMatch(/^___FLUENTREAD_[a-z0-9_-]+_0_BEGIN___$/u);
-        expect(parseTranslationSlots(packet, translated)).toEqual(['一', '二']);
-        expect(parseTranslationSlots({...packet, ends: packet.ends.slice(1)}, translated)).toBeNull();
-        expect(parseTranslationSlots({...packet, starts: ['', packet.starts[1]]}, translated)).toBeNull();
-        expect(parseTranslationSlots(packet, `${packet.starts[0]}一${packet.starts[0]}二${packet.ends[0]}`)).toBeNull();
-        expect(parseTranslationSlots(packet, `${packet.starts[0]}一`)).toBeNull();
-        expect(parseTranslationSlots(packet, `${translated}\nextra prose`)).toBeNull();
-        expect(serializeTranslationSlots(['Gamma'], '!!!').starts[0]).toBe('___FLUENTREAD_slots_0_BEGIN___');
-
-        const {document} = parseHTML('<html><body><p id="target">Clamped text.</p></body></html>');
-        const target = document.querySelector('#target') as HTMLElement;
-        removeTranslationTruncation(target);
-        expect(target.style.getPropertyValue('-webkit-line-clamp')).toBe('unset');
-        expect(target.style.getPropertyValue('line-clamp')).toBe('unset');
-        expect(target.style.getPropertyValue('max-height')).toBe('unset');
-
-        Object.defineProperty(document.defaultView, 'getComputedStyle', {
-            configurable: true,
-            value: () => { throw new Error('style failed'); },
-        });
-        expect(hasActiveTranslationLineClamp(target)).toBe(false);
-        Object.defineProperty(document.defaultView, 'getComputedStyle', {
-            configurable: true,
-            value: () => null,
-        });
-        expect(hasActiveTranslationLineClamp(target)).toBe(false);
-        for (const value of ['', 'none', 'normal', 'auto', 'unset', 'initial', 'not-a-number']) {
-            Object.defineProperty(document.defaultView, 'getComputedStyle', {
-                configurable: true,
-                value: () => ({
-                    webkitLineClamp: value,
-                    getPropertyValue: () => '',
-                }),
-            });
-            expect(hasActiveTranslationLineClamp(target)).toBe(false);
-        }
-        Object.defineProperty(document.defaultView, 'getComputedStyle', {
-            configurable: true,
-            value: () => ({
-                webkitLineClamp: '',
-                getPropertyValue: (property: string) => property === 'line-clamp' ? '3' : '',
-            }),
-        });
-        expect(hasActiveTranslationLineClamp(target)).toBe(true);
-        const clampedWrapper = document.createElement('section');
-        clampedWrapper.append(target);
-        document.body.append(clampedWrapper);
-        expect(findTranslationTruncationAncestors(target)).toEqual([clampedWrapper]);
-
-        const originalCreateTreeWalker = document.createTreeWalker;
-        Object.defineProperty(document, 'createTreeWalker', {
-            configurable: true,
-            value: undefined,
-        });
-        expect(collectLiveTranslationTextSlots(target)).toEqual([]);
-        expect(createTranslationSourceSnapshot(target).slots).toEqual([]);
-        expect(extractTranslationText(target)).toBe('');
-        Object.defineProperty(document, 'createTreeWalker', {
-            configurable: true,
-            value: originalCreateTreeWalker,
-        });
-
-        const nullText = document.createTextNode('Readable text hidden by null nodeValue.');
-        const nullDirectHost = document.createElement('p');
-        nullDirectHost.append(nullText);
-        document.body.append(nullDirectHost);
-        Object.defineProperty(nullText, 'nodeValue', {
-            configurable: true,
-            get: () => null,
-        });
-        const nullTextHost = document.createElement('p');
-        const nullWalkerText = document.createTextNode('Walker text hidden by null nodeValue.');
-        Object.defineProperty(nullWalkerText, 'nodeValue', {
-            configurable: true,
-            get: () => null,
-        });
-        nullTextHost.append(nullWalkerText);
-        document.body.append(nullTextHost);
-        expect(extractTranslationTextFromNodes([nullText])).toBe('');
-        expect(extractTranslationText(nullTextHost)).toBe('');
-        expect(collectLiveTranslationTextSlots(nullTextHost)).toEqual([]);
-        expect(createTranslationSourceSnapshot(nullTextHost).slots).toEqual([]);
-        expect(hasMeaningfulTranslationTextInNodes([nullTextHost])).toBe(false);
-    });
-
-    it('honors declarative path gates and fails closed for invalid pathname patterns', () => {
+    it('honors declarative host and path gates', () => {
         const adapter = createDeclarativeAdapter({
             id: 'path-gated',
             hosts: [{hostname: 'example.test', includeSubdomains: true}],
@@ -1512,12 +1010,6 @@ describe('translation candidate core', () => {
             targets: [{selector: '.article-copy', reason: 'path-copy'}],
             keepOriginal: [{selector: '.token', reason: 'secret'}],
             mutationExclude: [{selector: '.live-widget', reason: 'dynamic'}],
-        });
-        const brokenPath = createDeclarativeAdapter({
-            id: 'broken-path',
-            hosts: ['example.test'],
-            pathnames: [{source: '[', flags: 'u'} as RegExp],
-            targets: [{selector: '.article-copy', reason: 'path-copy'}],
         });
         const {document} = parseHTML(`
             <html><body><main>
@@ -1530,199 +1022,15 @@ describe('translation candidate core', () => {
         expect(adapter.matches(new URL('https://sub.example.test/docs/page'))).toBe(true);
         expect(adapter.matches(new URL('https://sub.example.test/blog'))).toBe(false);
         expect(adapter.matches(new URL('https://other.test/docs/page'))).toBe(false);
-        expect(brokenPath.matches(new URL('https://example.test/docs/page'))).toBe(false);
         expect(adapter.decide(document.querySelector('#copy')!, {url: new URL('https://sub.example.test/docs/page')}))
             .toMatchObject({kind: 'force-target', reason: 'path-copy'});
         expect(adapter.shouldStayOriginal?.(document.querySelector('#token')!, {url: new URL('https://sub.example.test/docs/page')}))
             .toBe(true);
         expect(adapter.shouldIgnoreMutation?.(document.querySelector('#widget')!, {url: new URL('https://sub.example.test/docs/page')}))
             .toBe(true);
-        expect(adapter.decide({ownerDocument: null} as unknown as Element, {url: new URL('https://sub.example.test/docs/page')}))
-            .toEqual({kind: 'pass'});
     });
 
-    it('covers adapter failure isolation and explicit candidate precedence', () => {
-        const {document} = parseHTML(`
-            <html><body><main>
-                <div id="pruned"><p id="pruned-child">Pruned child text.</p></div>
-                <p id="skip">Skipped self text.</p>
-                <button id="forced-button">Confirm action</button>
-                <div id="atomic-wrapper">Before <span id="atomic-child">Atomic child text.</span> After</div>
-            </main></body></html>
-        `);
-        const pruned = document.querySelector('#pruned')!;
-        const skip = document.querySelector('#skip')!;
-        const forcedButton = document.querySelector('#forced-button')!;
-        const atomicChild = document.querySelector('#atomic-child')!;
-        const badMatches = {
-            id: 'bad-matches',
-            priority: undefined,
-            matches: () => { throw new Error('matches failed'); },
-            decide: () => ({kind: 'force-target' as const, reason: 'never'}),
-        };
-        const adapter = {
-            id: 'edge-adapter',
-            matches: () => true,
-            decide: (element: Element) => {
-                if (element === pruned) return {kind: 'prune-subtree' as const, reason: 'private'};
-                if (element === skip) return {kind: 'skip-self' as const, reason: 'skip'};
-                if (element === forcedButton) return {kind: 'force-target' as const, reason: 'button'};
-                if (element === atomicChild) return {kind: 'force-target' as const, reason: 'atomic'};
-                if (element.id === 'non-atomic-inline') {
-                    return {kind: 'force-target' as const, reason: 'non-atomic-inline', atomic: false};
-                }
-                if (element.id === 'stale-text-target') {
-                    return {
-                        kind: 'force-target' as const,
-                        reason: 'stale-text-target',
-                        target: document.createTextNode('not an element') as unknown as Element,
-                    };
-                }
-                return {kind: 'pass' as const};
-            },
-            shouldStayOriginal: () => { throw new Error('stay original failed'); },
-            shouldIgnoreMutation: () => { throw new Error('ignore mutation failed'); },
-        };
-        const keepOriginal = {
-            id: 'keep-original',
-            matches: () => true,
-            decide: () => ({kind: 'pass' as const}),
-            shouldStayOriginal: (element: Element) => element.id === 'skip',
-        };
-        const stale = document.createElement('p');
-        stale.id = 'stale-text-target';
-        stale.textContent = 'Readable stale target text.';
-        document.body.append(stale);
-        const core = new TranslationCandidateCore({
-            url: new URL('https://example.test'),
-            adapters: [badMatches, adapter],
-        });
-        const noPriorityA = createDeclarativeAdapter({
-            id: 'no-priority-a',
-            hosts: ['example.test'],
-            targets: [{selector: '#skip', reason: 'a'}],
-        });
-        const noPriorityB = createDeclarativeAdapter({
-            id: 'no-priority-b',
-            hosts: ['example.test'],
-            targets: [{selector: '#skip', reason: 'b'}],
-        });
-
-        expect(core.adapters.map((item) => item.id)).toEqual(['edge-adapter']);
-        expect(new TranslationCandidateCore({
-            url: new URL('https://example.test'),
-            adapters: [noPriorityA, noPriorityB],
-        }).adapters.map((item) => item.id)).toEqual(['no-priority-a', 'no-priority-b']);
-        expect(core.inspect(pruned).candidate).toBeNull();
-        expect(core.resolve(pruned.querySelector('#pruned-child')?.firstChild)).toBeNull();
-        expect(core.inspect(skip).candidate).toBeNull();
-        expect(core.inspect(stale).candidate).toBeNull();
-        expect(core.inspect(forcedButton).candidate).toMatchObject({kind: 'control', reason: 'button'});
-        expect(core.shouldStayOriginal(document.querySelector('main')!)).toBe(false);
-        expect(core.shouldIgnoreMutation(document.querySelector('main')!)).toBe(false);
-        expect(new TranslationCandidateCore({
-            url: new URL('https://example.test'),
-            adapters: [keepOriginal],
-        }).shouldStayOriginal(skip)).toBe(true);
-        expect(selectPreferredTranslationCandidate(
-            {element: skip as HTMLElement, kind: 'content', reason: 'generic'},
-            {element: forcedButton as HTMLElement, kind: 'content', reason: 'forced', adapterId: 'edge-adapter'},
-        )?.element).toBe(forcedButton);
-        expect(selectPreferredTranslationCandidate(
-            {element: skip as HTMLElement, kind: 'content', reason: 'generic'},
-            {element: stale as HTMLElement, kind: 'content', reason: 'generic-2'},
-        )?.element).toBe(skip);
-
-        const candidates = core.discover(document.querySelector('#atomic-wrapper')!);
-        expect(candidates.map((candidate) => candidate.element.id)).toContain('atomic-child');
-        expect(candidates.filter((candidate) => candidate.element.id === 'atomic-wrapper'))
-            .toHaveLength(2);
-        expect(core.resolve(null)).toBeNull();
-        expect(core.resolve(document.createComment('not an element'))).toBeNull();
-        expect(core.resolve(document.querySelector('#atomic-wrapper'))?.element.id).toBe('atomic-wrapper');
-
-        const directBarrier = document.createElement('div');
-        const barrier = document.createElement('span');
-        barrier.id = 'manual-barrier';
-        barrier.textContent = 'Barrier text.';
-        directBarrier.append('Before barrier.', barrier, 'After barrier.');
-        expect(getDirectInlineRuns(directBarrier, undefined, true, (element) => element === barrier)
-            .map((run) => run.map((node) => node.textContent).join('').trim()))
-            .toEqual(['Before barrier.', 'After barrier.']);
-
-        const mixed = document.createElement('div');
-        mixed.id = 'mixed-inline-resolution';
-        mixed.innerHTML = [
-            'Intro ',
-            '<span id="pass-inline">pass inline</span>',
-            '<span id="non-atomic-inline">non atomic inline</span>',
-            '<span id="redirect-inline">redirected inline</span>',
-            '<span id="empty-inline"></span>',
-            '<span id="second-atomic-child">second atomic child</span>',
-            ' Tail',
-        ].join('');
-        document.body.append(mixed);
-        const secondAtomic = mixed.querySelector('#second-atomic-child')!;
-        const redirectInline = mixed.querySelector('#redirect-inline')!;
-        const mixedAdapter = {
-            id: 'mixed-adapter',
-            matches: () => true,
-            decide: (element: Element) => {
-                if (element === secondAtomic) return {kind: 'force-target' as const, reason: 'second-atomic'};
-                if (element === redirectInline) {
-                    return {kind: 'force-target' as const, reason: 'redirect-inline', target: mixed};
-                }
-                if (element.id === 'non-atomic-inline') {
-                    return {kind: 'force-target' as const, reason: 'non-atomic-inline', atomic: false};
-                }
-                return {kind: 'pass' as const};
-            },
-        };
-        const mixedCore = new TranslationCandidateCore({
-            url: new URL('https://example.test'),
-            adapters: [mixedAdapter],
-        });
-
-        expect(mixedCore.discover(mixed).map((candidate) => candidate.element.id))
-            .toContain('second-atomic-child');
-        expect(mixedCore.resolve(mixed)?.element).toBe(mixed);
-        expect(mixedCore.resolve(mixed.querySelector('#pass-inline')?.firstChild)?.element).toBe(mixed);
-        expect(mixedCore.resolve(mixed.querySelector('#empty-inline'))?.element).toBe(mixed);
-
-        const statefulWrapper = document.createElement('div');
-        statefulWrapper.id = 'stateful-wrapper';
-        statefulWrapper.innerHTML = [
-            'Before ',
-            '<span id="stateful-child">Stateful child text.</span>',
-            '<p id="stateful-block">Block child text.</p>',
-            ' After',
-        ].join('');
-        document.body.append(statefulWrapper);
-        const statefulChild = statefulWrapper.querySelector('#stateful-child')!;
-        let statefulDecisions = 0;
-        const statefulCore = new TranslationCandidateCore({
-            url: new URL('https://example.test'),
-            adapters: [{
-                id: 'stateful-barrier',
-                matches: () => true,
-                decide: (element: Element) => {
-                    if (element !== statefulChild) return {kind: 'pass' as const};
-                    statefulDecisions += 1;
-                    return statefulDecisions >= 2
-                        ? {kind: 'force-target' as const, reason: 'late-barrier'}
-                        : {kind: 'pass' as const};
-                },
-            }],
-        });
-        const statefulCandidates = statefulCore.discover(statefulWrapper);
-        const statefulRunText = statefulCandidates
-            .filter((candidate) => candidate.element === statefulWrapper && candidate.nodes)
-            .map((candidate) => candidate.nodes?.map((node) => node.textContent).join('').trim());
-
-        expect(statefulRunText).toEqual(['Before', 'After']);
-    });
-
-    it('keeps hover resolution inside owned wrappers and bounded stale inline probes', () => {
+    it('keeps hover resolution inside owned wrappers', () => {
         const {document, core} = page(`
             <main><div id="parent">
                 Intro text.
@@ -1742,130 +1050,6 @@ describe('translation candidate core', () => {
         expect(core.resolve(extensionUi)?.element).toBe(parent);
         expect(core.resolve(extensionUi.firstChild)?.element).toBe(parent);
         expect(core.resolve(extensionChild.firstChild)?.element).toBe(parent);
-
-        const budgeted = document.createElement('div');
-        budgeted.id = 'budgeted';
-        budgeted.append('Before budget. ');
-        for (let index = 0; index < 270; index += 1) {
-            const shell = document.createElement('span');
-            shell.innerHTML = `<p>Nested candidate ${index} remains separate.</p>`;
-            budgeted.append(shell);
-        }
-        budgeted.append(' After budget.');
-        document.body.append(budgeted);
-        const candidates = core.discover(budgeted);
-
-        expect(candidates.length).toBeGreaterThan(200);
-        expect(core.resolve(budgeted.firstChild)?.element).toBe(budgeted);
-    });
-
-    it('guards extreme text ancestry and layout edge cases without provider work', () => {
-        const {document, core} = page('<main><div id="root"></div></main>');
-        const root = document.querySelector('#root')!;
-        let parent = root;
-        for (let index = 0; index < maxComposedAncestorDepth + 2; index += 1) {
-            const child = document.createElement('span');
-            parent.append(child);
-            parent = child;
-        }
-        parent.textContent = 'Deep readable text should be conservatively protected.';
-        expect(hasMeaningfulTranslationTextInNodes([parent.firstChild!])).toBe(false);
-        expect(isTranslationTextNodeProtected(parent.firstChild as Text)).toBe(true);
-        expect(hasMeaningfulTranslationTextInNodes([document.createComment('Readable comment')])).toBe(false);
-        expect(extractTranslationTextFromNodes([document.createComment('Readable comment')])).toBe('');
-        const detachedText = document.createTextNode('Detached readable text.');
-        expect(extractTranslationTextFromNodes([detachedText])).toBe('');
-
-        const manyInlineChildren = document.createElement('p');
-        manyInlineChildren.id = 'many-inline';
-        for (let index = 0; index < 2050; index += 1) {
-            const span = document.createElement('span');
-            span.textContent = index === 0 ? 'Readable text.' : 'x';
-            manyInlineChildren.append(span);
-        }
-        document.body.append(manyInlineChildren);
-        expect(core.inspect(manyInlineChildren).candidate).toBeNull();
-        expect(hasDirectReadableText(manyInlineChildren)).toBe(false);
-        expect(getDirectInlineRuns(manyInlineChildren)).toEqual([]);
-
-        const emptyButton = document.createElement('button');
-        emptyButton.id = 'empty-button';
-        document.body.append(emptyButton);
-        expect(core.inspect(emptyButton).candidate).toBeNull();
-        expect(classifyGenericCandidate(emptyButton)).toBeNull();
-
-        const deepNav = document.createElement('nav');
-        let structuralParent = deepNav;
-        for (let index = 0; index < maxComposedAncestorDepth + 2; index += 1) {
-            const child = document.createElement('span');
-            structuralParent.append(child);
-            structuralParent = child;
-        }
-        structuralParent.textContent = 'Deep structural text.';
-        document.body.append(deepNav);
-        expect(hasStructuralAncestor(structuralParent)).toBe(true);
-        expect(core.resolve(structuralParent.firstChild)).toBeNull();
-
-        const deepMain = document.createElement('main');
-        let asideParent = deepMain;
-        for (let index = 0; index < maxComposedAncestorDepth + 2; index += 1) {
-            const child = document.createElement('span');
-            asideParent.append(child);
-            asideParent = child;
-        }
-        const deepAside = document.createElement('aside');
-        asideParent.append(deepAside);
-        document.body.append(deepMain);
-        expect(isStructuralContainer(deepAside)).toBe(true);
-
-        const hidden = document.createElement('p');
-        hidden.textContent = 'Hidden text.';
-        hidden.setAttribute('aria-hidden', 'true');
-        document.body.append(hidden);
-        expect(evaluateHardGuard(hidden)).toEqual({prune: true, reason: 'hidden'});
-        hidden.removeAttribute('aria-hidden');
-        hidden.className = 'sr-only';
-        expect(evaluateHardGuard(hidden)).toEqual({prune: true, reason: 'hidden'});
-
-        Object.defineProperty(document.defaultView, 'getComputedStyle', {
-            configurable: true,
-            value: (element: Element) => ({
-                display: element.id === 'display-none' ? 'none' : '',
-            }),
-        });
-        const displayNone = document.createElement('span');
-        displayNone.id = 'display-none';
-        displayNone.textContent = 'Invisible text.';
-        document.body.append(displayNone);
-        expect(core.inspect(displayNone).candidate).toBeNull();
-        expect(isBlockBoundary(displayNone)).toBe(false);
-        expect(isBlockBoundary({tagName: 'div', ownerDocument: null} as unknown as Element)).toBe(true);
-
-        Object.defineProperty(document.defaultView, 'getComputedStyle', {
-            configurable: true,
-            value: () => null,
-        });
-        const noStyle = document.createElement('p');
-        noStyle.textContent = 'Readable when style lookup returns nothing.';
-        document.body.append(noStyle);
-        expect(evaluateHardGuard(noStyle)).toEqual({prune: false});
-
-        Object.defineProperty(document.defaultView, 'getComputedStyle', {
-            configurable: true,
-            value: () => { throw new Error('style unavailable'); },
-        });
-        const styleFallback = document.createElement('p');
-        styleFallback.textContent = 'Readable after style failure.';
-        document.body.append(styleFallback);
-        expect(core.inspect(styleFallback).candidate?.element).toBe(styleFallback);
-
-        const structuralNav = document.createElement('nav');
-        const structuralCopy = document.createElement('p');
-        structuralCopy.textContent = 'Navigation text.';
-        structuralNav.append(structuralCopy);
-        document.body.append(structuralNav);
-        expect(hasStructuralAncestor(structuralCopy)).toBe(true);
-        expect(classifyGenericCandidate(structuralCopy)).toBeNull();
     });
 });
 

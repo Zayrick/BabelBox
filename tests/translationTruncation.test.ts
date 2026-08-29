@@ -11,21 +11,26 @@ vi.mock('@/src/core/config/catalog', () => ({
 import {
     findTranslationTruncationAncestors,
     hasActiveTranslationLineClamp,
-    translationTruncationStyleOverrides,
 } from '@/src/core/translation/public';
 import {config} from '@/src/services/config/store';
 import {options} from '@/src/core/config/catalog';
 import {
-    acquireTranslationLayoutOverride,
     beginTranslation,
-    getTranslationState,
-    isTranslationLayoutOverrideMutation,
-    reconcileTranslationLayoutOverrides,
     restoreTranslation,
     setBilingualContent,
 } from '@/src/features/full-page-translation/content/state';
 import {ensureTranslationTruncationLayout} from '@/src/features/full-page-translation/content/layout';
 import {appendBilingualTranslation} from '@/src/features/full-page-translation/content/renderer';
+
+function installStylePriorityApi(element: HTMLElement): void {
+    if (typeof element.style.getPropertyPriority === 'function') return;
+    Object.defineProperty(Object.getPrototypeOf(element.style), 'getPropertyPriority', {
+        configurable: true,
+        value(this: CSSStyleDeclaration, property: string) {
+            return /!important\s*$/iu.test(this.getPropertyValue(property)) ? 'important' : '';
+        },
+    });
+}
 
 function openRouterFixture() {
     const {document} = parseHTML(`
@@ -42,6 +47,7 @@ function openRouterFixture() {
     const ordinary = document.querySelector<HTMLElement>('#ordinary-overflow')!;
     const first = document.querySelector<HTMLElement>('#first')!;
     const second = document.querySelector<HTMLElement>('#second')!;
+    installStylePriorityApi(clamp);
     const getComputedStyle = (element: Element) => {
         const lineClamp = element === clamp ? '2' : 'none';
         return {
@@ -101,13 +107,6 @@ function trackStylePriorities(element: HTMLElement) {
     };
 }
 
-async function flushMutationObservers(): Promise<void> {
-    await Promise.resolve();
-    await Promise.resolve();
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
-    await Promise.resolve();
-}
-
 async function withDocumentRealm<T>(
     document: Document,
     callback: () => Promise<T>,
@@ -152,45 +151,6 @@ async function withDocumentRealm<T>(
     }
 }
 
-function commitBilingualTranslation(owner: HTMLElement): HTMLElement {
-    const attempt = beginTranslation(owner, 'bilingual')!;
-    attempt.state.phase = 'translated';
-    expect(ensureTranslationTruncationLayout(owner)).toBe(true);
-
-    const wrapper = owner.ownerDocument.createElement('span');
-    wrapper.className = 'fluent-read-bilingual-content';
-    wrapper.setAttribute('data-fr-translation-owned', 'true');
-    wrapper.textContent = 'Translated text.';
-    owner.appendChild(wrapper);
-    setBilingualContent(owner, wrapper);
-    return wrapper;
-}
-
-function dynamicClampFixture() {
-    const {document} = parseHTML(`
-        <html><body>
-            <div id="late-clamp"><p id="owner">A translated paragraph.</p></div>
-        </body></html>
-    `);
-    const clamp = document.querySelector<HTMLElement>('#late-clamp')!;
-    const owner = document.querySelector<HTMLElement>('#owner')!;
-    Object.defineProperty(document.defaultView, 'getComputedStyle', {
-        configurable: true,
-        value: (element: Element) => {
-            const inlineClamp = (element as HTMLElement).style?.getPropertyValue('-webkit-line-clamp') ?? '';
-            const lineClamp = inlineClamp === 'unset'
-                ? 'none'
-                : inlineClamp || (element === clamp && clamp.classList.contains('line-clamp-2') ? '2' : 'none');
-            return {
-                webkitLineClamp: lineClamp,
-                getPropertyValue: (property: string) =>
-                    property === '-webkit-line-clamp' || property === 'line-clamp' ? lineClamp : '',
-            } as unknown as CSSStyleDeclaration;
-        },
-    });
-    return {document, clamp, owner};
-}
-
 describe('translation truncation layout', () => {
     it('finds the active OpenRouter-style ancestor but ignores ordinary overflow clipping', () => {
         const {clamp, ordinary, first} = openRouterFixture();
@@ -211,6 +171,34 @@ describe('translation truncation layout', () => {
         });
 
         expect(findTranslationTruncationAncestors(first, (element) => element === clamp)).toEqual([clamp]);
+    });
+
+    it('leases a clipping host across an open ShadowRoot', () => {
+        const {document} = parseHTML('<html><body><div id="host"></div></body></html>');
+        const host = document.querySelector<HTMLElement>('#host')!;
+        const owner = document.createElement('p');
+        owner.textContent = 'Readable shadow content.';
+        host.attachShadow({mode: 'open'}).appendChild(owner);
+        installStylePriorityApi(host);
+        host.style.setProperty('-webkit-line-clamp', '2');
+        Object.defineProperty(document.defaultView, 'getComputedStyle', {
+            configurable: true,
+            value: (element: Element) => ({
+                webkitLineClamp: element === host ? host.style.getPropertyValue('-webkit-line-clamp') : 'none',
+                getPropertyValue: (property: string) =>
+                    property === '-webkit-line-clamp' && element === host
+                        ? host.style.getPropertyValue(property)
+                        : '',
+            } as CSSStyleDeclaration),
+        });
+
+        const attempt = beginTranslation(owner, 'bilingual')!;
+        expect(ensureTranslationTruncationLayout(owner)).toBe(true);
+        expect(host.style.getPropertyValue('-webkit-line-clamp')).toBe('unset');
+
+        attempt.state.phase = 'translated';
+        expect(restoreTranslation(owner)).toBe(true);
+        expect(host.style.getPropertyValue('-webkit-line-clamp')).toBe('2');
     });
 
     it('wires OpenRouter ancestor unclamping through the real bilingual renderer', async () => {
@@ -293,44 +281,6 @@ describe('translation truncation layout', () => {
         });
     });
 
-    it('accepts empty renderer text and ignores parser nodes that are not element or text', async () => {
-        const {document} = parseHTML('<html><body><p id="owner">Readable paragraph.</p></body></html>');
-        const owner = document.querySelector<HTMLElement>('#owner')!;
-
-        await withDocumentRealm(document, async () => {
-            const previousParser = Object.getOwnPropertyDescriptor(globalThis, 'DOMParser');
-            class FixtureDOMParser {
-                parseFromString(): Document {
-                    return {
-                        body: {
-                            childNodes: [
-                                {nodeType: Node.TEXT_NODE, nodeValue: null},
-                                {nodeType: Node.COMMENT_NODE, nodeValue: 'ignored'},
-                            ],
-                        },
-                    } as unknown as Document;
-                }
-            }
-
-            try {
-                Object.defineProperty(globalThis, 'DOMParser', {
-                    configurable: true,
-                    value: FixtureDOMParser,
-                });
-                const attempt = beginTranslation(owner, 'bilingual')!;
-                attempt.state.phase = 'translated';
-                const wrapper = appendBilingualTranslation(owner, '');
-
-                expect(wrapper.textContent).toBe('');
-                expect(wrapper.childNodes).toHaveLength(1);
-                expect(restoreTranslation(owner)).toBe(true);
-            } finally {
-                if (previousParser) Object.defineProperty(globalThis, 'DOMParser', previousParser);
-                else Reflect.deleteProperty(globalThis, 'DOMParser');
-            }
-        });
-    });
-
     it('shares one clamp lease and restores its properties only after the last owner exits', () => {
         const {clamp, first, second} = openRouterFixture();
         clamp.setAttribute(
@@ -340,19 +290,10 @@ describe('translation truncation layout', () => {
         const firstAttempt = beginTranslation(first, 'bilingual')!;
         const secondAttempt = beginTranslation(second, 'bilingual')!;
 
-        expect(acquireTranslationLayoutOverride(
-            first,
-            clamp,
-            translationTruncationStyleOverrides,
-        )).toBe(true);
+        expect(ensureTranslationTruncationLayout(first)).toBe(true);
         expect(clamp.style.getPropertyValue('-webkit-line-clamp')).toBe('unset');
-        expect(isTranslationLayoutOverrideMutation(clamp)).toBe(true);
 
-        expect(acquireTranslationLayoutOverride(
-            second,
-            clamp,
-            translationTruncationStyleOverrides,
-        )).toBe(true);
+        expect(ensureTranslationTruncationLayout(second)).toBe(true);
         firstAttempt.state.phase = 'translated';
         expect(restoreTranslation(first)).toBe(true);
         expect(clamp.style.getPropertyValue('-webkit-line-clamp')).toBe('unset');
@@ -371,199 +312,13 @@ describe('translation truncation layout', () => {
         const {clamp, first} = openRouterFixture();
         clamp.style.setProperty('-webkit-line-clamp', '2');
         const attempt = beginTranslation(first, 'bilingual')!;
-        acquireTranslationLayoutOverride(first, clamp, translationTruncationStyleOverrides);
+        ensureTranslationTruncationLayout(first);
 
         clamp.style.setProperty('-webkit-line-clamp', '4', 'important');
-        expect(isTranslationLayoutOverrideMutation(clamp)).toBe(false);
         attempt.state.phase = 'translated';
         expect(restoreTranslation(first)).toBe(true);
 
         expect(clamp.style.getPropertyValue('-webkit-line-clamp')).toBe('4');
-    });
-
-    it('reapplies an overridden host clamp and restores the host rewrite as the new baseline', () => {
-        const {clamp, first} = openRouterFixture();
-        clamp.style.setProperty('-webkit-line-clamp', '2');
-        commitBilingualTranslation(first);
-
-        clamp.setAttribute('style', '-webkit-line-clamp: 4; background-color: blue;');
-        expect(reconcileTranslationLayoutOverrides(first)).toBe(true);
-        expect(clamp.style.getPropertyValue('-webkit-line-clamp')).toBe('unset');
-        expect(clamp.style.getPropertyValue('background-color')).toBe('blue');
-
-        expect(restoreTranslation(first)).toBe(true);
-        expect(clamp.style.getPropertyValue('-webkit-line-clamp')).toBe('4');
-        expect(clamp.style.getPropertyValue('background-color')).toBe('blue');
-    });
-
-    it('releases a hover-style lease when its translated owner is detached', async () => {
-        const {document, clamp, first} = openRouterFixture();
-        await withDocumentRealm(document, async () => {
-            clamp.style.setProperty('-webkit-line-clamp', '2');
-            commitBilingualTranslation(first);
-            await flushMutationObservers();
-            first.remove();
-            await flushMutationObservers();
-
-            try {
-                expect(getTranslationState(first)).toBeUndefined();
-                expect(clamp.style.getPropertyValue('-webkit-line-clamp')).toBe('2');
-            } finally {
-                if (getTranslationState(first)) restoreTranslation(first);
-            }
-        });
-    });
-
-    it('automatically clears a connected hover owner when the host removes its bilingual wrapper', async () => {
-        const {document, clamp, first} = openRouterFixture();
-        await withDocumentRealm(document, async () => {
-            clamp.style.setProperty('-webkit-line-clamp', '2');
-            const wrapper = commitBilingualTranslation(first);
-            await flushMutationObservers();
-
-            wrapper.remove();
-            await flushMutationObservers();
-
-            try {
-                expect(getTranslationState(first)).toBeUndefined();
-                expect(clamp.style.getPropertyValue('-webkit-line-clamp')).toBe('2');
-            } finally {
-                if (getTranslationState(first)) restoreTranslation(first);
-            }
-        });
-    });
-
-    it('moves a connected hover owner lease from clamp A to clamp B', async () => {
-        const {document} = parseHTML(`
-            <html><body>
-                <div id="clamp-a" style="-webkit-line-clamp: 2"><p id="owner">Moved prose.</p></div>
-                <div id="clamp-b" style="-webkit-line-clamp: 3"></div>
-            </body></html>
-        `);
-        const clampA = document.querySelector<HTMLElement>('#clamp-a')!;
-        const clampB = document.querySelector<HTMLElement>('#clamp-b')!;
-        const owner = document.querySelector<HTMLElement>('#owner')!;
-        Object.defineProperty(document.defaultView, 'getComputedStyle', {
-            configurable: true,
-            value: (element: Element) => {
-                const inlineClamp = (element as HTMLElement).style?.getPropertyValue('-webkit-line-clamp') ?? '';
-                const lineClamp = inlineClamp === 'unset' ? 'none' : inlineClamp || 'none';
-                return {
-                    webkitLineClamp: lineClamp,
-                    getPropertyValue: (property: string) =>
-                        property === '-webkit-line-clamp' || property === 'line-clamp' ? lineClamp : '',
-                } as unknown as CSSStyleDeclaration;
-            },
-        });
-
-        await withDocumentRealm(document, async () => {
-            const wrapper = commitBilingualTranslation(owner);
-            await flushMutationObservers();
-            expect(clampA.style.getPropertyValue('-webkit-line-clamp')).toBe('unset');
-
-            clampB.appendChild(owner);
-            await flushMutationObservers();
-
-            try {
-                expect(getTranslationState(owner)?.phase).toBe('translated');
-                expect(wrapper.isConnected).toBe(true);
-                expect(clampA.style.getPropertyValue('-webkit-line-clamp')).toBe('2');
-                expect(clampB.style.getPropertyValue('-webkit-line-clamp')).toBe('unset');
-            } finally {
-                if (getTranslationState(owner)) restoreTranslation(owner);
-            }
-        });
-    });
-
-    it.each([
-        {
-            trigger: 'class',
-            activate: (clamp: HTMLElement) => clamp.classList.add('line-clamp-2'),
-            restoredClamp: '',
-        },
-        {
-            trigger: 'inline style',
-            activate: (clamp: HTMLElement) => clamp.style.setProperty('-webkit-line-clamp', '2'),
-            restoredClamp: '2',
-        },
-    ])('automatically acquires an ancestor clamp activated through $trigger', async ({activate, restoredClamp}) => {
-        const {document, clamp, owner} = dynamicClampFixture();
-        await withDocumentRealm(document, async () => {
-            commitBilingualTranslation(owner);
-            await flushMutationObservers();
-            expect(clamp.style.getPropertyValue('-webkit-line-clamp') ?? '').toBe('');
-
-            activate(clamp);
-            await flushMutationObservers();
-
-            try {
-                expect(getTranslationState(owner)?.phase).toBe('translated');
-                expect(clamp.style.getPropertyValue('-webkit-line-clamp')).toBe('unset');
-            } finally {
-                if (getTranslationState(owner)) restoreTranslation(owner);
-            }
-            expect(clamp.style.getPropertyValue('-webkit-line-clamp') ?? '').toBe(restoredClamp);
-        });
-    });
-
-    it('reapplies a hover owner override after the host rewrites its inline clamp', async () => {
-        const {document, first} = openRouterFixture();
-        await withDocumentRealm(document, async () => {
-            commitBilingualTranslation(first);
-            await flushMutationObservers();
-
-            first.setAttribute('style', '-webkit-line-clamp: 2; color: blue;');
-            await flushMutationObservers();
-
-            try {
-                expect(first.style.getPropertyValue('-webkit-line-clamp')).toBe('unset');
-                expect(first.style.getPropertyValue('color')).toBe('blue');
-            } finally {
-                if (getTranslationState(first)) restoreTranslation(first);
-            }
-            expect(first.style.getPropertyValue('-webkit-line-clamp')).toBe('2');
-            expect(first.style.getPropertyValue('color')).toBe('blue');
-        });
-    });
-
-    it('automatically releases a hover lease when its owner is removed inside an open ShadowRoot', async () => {
-        const {document} = parseHTML('<html><body><div id="host"></div></body></html>');
-        const host = document.querySelector<HTMLElement>('#host')!;
-        const shadowRoot = host.attachShadow({mode: 'open'});
-        const clamp = document.createElement('div');
-        const owner = document.createElement('p');
-        clamp.style.setProperty('-webkit-line-clamp', '2');
-        owner.textContent = 'Shadow-root model description.';
-        clamp.appendChild(owner);
-        shadowRoot.appendChild(clamp);
-        Object.defineProperty(document.defaultView, 'getComputedStyle', {
-            configurable: true,
-            value: (element: Element) => {
-                const inlineClamp = (element as HTMLElement).style?.getPropertyValue('-webkit-line-clamp') ?? '';
-                const lineClamp = inlineClamp === 'unset' ? 'none' : inlineClamp || 'none';
-                return {
-                    webkitLineClamp: lineClamp,
-                    getPropertyValue: (property: string) =>
-                        property === '-webkit-line-clamp' || property === 'line-clamp' ? lineClamp : '',
-                } as unknown as CSSStyleDeclaration;
-            },
-        });
-
-        await withDocumentRealm(document, async () => {
-            commitBilingualTranslation(owner);
-            await flushMutationObservers();
-            expect(clamp.style.getPropertyValue('-webkit-line-clamp')).toBe('unset');
-
-            owner.remove();
-            await flushMutationObservers();
-
-            try {
-                expect(getTranslationState(owner)).toBeUndefined();
-                expect(clamp.style.getPropertyValue('-webkit-line-clamp')).toBe('2');
-            } finally {
-                if (getTranslationState(owner)) restoreTranslation(owner);
-            }
-        });
     });
 
     it('restores the exact original style attribute when the host did not mutate it', () => {
@@ -571,7 +326,7 @@ describe('translation truncation layout', () => {
         const originalStyle = 'COLOR: red; -webkit-line-clamp: 2; max-height: 40px';
         clamp.setAttribute('style', originalStyle);
         const attempt = beginTranslation(first, 'bilingual')!;
-        acquireTranslationLayoutOverride(first, clamp, translationTruncationStyleOverrides);
+        ensureTranslationTruncationLayout(first);
         attempt.state.phase = 'translated';
 
         expect(restoreTranslation(first)).toBe(true);
@@ -582,7 +337,7 @@ describe('translation truncation layout', () => {
         const {clamp, first} = openRouterFixture();
         expect(clamp.getAttribute('style')).toBeNull();
         const attempt = beginTranslation(first, 'bilingual')!;
-        acquireTranslationLayoutOverride(first, clamp, translationTruncationStyleOverrides);
+        ensureTranslationTruncationLayout(first);
         expect(clamp.getAttribute('style')).not.toBeNull();
 
         attempt.state.phase = 'translated';

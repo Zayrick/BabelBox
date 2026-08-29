@@ -7,7 +7,7 @@ outside the directory import `public.ts`; WXT treats a directory-level
 ## Pipeline
 
 1. `filters.ts` normalizes editable global/site rules and resolves the current URL policy.
-2. `dom.ts` applies the policy plus non-overridable FluentRead ownership/depth guards.
+2. `dom.ts` applies the policy plus FluentRead DOM ownership guards.
 3. `registry.ts` selects runtime-only site adapters for the current URL.
 4. `engine.ts` resolves configured include rules, adapter decisions and generic layout boundaries.
 5. `text.ts` extracts readable source text and rejects identifiers/target text.
@@ -24,18 +24,15 @@ or `include` actions. A matching site rule wins on the same element, then the
 global rule list and hidden/editable switches apply. A child include cannot reopen an
 excluded ancestor. Scripts/styles, form inputs, code, `translate=no`, SVG/math,
 and the supported-site selectors are stored as editable defaults rather than
-engine constants. Only FluentRead-owned DOM and the composed-ancestor depth cap
-remain non-overridable safety guards.
+engine constants. FluentRead-owned DOM is always excluded.
 
 Runtime adapters can still return `pass`, `skip-self`, `prune-subtree` or
 `force-target`, but default translation filtering does not live in adapters.
 Adapters are sorted by priority, while registration order is stable for ties.
-Invalid configured or adapter selectors only invalidate that match and never
-abort the page scan.
+Invalid configured selectors only invalidate that match and never abort the page scan.
 
-Every accepted candidate includes a reason and optional adapter id. This keeps
-hover/full equality and adapter precedence directly testable without starting a
-browser. Open Shadow DOM is traversed through the same policy.
+Every accepted candidate includes a reason and optional adapter id. Hover and
+full-page translation use the same candidate result, including in open Shadow DOM.
 
 ## Verification contract
 

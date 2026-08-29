@@ -19,7 +19,6 @@ function base64UrlJson(value: unknown): string {
 
 describe('Edge TTS pure policy', () => {
     it('normalizes supported translation language aliases without guessing unknown locales', () => {
-        expect(normalizeEdgeTtsLanguage(undefined as unknown as string)).toBe('en-US');
         expect(normalizeEdgeTtsLanguage('auto')).toBe('en-US');
         expect(normalizeEdgeTtsLanguage('detect')).toBe('en-US');
         expect(normalizeEdgeTtsLanguage('ZH-HANS')).toBe('zh-CN');

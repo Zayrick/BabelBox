@@ -16,10 +16,7 @@ import {
   type TranslationQueueLease,
   type TranslationQueueSession,
 } from '@/src/services/translation/queue';
-import {
-  isRetryableTranslationError,
-  unwrapTranslationResponse,
-} from '@/src/services/translation/errors';
+import {unwrapTranslationResponse} from '@/src/services/translation/errors';
 
 const isDev = process.env.NODE_ENV === 'development';
 const VIDEO_COUNT_SAVE_INTERVAL = 10_000;
@@ -41,26 +38,6 @@ function createAbortError(): Error {
 
 function throwIfAborted(signal?: AbortSignal): void {
   if (signal?.aborted) throw createAbortError();
-}
-
-function isAbortError(error: unknown): boolean {
-  return error instanceof Error && error.name === 'AbortError';
-}
-
-function waitForDelay(delay: number, signal?: AbortSignal): Promise<void> {
-  throwIfAborted(signal);
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => {
-      signal?.removeEventListener('abort', onAbort);
-      resolve();
-    }, delay);
-    const onAbort = () => {
-      clearTimeout(timer);
-      signal?.removeEventListener('abort', onAbort);
-      reject(createAbortError());
-    };
-    signal?.addEventListener('abort', onAbort, {once: true});
-  });
 }
 
 function waitForRequest<T>(
@@ -148,7 +125,7 @@ function scheduleVideoCountSave(): void {
 
 /**
  * 翻译API的统一入口
- * 所有翻译请求都应该通过此函数发送，以便集中管理队列和重试逻辑
+ * 所有翻译请求都应该通过此函数发送，以便集中管理队列和请求生命周期
  *
  * @param origin 原始文本
  * @param context 上下文信息，通常是页面标题
@@ -157,25 +134,18 @@ function scheduleVideoCountSave(): void {
  */
 export async function translateText(origin: string, context: string = document.title, options: TranslateOptions = {}): Promise<string> {
   const selectedService = options.serviceOverride || config.service;
-  const selectedProvider = getTranslationServiceProvider(config, selectedService);
   const selectedModel = options.modelOverride || getTranslationServiceModel(config, selectedService);
   const selectedLanguages = getTranslationLanguages(options);
   const {
-    retryDelay = 1000,
     timeout = 45000,
     useCache = config.useCache,
     skipLanguageDetection = false,
     signal,
     queueSession,
   } = options;
-  // AI SDK providers own their HTTP retry policy. Other providers receive one
-  // client-level retry unless the caller supplies an explicit policy.
-  const maxRetries = options.maxRetries ?? (servicesType.isAiSdk(selectedProvider) ? 0 : 1);
   throwIfAborted(signal);
-  const cleanedOrigin = origin?.replace(/[\s\u3000]/g, '') || '';
-  if (!cleanedOrigin || cleanedOrigin.length === 0) {
-    return origin || '';
-  }
+  const cleanedOrigin = origin.replace(/[\s\u3000]/g, '');
+  if (!cleanedOrigin) return origin;
 
   assertTranslationCredentials(selectedService, selectedModel);
   if (!skipLanguageDetection && detectlang(origin.replace(/[\s\u3000]/g, '')) === selectedLanguages.targetLanguage) {
@@ -190,49 +160,26 @@ export async function translateText(origin: string, context: string = document.t
   scheduleTranslationCountSave();
 
   return enqueueTranslation(async (lease) => {
-    const translationTask = async (retryCount: number = 0): Promise<string> => {
-      throwIfAborted(signal);
-      try {
-        const response = await waitForRequest(
-          browser.runtime.sendMessage({
-            type: 'translate',
-            context,
-            pageContext,
-            origin,
-            useCache,
-            serviceOverride: selectedService,
-            sourceLanguage: selectedLanguages.sourceLanguage,
-            targetLanguage: selectedLanguages.targetLanguage,
-            modelOverride: selectedModel,
-            requestTimeoutMs: Math.max(1_000, timeout - 1_000),
-          }),
-          timeout,
-          signal,
-          lease,
-        );
-        const result = unwrapTranslationResponse<string>(response);
-
-        if (!result || result === origin) {
-          return origin;
-        }
-
-        return result;
-      } catch (error) {
-        if (isAbortError(error)) throw error;
-        if (retryCount < maxRetries && isRetryableTranslationError(error)) {
-          if (isDev) {
-            console.log(`[翻译API] 翻译失败，${retryCount + 1}/${maxRetries} 次重试`);
-          }
-
-          await waitForDelay(retryDelay, signal);
-          return translationTask(retryCount + 1);
-        }
-
-        throw error;
-      }
-    };
-
-    return translationTask();
+    throwIfAborted(signal);
+    const response = await waitForRequest(
+      browser.runtime.sendMessage({
+        type: 'translate',
+        context,
+        pageContext,
+        origin,
+        useCache,
+        serviceOverride: selectedService,
+        sourceLanguage: selectedLanguages.sourceLanguage,
+        targetLanguage: selectedLanguages.targetLanguage,
+        modelOverride: selectedModel,
+        requestTimeoutMs: Math.max(1_000, timeout - 1_000),
+      }),
+      timeout,
+      signal,
+      lease,
+    );
+    const result = unwrapTranslationResponse<string>(response);
+    return result;
   }, queueSession);
 }
 
@@ -247,18 +194,15 @@ export async function translateTextBatch(
   if (origins.length === 0) return [];
 
   const selectedService = options.serviceOverride || config.service;
-  const selectedProvider = getTranslationServiceProvider(config, selectedService);
   const selectedModel = options.modelOverride || getTranslationServiceModel(config, selectedService);
   const selectedLanguages = getTranslationLanguages(options);
   const {
-    retryDelay = 1000,
     timeout = 45000,
     useCache = config.useCache,
     signal,
     queueSession,
   } = options;
   assertTranslationCredentials(selectedService, selectedModel);
-  const maxRetries = options.maxRetries ?? (servicesType.isAiSdk(selectedProvider) ? 0 : 1);
   throwIfAborted(signal);
   const pageContext = await resolvePageContext(options.pageContext, selectedService, selectedModel);
   throwIfAborted(signal);
@@ -266,44 +210,32 @@ export async function translateTextBatch(
   scheduleTranslationCountSave();
 
   return enqueueTranslation(async (lease) => {
-    const translationTask = async (retryCount: number = 0): Promise<string[]> => {
-      throwIfAborted(signal);
-      try {
-        const response = await waitForRequest(
-          browser.runtime.sendMessage({
-            type: 'translate',
-            context,
-            pageContext,
-            origin: origins,
-            useCache,
-            serviceOverride: selectedService,
-            sourceLanguage: selectedLanguages.sourceLanguage,
-            targetLanguage: selectedLanguages.targetLanguage,
-            modelOverride: selectedModel,
-            requestTimeoutMs: Math.max(1_000, timeout - 1_000),
-          }),
-          timeout,
-          signal,
-          lease,
-        );
-        const result = unwrapTranslationResponse<string[]>(response);
+    throwIfAborted(signal);
+    const response = await waitForRequest(
+      browser.runtime.sendMessage({
+        type: 'translate',
+        context,
+        pageContext,
+        origin: origins,
+        useCache,
+        serviceOverride: selectedService,
+        sourceLanguage: selectedLanguages.sourceLanguage,
+        targetLanguage: selectedLanguages.targetLanguage,
+        modelOverride: selectedModel,
+        requestTimeoutMs: Math.max(1_000, timeout - 1_000),
+      }),
+      timeout,
+      signal,
+      lease,
+    );
+    const result = unwrapTranslationResponse<string[]>(response);
 
-        if (!Array.isArray(result) || result.length !== origins.length || result.some(item => typeof item !== 'string')) {
-          throw new Error('批量翻译返回格式异常');
-        }
+    if (!Array.isArray(result) || result.length !== origins.length ||
+      result.some(item => typeof item !== 'string' || !item.trim())) {
+      throw new Error('批量翻译返回格式异常');
+    }
 
-        return result as string[];
-      } catch (error) {
-        if (isAbortError(error)) throw error;
-        if (retryCount < maxRetries && isRetryableTranslationError(error)) {
-          await waitForDelay(retryDelay, signal);
-          return translationTask(retryCount + 1);
-        }
-        throw error;
-      }
-    };
-
-    return translationTask();
+    return result;
   }, queueSession);
 }
 
@@ -312,8 +244,8 @@ export async function translateTextBatch(
  * 统一请求、缓存和错误边界；只发送 YouTube 已提供的纯文本字幕内容。
  */
 export async function translateVideoText(origin: string): Promise<string> {
-  const cleanedOrigin = origin?.replace(/[\s\u3000]/g, '') || '';
-  if (!cleanedOrigin) return origin || '';
+  const cleanedOrigin = origin.replace(/[\s\u3000]/g, '');
+  if (!cleanedOrigin) return origin;
 
   const service = config.videoService;
   const model = getTranslationServiceModel(config, service);
@@ -321,21 +253,21 @@ export async function translateVideoText(origin: string): Promise<string> {
   const useCache = config.useCache;
   const pageContext = await resolvePageContext(undefined, service, model);
 
-  // 视频字幕是高频、短文本请求。计数保留在内存中，并合并为低频写入，避免
+  // 视频字幕是高频、短文本请求。计数保留在内存中，并合并为低频写入。
   scheduleVideoCountSave();
   return enqueueTranslation(async (lease) => {
     const response = await waitForRequest(browser.runtime.sendMessage({
-        type: 'translate',
-        context: `YouTube 视频字幕：${typeof document === 'undefined' ? '' : document.title}`,
-        pageContext,
-        origin,
-        useCache,
-        serviceOverride: service,
-        modelOverride: model,
-        sourceLanguage: languages.sourceLanguage,
-        targetLanguage: languages.targetLanguage,
-        requestTimeoutMs: 19_000,
-      }), 20_000, undefined, lease);
+      type: 'translate',
+      context: `YouTube 视频字幕：${document.title}`,
+      pageContext,
+      origin,
+      useCache,
+      serviceOverride: service,
+      modelOverride: model,
+      sourceLanguage: languages.sourceLanguage,
+      targetLanguage: languages.targetLanguage,
+      requestTimeoutMs: 19_000,
+    }), 20_000, undefined, lease);
     return unwrapTranslationResponse<string>(response);
   });
 }
@@ -349,10 +281,6 @@ export function cancelAllTranslations() {
 }
 
 export interface TranslateOptions {
-  /** 最大重试次数 */
-  maxRetries?: number;
-  /** 重试间隔(毫秒) */
-  retryDelay?: number;
   /** 超时时间(毫秒) */
   timeout?: number;
   /** 是否使用缓存 */
@@ -367,7 +295,7 @@ export interface TranslateOptions {
   pageContext?: string;
   /** Internal structured packets contain ASCII sentinels that must not affect source-language detection. */
   skipLanguageDetection?: boolean;
-  /** Cancel retry delays and ignore a late runtime response after the DOM attempt is restored. */
+  /** Stop waiting after the DOM attempt is restored; the dispatched runtime request may still settle later. */
   signal?: AbortSignal;
   /** Queue scope used to reject work that has not started when one DOM attempt is cancelled. */
   queueSession?: TranslationQueueSession;

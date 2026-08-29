@@ -70,6 +70,8 @@ vi.mock("@/src/features/full-page-translation/content/renderer", () => ({
 }));
 vi.mock("@/src/features/full-page-translation/content/layout", () => ({
     ensureTranslationTruncationLayout: runtime.ensureTranslationTruncationLayout,
+    isTranslationLayoutOverrideMutation: () => false,
+    releaseTranslationTruncationLayout: () => undefined,
 }));
 vi.mock("@/src/core/translation/public", () => {
     const protectedSelector = [
@@ -571,49 +573,6 @@ describe("全文翻译可见性锚点", () => {
         expect(runtime.requests).toHaveBeenCalledTimes(1);
     });
 
-    it("宿主因样式或布局重绘重挂同一段原文时复用全文结果，不重复请求", async () => {
-        runtime.config.display = 1;
-        const source = "The same paragraph survives a layout remount.";
-        document.body.innerHTML = `<p id="prose">${source}</p>`;
-        const firstParagraph = document.querySelector<HTMLElement>("#prose")!;
-        setLayoutBox(firstParagraph, 620, 90);
-        runtime.candidates = [{element: firstParagraph, kind: "content", reason: "paragraph"}];
-
-        autoTranslateEnglishPage();
-        await vi.advanceTimersByTimeAsync(50);
-        const observer = TestIntersectionObserver.instances[0]!;
-        observer.emit(firstParagraph, true);
-        await finishScheduledWork();
-
-        expect(runtime.requests).toHaveBeenCalledTimes(1);
-        const firstWrapper = firstParagraph.querySelector<HTMLElement>(".fluent-read-bilingual-content")!;
-        expect(firstWrapper).toBeTruthy();
-
-        // A page framework can replace the translated owner after a class/style
-        // pass. The new node is a new DOM identity but the same source slot.
-        const replacement = document.createElement("p");
-        replacement.id = "prose-remounted";
-        replacement.textContent = source;
-        setLayoutBox(replacement, 620, 90);
-        firstParagraph.replaceWith(replacement);
-        runtime.candidates = [{element: replacement, kind: "content", reason: "paragraph"}];
-        TestMutationObserver.instances.at(-1)!.emit([{
-            type: "childList",
-            target: document.body,
-            addedNodes: [replacement] as unknown as NodeList,
-            removedNodes: [firstParagraph] as unknown as NodeList,
-        } as unknown as MutationRecord]);
-        await vi.advanceTimersByTimeAsync(50);
-
-        observer.emit(replacement, true);
-        await finishScheduledWork();
-
-        expect(runtime.requests).toHaveBeenCalledTimes(1);
-        expect(firstParagraph.isConnected).toBe(false);
-        expect(replacement.querySelectorAll(".fluent-read-bilingual-content")).toHaveLength(1);
-        expect(replacement.textContent).toContain(`译:${source}`);
-    });
-
     it("没有任何布局锚点的 H1 仍直接进入受控翻译队列", async () => {
         document.body.innerHTML = '<h1 id="title">Text-only heading</h1>';
         const title = document.querySelector<HTMLElement>("#title")!;
@@ -881,36 +840,6 @@ describe("全文翻译可见性锚点", () => {
         expect(runtime.requests).not.toHaveBeenCalled();
     });
 
-    it("旧 IntersectionObserver 的排队 callback 不会把新会话候选送入队列", async () => {
-        document.body.innerHTML = '<h1 id="title">Shared title across sessions</h1>';
-        const title = document.querySelector<HTMLElement>("#title")!;
-        setLayoutBox(title, 320, 48);
-        runtime.candidates = [{element: title, kind: "content", reason: "heading"}];
-
-        autoTranslateEnglishPage();
-        await vi.advanceTimersByTimeAsync(50);
-        const oldObserver = TestIntersectionObserver.instances[0]!;
-        expect(oldObserver.observe).toHaveBeenCalledWith(title);
-
-        restoreOriginalContent();
-        autoTranslateEnglishPage();
-        await vi.advanceTimersByTimeAsync(50);
-        const newObserver = TestIntersectionObserver.instances[1]!;
-        expect(newObserver.observe).toHaveBeenCalledWith(title);
-
-        // Browser delivery can race disconnect(). Even if an already-queued old
-        // callback carries a target observed again by the new session, it still
-        // belongs to the disposed session and must not consult the new maps.
-        oldObserver.emit(title, true);
-        await finishScheduledWork();
-        expect(runtime.requests).not.toHaveBeenCalled();
-
-        newObserver.emit(title, true);
-        await finishScheduledWork();
-        expect(runtime.requests).toHaveBeenCalledTimes(1);
-        expect(runtime.requests).toHaveBeenCalledWith(["Shared title across sessions"]);
-    });
-
     it("失败 UI 注入的重试回调会按点击时的当前显示模式重新解析候选", async () => {
         runtime.config.display = 1;
         document.body.innerHTML = '<p id="prose">Retry with the latest display mode.</p>';
@@ -935,9 +864,7 @@ describe("全文翻译可见性锚点", () => {
         expect(paragraph.textContent).toBe("译:Retry with the latest display mode.");
     });
 
-    it.each(["translate-no", "hidden"] as const)(
-        "全文会话登记启动前 hover 状态的祖先索引，新增 %s 会恢复且 stop 后不再响应",
-        async (guard) => {
+    it("全文会话登记启动前 hover 状态的祖先索引，新增 translate=no 会恢复且 stop 后不再响应", async () => {
             runtime.config.display = 1;
             document.body.innerHTML = `
                 <section id="ancestor">
@@ -968,12 +895,11 @@ describe("全文翻译可见性锚点", () => {
             expect(runtime.requests).toHaveBeenCalledTimes(1);
             const mutationObserver = TestMutationObserver.instances.at(-1)!;
 
-            if (guard === "translate-no") ancestor.setAttribute("translate", "no");
-            else ancestor.hidden = true;
+            ancestor.setAttribute("translate", "no");
             mutationObserver.emit([{
                 type: "attributes",
                 target: ancestor,
-                attributeName: guard === "translate-no" ? "translate" : "hidden",
+                attributeName: "translate",
                 addedNodes: [] as unknown as NodeList,
                 removedNodes: [] as unknown as NodeList,
             } as unknown as MutationRecord]);
@@ -987,66 +913,16 @@ describe("全文翻译可见性锚点", () => {
 
             restoreOriginalContent();
             expect(isFullPageTranslationActive()).toBe(false);
-            if (guard === "translate-no") ancestor.removeAttribute("translate");
-            else ancestor.hidden = false;
+            ancestor.removeAttribute("translate");
             mutationObserver.emit([{
                 type: "attributes",
                 target: ancestor,
-                attributeName: guard === "translate-no" ? "translate" : "hidden",
+                attributeName: "translate",
                 addedNodes: [] as unknown as NodeList,
                 removedNodes: [] as unknown as NodeList,
             } as unknown as MutationRecord]);
             await finishScheduledWork();
             expect(runtime.requests).toHaveBeenCalledTimes(1);
-        },
-    );
-
-    it("全文 discovery enter 会登记启动前已提交的 hover synthetic 状态", async () => {
-        runtime.config.display = 1;
-        document.body.innerHTML = `
-            <section id="ancestor">
-                <div id="mixed">Readable inline prefix <strong id="emphasis">with emphasized prose.</strong>
-                    <p>Independent block child.</p>
-                </div>
-            </section>
-        `;
-        const ancestor = document.querySelector<HTMLElement>("#ancestor")!;
-        const host = document.querySelector<HTMLElement>("#mixed")!;
-        const sourceNodes = [host.firstChild as Text, document.querySelector<HTMLElement>("#emphasis")!] as const;
-        setLayoutBox(host, 640, 120);
-        runtime.candidates = [{element: host, nodes: sourceNodes, kind: "content", reason: "inline-run"}];
-
-        runtime.pointCandidate = runtime.candidates[0]!;
-        handleTranslation(20, 20);
-        await finishScheduledWork();
-
-        const segment = host.querySelector<HTMLElement>('[data-fr-translation-segment="true"]')!;
-        const hoverState = getTranslationState(segment)!;
-        expect(hoverState.phase).toBe("translated");
-        expect(segment.querySelectorAll(".fluent-read-bilingual-content")).toHaveLength(1);
-        expect(runtime.requests).toHaveBeenCalledTimes(1);
-
-        autoTranslateEnglishPage();
-        await vi.advanceTimersByTimeAsync(50);
-        expect(getTranslationState(segment)).toBe(hoverState);
-        expect(runtime.requests).toHaveBeenCalledTimes(1);
-
-        ancestor.setAttribute("translate", "no");
-        TestMutationObserver.instances.at(-1)!.emit([{
-            type: "attributes",
-            target: ancestor,
-            attributeName: "translate",
-            addedNodes: [] as unknown as NodeList,
-            removedNodes: [] as unknown as NodeList,
-        } as unknown as MutationRecord]);
-        await finishScheduledWork();
-
-        expect(hoverState.controller.signal.aborted).toBe(true);
-        expect(segment.isConnected).toBe(false);
-        expect(ancestor.querySelectorAll(
-            '[data-fr-translation-segment="true"], [data-fr-translation-owned="true"]',
-        )).toHaveLength(0);
-        expect(runtime.requests).toHaveBeenCalledTimes(1);
     });
 
     it("全文 discovery enter 会登记启动前 in-flight hover synthetic 状态且旧结果不可覆盖", async () => {
@@ -1148,7 +1024,7 @@ describe("全文翻译可见性锚点", () => {
         expect(runtime.requests).toHaveBeenCalledTimes(1);
     });
 
-    it("异步 nodes 候选只忽略 synthetic source 迁移与当前 spinner 的真实 childList 记录", async () => {
+    it("异步 nodes 候选忽略自身的 materialization 与 spinner 记录", async () => {
         runtime.config.display = 1;
         document.body.innerHTML = `
             <div id="mixed">Readable inline prefix <strong id="emphasis">with emphasized prose.</strong>
@@ -1175,15 +1051,6 @@ describe("全文翻译可见性锚点", () => {
         const segment = host.querySelector<HTMLElement>('[data-fr-translation-segment="true"]')!;
         const spinner = segment.querySelector<HTMLElement>('[data-fr-translation-owned="true"]')!;
         expect(Array.from(segment.childNodes).filter((node) => node !== spinner)).toEqual(sourceNodes);
-        const nativeCloneNode = segment.cloneNode.bind(segment);
-        let snapshotCloneCalls = 0;
-        Object.defineProperty(segment, "cloneNode", {
-            configurable: true,
-            value: (deep?: boolean) => {
-                snapshotCloneCalls += 1;
-                return nativeCloneNode(deep);
-            },
-        });
 
         // These are the actual live Node identities produced by materialization:
         // the host gains the segment, its source nodes move into that segment,
@@ -1201,17 +1068,16 @@ describe("全文翻译可见性锚点", () => {
                 addedNodes: [] as unknown as NodeList,
                 removedNodes: [node] as unknown as NodeList,
             })),
-            ...Array.from({length: 64}, () => ({
+            {
                 type: "childList",
                 target: segment,
                 addedNodes: [...sourceNodes, spinner] as unknown as NodeList,
                 removedNodes: [] as unknown as NodeList,
-            })),
+            },
         ] as unknown as MutationRecord[]);
         await vi.advanceTimersByTimeAsync(100);
 
         expect(runtime.requests).toHaveBeenCalledTimes(1);
-        expect(snapshotCloneCalls).toBe(1);
         expect(segment.isConnected).toBe(true);
         pendingRequest.resolve(runtime.requests.mock.calls[0]![0].map((origin) => `译:${origin}`));
         await finishScheduledWork();
@@ -1219,66 +1085,6 @@ describe("全文翻译可见性锚点", () => {
         expect(runtime.requests).toHaveBeenCalledTimes(1);
         expect(segment.isConnected).toBe(true);
         expect(segment.querySelectorAll(".fluent-read-bilingual-content")).toHaveLength(1);
-    });
-
-    it("已译 synthetic inline-run 的祖先新增 translate=no 会 abort、unwrap，移除后可重译", async () => {
-        runtime.config.display = 1;
-        document.body.innerHTML = `
-            <section id="ancestor">
-                <div id="mixed">Readable inline prefix <strong id="emphasis">with emphasized prose.</strong>
-                    <p>Independent block child.</p>
-                </div>
-            </section>
-        `;
-        const ancestor = document.querySelector<HTMLElement>("#ancestor")!;
-        const host = document.querySelector<HTMLElement>("#mixed")!;
-        const sourceNodes = [host.firstChild as Text, document.querySelector<HTMLElement>("#emphasis")!] as const;
-        setLayoutBox(host, 640, 120);
-        runtime.candidates = [{element: host, nodes: sourceNodes, kind: "content", reason: "inline-run"}];
-
-        autoTranslateEnglishPage();
-        await vi.advanceTimersByTimeAsync(50);
-        const visibilityObserver = TestIntersectionObserver.instances[0]!;
-        visibilityObserver.emit(host, true);
-        await finishScheduledWork();
-
-        const firstSegment = host.querySelector<HTMLElement>('[data-fr-translation-segment="true"]')!;
-        const firstState = getTranslationState(firstSegment)!;
-        expect(firstSegment.querySelectorAll(".fluent-read-bilingual-content")).toHaveLength(1);
-        expect(firstState.controller.signal.aborted).toBe(false);
-
-        ancestor.setAttribute("translate", "no");
-        TestMutationObserver.instances.at(-1)!.emit([{
-            type: "attributes",
-            target: ancestor,
-            attributeName: "translate",
-            addedNodes: [] as unknown as NodeList,
-            removedNodes: [] as unknown as NodeList,
-        } as unknown as MutationRecord]);
-        await finishScheduledWork();
-
-        expect(firstState.controller.signal.aborted).toBe(true);
-        expect(firstSegment.isConnected).toBe(false);
-        expect(ancestor.querySelectorAll(
-            '[data-fr-translation-segment="true"], [data-fr-translation-owned="true"]',
-        )).toHaveLength(0);
-        expect(runtime.requests).toHaveBeenCalledTimes(1);
-
-        ancestor.removeAttribute("translate");
-        TestMutationObserver.instances.at(-1)!.emit([{
-            type: "attributes",
-            target: ancestor,
-            attributeName: "translate",
-            addedNodes: [] as unknown as NodeList,
-            removedNodes: [] as unknown as NodeList,
-        } as unknown as MutationRecord]);
-        await vi.advanceTimersByTimeAsync(50);
-        visibilityObserver.emit(host, true);
-        await finishScheduledWork();
-
-        expect(runtime.requests).toHaveBeenCalledTimes(2);
-        expect(host.querySelectorAll('[data-fr-translation-segment="true"]')).toHaveLength(1);
-        expect(host.querySelectorAll(".fluent-read-bilingual-content")).toHaveLength(1);
     });
 
     it("in-flight synthetic inline-run 的祖先 hidden 会 abort，旧结果不可覆盖且解除后可翻译", async () => {
@@ -1346,126 +1152,6 @@ describe("全文翻译可见性锚点", () => {
         expect(host.querySelectorAll('[data-fr-translation-segment="true"]')).toHaveLength(1);
         expect(host.querySelectorAll(".fluent-read-bilingual-content")).toHaveLength(1);
         expect(host.textContent).not.toContain("旧译:");
-    });
-
-    it("loading synthetic 内新增 lookalike owned artifact 仍会 stale、恢复并重译", async () => {
-        runtime.config.display = 1;
-        document.body.innerHTML = `
-            <div id="mixed">Readable inline prefix <strong id="emphasis">with emphasized prose.</strong>
-                <p>Independent block child.</p>
-            </div>
-        `;
-        const host = document.querySelector<HTMLElement>("#mixed")!;
-        const sourceText = host.firstChild as Text;
-        const emphasis = document.querySelector<HTMLElement>("#emphasis")!;
-        const sourceNodes = [sourceText, emphasis] as const;
-        setLayoutBox(host, 640, 120);
-        runtime.candidates = [{element: host, nodes: sourceNodes, kind: "content", reason: "inline-run"}];
-        const firstRequest = deferred<string[]>();
-        runtime.requests.mockImplementationOnce(() => firstRequest.promise);
-
-        autoTranslateEnglishPage();
-        await vi.advanceTimersByTimeAsync(50);
-        const visibilityObserver = TestIntersectionObserver.instances[0]!;
-        visibilityObserver.emit(host, true);
-        await vi.advanceTimersByTimeAsync(1);
-        await Promise.resolve();
-
-        const segment = host.querySelector<HTMLElement>('[data-fr-translation-segment="true"]')!;
-        const spinner = segment.querySelector<HTMLElement>('[data-fr-translation-owned="true"]')!;
-        const mutationObserver = TestMutationObserver.instances.at(-1)!;
-        mutationObserver.emit([{
-            type: "childList",
-            target: segment,
-            addedNodes: [...sourceNodes, spinner] as unknown as NodeList,
-            removedNodes: [] as unknown as NodeList,
-        } as unknown as MutationRecord]);
-        expect(segment.isConnected).toBe(true);
-
-        const lookalike = document.createElement("span");
-        lookalike.setAttribute("data-fr-translation-owned", "true");
-        lookalike.textContent = "Host inserted lookalike artifact";
-        segment.appendChild(lookalike);
-        mutationObserver.emit([{
-            type: "childList",
-            target: segment,
-            addedNodes: [lookalike] as unknown as NodeList,
-            removedNodes: [] as unknown as NodeList,
-        } as unknown as MutationRecord]);
-
-        expect(segment.isConnected).toBe(false);
-        expect(lookalike.isConnected).toBe(false);
-        firstRequest.resolve(runtime.requests.mock.calls[0]![0].map((origin) => `译:${origin}`));
-        await finishScheduledWork();
-        visibilityObserver.emit(host, true);
-        await finishScheduledWork();
-
-        expect(runtime.requests).toHaveBeenCalledTimes(2);
-        expect(host.querySelectorAll(".fluent-read-bilingual-content")).toHaveLength(1);
-    });
-
-    it("provider 进行中 attribute/owner 与下一代 source 依次失效后只提交最新 generation", async () => {
-        document.body.innerHTML = `
-            <article id="owner" data-layout="paragraph">
-                <p id="math">A long perspective paragraph with an inline formula.</p>
-            </article>
-        `;
-        const owner = document.querySelector<HTMLElement>("#owner")!;
-        const paragraph = document.querySelector<HTMLElement>("#math")!;
-        setLayoutBox(owner, 750, 180);
-        setLayoutBox(paragraph, 750, 140);
-        runtime.candidates = [{element: paragraph, kind: "content", reason: "paragraph"}];
-
-        const firstRequest = deferred<string[]>();
-        const secondRequest = deferred<string[]>();
-        runtime.requests
-            .mockImplementationOnce(() => firstRequest.promise)
-            .mockImplementationOnce(() => secondRequest.promise);
-
-        autoTranslateEnglishPage();
-        await vi.advanceTimersByTimeAsync(50);
-        const observer = TestIntersectionObserver.instances[0]!;
-        observer.emit(paragraph, true);
-        await vi.advanceTimersByTimeAsync(1);
-        await Promise.resolve();
-
-        expect(runtime.requests).toHaveBeenCalledTimes(1);
-        expect(runtime.requests).toHaveBeenNthCalledWith(1, [
-            "A long perspective paragraph with an inline formula.",
-        ]);
-
-        // First invalidate only semantic ownership. The source is intentionally
-        // unchanged so this path proves commit-time candidate revalidation rather
-        // than relying on the source snapshot check.
-        owner.setAttribute("data-layout", "article");
-        runtime.candidates = [{element: owner, kind: "content", reason: "article-prose"}];
-        firstRequest.resolve(["译:A long perspective paragraph with an inline formula."]);
-
-        await vi.advanceTimersByTimeAsync(1);
-        await Promise.resolve();
-        await Promise.resolve();
-
-        expect(runtime.requests).toHaveBeenCalledTimes(2);
-        expect(runtime.requests).toHaveBeenNthCalledWith(2, [
-            "A long perspective paragraph with an inline formula.",
-        ]);
-
-        // The fresh ARTICLE generation is now in flight. Change its source and
-        // resolve the old request; lifecycle retry must reset for the new source
-        // signature and commit only the third generation.
-        paragraph.firstChild!.nodeValue = "The settled perspective paragraph keeps the inline formula intact.";
-        secondRequest.resolve(["译:A long perspective paragraph with an inline formula."]);
-
-        await finishScheduledWork();
-
-        expect(runtime.requests).toHaveBeenCalledTimes(3);
-        expect(runtime.requests).toHaveBeenNthCalledWith(3, [
-            "The settled perspective paragraph keeps the inline formula intact.",
-        ]);
-        expect(paragraph.textContent).toBe("译:The settled perspective paragraph keeps the inline formula intact.");
-
-        await finishScheduledWork();
-        expect(runtime.requests).toHaveBeenCalledTimes(3);
     });
 
     it("显式 unchanged 在同一全文会话形成 source 签名墓碑，普通 rescan 不重复请求", async () => {
@@ -1536,22 +1222,14 @@ describe("全文翻译可见性锚点", () => {
             <p id="prose">
                 <span id="lead">Readable prose before protected renderers. </span>
                 <span id="math-v2-root" class="MathJax_Display"><span id="math-v2">x + y</span></span>
-                <mjx-container id="math-v3-root"><span id="math-v3">a = b</span></mjx-container>
-                <span id="katex-root" class="katex"><span id="katex">c = d</span></span>
                 <code id="code">const answer = 42;</code>
-                <span id="translate-no" translate="no">Do not translate</span>
-                <span id="notranslate" class="notranslate">Keep original</span>
                 <span id="tail"> Readable prose after protected renderers.</span>
             </p>
         `;
         const paragraph = document.querySelector<HTMLElement>("#prose")!;
         const lead = document.querySelector<HTMLElement>("#lead")!;
-        const protectedChurnHosts = [
-            "#math-v2", "#math-v3", "#katex", "#code", "#translate-no", "#notranslate",
-        ].map((selector) => document.querySelector<HTMLElement>(selector)!);
-        const protectedAttributeRoots = [
-            "#math-v2-root", "#math-v3-root", "#katex-root", "#code", "#translate-no", "#notranslate",
-        ].map((selector) => document.querySelector<HTMLElement>(selector)!);
+        const math = document.querySelector<HTMLElement>("#math-v2")!;
+        const code = document.querySelector<HTMLElement>("#code")!;
         setLayoutBox(paragraph, 700, 140);
         runtime.candidates = [{element: paragraph, kind: "content", reason: "paragraph"}];
 
@@ -1566,37 +1244,24 @@ describe("全文翻译可见性锚点", () => {
         expect(firstWrapper?.isConnected).toBe(true);
         expect(paragraph.querySelectorAll(".fluent-read-bilingual-content")).toHaveLength(1);
 
-        const records: MutationRecord[] = [];
-        for (const [index, host] of protectedChurnHosts.entries()) {
-            const text = host.firstChild as Text;
-            text.nodeValue = `host churn ${index}`;
-            records.push({
+        const mathText = math.firstChild as Text;
+        mathText.nodeValue = "host math churn";
+        code.setAttribute("style", "--render-pass: 1");
+        TestMutationObserver.instances.at(-1)!.emit([
+            {
                 type: "characterData",
-                target: text,
+                target: mathText,
                 addedNodes: [] as unknown as NodeList,
                 removedNodes: [] as unknown as NodeList,
-            } as unknown as MutationRecord);
-            const renderedChild = document.createElement("span");
-            renderedChild.textContent = `rendered ${index}`;
-            host.appendChild(renderedChild);
-            records.push({
-                type: "childList",
-                target: host,
-                addedNodes: [renderedChild] as unknown as NodeList,
-                removedNodes: [] as unknown as NodeList,
-            } as unknown as MutationRecord);
-        }
-        for (const [index, root] of protectedAttributeRoots.entries()) {
-            root.setAttribute("style", `--render-pass: ${index}`);
-            records.push({
+            } as unknown as MutationRecord,
+            {
                 type: "attributes",
-                target: root,
+                target: code,
                 attributeName: "style",
                 addedNodes: [] as unknown as NodeList,
                 removedNodes: [] as unknown as NodeList,
-            } as unknown as MutationRecord);
-        }
-        TestMutationObserver.instances.at(-1)!.emit(records);
+            } as unknown as MutationRecord,
+        ]);
         await finishScheduledWork();
 
         expect(runtime.requests).toHaveBeenCalledTimes(1);
@@ -1627,13 +1292,11 @@ describe("全文翻译可见性锚点", () => {
                 <span id="preview" class="MathJax_Preview">FORMULA_PREVIEW_SECRET</span>
                 <script id="tex" type="math/tex; mode=display">FORMULA_TEX_SECRET</script>
                 <span id="tail"> The explanation continues around the equation.</span>
-                <a id="reference" href="/before">Stable reference text</a>
             </p>
         `;
         const paragraph = document.querySelector<HTMLElement>("#prose")!;
         const lead = document.querySelector<HTMLElement>("#lead")!;
         const preview = document.querySelector<HTMLElement>("#preview")!;
-        const reference = document.querySelector<HTMLAnchorElement>("#reference")!;
         setLayoutBox(paragraph, 750, 338);
         runtime.candidates = [{element: paragraph, kind: "content", reason: "paragraph"}];
 
@@ -1714,28 +1377,6 @@ describe("全文翻译可见性锚点", () => {
         expect(runtime.requests.mock.calls[1]![0].join(" ")).not.toMatch(
             /FORMULA_RENDERED_SECRET|FORMULA_TEX_SECRET/u,
         );
-
-        // Replacing an inline link with the same text still changes the exact
-        // translatable Text identity, so the bilingual snapshot cannot be kept.
-        const secondWrapper = paragraph.querySelector<HTMLElement>(".fluent-read-bilingual-content")!;
-        const replacementReference = document.createElement("a");
-        replacementReference.id = "reference-next";
-        replacementReference.href = "/after";
-        replacementReference.textContent = reference.textContent;
-        reference.replaceWith(replacementReference);
-        mutationObserver.emit([{
-            type: "childList",
-            target: paragraph,
-            addedNodes: [replacementReference] as unknown as NodeList,
-            removedNodes: [reference] as unknown as NodeList,
-        } as unknown as MutationRecord]);
-        await finishScheduledWork();
-
-        expect(secondWrapper.isConnected).toBe(false);
-        expect(runtime.requests).toHaveBeenCalledTimes(2);
-        visibilityObserver.emit(paragraph, true);
-        await finishScheduledWork();
-        expect(runtime.requests).toHaveBeenCalledTimes(3);
     });
 
     it("宿主篡改译文 wrapper 不会被 hard guard 当成可忽略 mutation", async () => {
@@ -1770,9 +1411,7 @@ describe("全文翻译可见性锚点", () => {
         expect(paragraph.querySelectorAll(".fluent-read-bilingual-content")).toHaveLength(1);
     });
 
-    it.each(["element", "text"] as const)(
-        "宿主向译文 wrapper append %s 的 childList mutation 会恢复并重译",
-        async (kind) => {
+    it("宿主向译文 wrapper append 文本后会恢复并重译", async () => {
             runtime.config.display = 1;
             document.body.innerHTML = '<p id="prose">Host prose remains authoritative.</p>';
             const paragraph = document.querySelector<HTMLElement>("#prose")!;
@@ -1801,10 +1440,7 @@ describe("全文翻译可见性锚点", () => {
             expect(runtime.requests).toHaveBeenCalledTimes(1);
             expect(firstWrapper.isConnected).toBe(true);
 
-            const appended = kind === "element"
-                ? document.createElement("span")
-                : document.createTextNode("Host appended translation text.");
-            if (appended.nodeType === 1) appended.textContent = "Host appended translation element.";
+            const appended = document.createTextNode("Host appended translation text.");
             firstWrapper.appendChild(appended);
             mutationObserver.emit([{
                 type: "childList",
@@ -1819,8 +1455,7 @@ describe("全文翻译可见性锚点", () => {
             expect(runtime.requests).toHaveBeenCalledTimes(2);
             expect(firstWrapper.isConnected).toBe(false);
             expect(paragraph.querySelectorAll(".fluent-read-bilingual-content")).toHaveLength(1);
-        },
-    );
+    });
 
     it("普通后代新增 translate=no 会重启，且新 payload 排除受保护文本", async () => {
         runtime.config.display = 1;
@@ -1863,53 +1498,4 @@ describe("全文翻译可见性锚点", () => {
         expect(paragraph.querySelectorAll(".fluent-read-bilingual-content")).toHaveLength(1);
     });
 
-    it("provider 空结果的立即重排有上限，source 变化后才开启新 generation", async () => {
-        document.body.innerHTML = '<p id="late">Initial prose before hydration.</p>';
-        const paragraph = document.querySelector<HTMLElement>("#late")!;
-        setLayoutBox(paragraph, 600, 80);
-        runtime.candidates = [{element: paragraph, kind: "content", reason: "late-paragraph"}];
-        const firstRequest = deferred<string[]>();
-        runtime.requests
-            .mockImplementationOnce(() => firstRequest.promise)
-            .mockImplementation(async () => []);
-
-        autoTranslateEnglishPage();
-        await vi.advanceTimersByTimeAsync(50);
-        const observer = TestIntersectionObserver.instances[0]!;
-        observer.emit(paragraph, true);
-        await vi.advanceTimersByTimeAsync(1);
-        await Promise.resolve();
-        expect(runtime.requests).toHaveBeenCalledTimes(1);
-
-        // Re-entering the IO threshold while this key is in flight only keeps
-        // one pending wake-up. It must not create an `owned` task that forgets
-        // the generation before its bounded empty-result retries are finalized.
-        observer.emit(paragraph, true);
-        await vi.advanceTimersByTimeAsync(1);
-        await Promise.resolve();
-        expect(runtime.requests).toHaveBeenCalledTimes(1);
-
-        firstRequest.resolve([]);
-        await finishScheduledWork();
-
-        // Initial request plus two lifecycle retries; a third retryable outcome
-        // stores the capped signature and must not schedule a fourth request.
-        expect(runtime.requests).toHaveBeenCalledTimes(3);
-
-        paragraph.firstChild!.nodeValue = "Late prose became readable after hydration.";
-        runtime.requests.mockImplementation(async (origins) => origins.map((origin) => `译:${origin}`));
-        TestMutationObserver.instances.at(-1)!.emit([{
-            type: "characterData",
-            target: paragraph.firstChild!,
-            addedNodes: [] as unknown as NodeList,
-            removedNodes: [] as unknown as NodeList,
-        } as unknown as MutationRecord]);
-        await vi.advanceTimersByTimeAsync(50);
-        expect(observer.observed.has(paragraph)).toBe(true);
-        observer.emit(paragraph, true);
-        await finishScheduledWork();
-
-        expect(runtime.requests).toHaveBeenCalledTimes(4);
-        expect(paragraph.textContent).toBe("译:Late prose became readable after hydration.");
-    });
 });

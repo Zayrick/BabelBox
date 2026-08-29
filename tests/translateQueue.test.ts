@@ -10,7 +10,6 @@ import {
   clearTranslationQueue,
   createTranslationQueueSession,
   enqueueTranslation,
-  type TranslationQueueLease,
 } from '@/src/services/translation/queue';
 
 function deferred<T>() {
@@ -56,22 +55,6 @@ describe('translation queue', () => {
     await vi.waitFor(() => expect(started).toEqual([0, 1, 2, 3, 4]));
     controls[4].resolve(4);
     await expect(jobs[4]).resolves.toBe(4);
-  });
-
-  it('接受超过一百的显式并发配置', async () => {
-    mockConfig.maxConcurrentTranslations = 101;
-    const controls = Array.from({length: 102}, () => deferred<number>());
-    const started: number[] = [];
-    const jobs = controls.map((control, index) => enqueueTranslation(async () => {
-      started.push(index);
-      return control.promise;
-    }));
-
-    expect(started).toEqual(Array.from({length: 101}, (_, index) => index));
-    controls[0].resolve(0);
-    await vi.waitFor(() => expect(started).toEqual(Array.from({length: 102}, (_, index) => index)));
-    controls.slice(1).forEach((control, index) => control.resolve(index + 1));
-    await expect(Promise.all(jobs)).resolves.toEqual(Array.from({length: 102}, (_, index) => index));
   });
 
   it('向调用方传播任务错误，并继续处理队列中的下一个任务', async () => {
@@ -138,21 +121,6 @@ describe('translation queue', () => {
     await expect(next).resolves.toBe('next-result');
     expect(started).toEqual(['first', 'next']);
   });
-
-  it('跨过内部压缩阈值后仍保持摊销 O(1) 的 FIFO 语义', async () => {
-    mockConfig.maxConcurrentTranslations = 1;
-    const started: number[] = [];
-    const count = 2500;
-
-    const results = await Promise.all(Array.from({length: count}, (_, index) =>
-      enqueueTranslation(async () => {
-        started.push(index);
-        return index;
-      })));
-
-    expect(results).toEqual(Array.from({length: count}, (_, index) => index));
-    expect(started).toEqual(results);
-  }, 10_000);
 
   it('清空队列会拒绝等待任务、保留活跃任务，并允许新 generation 继续执行', async () => {
     mockConfig.maxConcurrentTranslations = 1;
@@ -239,13 +207,6 @@ describe('translation queue', () => {
     });
   });
 
-  it('拒绝不是队列创建的伪造会话', async () => {
-    const invalid = Object.freeze({generation: 0});
-
-    expect(() => cancelTranslationQueueSession(invalid)).toThrow('无效的翻译队列会话');
-    await expect(enqueueTranslation(async () => 'never', invalid)).rejects.toThrow('无效的翻译队列会话');
-  });
-
   it('会话取消只影响自己的等待任务', async () => {
     mockConfig.maxConcurrentTranslations = 1;
     const activeControl = deferred<string>();
@@ -262,36 +223,4 @@ describe('translation queue', () => {
     await expect(other).resolves.toBe('other');
   });
 
-  it('全局清空会跳过会话取消留下的稀疏槽并拒绝其他等待任务', async () => {
-    mockConfig.maxConcurrentTranslations = 1;
-    const activeControl = deferred<string>();
-    const active = enqueueTranslation(() => activeControl.promise);
-    const other = enqueueTranslation(async () => 'other');
-    const otherOutcome = other.catch((error) => error);
-    const session = createTranslationQueueSession();
-    const cancelled = enqueueTranslation(async () => 'cancelled', session);
-    const cancelledOutcome = cancelled.catch((error) => error);
-
-    cancelTranslationQueueSession(session, 'session cancelled');
-    await expect(cancelledOutcome).resolves.toMatchObject({message: 'session cancelled'});
-    clearTranslationQueue();
-    await expect(otherOutcome).resolves.toMatchObject({message: '翻译队列已清空'});
-
-    activeControl.resolve('active');
-    await expect(active).resolves.toBe('active');
-  });
-
-  it('任务结束后不允许继续追加 transport lease', async () => {
-    let capturedLease: TranslationQueueLease | undefined;
-    await expect(enqueueTranslation(async (lease) => {
-      capturedLease = lease;
-      return 'done';
-    })).resolves.toBe('done');
-    await vi.waitFor(() => expect(capturedLease).toBeDefined());
-    await Promise.resolve();
-
-    expect(() => capturedLease?.holdUntil(Promise.resolve())).toThrow(
-      '翻译队列任务已结束，无法继续占用并发槽',
-    );
-  });
 });

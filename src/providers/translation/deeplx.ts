@@ -109,10 +109,6 @@ export async function translateDeepLXText(
     serviceKey: string = services.deeplx,
     languageOverride?: TranslationLanguageOverride & TranslationProviderRequestContext,
 ): Promise<string> {
-    if (typeof text !== "string") {
-        throw new Error("DeepLX 翻译仅支持单条文本");
-    }
-
     const current = getTranslationProviderConfig(languageOverride, config);
     const token = current.token[serviceKey]?.trim() || "";
     const endpoints = getDeepLXEndpoints(

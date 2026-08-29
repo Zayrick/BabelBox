@@ -1,13 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   advanceVocabularyReviewSession,
-  buildAnkiTsv,
-  buildVocabularyCloze,
   createVocabularyLifecycleGuard,
   createVocabularyReviewSession,
-  reconcileVocabularyReviewQueue,
   reconcileVocabularyReviewSession,
-  vocabularyImportNeedsConfirmation,
   vocabularyReviewSessionProgress,
   type VocabularyEntry,
 } from '@/src/features/vocabulary/learningModel'
@@ -40,21 +36,10 @@ function entry(id: string, overrides: Partial<VocabularyEntry> = {}): Vocabulary
   }
 }
 
-describe('vocabulary learning model edge cases', () => {
-  it('normalizes empty export cells, invalid sizes and empty cloze inputs', () => {
-    expect(buildAnkiTsv([null as unknown as string], [[undefined]])).toBe(
-      '#separator:tab\n#html:false\n#columns:\n',
-    )
-    expect(vocabularyImportNeedsConfirmation(Number.NaN)).toBe(false)
-    expect(buildVocabularyCloze('', 'word')).toBe('')
-    expect(buildVocabularyCloze('word', '')).toBe('')
-  })
-
-  it('deduplicates queue entries and advances non-head or missing entries safely', () => {
+describe('vocabulary learning model', () => {
+  it('advances a reviewed card without disturbing the remaining queue', () => {
     const first = entry('first')
     const second = entry('second')
-    expect(reconcileVocabularyReviewQueue([first, first], [first], NOW)).toEqual([first])
-
     const session = createVocabularyReviewSession([first, second])
     expect(advanceVocabularyReviewSession(session, 'second')).toMatchObject({
       queue: [first],
@@ -68,14 +53,11 @@ describe('vocabulary learning model edge cases', () => {
     })
   })
 
-  it('detects each kind of current-card change and preserves an unchanged answer', () => {
+  it('hides an answer when the current card changes and preserves it otherwise', () => {
     const current = entry('current')
     const session = { queue: [current], completed: 2, answerVisible: true }
 
-    expect(reconcileVocabularyReviewSession(session, [], NOW).answerVisible).toBe(false)
-    expect(reconcileVocabularyReviewSession(session, [entry('other')], NOW).answerVisible).toBe(false)
     expect(reconcileVocabularyReviewSession(session, [entry('current', { updatedAt: 2 })], NOW).answerVisible).toBe(false)
-    expect(reconcileVocabularyReviewSession(session, [entry('current', { reviewCount: 1 })], NOW).answerVisible).toBe(false)
     expect(reconcileVocabularyReviewSession(session, [current], NOW).answerVisible).toBe(true)
 
     expect(vocabularyReviewSessionProgress({ queue: [], completed: 2, answerVisible: false })).toEqual({

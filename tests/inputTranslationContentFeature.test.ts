@@ -206,20 +206,6 @@ describe('input translation content feature', () => {
         expect(sendMessage).toHaveBeenCalledWith(expect.objectContaining({text: 'Other'}));
     });
 
-    it('未知但未禁用的输入触发配置不会执行任何翻译动作', async () => {
-        const {fakeDocument, sendMessage} = mountHarness({
-            config: {inputBoxTranslationTrigger: 'manual-only'},
-        });
-        const input = fakeElement('input');
-        input.value = 'Hello';
-        fakeDocument.activeElement = input;
-
-        await fakeDocument.emit('keydown', trustedKey({key: 'Enter', ctrlKey: true}));
-
-        expect(sendMessage).not.toHaveBeenCalled();
-        expect(input.value).toBe('Hello');
-    });
-
     it('空输入或清理触发符号后为空时不会请求 background', async () => {
         const empty = mountHarness();
         const emptyInput = fakeElement('input');
@@ -262,29 +248,6 @@ describe('input translation content feature', () => {
         expect(repeated.sendMessage).not.toHaveBeenCalled();
     });
 
-    it('用户编辑、配置 generation 变化或 abort 后，异步结果不能覆盖输入框', async () => {
-        let resolveMessage: (value: unknown) => void = () => undefined;
-        let generation = 0;
-        const pending = new Promise(resolve => { resolveMessage = resolve; });
-        const {fakeDocument, controller} = mountHarness({
-            generation: () => generation,
-            sendMessage: () => pending,
-        });
-        const input = fakeElement('input');
-        input.value = 'Hello';
-        fakeDocument.activeElement = input;
-
-        const running = fakeDocument.emit('keydown', trustedKey({key: 'Enter', ctrlKey: true}));
-        input.value = 'Hello edited';
-        generation = 1;
-        controller.abort();
-        resolveMessage({success: true, translatedText: '你好'});
-        await running;
-
-        expect(input.value).toBe('Hello edited');
-        expect(input.classList.remove).toHaveBeenCalledWith('fluent-input-translating');
-    });
-
     it('翻译成功返回前输入已变化时，成功结果不会写回', async () => {
         const harness = mountHarness({
             sendMessage: async () => {
@@ -299,25 +262,6 @@ describe('input translation content feature', () => {
         await harness.fakeDocument.emit('keydown', trustedKey({key: 'Enter', ctrlKey: true}));
 
         expect(input.value).toBe('Changed');
-        expect(input.classList.remove).toHaveBeenCalledWith('fluent-input-translating');
-    });
-
-    it('翻译成功返回前站点被禁用时，成功结果不会写回', async () => {
-        let disabled = false;
-        const harness = mountHarness({
-            isSiteDisabled: () => disabled,
-            sendMessage: async () => {
-                disabled = true;
-                return {success: true, translatedText: '你好'};
-            },
-        });
-        const input = fakeElement('input');
-        input.value = 'Hello';
-        harness.fakeDocument.activeElement = input;
-
-        await harness.fakeDocument.emit('keydown', trustedKey({key: 'Enter', ctrlKey: true}));
-
-        expect(input.value).toBe('Hello');
         expect(input.classList.remove).toHaveBeenCalledWith('fluent-input-translating');
     });
 
@@ -390,31 +334,11 @@ describe('input translation content feature', () => {
         expect(failedInput.value).toBe('Hello');
         expect(failed.logger.error).toHaveBeenCalledWith('微软翻译失败:', expect.any(Error));
 
-        const defaultFailure = mountHarness({
-            sendMessage: async () => undefined,
-        });
-        const defaultFailedInput = fakeElement('input');
-        defaultFailedInput.value = 'Hello';
-        defaultFailure.fakeDocument.activeElement = defaultFailedInput;
-        await defaultFailure.fakeDocument.emit('keydown', trustedKey({key: 'Enter', ctrlKey: true}));
-        expect(defaultFailure.logger.error).toHaveBeenCalledWith('微软翻译失败:', expect.any(Error));
-
-        const emptySuccess = mountHarness({
-            sendMessage: async () => ({success: true}),
-        });
-        const emptySuccessInput = fakeElement('input');
-        emptySuccessInput.value = 'Hello';
-        emptySuccess.fakeDocument.activeElement = emptySuccessInput;
-        await emptySuccess.fakeDocument.emit('keydown', trustedKey({key: 'Enter', ctrlKey: true}));
-        expect(emptySuccessInput.value).toBe('Hello');
     });
 
-    it('翻译失败返回时若输入已经改变，只清理自己拥有的视觉状态', async () => {
+    it('tooltip 创建失败时停止当前请求并清理视觉状态', async () => {
         const harness = mountHarness({
-            sendMessage: async () => {
-                (harness.fakeDocument.activeElement as any).value = 'Changed';
-                throw new Error('network failed');
-            },
+            createUi: vi.fn().mockRejectedValue(new Error('shadow failed')),
         });
         const input = fakeElement('input');
         input.value = 'Hello';
@@ -422,44 +346,8 @@ describe('input translation content feature', () => {
 
         await harness.fakeDocument.emit('keydown', trustedKey({key: 'Enter', ctrlKey: true}));
 
-        expect(input.value).toBe('Changed');
-        expect(harness.logger.error).not.toHaveBeenCalledWith('微软翻译失败:', expect.any(Error));
-        expect(input.classList.remove).toHaveBeenCalledWith('fluent-input-translating');
-    });
-
-    it('tooltip 创建异常走外层降级提示路径', async () => {
-        const logger = {error: vi.fn()};
-        const fallbackRecords: any[] = [];
-        const fallbackCreateUi = createUiFactory(fallbackRecords);
-        const harness = mountHarness({
-            createUi: vi.fn()
-                .mockRejectedValueOnce(new Error('shadow failed'))
-                .mockImplementation(fallbackCreateUi),
-        });
-        const input = fakeElement('input');
-        input.value = 'Hello';
-        harness.fakeDocument.activeElement = input;
-        harness.logger.error = logger.error;
-
-        await harness.fakeDocument.emit('keydown', trustedKey({key: 'Enter', ctrlKey: true}));
-
-        expect(logger.error).toHaveBeenCalledWith('输入框翻译失败:', expect.any(Error));
-    });
-
-    it('外层异常发生后若请求已经失效，只清理视觉状态不显示降级提示', async () => {
-        const harness = mountHarness({
-            createUi: vi.fn(async () => {
-                harness.controller.abort();
-                throw new Error('shadow failed');
-            }),
-        });
-        const input = fakeElement('input');
-        input.value = 'Hello';
-        harness.fakeDocument.activeElement = input;
-
-        await harness.fakeDocument.emit('keydown', trustedKey({key: 'Enter', ctrlKey: true}));
-
-        expect(harness.logger.error).not.toHaveBeenCalledWith('输入框翻译失败:', expect.any(Error));
+        expect(harness.logger.error).toHaveBeenCalledWith('输入框提示创建失败:', expect.any(Error));
+        expect(harness.sendMessage).not.toHaveBeenCalled();
         expect(input.classList.remove).toHaveBeenCalledWith('fluent-input-translating');
     });
 

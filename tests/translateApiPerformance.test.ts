@@ -36,14 +36,13 @@ vi.mock('@/src/core/config/catalog', async (importOriginal) => {
     servicesType: {
       ...actual.servicesType,
       isUseAIContext: (service: string) => service === 'mock-ai',
-      isAiSdk: (service: string) => service === 'mock-ai',
     },
   };
 });
 vi.mock('@/src/services/translation/context', () => ({getPageTranslationContext: mocks.getPageTranslationContext}));
 vi.mock('@/src/core/config/validation', () => ({getMissingCredentialMessage: mocks.getMissingCredentialMessage}));
 
-import {cancelAllTranslations, translateText, translateTextBatch, translateVideoText} from '@/src/services/translation/client';
+import {translateText, translateTextBatch, translateVideoText} from '@/src/services/translation/client';
 import {clearTranslationQueue} from '@/src/services/translation/queue';
 
 const originalDocument = globalThis.document;
@@ -99,7 +98,7 @@ describe('translation API request lifecycle performance', () => {
     mocks.getMissingCredentialMessage.mockReturnValue('DeepSeek 需要 API Key（访问令牌），当前尚未配置');
     mocks.sendMessage.mockResolvedValue('网页译文');
 
-    await expect(translateText('Readable source', 'Context', {maxRetries: 0})).resolves.toBe('网页译文');
+    await expect(translateText('Readable source', 'Context')).resolves.toBe('网页译文');
 
     expect(mocks.sendMessage).toHaveBeenCalledTimes(1);
   });
@@ -109,7 +108,7 @@ describe('translation API request lifecycle performance', () => {
     mocks.getMissingCredentialMessage.mockReturnValue('DeepSeek 需要 API Key（访问令牌），当前尚未配置');
     mocks.sendMessage.mockResolvedValue(['网页批量译文']);
 
-    await expect(translateTextBatch(['Readable source'], 'Context', {maxRetries: 0}))
+    await expect(translateTextBatch(['Readable source'], 'Context'))
       .resolves.toEqual(['网页批量译文']);
 
     expect(mocks.sendMessage).toHaveBeenCalledTimes(1);
@@ -123,7 +122,7 @@ describe('translation API request lifecycle performance', () => {
     mocks.config.service = 'mock-ai';
     mocks.getMissingCredentialMessage.mockReturnValue('DeepSeek 需要 API Key（访问令牌），当前尚未配置');
 
-    await expect(translateText('Readable source', 'Context', {maxRetries: 0}))
+    await expect(translateText('Readable source', 'Context'))
       .rejects.toThrow('DeepSeek 需要 API Key');
 
     expect(mocks.sendMessage).not.toHaveBeenCalled();
@@ -156,7 +155,6 @@ describe('translation API request lifecycle performance', () => {
       sourceLanguage: 'en',
       targetLanguage: 'ja',
       useCache: false,
-      maxRetries: 0,
     })).resolves.toBe('文档译文');
 
     expect(mocks.config.service).toBe('mock');
@@ -181,10 +179,10 @@ describe('translation API request lifecycle performance', () => {
       return Promise.resolve(Array.isArray(origin) ? origin.map(value => `译:${value}`) : `译:${origin}`);
     });
 
-    const first = translateText('Blocking source', 'Context', {maxRetries: 0});
+    const first = translateText('Blocking source', 'Context');
     await vi.waitFor(() => expect(mocks.sendMessage).toHaveBeenCalledTimes(1));
-    const queuedSingle = translateText('Queued source', 'Context', {maxRetries: 0});
-    const queuedBatch = translateTextBatch(['Queued batch source'], 'Context', {maxRetries: 0});
+    const queuedSingle = translateText('Queued source', 'Context');
+    const queuedBatch = translateTextBatch(['Queued batch source'], 'Context');
 
     mocks.config.service = 'mock-ai';
     mocks.config.model['mock-ai'] = 'changed-model';
@@ -221,7 +219,7 @@ describe('translation API request lifecycle performance', () => {
       .mockImplementationOnce(() => blocker.promise)
       .mockResolvedValueOnce('字幕译文');
 
-    const first = translateText('Blocking source', 'Context', {maxRetries: 0});
+    const first = translateText('Blocking source', 'Context');
     await vi.waitFor(() => expect(mocks.sendMessage).toHaveBeenCalledTimes(1));
     mocks.config.videoService = 'mock-ai';
     mocks.config.model['mock-ai'] = 'video-model';
@@ -249,7 +247,7 @@ describe('translation API request lifecycle performance', () => {
     }));
   });
 
-  it('lets AI SDK services own retries and preserves structured error details', async () => {
+  it('preserves structured background error details', async () => {
     mocks.config.service = 'mock-ai';
     mocks.sendMessage.mockResolvedValue({
       marker: 'fluentread-translation-error-v1',
@@ -270,28 +268,6 @@ describe('translation API request lifecycle performance', () => {
     expect(mocks.sendMessage).toHaveBeenCalledTimes(1);
   });
 
-  it('aborts a retry delay without sending another runtime request', async () => {
-    mocks.sendMessage.mockRejectedValue(new Error('temporary failure'));
-    const controller = new AbortController();
-    const request = translateText('Readable source', 'Context', {
-      maxRetries: 3,
-      retryDelay: 10_000,
-      signal: controller.signal,
-    });
-    const outcome = request.catch((error) => error);
-
-    await vi.waitFor(() => expect(mocks.sendMessage).toHaveBeenCalledTimes(1));
-    controller.abort();
-
-    await expect(outcome).resolves.toMatchObject({name: 'AbortError'});
-    expect(mocks.sendMessage).toHaveBeenCalledTimes(1);
-    // The retry timer is removed synchronously; only count persistence remains.
-    expect(vi.getTimerCount()).toBe(1);
-    cancelAllTranslations();
-    expect(mocks.saveConfig).toHaveBeenCalledTimes(1);
-    expect(vi.getTimerCount()).toBe(0);
-  });
-
   it('aborts the DOM caller immediately but does not release the real transport concurrency slot', async () => {
     mocks.config.maxConcurrentTranslations = 1;
     const firstTransport = deferred<string>();
@@ -301,7 +277,6 @@ describe('translation API request lifecycle performance', () => {
     const controller = new AbortController();
     const first = translateText('First readable source', 'Context', {
       signal: controller.signal,
-      maxRetries: 0,
     });
     const firstOutcome = first.catch((error) => error);
 
@@ -309,7 +284,7 @@ describe('translation API request lifecycle performance', () => {
     controller.abort();
     await expect(firstOutcome).resolves.toMatchObject({name: 'AbortError'});
 
-    const second = translateText('Second readable source', 'Context', {maxRetries: 0});
+    const second = translateText('Second readable source', 'Context');
     await Promise.resolve();
     expect(mocks.sendMessage).toHaveBeenCalledTimes(1);
 
@@ -329,7 +304,6 @@ describe('translation API request lifecycle performance', () => {
     const removeListener = vi.spyOn(controller.signal, 'removeEventListener');
     const first = translateText('First timeout source', 'Context', {
       signal: controller.signal,
-      maxRetries: 0,
       timeout: 10_000,
     });
     const firstOutcome = first.catch((error) => error);
@@ -342,7 +316,7 @@ describe('translation API request lifecycle performance', () => {
     expect(addListener).toHaveBeenCalledWith('abort', expect.any(Function), {once: true});
     expect(removeListener).toHaveBeenCalledWith('abort', expect.any(Function));
 
-    const second = translateText('Second timeout source', 'Context', {maxRetries: 0});
+    const second = translateText('Second timeout source', 'Context');
     await vi.advanceTimersByTimeAsync(9_999);
     expect(mocks.sendMessage).toHaveBeenCalledTimes(1);
 

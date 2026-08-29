@@ -54,10 +54,6 @@ function getErrorMessage(error: unknown): string {
 }
 
 export async function translateFreeText(text: string, languages: FreeTranslationRequest = {}): Promise<string> {
-    if (typeof text !== "string") {
-        throw new Error("免费翻译服务仅支持文本输入");
-    }
-
     const failures: string[] = [];
     for (const provider of providers) {
         try {

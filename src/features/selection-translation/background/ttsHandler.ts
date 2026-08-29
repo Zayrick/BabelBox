@@ -104,11 +104,7 @@ interface ActiveSelectionTts extends SelectionTtsRoute {
 
 function parseTabId(context: SelectionTtsContext): number | null {
     const tabId = context.sender?.tab?.id;
-    try {
-        return parseSelectionTtsTabId(tabId);
-    } catch {
-        return null;
-    }
+    return tabId === undefined ? null : parseSelectionTtsTabId(tabId);
 }
 
 function parseText(value: unknown): string {
@@ -175,150 +171,147 @@ export function createSelectionTtsBackgroundHandlers(
     const playbackStateHandler: SelectionTtsBackgroundHandler<SelectionTtsPlaybackStateMessage> = {
         type: SELECTION_TTS_PLAYBACK_STATE_MESSAGE_TYPE,
         async handle(message) {
-                let route: SelectionTtsRoute;
-                let state: ReturnType<typeof parseSelectionTtsPlaybackState>;
-                try {
-                    route = parseSelectionTtsRoute(message);
-                    state = parseSelectionTtsPlaybackState(message.state);
-                } catch {
-                    return {success: true};
-                }
-
-                // MV3 worker 重建后仍可仅凭 offscreen 自描述消息转发结果。
-                if (activeSelectionTts && sameSelectionTtsRoute(activeSelectionTts, route)) {
-                    activeSelectionTts = null;
-                }
-                await dependencies.sendTabMessage(route.tabId, {
-                    type: 'selectionTtsState',
-                    clientRequestId: route.clientRequestId,
-                    state,
-                    error: typeof message.error === 'string' ? message.error : undefined,
-                }).catch(() => undefined);
+            let route: SelectionTtsRoute;
+            let state: ReturnType<typeof parseSelectionTtsPlaybackState>;
+            try {
+                route = parseSelectionTtsRoute(message);
+                state = parseSelectionTtsPlaybackState(message.state);
+            } catch {
                 return {success: true};
+            }
+
+            // MV3 worker 重建后仍可仅凭 offscreen 自描述消息转发结果。
+            if (activeSelectionTts && sameSelectionTtsRoute(activeSelectionTts, route)) {
+                activeSelectionTts = null;
+            }
+            await dependencies.sendTabMessage(route.tabId, {
+                type: 'selectionTtsState',
+                clientRequestId: route.clientRequestId,
+                state,
+                error: typeof message.error === 'string' ? message.error : undefined,
+            }).catch(() => undefined);
+            return {success: true};
         },
     };
 
     const stopHandler: SelectionTtsBackgroundHandler<SelectionTtsStopMessage> = {
         type: SELECTION_TTS_STOP_MESSAGE_TYPE,
         async handle(message, context) {
-                const tabId = parseTabId(context);
-                if (tabId === null || message.clientRequestId === undefined) return {success: true};
-                const route = {
-                    tabId,
-                    clientRequestId: parseSelectionTtsClientRequestId(message.clientRequestId),
-                };
-                if (activeSelectionTts && sameSelectionTtsRoute(activeSelectionTts, route)) {
-                    activeSelectionTts.controller.abort();
-                    activeSelectionTts = null;
-                }
-                // 不依赖 active 内存：worker 重启后 STOP 仍能直达 offscreen。
-                await dependencies.stopWithOffscreen(route).catch(() => undefined);
-                return {success: true};
+            const tabId = parseTabId(context);
+            if (tabId === null || message.clientRequestId === undefined) return {success: true};
+            const route = {
+                tabId,
+                clientRequestId: parseSelectionTtsClientRequestId(message.clientRequestId),
+            };
+            if (activeSelectionTts && sameSelectionTtsRoute(activeSelectionTts, route)) {
+                activeSelectionTts.controller.abort();
+                activeSelectionTts = null;
+            }
+            // 不依赖 active 内存：worker 重启后 STOP 仍能直达 offscreen。
+            await dependencies.stopWithOffscreen(route).catch(() => undefined);
+            return {success: true};
         },
     };
 
     const edgeTtsHandler: SelectionTtsBackgroundHandler<SelectionTtsMessage> = {
         type: SELECTION_TTS_MESSAGE_TYPE,
         async handle(message, context): Promise<SelectionTtsResponse> {
-                const text = parseText(message.text);
-                const language = parseLanguage(message.language);
-                const clientRequestId = parseSelectionTtsClientRequestId(message.clientRequestId);
-                const tabId = parseTabId(context);
+            const text = parseText(message.text);
+            const language = parseLanguage(message.language);
+            const clientRequestId = parseSelectionTtsClientRequestId(message.clientRequestId);
+            const tabId = parseTabId(context);
 
-                // 新请求先取消旧请求；没有 tab 时保留旧行为，合成后回退到 page audio。
-                await stopActiveSelectionTts();
-                const active = tabId === null ? null : beginSelectionTts(tabId, clientRequestId);
-                let result: SelectionTtsAudio;
+            // 新请求先取消旧请求；没有 tab 时合成后直接返回 page audio。
+            await stopActiveSelectionTts();
+            const active = tabId === null ? null : beginSelectionTts(tabId, clientRequestId);
+            let result: SelectionTtsAudio;
+            try {
+                result = await dependencies.synthesize(
+                    text,
+                    language,
+                    dependencies.getPreferredVoices(),
+                    active?.controller.signal,
+                );
+            } catch (synthesisError) {
+                if (active && activeSelectionTts === active) {
+                    activeSelectionTts = null;
+                }
+                throw synthesisError;
+            }
+
+            if (active && activeSelectionTts !== active) {
+                return {success: false, error: '语音合成已取消'};
+            }
+
+            if (tabId !== null && active && dependencies.offscreenPlaybackEnabled !== false) {
+                active.playbackStarted = true;
                 try {
-                    result = await dependencies.synthesize(
-                        text,
-                        language,
-                        dependencies.getPreferredVoices(),
-                        active?.controller.signal,
-                    );
-                } catch (synthesisError) {
-                    if (active && activeSelectionTts === active) {
+                    await dependencies.playWithOffscreen({
+                        audioBase64: arrayBufferToBase64(result.audio),
+                        contentType: result.contentType,
+                        tabId,
+                        clientRequestId: active.clientRequestId,
+                    });
+                    if (activeSelectionTts !== active) {
+                        // STOP 可能早于 PLAY 生效；PLAY 成功返回后必须二次 STOP 清理 late playback。
+                        return stopLatePlayback(active);
+                    }
+                    return {success: true, transport: 'offscreen', voice: result.voice};
+                } catch (offscreenError) {
+                    const stillCurrent = activeSelectionTts === active;
+                    if (stillCurrent) {
                         activeSelectionTts = null;
                     }
-                    throw synthesisError;
+                    if (!stillCurrent) return stopLatePlayback(active);
+                    dependencies.warn?.('Offscreen TTS playback unavailable, returning page audio:', offscreenError);
                 }
+            }
 
-                if (active && activeSelectionTts !== active) {
-                    return {success: false, error: '语音合成已取消'};
-                }
+            if (activeSelectionTts === active) activeSelectionTts = null;
 
-                if (tabId !== null && active && dependencies.offscreenPlaybackEnabled !== false) {
-                    active.playbackStarted = true;
-                    try {
-                        await dependencies.playWithOffscreen({
-                            audioBase64: arrayBufferToBase64(result.audio),
-                            contentType: result.contentType,
-                            tabId,
-                            clientRequestId: active.clientRequestId,
-                        });
-                        if (activeSelectionTts !== active) {
-                            // STOP 可能早于 PLAY 生效；PLAY 成功返回后必须二次 STOP 清理 late playback。
-                            return stopLatePlayback(active);
-                        }
-                        return {success: true, transport: 'offscreen', voice: result.voice};
-                    } catch (offscreenError) {
-                        const stillCurrent = activeSelectionTts === active;
-                        if (stillCurrent) {
-                            activeSelectionTts = null;
-                        }
-                        if (!stillCurrent) return stopLatePlayback(active);
-                        dependencies.warn?.('Offscreen TTS playback unavailable, returning page audio:', offscreenError);
-                    }
-                }
-
-                if (activeSelectionTts === active) activeSelectionTts = null;
-
-                return {
-                    success: true,
-                    audioBase64: arrayBufferToBase64(result.audio),
-                    contentType: result.contentType,
-                    voice: result.voice,
-                    transport: 'page',
-                };
+            return {
+                success: true,
+                audioBase64: arrayBufferToBase64(result.audio),
+                contentType: result.contentType,
+                voice: result.voice,
+                transport: 'page',
+            };
         },
     };
 
     const googleTtsHandler: SelectionTtsBackgroundHandler<SelectionTtsGoogleMessage> = {
         type: SELECTION_TTS_GOOGLE_MESSAGE_TYPE,
         async handle(message, context): Promise<SelectionTtsResponse> {
-                const text = parseText(message.text);
-                const language = parseLanguage(message.language);
-                const clientRequestId = parseSelectionTtsClientRequestId(message.clientRequestId);
-                const tabId = parseTabId(context);
+            const text = parseText(message.text);
+            const language = parseLanguage(message.language);
+            const clientRequestId = parseSelectionTtsClientRequestId(message.clientRequestId);
+            const tabId = parseTabId(context);
 
-                // Google fallback 与 Edge 共用单例播放状态，新请求同样先取消旧播放。
-                await stopActiveSelectionTts();
-                if (tabId === null) return {success: false, error: '无法确定当前标签页'};
-                if (dependencies.offscreenPlaybackEnabled === false) {
-                    return {success: false, error: '当前浏览器暂不支持 Google TTS 扩展播放'};
-                }
+            // Google TTS 与 Edge 共用单例播放状态，新请求同样先取消旧播放。
+            await stopActiveSelectionTts();
+            if (tabId === null) return {success: false, error: '无法确定当前标签页'};
+            if (dependencies.offscreenPlaybackEnabled === false) {
+                return {success: false, error: '当前浏览器暂不支持 Google TTS 扩展播放'};
+            }
 
-                const active = beginSelectionTts(tabId, clientRequestId);
-                active.playbackStarted = true;
-                try {
-                    await dependencies.playWithOffscreen({
-                        sourceUrl: googleSelectionTtsUrl(text, language),
-                        tabId,
-                        clientRequestId: active.clientRequestId,
-                    });
-                    if (activeSelectionTts !== active) return stopLatePlayback(active);
-                    return {success: true, transport: 'offscreen'};
-                } catch (offscreenError) {
-                    const stillCurrent = activeSelectionTts === active;
-                    if (stillCurrent) {
-                        activeSelectionTts = null;
-                    } else {
-                        await dependencies.stopWithOffscreen(active).catch(() => undefined);
-                    }
-                    return stillCurrent
-                        ? {success: false, error: errorMessage(offscreenError)}
-                        : {success: false, error: '语音播放已取消'};
+            const active = beginSelectionTts(tabId, clientRequestId);
+            active.playbackStarted = true;
+            try {
+                await dependencies.playWithOffscreen({
+                    sourceUrl: googleSelectionTtsUrl(text, language),
+                    tabId,
+                    clientRequestId: active.clientRequestId,
+                });
+                if (activeSelectionTts !== active) return stopLatePlayback(active);
+                return {success: true, transport: 'offscreen'};
+            } catch (offscreenError) {
+                const stillCurrent = activeSelectionTts === active;
+                if (stillCurrent) {
+                    activeSelectionTts = null;
+                    return {success: false, error: errorMessage(offscreenError)};
                 }
+                return stopLatePlayback(active);
+            }
         },
     };
 

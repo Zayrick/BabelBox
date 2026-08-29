@@ -118,7 +118,3 @@ export function unwrapTranslationResponse<T>(value: unknown): T {
   if (isSerializedTranslationError(value)) throw new TranslationRequestError(value);
   return value as T;
 }
-
-export function isRetryableTranslationError(error: unknown): boolean {
-  return !(error instanceof TranslationRequestError) || error.retryable;
-}

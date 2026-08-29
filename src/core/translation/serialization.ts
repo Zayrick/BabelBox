@@ -1,4 +1,5 @@
 import {isTranslationTextNodeProtected} from './text';
+import {getComposedParent} from './dom';
 
 const translationArtifactSelector = [
     '.fluent-read-bilingual-content',
@@ -36,8 +37,6 @@ export const translationTruncationStyleOverrides: readonly TranslationStyleOverr
     {property: 'line-clamp', value: 'unset', priority: 'important'},
     {property: 'max-height', value: 'unset', priority: 'important'},
 ];
-
-const maxTranslationTruncationAncestorDepth = 16;
 
 function hashSlotSources(sources: readonly string[]): string {
     let hash = 2166136261;
@@ -224,29 +223,22 @@ export function hasActiveTranslationLineClamp(element: HTMLElement): boolean {
 }
 
 /**
- * A translated paragraph can sit inside a separate line-clamp wrapper. Walk a
- * small, bounded ancestor chain so rendering can temporarily lease every
- * active clipping container without turning candidate discovery into a style
- * mutation. Existing leases are included for sibling candidates that share
- * one clamp container after the first translation has already unset it.
+ * A translated paragraph can sit inside a separate line-clamp wrapper.
+ * Existing leases are included when sibling candidates share that wrapper.
  */
 export function findTranslationTruncationAncestors(
     node: HTMLElement,
     hasExistingOverride: (element: HTMLElement) => boolean = () => false,
 ): HTMLElement[] {
     const result: HTMLElement[] = [];
-    let current = node.parentElement;
-    let depth = 0;
-    while (current && current !== node.ownerDocument?.body && depth < maxTranslationTruncationAncestorDepth) {
-        depth += 1;
-        if (hasExistingOverride(current) || hasActiveTranslationLineClamp(current)) result.push(current);
-        current = current.parentElement;
+    const HTMLElementConstructor = node.ownerDocument.defaultView?.HTMLElement;
+    let current = getComposedParent(node);
+    while (current && current !== node.ownerDocument?.body) {
+        if (HTMLElementConstructor && current instanceof HTMLElementConstructor) {
+            const element = current as HTMLElement;
+            if (hasExistingOverride(element) || hasActiveTranslationLineClamp(element)) result.push(element);
+        }
+        current = getComposedParent(current);
     }
     return result;
-}
-
-export function removeTranslationTruncation(node: HTMLElement): void {
-    translationTruncationStyleOverrides.forEach(({property, value, priority}) => {
-        node.style.setProperty(property, value, priority);
-    });
 }

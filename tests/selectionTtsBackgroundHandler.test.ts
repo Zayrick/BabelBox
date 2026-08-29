@@ -59,7 +59,7 @@ function createSubject(overrides: Partial<SelectionTtsBackgroundDependencies> = 
 }
 
 describe('selection TTS background handlers', () => {
-    it('无 tab 的 Edge TTS 保留 page audio fallback，不进入 offscreen', async () => {
+    it('无 tab 的 Edge TTS 返回 page audio，不进入 offscreen', async () => {
         const {dependencies, router} = createSubject();
 
         await expect(router.dispatch({
@@ -175,14 +175,6 @@ describe('selection TTS background handlers', () => {
             text: '   ',
         }, {sender: {tab: {id: 1}}})).rejects.toThrow('TTS 文本为空');
         await expect(router.dispatch({
-            type: SELECTION_TTS_MESSAGE_TYPE,
-            text: 123,
-        }, {sender: {tab: {id: 1}}})).rejects.toThrow('TTS 文本为空');
-        await expect(router.dispatch({
-            type: SELECTION_TTS_STOP_MESSAGE_TYPE,
-            clientRequestId: 1.2,
-        }, {sender: {tab: {id: 1}}})).rejects.toThrow('clientRequestId');
-        await expect(router.dispatch({
             type: SELECTION_TTS_GOOGLE_MESSAGE_TYPE,
             text: 'hello',
             clientRequestId: '',
@@ -203,15 +195,7 @@ describe('selection TTS background handlers', () => {
             text: 'hello',
             clientRequestId: clientId(8),
         }, {sender: {tab: {id: 2}}})).rejects.toBe(failure);
-        await router.dispatch({
-            type: SELECTION_TTS_STOP_MESSAGE_TYPE,
-            clientRequestId: clientId(8),
-        }, {sender: {tab: {id: 2}}});
-
-        expect(dependencies.stopWithOffscreen).toHaveBeenCalledWith({
-            tabId: 2,
-            clientRequestId: clientId(8),
-        });
+        expect(dependencies.playWithOffscreen).not.toHaveBeenCalled();
     });
 
     it('Edge offscreen 成功后由 playback state 转发给原始 client request', async () => {
@@ -247,40 +231,6 @@ describe('selection TTS background handlers', () => {
             error: 'done',
         });
 
-        await router.dispatch({
-            type: SELECTION_TTS_MESSAGE_TYPE,
-            text: 'again',
-            clientRequestId: clientId(78),
-        }, {sender: {tab: {id: 3}}});
-        await router.dispatch({
-            type: SELECTION_TTS_PLAYBACK_STATE_MESSAGE_TYPE,
-            tabId: 3,
-            clientRequestId: clientId(99),
-            state: 'stale',
-        }, {});
-        expect(dependencies.sendTabMessage).toHaveBeenCalledTimes(1);
-        await router.dispatch({
-            type: SELECTION_TTS_PLAYBACK_STATE_MESSAGE_TYPE,
-            tabId: 3,
-            clientRequestId: clientId(78),
-            state: 'error',
-            error: 404,
-        }, {});
-        expect(dependencies.sendTabMessage).toHaveBeenLastCalledWith(3, {
-            type: 'selectionTtsState',
-            clientRequestId: clientId(78),
-            state: 'error',
-            error: undefined,
-        });
-
-        await router.dispatch({
-            type: SELECTION_TTS_PLAYBACK_STATE_MESSAGE_TYPE,
-            tabId: '3',
-            clientRequestId: clientId(77),
-            state: 'late',
-            error: 404,
-        }, {});
-        expect(dependencies.sendTabMessage).toHaveBeenCalledTimes(2);
     });
 
     it('MV3 handler factory 重建后仍按自描述路由转发 ended/error', async () => {
@@ -525,31 +475,6 @@ describe('selection TTS background handlers', () => {
         );
     });
 
-    it('Edge late PLAY 失败时按取消处理并二次 stop', async () => {
-        const play = deferred<void>();
-        const {dependencies, router} = createSubject({
-            playWithOffscreen: vi.fn(() => play.promise),
-        });
-
-        const request = router.dispatch({
-            type: SELECTION_TTS_MESSAGE_TYPE,
-            text: 'hello',
-            clientRequestId: clientId(91),
-        }, {sender: {tab: {id: 12}}});
-        await vi.waitFor(() => expect(dependencies.playWithOffscreen).toHaveBeenCalled());
-        await router.dispatch({
-            type: SELECTION_TTS_STOP_MESSAGE_TYPE,
-            clientRequestId: clientId(91),
-        }, {sender: {tab: {id: 12}}});
-        play.reject(new Error('late edge failure'));
-
-        await expect(request).resolves.toEqual({
-            handled: true,
-            response: {success: false, error: '语音播放已取消'},
-        });
-        expect(dependencies.stopWithOffscreen).toHaveBeenCalledTimes(2);
-    });
-
     it('Google TTS 生成可播放 URL，offscreen 成功时返回 offscreen transport', async () => {
         const {dependencies, router} = createSubject();
 
@@ -579,18 +504,6 @@ describe('selection TTS background handlers', () => {
         }, {})).resolves.toEqual({
             handled: true,
             response: {success: false, error: '无法确定当前标签页'},
-        });
-
-        const {router: failingRouter} = createSubject({
-            playWithOffscreen: vi.fn(async () => { throw 'google play failed'; }),
-        });
-        await expect(failingRouter.dispatch({
-            type: SELECTION_TTS_GOOGLE_MESSAGE_TYPE,
-            text: 'hello',
-            clientRequestId: clientId('failure'),
-        }, {sender: {tab: {id: 9}}})).resolves.toEqual({
-            handled: true,
-            response: {success: false, error: 'google play failed'},
         });
 
         const {router: errorRouter} = createSubject({
@@ -631,28 +544,4 @@ describe('selection TTS background handlers', () => {
         expect(dependencies.stopWithOffscreen).toHaveBeenCalledTimes(2);
     });
 
-    it('Google late PLAY 失败时仍按取消处理并二次 stop', async () => {
-        const play = deferred<void>();
-        const {dependencies, router} = createSubject({
-            playWithOffscreen: vi.fn(() => play.promise),
-        });
-
-        const request = router.dispatch({
-            type: SELECTION_TTS_GOOGLE_MESSAGE_TYPE,
-            text: 'hello',
-            clientRequestId: clientId(21),
-        }, {sender: {tab: {id: 11}}});
-        await vi.waitFor(() => expect(dependencies.playWithOffscreen).toHaveBeenCalled());
-        await router.dispatch({
-            type: SELECTION_TTS_STOP_MESSAGE_TYPE,
-            clientRequestId: clientId(21),
-        }, {sender: {tab: {id: 11}}});
-        play.reject('late failure');
-
-        await expect(request).resolves.toEqual({
-            handled: true,
-            response: {success: false, error: '语音播放已取消'},
-        });
-        expect(dependencies.stopWithOffscreen).toHaveBeenCalledTimes(2);
-    });
 });

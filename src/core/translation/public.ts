@@ -23,7 +23,6 @@ export {
     findTranslationTruncationAncestors,
     hasActiveTranslationLineClamp,
     parseTranslationSlots,
-    removeTranslationTruncation,
     serializeTranslationSlots,
     translationTruncationStyleOverrides,
 } from './serialization';

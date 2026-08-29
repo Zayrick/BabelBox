@@ -67,6 +67,8 @@ vi.mock('@/src/features/full-page-translation/content/renderer', () => ({
 }));
 vi.mock('@/src/features/full-page-translation/content/layout', () => ({
     ensureTranslationTruncationLayout: () => true,
+    isTranslationLayoutOverrideMutation: () => false,
+    releaseTranslationTruncationLayout: () => undefined,
 }));
 
 import {

@@ -246,7 +246,7 @@ export function resolveConfiguredModel(selectedModel?: string, customModel?: str
     return selectedModel === customModelString ? customModel || '' : selectedModel || '';
 }
 
-// 当前官方模型编号的单一来源，同时供列表和旧配置迁移使用。
+// 官方模型编号供列表与配置迁移使用。
 export const currentModelIds = {
     openai: "gpt-5.6-luna",
     zhipu: "glm-5.3",
@@ -272,8 +272,7 @@ export const currentModelIds = {
     infiniGeneral: "qwen3.6-27b",
 } as const;
 
-// 各 AI 服务的开箱默认模型优先选择近期、低延迟或低成本档位。
-// currentModelIds 仍作为官方编号与旧配置迁移的单一来源；用户仍可在模型列表中主动选择更大的模型。
+// 默认模型优先选择低延迟或低成本档位；完整列表仍提供其他模型。
 export const defaultModelIds = {
     [services.openai]: currentModelIds.openai,
     [services.azureOpenai]: currentModelIds.openai,

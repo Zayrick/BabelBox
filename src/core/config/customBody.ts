@@ -40,7 +40,7 @@ export function isCustomBodyMapping(value: unknown): value is Record<string, str
         && Object.values(value).every(item => typeof item === 'string');
 }
 
-// 兼容旧配置以及存储中可能存在的异常值，只保留字符串配置项。
+// 存储映射只保留字符串配置项。
 export function normalizeCustomBodyMapping(value: unknown): Record<string, string> {
     if (value === null || typeof value !== 'object' || Array.isArray(value)) return {};
 

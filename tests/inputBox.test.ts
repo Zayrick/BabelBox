@@ -47,7 +47,7 @@ describe('输入框快捷键', () => {
         expect(isInputElement(fakeElement('DIV'))).toBe(false);
     });
 
-    it('能穿透开放 Shadow DOM 获取真实焦点，并拒绝未知三连击类型', () => {
+    it('能穿透开放 Shadow DOM 获取真实焦点', () => {
         const inner = fakeElement('INPUT');
         const host = {
             ...fakeElement('DIV'),
@@ -55,7 +55,6 @@ describe('输入框快捷键', () => {
         } as unknown as Element;
 
         expect(getDeepActiveElement({ activeElement: host } as Document)).toBe(inner);
-        expect(matchesInputBoxTrigger(keyEvent('x', 'KeyX'), 'unknown' as never)).toBe(false);
     });
 
     it('清理触发符号后保留真实输入内容', () => {

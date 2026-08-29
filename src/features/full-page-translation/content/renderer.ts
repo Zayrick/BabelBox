@@ -62,7 +62,7 @@ function sanitizeNode(node: Node): Node[] {
  * DOMParser 使用独立文档解析，随后只迁移白名单节点和安全属性。
  */
 function createSafeTranslationFragment(text: string): DocumentFragment {
-    const parsed = new DOMParser().parseFromString(text || "", "text/html");
+    const parsed = new DOMParser().parseFromString(text, "text/html");
     const fragment = document.createDocumentFragment();
     Array.from(parsed.body.childNodes)
         .flatMap(sanitizeNode)
@@ -81,7 +81,7 @@ export function appendBilingualTranslation(node: HTMLElement, text: string): HTM
     content.classList.add("fluent-read-bilingual-content");
     content.setAttribute("data-fr-translation-owned", "true");
     content.setAttribute("translate", "no");
-    content.lang = config.to || "";
+    content.lang = config.to;
     content.dir = "auto";
 
     const style = options.styles.find((item) => item.value === config.style && !item.disabled);

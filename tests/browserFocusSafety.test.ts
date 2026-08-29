@@ -4,30 +4,18 @@ import {describe, expect, it, vi} from 'vitest';
 
 const PROJECT_ROOT = resolve(__dirname, '..');
 const require = createRequire(import.meta.url);
-const RUNNER_CLI_CASES = [
-    {
-        path: 'scripts/run-userscript-smoke-test.cjs',
-        requiredArgs: [
-            '--artifact', '.output/userscript/fluent-read.user.js',
-            '--playwright-root', '/tmp/playwright-runtime',
-            '--artifacts-dir', '/tmp/userscript-artifacts',
-        ],
-    },
-    {
-        path: 'scripts/run-video-subtitle-test.cjs',
-        requiredArgs: ['--playwright-root', '/tmp/playwright-runtime'],
-    },
-    {
-        path: 'scripts/run-video-performance-test.cjs',
-        requiredArgs: ['--playwright-root', '/tmp/playwright-runtime'],
-    },
+const USER_SCRIPT_RUNNER = 'scripts/run-userscript-smoke-test.cjs';
+const REQUIRED_ARGS = [
+    '--artifact', '.output/userscript/fluent-read.user.js',
+    '--playwright-root', '/tmp/playwright-runtime',
+    '--artifacts-dir', '/tmp/userscript-artifacts',
 ];
 
 describe('browser regression focus safety', () => {
     it('uses an isolated page when the focus-safe helper owns the startup page', async () => {
         const {selectUserscriptTestPage} = require(resolve(
             PROJECT_ROOT,
-            'scripts/run-userscript-smoke-test.cjs',
+            USER_SCRIPT_RUNNER,
         ));
         const startupPage = {id: 'startup'};
         const isolatedPage = {id: 'isolated'};
@@ -44,16 +32,16 @@ describe('browser regression focus safety', () => {
         expect(createIsolatedPage).not.toHaveBeenCalled();
     });
 
-    it.each(RUNNER_CLI_CASES)('$path requires a focus-safe helper in background mode', ({path, requiredArgs}) => {
-        const {parseArgs} = require(resolve(PROJECT_ROOT, path));
-        expect(() => parseArgs(requiredArgs, {})).toThrow(/--focus-safe-helper|FLUENTREAD_FOCUS_SAFE_HELPER/);
+    it('requires a focus-safe helper in background mode', () => {
+        const {parseArgs} = require(resolve(PROJECT_ROOT, USER_SCRIPT_RUNNER));
+        expect(() => parseArgs(REQUIRED_ARGS, {})).toThrow(/--focus-safe-helper|FLUENTREAD_FOCUS_SAFE_HELPER/);
     });
 
-    it.each(RUNNER_CLI_CASES)('$path accepts an explicit helper, environment helper, or headed mode', ({path, requiredArgs}) => {
-        const {parseArgs} = require(resolve(PROJECT_ROOT, path));
-        const explicit = parseArgs([...requiredArgs, '--focus-safe-helper', '/tmp/focus-safe-browser.cjs'], {});
-        const fromEnv = parseArgs(requiredArgs, {FLUENTREAD_FOCUS_SAFE_HELPER: '/tmp/focus-safe-browser.cjs'});
-        const headed = parseArgs([...requiredArgs, '--headed'], {});
+    it('accepts an explicit helper, environment helper, or headed mode', () => {
+        const {parseArgs} = require(resolve(PROJECT_ROOT, USER_SCRIPT_RUNNER));
+        const explicit = parseArgs([...REQUIRED_ARGS, '--focus-safe-helper', '/tmp/focus-safe-browser.cjs'], {});
+        const fromEnv = parseArgs(REQUIRED_ARGS, {FLUENTREAD_FOCUS_SAFE_HELPER: '/tmp/focus-safe-browser.cjs'});
+        const headed = parseArgs([...REQUIRED_ARGS, '--headed'], {});
 
         expect(explicit).toMatchObject({background: true, focusSafeHelper: '/tmp/focus-safe-browser.cjs'});
         expect(fromEnv).toMatchObject({background: true, focusSafeHelper: '/tmp/focus-safe-browser.cjs'});

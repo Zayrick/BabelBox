@@ -16,13 +16,6 @@ const extensionSelector = [
     '[data-fr-translation-owned="true"]',
 ].join(',');
 
-/**
- * Host pages can construct adversarially deep trees. Ancestor-dependent safety
- * checks run synchronously, so cap one lookup and conservatively prune beyond
- * the limit instead of blocking the renderer for hundreds of milliseconds.
- */
-export const maxComposedAncestorDepth = 512;
-
 export function getComposedParent(element: Element): Element | null {
     if (element.parentElement) return element.parentElement;
     const root = element.getRootNode?.() as {host?: Element};
@@ -77,19 +70,14 @@ export function evaluateElementHardGuard(
 
 /**
  * Guards are shared by initial discovery, hover resolution, mutations and open
- * Shadow DOM. A site rule may override a global decision on the same element,
- * while FluentRead-owned DOM and the depth limit remain immutable boundaries.
+ * Shadow DOM. A site rule may override a global decision on the same element;
+ * FluentRead-owned DOM remains an immutable boundary.
  */
 export function evaluateHardGuard(
     element: Element,
     filterPolicy: TranslationFilterPolicy = defaultTranslationFilterPolicy,
 ): HardGuardResult {
-    let depth = 0;
     for (const current of composedAncestors(element)) {
-        depth += 1;
-        if (depth > maxComposedAncestorDepth) {
-            return {prune: true, reason: 'ancestor-depth-limit'};
-        }
         const guard = evaluateElementHardGuard(current, filterPolicy);
         if (guard.prune) return guard;
     }
@@ -128,22 +116,6 @@ export function getOpenShadowRoots(root: Node): ShadowRoot[] {
         }
     }
     return result;
-}
-
-export function safeMatches(element: Element, selector: string): boolean {
-    try {
-        return element.matches(selector);
-    } catch {
-        return false;
-    }
-}
-
-export function safeClosest(element: Element, selector: string): Element | null {
-    try {
-        return element.closest(selector);
-    } catch {
-        return null;
-    }
 }
 
 export function findElementsAtPoint(root: Document | ShadowRoot, x: number, y: number): Element[] {

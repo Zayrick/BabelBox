@@ -7,9 +7,7 @@ import {
     getComposedParent,
     isDocumentSurface,
     isExtensionElementSelf,
-    maxComposedAncestorDepth,
 } from './dom';
-import type {HardGuardResult} from './dom';
 import {
     createTranslationFilterPolicy,
     type TranslationFilterPolicy,
@@ -36,15 +34,6 @@ import type {
     TranslationCoreOptions,
     TranslationSiteAdapter,
 } from './types';
-import {
-    findAdapterPrunedAncestor,
-    inheritCachedFlag,
-    partitionInlineRunAtBarriers,
-    readCachedFlagOr,
-} from './internal';
-
-const maxHoverBarrierDiscoverySteps = 256;
-
 interface AdapterDecisionResult {
     decision: AdapterDecision;
     adapterId?: string;
@@ -58,24 +47,38 @@ interface AdapterPrunedAncestor {
 /** Caches that are valid only for one synchronous hover/inspection call. */
 interface ResolutionEvaluationContext {
     textProtectionCache: TranslationTextProtectionCache;
-    hardGuards: WeakMap<Element, HardGuardResult>;
     adapterDecisions: WeakMap<Element, AdapterDecisionResult>;
     adapterPrunedAncestors: WeakMap<Element, AdapterPrunedAncestor | null>;
     extensionElements: WeakMap<Element, boolean>;
     structuralContainers: WeakMap<Element, boolean>;
-    structuralAncestors: WeakMap<Element, boolean>;
 }
 
 function createResolutionEvaluationContext(): ResolutionEvaluationContext {
     return {
         textProtectionCache: createTranslationTextProtectionCache(),
-        hardGuards: new WeakMap(),
         adapterDecisions: new WeakMap(),
         adapterPrunedAncestors: new WeakMap(),
         extensionElements: new WeakMap(),
         structuralContainers: new WeakMap(),
-        structuralAncestors: new WeakMap(),
     };
+}
+
+function partitionInlineRunAtBarriers<T>(
+    nodes: readonly T[],
+    isBarrier: (node: T) => boolean,
+): T[][] {
+    const partitions: T[][] = [];
+    let current: T[] = [];
+    for (const node of nodes) {
+        if (isBarrier(node)) {
+            if (current.length > 0) partitions.push(current);
+            current = [];
+        } else {
+            current.push(node);
+        }
+    }
+    if (current.length > 0) partitions.push(current);
+    return partitions;
 }
 
 function isElementNode(node: Node | null | undefined): node is Element {
@@ -152,13 +155,7 @@ export class TranslationCandidateCore {
         this.filterPolicy = createTranslationFilterPolicy(options.filterConfig, this.url);
         this.adapters = (options.adapters ?? [])
             .map((adapter, index) => ({adapter, index}))
-            .filter(({adapter}) => {
-                try {
-                    return adapter.matches(this.url);
-                } catch {
-                    return false;
-                }
-            })
+            .filter(({adapter}) => adapter.matches(this.url))
             .sort((left, right) =>
                 (right.adapter.priority ?? 0) - (left.adapter.priority ?? 0) || left.index - right.index)
             .map(({adapter}) => adapter);
@@ -187,15 +184,11 @@ export class TranslationCandidateCore {
         }
 
         for (const adapter of this.adapters) {
-            try {
-                const decision = adapter.decide(element, this.context);
-                if (decision.kind !== 'pass') {
-                    const result = {decision, adapterId: adapter.id};
-                    evaluationContext?.adapterDecisions.set(element, result);
-                    return result;
-                }
-            } catch {
-                // A stale third-party adapter must not abort generic discovery.
+            const decision = adapter.decide(element, this.context);
+            if (decision.kind !== 'pass') {
+                const result = {decision, adapterId: adapter.id};
+                evaluationContext?.adapterDecisions.set(element, result);
+                return result;
             }
         }
         const result: AdapterDecisionResult = {decision: {kind: 'pass'}};
@@ -204,28 +197,16 @@ export class TranslationCandidateCore {
     }
 
     shouldStayOriginal = (element: Element): boolean => {
-        let depth = 0;
         for (const ancestor of composedAncestors(element)) {
-            depth += 1;
-            if (depth > maxComposedAncestorDepth || this.filterPolicy.isExcludedSelf(ancestor)) return true;
+            if (this.filterPolicy.isExcludedSelf(ancestor)) return true;
         }
-        return this.adapters.some((adapter) => {
-            try {
-                return adapter.shouldStayOriginal?.(element, this.context) === true;
-            } catch {
-                return false;
-            }
-        });
+        return this.adapters.some((adapter) =>
+            adapter.shouldStayOriginal?.(element, this.context) === true);
     };
 
     shouldIgnoreMutation = (element: Element): boolean =>
-        this.shouldStayOriginal(element) || this.adapters.some((adapter) => {
-            try {
-                return adapter.shouldIgnoreMutation?.(element, this.context) === true;
-            } catch {
-                return false;
-            }
-        });
+        this.shouldStayOriginal(element) || this.adapters.some((adapter) =>
+            adapter.shouldIgnoreMutation?.(element, this.context) === true);
 
     private hasAdapterPrunedAncestor(
         element: Element,
@@ -235,60 +216,18 @@ export class TranslationCandidateCore {
             return evaluationContext.adapterPrunedAncestors.get(element) ?? null;
         }
 
-        const {result, inspected} = findAdapterPrunedAncestor(
-            composedAncestors(element),
-            maxComposedAncestorDepth,
-            (ancestor) => this.adapterDecision(ancestor, evaluationContext),
-        );
-        if (result) {
-            evaluationContext?.adapterPrunedAncestors.set(element, result);
-            return result;
+        const inspected: Element[] = [];
+        for (const ancestor of composedAncestors(element)) {
+            inspected.push(ancestor);
+            const {decision, adapterId} = this.adapterDecision(ancestor, evaluationContext);
+            if (decision.kind === 'prune-subtree') {
+                const result = {reason: decision.reason || 'adapter-pruned', adapterId};
+                evaluationContext?.adapterPrunedAncestors.set(element, result);
+                return result;
+            }
         }
         inspected.forEach((ancestor) => evaluationContext?.adapterPrunedAncestors.set(ancestor, null));
         return null;
-    }
-
-    private primeResolutionAncestry(
-        element: Element,
-        evaluationContext: ResolutionEvaluationContext,
-    ): void {
-        if (evaluationContext.hardGuards.has(element) &&
-            evaluationContext.structuralAncestors.has(element)) return;
-
-        const chain: Element[] = [];
-        let current: Element | null = element;
-        while (current && chain.length < maxComposedAncestorDepth) {
-            chain.push(current);
-            current = getComposedParent(current);
-        }
-        // Keep the existing bounded fallback for over-deep ancestry rather
-        // than evaluating or persisting a partial prefix.
-        if (current) return;
-
-        const ownGuards = chain.map((item) => evaluateElementHardGuard(item, this.filterPolicy));
-        let inheritedGuard: HardGuardResult = {prune: false};
-        for (let index = chain.length - 1; index >= 0; index -= 1) {
-            const item = chain[index]!;
-            const ownGuard = ownGuards[index]!;
-            inheritedGuard = ownGuard.prune ? ownGuard : inheritedGuard;
-            evaluationContext.hardGuards.set(item, inheritedGuard);
-
-            const parent = getComposedParent(item);
-            const hasStructuralAncestor = Boolean(parent && !isDocumentSurface(parent) && (
-                this.isStructuralContainerForResolution(parent, evaluationContext) ||
-                evaluationContext.structuralAncestors.get(parent) === true
-            ));
-            evaluationContext.structuralAncestors.set(item, hasStructuralAncestor);
-        }
-    }
-
-    private hardGuard(
-        element: Element,
-        evaluationContext?: ResolutionEvaluationContext,
-    ): HardGuardResult {
-        if (!evaluationContext) return evaluateHardGuard(element, this.filterPolicy);
-        this.primeResolutionAncestry(element, evaluationContext);
-        return evaluationContext.hardGuards.get(element) ?? evaluateHardGuard(element, this.filterPolicy);
     }
 
     private isExtensionElementForResolution(
@@ -305,7 +244,7 @@ export class TranslationCandidateCore {
             // parentElement 不跨越 ShadowRoot，与扩展 UI 的所有权边界一致。
             current = current.parentElement;
         }
-        let inherited = inheritCachedFlag(current, evaluationContext.extensionElements);
+        let inherited = current ? evaluationContext.extensionElements.get(current) === true : false;
         for (let index = chain.length - 1; index >= 0; index -= 1) {
             inherited = inherited || isExtensionElementSelf(chain[index]!);
             evaluationContext.extensionElements.set(chain[index]!, inherited);
@@ -326,14 +265,8 @@ export class TranslationCandidateCore {
 
     private hasStructuralAncestorForResolution(
         element: Element,
-        evaluationContext: ResolutionEvaluationContext,
     ): boolean {
-        this.primeResolutionAncestry(element, evaluationContext);
-        return readCachedFlagOr(
-            evaluationContext.structuralAncestors,
-            element,
-            () => hasStructuralAncestor(element),
-        );
+        return hasStructuralAncestor(element);
     }
 
     inspect(element: Element): TranslationCoreInspection {
@@ -350,7 +283,7 @@ export class TranslationCandidateCore {
         textProtectionCache: TranslationTextProtectionCache,
         evaluationContext?: ResolutionEvaluationContext,
     ): TranslationCoreInspection {
-        const hardGuard = this.hardGuard(element, evaluationContext);
+        const hardGuard = evaluateHardGuard(element, this.filterPolicy);
         if (hardGuard.prune) {
             return {candidate: null};
         }
@@ -371,7 +304,7 @@ export class TranslationCandidateCore {
                 this.shouldStayOriginal,
                 textProtectionCache,
             ) ||
-                this.hardGuard(target, evaluationContext).prune) {
+                evaluateHardGuard(target, this.filterPolicy).prune) {
                 return {candidate: null};
             }
             const candidate: TranslationCandidate = {
@@ -384,7 +317,7 @@ export class TranslationCandidateCore {
         }
 
         if (evaluationContext &&
-            this.hasStructuralAncestorForResolution(element, evaluationContext) &&
+            this.hasStructuralAncestorForResolution(element) &&
             !isSemanticHeadingElement(element)) {
             return {candidate: null};
         }
@@ -482,15 +415,13 @@ export class TranslationCandidateCore {
     ): TranslationCandidate | null {
         if (isDocumentSurface(element) ||
             this.isStructuralContainerForResolution(element, evaluationContext) ||
-            this.hasStructuralAncestorForResolution(element, evaluationContext) ||
+            this.hasStructuralAncestorForResolution(element) ||
             !isBlockBoundary(element) ||
             element.children.length === 0) {
             return null;
         }
-        // Use post-order ownership barriers from full discovery as probe
-        // priority, then revalidate every inline child within one strict
-        // budget. This preserves parity after live mutations without an
-        // unbounded subtree walk in pointer handling.
+        // Revalidate direct inline children so hover follows live DOM changes
+        // made since the last full-page discovery.
         const candidates = this.inlineRunCandidates(
             element,
             true,
@@ -513,11 +444,7 @@ export class TranslationCandidateCore {
         discoveredBarriers?: ReadonlySet<Element>,
     ): ReadonlySet<Element> {
         const barriers = new Set<Element>();
-        let remainingSteps = maxHoverBarrierDiscoverySteps;
         const children = Array.from(element.children);
-        // Revalidate previous barriers first. They are the only children whose
-        // stale ownership can otherwise make hover diverge from a fresh dirty
-        // subtree discovery; unknown children still share the same total cap.
         const orderedChildren = discoveredBarriers
             ? [
                 ...children.filter((child) => discoveredBarriers.has(child)),
@@ -528,29 +455,14 @@ export class TranslationCandidateCore {
         for (const child of orderedChildren) {
             // Native block boundaries already split direct runs in layout.ts.
             if (isBlockBoundary(child)) continue;
-            if (remainingSteps <= 0) {
-                // Never reparent an uninspected subtree merely because the
-                // bounded hover probe ran out of budget. Previously discovered
-                // barriers must remain conservative too, but they are not
-                // trusted once the live subtree can be revalidated below.
-                barriers.add(child);
-                continue;
-            }
-
             let ownsCandidate = false;
-            let exhausted = false;
             for (const step of this.discoverSteps(child)) {
-                remainingSteps -= 1;
                 if (step.candidate) {
                     ownsCandidate = true;
                     break;
                 }
-                if (remainingSteps <= 0) {
-                    exhausted = true;
-                    break;
-                }
             }
-            if (ownsCandidate || exhausted) barriers.add(child);
+            if (ownsCandidate) barriers.add(child);
         }
         return barriers;
     }
@@ -577,9 +489,6 @@ export class TranslationCandidateCore {
                 current = getComposedParent(current);
                 continue;
             }
-            // Inherited hard guards apply to every possible ancestor candidate.
-            // Stop immediately instead of repeatedly climbing an extreme tree.
-            if (this.hardGuard(current, evaluationContext).reason === 'ancestor-depth-limit') return null;
             // Full-page discovery prunes adapter-owned controlled subtrees before
             // walking their children. Hover resolution must apply the same
             // inherited prune decision before trying a generic inline run;

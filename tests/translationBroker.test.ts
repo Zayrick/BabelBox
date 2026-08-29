@@ -36,8 +36,8 @@ const mocks = vi.hoisted(() => {
         'cozecn',
         'azureOpenai',
     ]);
-    const aiServices = new Set(['ai', 'aiSdk', 'brokenAiSdk']);
-    const aiSdkServices = new Set(['aiSdk', 'brokenAiSdk']);
+    const aiServices = new Set(['ai', 'aiSdk']);
+    const aiSdkServices = new Set(['aiSdk']);
     const service = vi.fn();
     const minimaxEndpoints = {
         payg: {cn: 'https://minimax.payg.cn', global: 'https://minimax.payg.global'},
@@ -48,7 +48,6 @@ const mocks = vi.hoisted(() => {
         ai: service,
         aiSdk: service,
         azureOpenai: service,
-        brokenAiSdk: service,
         custom: service,
         cozecom: service,
         cozecn: service,
@@ -70,7 +69,6 @@ const mocks = vi.hoisted(() => {
             mock: 'mock-model',
             ai: 'ai-model',
             aiSdk: 'ai-sdk-model',
-            brokenAiSdk: 'broken-ai-sdk-model',
             custom: 'custom-model',
             deeplx: 'deeplx-model',
             newapi: 'newapi-model',
@@ -102,10 +100,9 @@ const mocks = vi.hoisted(() => {
         cacheStore,
         config,
         providers,
-        endpointResolver: vi.fn((serviceName: string, _current?: unknown) => {
-            if (serviceName === 'brokenAiSdk') throw new Error('endpoint missing');
-            return {endpoint: `https://${serviceName}.endpoint.test`};
-        }),
+        endpointResolver: vi.fn((serviceName: string, _current?: unknown) => ({
+            endpoint: `https://${serviceName}.endpoint.test`,
+        })),
         getMissingCredentialMessage: vi.fn(() => null as string | null),
         machineServices,
         minimaxEndpoints,
@@ -142,7 +139,7 @@ function installBroker(now?: () => number): void {
             machine: mocks.machineServices,
             isAI: (service: string) => mocks.aiServices.has(service),
             isAiSdk: (service: string) => mocks.aiSdkServices.has(service),
-            isUseAIContext: (service: string) => service === 'ai' || service === 'aiSdk' || service === 'brokenAiSdk',
+            isUseAIContext: (service: string) => service === 'ai' || service === 'aiSdk',
         },
         endpointResolver: {
             resolveOpenAICompatibleEndpoint: mocks.endpointResolver,
@@ -204,11 +201,9 @@ describe('translation broker', () => {
         mocks.cacheStore.clear();
         mocks.aiSdkServices.clear();
         mocks.aiSdkServices.add('aiSdk');
-        mocks.aiSdkServices.add('brokenAiSdk');
         mocks.aiServices.clear();
         mocks.aiServices.add('ai');
         mocks.aiServices.add('aiSdk');
-        mocks.aiServices.add('brokenAiSdk');
         mocks.machineServices.clear();
         ['mock', 'custom', 'deeplx', 'newapi', 'minimax', 'mimo', 'cozecom', 'cozecn', 'azureOpenai'].forEach(service => mocks.machineServices.add(service));
         Object.assign(mocks.config, {
@@ -238,7 +233,6 @@ describe('translation broker', () => {
             ai: 'ai-model',
             aiSdk: 'ai-sdk-model',
             azureOpenai: 'azure-openai-model',
-            brokenAiSdk: 'broken-ai-sdk-model',
             custom: 'custom-model',
             cozecom: 'coze-model',
             cozecn: 'coze-cn-model',
@@ -255,10 +249,9 @@ describe('translation broker', () => {
         mocks.service.mockReset();
         mocks.service.mockResolvedValue('默认译文');
         mocks.getMissingCredentialMessage.mockReturnValue(null);
-        mocks.endpointResolver.mockImplementation((serviceName: string, _current?: unknown) => {
-            if (serviceName === 'brokenAiSdk') throw new Error('endpoint missing');
-            return {endpoint: `https://${serviceName}.endpoint.test`};
-        });
+        mocks.endpointResolver.mockImplementation((serviceName: string, _current?: unknown) => ({
+            endpoint: `https://${serviceName}.endpoint.test`,
+        }));
         Object.assign(mocks.minimaxEndpoints, {
             payg: {cn: 'https://minimax.payg.cn', global: 'https://minimax.payg.global'},
             'token-plan': {cn: 'https://minimax.token.cn', global: 'https://minimax.token.global'},
@@ -271,7 +264,7 @@ describe('translation broker', () => {
         vi.restoreAllMocks();
     });
 
-    it('reuses persisted single cache entries and skips storing unchanged or empty results', async () => {
+    it('reuses persisted single cache entries and skips storing unchanged results', async () => {
         mocks.service.mockResolvedValueOnce('共享译文');
         await expect(translateWithCache({origin: 'Readable source'})).resolves.toBe('共享译文');
         await expect(translateWithCache({origin: 'Readable source'})).resolves.toBe('共享译文');
@@ -284,8 +277,6 @@ describe('translation broker', () => {
         vi.clearAllMocks();
         mocks.service.mockResolvedValueOnce('Same');
         await expect(translateWithCache({origin: 'Same'})).resolves.toBe('Same');
-        mocks.service.mockResolvedValueOnce('');
-        await expect(translateWithCache({origin: 'Empty'})).resolves.toBe('');
 
         expect(mocks.cacheSet).not.toHaveBeenCalled();
     });
@@ -314,12 +305,9 @@ describe('translation broker', () => {
         expect(mocks.service).not.toHaveBeenCalled();
     });
 
-    it('拒绝 provider 的非字符串单条结果，且不污染缓存', async () => {
-        mocks.service.mockResolvedValueOnce({translated: '对象不是协议结果'});
+    it('拒绝 provider 的空单条结果，且不污染缓存', async () => {
+        mocks.service.mockResolvedValueOnce('');
         await expect(translateWithCache({origin: 'Cached invalid'})).rejects.toThrow('单条翻译返回格式异常');
-
-        mocks.service.mockResolvedValueOnce(undefined);
-        await expect(translateWithCache({origin: 'Direct invalid', useCache: false})).rejects.toThrow('单条翻译返回格式异常');
         expect(mocks.cacheSet).not.toHaveBeenCalled();
     });
 
@@ -423,23 +411,8 @@ describe('translation broker', () => {
         expect(mocks.service).not.toHaveBeenCalled();
     });
 
-    it('rejects invalid batch provider results and clears rejected pending batches', async () => {
-        mocks.service.mockResolvedValueOnce('not-array');
-        await expect(translateWithCache({origin: ['A'], useCache: false})).rejects.toThrow('批量翻译返回格式异常');
-
-        mocks.service.mockResolvedValueOnce(['A', 'extra']);
-        await expect(translateWithCache({origin: ['A'], useCache: false})).rejects.toThrow('批量翻译返回数量异常');
-
-        mocks.service.mockResolvedValueOnce(['A', undefined]);
-        await expect(translateWithCache({origin: ['A', 'B'], useCache: false})).rejects.toThrow('批量翻译返回格式异常');
-
-        mocks.service.mockResolvedValueOnce(['直连 A']);
-        await expect(translateWithCache({origin: ['A'], useCache: false})).resolves.toEqual(['直连 A']);
-
-        mocks.service.mockResolvedValueOnce(['only-one']);
-        await expect(translateWithCache({origin: ['A', 'B']})).rejects.toThrow('批量翻译返回数量异常');
-
-        mocks.service.mockResolvedValueOnce(['A-译文', null]);
+    it('rejects an unusable batch result and clears rejected pending work', async () => {
+        mocks.service.mockResolvedValueOnce(['A-译文', '']);
         await expect(translateWithCache({origin: ['A', 'B']})).rejects.toThrow('批量翻译返回格式异常');
 
         mocks.service.mockResolvedValueOnce(['A-译文', 'B-译文']);
@@ -483,16 +456,6 @@ describe('translation broker', () => {
         await translateWithCache({origin: 'Minimax'});
         expect(translationCacheIdentities().at(-1)).toMatchObject({service: 'minimax', endpoint: 'https://minimax.token.global'});
 
-        mocks.config.minimaxBillingPlan = 'unknown';
-        mocks.config.minimaxRegion = 'cn';
-        await translateWithCache({origin: 'Minimax default'});
-        expect(translationCacheIdentities().at(-1)).toMatchObject({service: 'minimax', endpoint: 'https://minimax.payg.cn'});
-
-        mocks.minimaxEndpoints.payg = {};
-        installBroker();
-        await translateWithCache({origin: 'Minimax missing endpoint'});
-        expect(translationCacheIdentities().at(-1)).toMatchObject({service: 'minimax', endpoint: ''});
-
         mocks.config.service = 'mimo';
         mocks.config.mimoBillingPlan = 'subscription';
         mocks.config.mimoRegion = 'global';
@@ -504,13 +467,6 @@ describe('translation broker', () => {
         expect(mocks.endpointResolver).toHaveBeenCalledWith('aiSdk', expect.any(Object));
         expect(translationCacheIdentities().at(-1)).toMatchObject({
             endpoint: 'https://aiSdk.endpoint.test',
-            transportProfile: 'ai-sdk-profile',
-        });
-
-        mocks.config.service = 'brokenAiSdk';
-        await translateWithCache({origin: 'Broken AI SDK'});
-        expect(translationCacheIdentities().at(-1)).toMatchObject({
-            endpoint: '',
             transportProfile: 'ai-sdk-profile',
         });
 
@@ -536,16 +492,6 @@ describe('translation broker', () => {
             azureOpenaiEndpoint: 'https://azure-openai.example',
             service: 'azureOpenai',
         });
-
-        mocks.config.service = 'mock';
-        await translateWithCache({origin: 'Fallback service', serviceOverride: ''});
-        expect(translationCacheIdentities().at(-1)).toMatchObject({service: 'mock'});
-
-        mocks.machineServices.add('');
-        mocks.config.model[''] = 'empty-service-model';
-        mocks.config.service = '';
-        await translateWithCache({origin: 'Empty configured service', serviceOverride: ''});
-        expect(translationCacheIdentities().at(-1)).toMatchObject({service: ''});
     });
 
     it('passes modelOverride through credential checks, cache identity, and provider calls', async () => {
@@ -695,7 +641,7 @@ describe('translation broker', () => {
         });
     });
 
-    it('uses persisted, shared, empty, failed, and evicted AI summaries without blocking translation', async () => {
+    it('uses persisted and shared AI summaries and falls back when summary generation fails', async () => {
         mocks.config.service = 'ai';
         mocks.config.enableAIContext = true;
 
@@ -745,13 +691,6 @@ describe('translation broker', () => {
         expect(mocks.service).toHaveBeenLastCalledWith(expect.objectContaining({pageContext: 'Empty context'}));
 
         mocks.service.mockReset();
-        mocks.service.mockImplementation((message: {summaryPrompt?: string; origin: string}) => (
-            Promise.resolve(message.summaryPrompt ? {notText: true} : `${message.origin}-译文`)
-        ));
-        await expect(translateWithCache({origin: 'Object summary', pageContext: 'Object context'})).resolves.toBe('Object summary-译文');
-        expect(mocks.service).toHaveBeenLastCalledWith(expect.objectContaining({pageContext: 'Object context'}));
-
-        mocks.service.mockReset();
         mocks.service.mockImplementation((message: {summaryPrompt?: string; origin: string}) => {
             if (message.summaryPrompt) return Promise.reject(new Error('summary failed'));
             return Promise.resolve(`${message.origin}-译文`);
@@ -764,28 +703,6 @@ describe('translation broker', () => {
             expect.any(Error),
         );
         summaryWarn.mockRestore();
-
-        mocks.service.mockReset();
-        mocks.service.mockImplementation((message: {summaryPrompt?: string; origin: string}) => (
-            Promise.resolve(message.summaryPrompt ? `Summary ${message.summaryPrompt}` : `${message.origin}-译文`)
-        ));
-        for (let index = 0; index < 9; index += 1) {
-            await translateWithCache({origin: `Evict ${index}`, pageContext: `Evict context ${index}`});
-        }
-        expect(mocks.service.mock.calls.filter(([message]) => message.summaryPrompt)).toHaveLength(9);
-
-        mocks.service.mockReset();
-        mocks.service.mockImplementation((message: {summaryPrompt?: string; origin: string}) => (
-            message.summaryPrompt
-                ? Promise.reject(new Error('summary failed'))
-                : Promise.resolve(`${message.origin}-译文`)
-        ));
-        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {
-            throw new Error('warn failed');
-        });
-        await expect(translateWithCache({origin: 'Reject summary', pageContext: 'Reject context'}))
-            .resolves.toBe('Reject summary-译文');
-        warn.mockRestore();
     });
 
     it('摘要耗时不同的相同总预算请求不共享正文 provider deadline', async () => {
@@ -926,7 +843,7 @@ describe('translation broker', () => {
         expect(mocks.service.mock.calls.filter(([message]) => !message.summaryPrompt)).toHaveLength(0);
     });
 
-    it('keeps AI summary disabled for non-finite budgets and blank page contexts', async () => {
+    it('skips AI summary when page context is blank', async () => {
         mocks.config.service = 'ai';
         mocks.config.enableAIContext = true;
         mocks.service.mockResolvedValue('译文');
@@ -934,7 +851,7 @@ describe('translation broker', () => {
         await expect(translateWithCache({
             origin: 'Blank context',
             pageContext: '   ',
-            requestTimeoutMs: Number.NaN,
+            requestTimeoutMs: 4_000,
             useCache: false,
         })).resolves.toBe('译文');
 

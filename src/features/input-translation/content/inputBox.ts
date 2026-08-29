@@ -80,8 +80,6 @@ export function matchesInputBoxTrigger(event: KeyboardEvent, trigger: InputBoxTr
             return event.key === '=' || (event.code === 'Equal' && !event.shiftKey);
         case 'triple_dash':
             return event.key === '-' || (event.code === 'Minus' && !event.shiftKey);
-        default:
-            return false;
     }
 }
 

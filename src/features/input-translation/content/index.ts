@@ -103,7 +103,9 @@ async function translateWithMicrosoft(
         targetLang,
     }) as { success?: boolean; translatedText?: string; error?: string } | undefined;
 
-    if (result?.success) return result.translatedText || '';
+    if (result?.success && typeof result.translatedText === 'string' && result.translatedText.trim()) {
+        return result.translatedText;
+    }
     throw new Error(result?.error || '微软翻译失败');
 }
 
@@ -174,111 +176,118 @@ export function createInputTranslationContentFeature(
         removeExistingTooltip();
         inputTooltipOwnerRequestId = requestId;
         const rect = element.getBoundingClientRect();
+        let ui: ShadowRootContentScriptUi<HTMLElement> | null = null;
+        try {
+            ui = await createUi<HTMLElement>(deps.context, {
+                name: 'fluent-read-input-tooltip-ui',
+                position: 'overlay',
+                alignment: 'top-left',
+                zIndex: 2_147_483_647,
+                mode: 'closed',
+                inheritStyles: false,
+                css: `
+                    :host {
+                        --fr-input-font-small: 11px;
+                        --fr-input-weight-medium: 600;
+                        all: initial !important;
+                        display: block !important;
+                        position: relative !important;
+                        width: 0 !important;
+                        height: 0 !important;
+                        overflow: visible !important;
+                    }
+                    html, body {
+                        width: 0 !important;
+                        height: 0 !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        overflow: visible !important;
+                    }
+                    .fluent-input-tooltip {
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 6px;
+                        position: fixed;
+                        box-sizing: border-box;
+                        background: rgba(17, 24, 39, 0.88);
+                        color: #fff;
+                        padding: 8px 12px;
+                        border: 0;
+                        border-radius: 8px;
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                        font-size: var(--fr-input-font-small);
+                        font-weight: var(--fr-input-weight-medium);
+                        line-height: 1.4;
+                        white-space: nowrap;
+                        z-index: 2147483647;
+                        pointer-events: none;
+                        transition: opacity 0.2s ease, transform 0.2s ease;
+                        backdrop-filter: blur(8px);
+                        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.2);
+                    }
+                    .fluent-input-tooltip.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+                    .fluent-input-tooltip.hide { opacity: 0; transform: translateX(-50%) translateY(-5px); }
+                    .fluent-input-tooltip.translating { background: rgba(59, 130, 246, 0.9); }
+                    .fluent-input-tooltip.success { background: rgba(34, 197, 94, 0.9); }
+                    .fluent-input-tooltip.error { background: rgba(239, 68, 68, 0.9); }
+                    .fluent-input-tooltip-icon { width: 14px; height: 14px; flex: 0 0 auto; stroke-width: 2; }
+                    ${animationsEnabled() ? '.fluent-input-tooltip.translating .fluent-input-tooltip-icon { animation: fluent-read-input-icon-spin .9s linear infinite; }' : ''}
+                    @keyframes fluent-read-input-icon-spin { to { transform: rotate(360deg); } }
+                    @media (prefers-reduced-motion: reduce) {
+                        .fluent-input-tooltip { transition: none; }
+                        .fluent-input-tooltip-icon { animation: none !important; }
+                    }
+                `,
+                onMount(container) {
+                    const tooltip = rootDocument.createElement('div');
+                    tooltip.className = `fluent-input-tooltip ${type}`;
+                    tooltip.id = 'fluent-input-translation-tooltip';
+                    const icon = createLucideIconElement(getTooltipIcon(type), {}, rootDocument);
+                    icon.classList.add('fluent-input-tooltip-icon');
+                    const messageElement = rootDocument.createElement('span');
+                    messageElement.textContent = message;
+                    tooltip.appendChild(icon);
+                    tooltip.appendChild(messageElement);
+                    tooltip.style.top = `${rect.bottom + 12}px`;
+                    tooltip.style.left = `${rect.left + (rect.width / 2)}px`;
+                    tooltip.style.transform = 'translateX(-50%) translateY(3px)';
+                    tooltip.style.opacity = animationsEnabled() ? '0' : '1';
+                    container.appendChild(tooltip);
+                    return tooltip;
+                },
+            });
 
-        const ui = await createUi<HTMLElement>(deps.context, {
-            name: 'fluent-read-input-tooltip-ui',
-            position: 'overlay',
-            alignment: 'top-left',
-            zIndex: 2_147_483_647,
-            mode: 'closed',
-            inheritStyles: false,
-            css: `
-                :host {
-                    --fr-input-font-small: 11px;
-                    --fr-input-weight-medium: 600;
-                    all: initial !important;
-                    display: block !important;
-                    position: relative !important;
-                    width: 0 !important;
-                    height: 0 !important;
-                    overflow: visible !important;
-                }
-                html, body {
-                    width: 0 !important;
-                    height: 0 !important;
-                    margin: 0 !important;
-                    padding: 0 !important;
-                    overflow: visible !important;
-                }
-                .fluent-input-tooltip {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 6px;
-                    position: fixed;
-                    box-sizing: border-box;
-                    background: rgba(17, 24, 39, 0.88);
-                    color: #fff;
-                    padding: 8px 12px;
-                    border: 0;
-                    border-radius: 8px;
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-                    font-size: var(--fr-input-font-small);
-                    font-weight: var(--fr-input-weight-medium);
-                    line-height: 1.4;
-                    white-space: nowrap;
-                    z-index: 2147483647;
-                    pointer-events: none;
-                    transition: opacity 0.2s ease, transform 0.2s ease;
-                    backdrop-filter: blur(8px);
-                    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.2);
-                }
-                .fluent-input-tooltip.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-                .fluent-input-tooltip.hide { opacity: 0; transform: translateX(-50%) translateY(-5px); }
-                .fluent-input-tooltip.translating { background: rgba(59, 130, 246, 0.9); }
-                .fluent-input-tooltip.success { background: rgba(34, 197, 94, 0.9); }
-                .fluent-input-tooltip.error { background: rgba(239, 68, 68, 0.9); }
-                .fluent-input-tooltip-icon { width: 14px; height: 14px; flex: 0 0 auto; stroke-width: 2; }
-                ${animationsEnabled() ? '.fluent-input-tooltip.translating .fluent-input-tooltip-icon { animation: fluent-read-input-icon-spin .9s linear infinite; }' : ''}
-                @keyframes fluent-read-input-icon-spin { to { transform: rotate(360deg); } }
-                @media (prefers-reduced-motion: reduce) {
-                    .fluent-input-tooltip { transition: none; }
-                    .fluent-input-tooltip-icon { animation: none !important; }
-                }
-            `,
-            onMount(container) {
-                const tooltip = rootDocument.createElement('div');
-                tooltip.className = `fluent-input-tooltip ${type}`;
-                tooltip.id = 'fluent-input-translation-tooltip';
-                const icon = createLucideIconElement(getTooltipIcon(type), {}, rootDocument);
-                icon.classList.add('fluent-input-tooltip-icon');
-                const messageElement = rootDocument.createElement('span');
-                messageElement.textContent = message;
-                tooltip.appendChild(icon);
-                tooltip.appendChild(messageElement);
-                tooltip.style.top = `${rect.bottom + 12}px`;
-                tooltip.style.left = `${rect.left + (rect.width / 2)}px`;
-                tooltip.style.transform = 'translateX(-50%) translateY(3px)';
-                tooltip.style.opacity = animationsEnabled() ? '0' : '1';
-                container.appendChild(tooltip);
-                return tooltip;
-            },
-        });
+            if (
+                signal.aborted
+                || requestId !== activeInputTranslationRequestId
+                || inputTooltipOwnerRequestId !== requestId
+                || !isEnabled()
+            ) {
+                ui.remove();
+                return null;
+            }
 
-        if (
-            signal.aborted
-            || requestId !== activeInputTranslationRequestId
-            || inputTooltipOwnerRequestId !== requestId
-            || !isEnabled()
-        ) {
-            ui.remove();
+            inputTooltipUi = ui;
+            ui.shadowHost.id = 'fluent-input-translation-tooltip-host';
+            ui.shadowHost.setAttribute('data-fluent-read-ui', 'input-tooltip');
+            ui.mount();
+
+            const tooltip = ui.mounted!;
+            if (!animationsEnabled()) {
+                tooltip.style.opacity = '1';
+                tooltip.style.transform = 'translateX(-50%) translateY(0)';
+            } else {
+                tooltip.style.opacity = '0';
+                setTimeout(() => tooltip.classList.add('show'), 10);
+            }
+
+            return tooltip;
+        } catch (error) {
+            ui?.remove();
+            if (inputTooltipUi === ui) inputTooltipUi = null;
+            logger.error('输入框提示创建失败:', error);
             return null;
         }
-
-        inputTooltipUi = ui;
-        ui.shadowHost.id = 'fluent-input-translation-tooltip-host';
-        ui.shadowHost.setAttribute('data-fluent-read-ui', 'input-tooltip');
-        ui.mount();
-
-        const tooltip = ui.mounted!;
-        if (!animationsEnabled()) {
-            tooltip.style.opacity = '1';
-            tooltip.style.transform = 'translateX(-50%) translateY(0)';
-        } else {
-            tooltip.style.opacity = '0';
-            setTimeout(() => tooltip.classList.add('show'), 10);
-        }
-
-        return tooltip;
     };
 
     const handleInputBoxTranslation = async (
@@ -334,25 +343,10 @@ export function createInputTranslationContentFeature(
                 return;
             }
 
+            let translatedText: string;
             try {
-                // background 消息不能中断，结果落地前再次校验快照和 feature signal。
-                const translatedText = await translateWithMicrosoft(deps.sendMessage, cleanedText, targetLanguage);
-                if (!isCurrentAndUnchanged()) {
-                    clearOwnedVisuals();
-                    return;
-                }
-
-                element.classList.remove('fluent-input-translating');
-                removeExistingTooltip(requestId);
-                if (translatedText && translatedText !== cleanedText) {
-                    setInputBoxText(element, translatedText);
-                    addInputBoxAnimation(element, 'success', requestId);
-                    await createTranslationTooltip(element, '翻译成功', 'success', requestId, signal);
-                } else {
-                    addInputBoxAnimation(element, 'error', requestId);
-                    await createTranslationTooltip(element, '内容无需翻译', 'error', requestId, signal);
-                }
-            } catch (translationError) {
+                translatedText = await translateWithMicrosoft(deps.sendMessage, cleanedText, targetLanguage);
+            } catch (error) {
                 if (!isCurrentAndUnchanged()) {
                     clearOwnedVisuals();
                     return;
@@ -361,21 +355,30 @@ export function createInputTranslationContentFeature(
                 addInputBoxAnimation(element, 'error', requestId);
                 removeExistingTooltip(requestId);
                 await createTranslationTooltip(element, '微软翻译失败', 'error', requestId, signal);
-                logger.error('微软翻译失败:', translationError);
+                logger.error('微软翻译失败:', error);
+                if (activeInputTranslationElement === element) activeInputTranslationElement = null;
+                setTimeout(() => removeExistingTooltip(requestId), 2500);
+                return;
             }
 
-            setTimeout(() => removeExistingTooltip(requestId), 2500);
-        } catch (error) {
             if (!isCurrentAndUnchanged()) {
                 clearOwnedVisuals();
                 return;
             }
-            logger.error('输入框翻译失败:', error);
+
             element.classList.remove('fluent-input-translating');
-            addInputBoxAnimation(element, 'error', requestId);
             removeExistingTooltip(requestId);
-            await createTranslationTooltip(element, '翻译服务暂时不可用', 'error', requestId, signal);
-            setTimeout(() => removeExistingTooltip(requestId), 3000);
+            if (translatedText && translatedText !== cleanedText) {
+                setInputBoxText(element, translatedText);
+                addInputBoxAnimation(element, 'success', requestId);
+                await createTranslationTooltip(element, '翻译成功', 'success', requestId, signal);
+            } else {
+                addInputBoxAnimation(element, 'error', requestId);
+                await createTranslationTooltip(element, '内容无需翻译', 'error', requestId, signal);
+            }
+
+            if (activeInputTranslationElement === element) activeInputTranslationElement = null;
+            setTimeout(() => removeExistingTooltip(requestId), 2500);
         } finally {
             signal.removeEventListener('abort', handleAbort);
         }

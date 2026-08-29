@@ -67,7 +67,6 @@ export interface VocabularyBookRuntimeMessage {
     action?: VocabularyBookAction | unknown;
     entryId?: unknown;
     term?: unknown;
-    word?: unknown;
     sourceLanguage?: unknown;
     rating?: unknown;
     input?: unknown;

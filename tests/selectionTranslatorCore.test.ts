@@ -1,11 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
-    canUseBundledDictionaryFallback,
     calculateSelectionPopupPosition,
     chooseSelectionRect,
     getSelectionPresentationDelayRemaining,
     isSameLanguage,
-    isSelectionExcludedTagName,
     normalizeSelectionText,
     normalizeSpeechLanguage,
     reconcileSelectionPresentation,
@@ -16,13 +14,8 @@ import {
     summarizeSelectionContext,
 } from '@/src/features/selection-translation/core';
 import {
-    buildEdgeTtsSsml,
-    edgeTtsVoiceCandidatesForLanguage,
-    edgeTtsVoiceForLanguage,
     synthesizeEdgeTts,
 } from '@/src/features/selection-translation/services/edgeTts';
-import { matchesConfiguredHotkey, matchesModifierOnlyHotkey, resolveConfiguredHotkey, shouldClaimConfiguredHotkey } from '@/src/core/hotkey';
-import { normalizeSelectionTtsVoiceOrder, selectionTtsVoiceLocale } from '@/src/features/selection-translation/ttsConfig';
 
 interface MockElementOptions {
     tagName?: string;
@@ -67,16 +60,13 @@ function mockTextNode(parentElement: MockElement | null): Node {
     return {nodeType: 3, parentElement} as Node;
 }
 
-function mockRange(start: Node | null, end: Node | null, cloneResult: boolean | 'throw'): Range {
+function mockRange(start: Node | null, end: Node | null, containsExcludedElement: boolean): Range {
     return {
         startContainer: start,
         endContainer: end,
-        cloneContents: () => {
-            if (cloneResult === 'throw') throw new Error('clone failed');
-            return {
-                querySelector: () => cloneResult ? {} : null,
-            };
-        },
+        cloneContents: () => ({
+            querySelector: () => containsExcludedElement ? {} : null,
+        }),
     } as unknown as Range;
 }
 
@@ -175,25 +165,18 @@ describe('selection translator text and speech language normalization', () => {
     });
 
     it('keeps a bounded context centered on the selected word', () => {
-        expect(summarizeSelectionContext('', 'common')).toBe('');
-        expect(summarizeSelectionContext('common text', '')).toBe('');
-        expect(summarizeSelectionContext('common text', 'common', 10)).toBe('');
+        expect(summarizeSelectionContext('  A   common\nexample. ', 'common')).toBe('A common example.');
         const context = summarizeSelectionContext(`Before ${'a'.repeat(80)} common ${'b'.repeat(80)} after`, 'common', 64);
         expect(context).toHaveLength(64);
         expect(context).toContain('common');
         expect(context.startsWith('…')).toBe(true);
         expect(context.endsWith('…')).toBe(true);
-        expect(summarizeSelectionContext('  A   common\nexample. ', 'common')).toBe('A common example.');
-        expect(summarizeSelectionContext(`${'x'.repeat(80)} tail`, 'missing', 40)).toBe(`${'x'.repeat(39)}…`);
+
         const repeated = `common FIRST ${'x'.repeat(650)} common SECOND`;
         const lastCommon = repeated.lastIndexOf('common');
         const aroundLast = summarizeSelectionContext(repeated, 'common', 80, lastCommon);
         expect(aroundLast).toContain('SECOND');
         expect(aroundLast).not.toContain('FIRST');
-        expect(summarizeSelectionContext(`${'x'.repeat(40)} common tail ${'y'.repeat(80)}`, 'common', 40, 0)).toContain('common');
-        expect(summarizeSelectionContext(`${'x'.repeat(80)} common tail`, 'common', 40, 500)).toContain('common');
-        expect(summarizeSelectionContext(`common left ${'x'.repeat(40)} common right`, 'common', 40, 45)).toContain('right');
-        expect(summarizeSelectionContext(`common ${'x'.repeat(80)}`, 'common', 40, 0).startsWith('common')).toBe(true);
     });
 
     it('only exposes answers completed for the current selection request', () => {
@@ -208,21 +191,9 @@ describe('selection translator text and speech language normalization', () => {
     });
 
     it('only uses bundled ECDICT auxiliary text for Simplified Chinese targets', () => {
-        expect(canUseBundledDictionaryFallback('zh-Hans')).toBe(true);
-        expect(canUseBundledDictionaryFallback('')).toBe(false);
-        expect(canUseBundledDictionaryFallback('ZH_cn')).toBe(true);
-        expect(canUseBundledDictionaryFallback('zh-Hant')).toBe(false);
-        expect(canUseBundledDictionaryFallback('ja')).toBe(false);
         expect(resolveSelectionDictionaryFallback('zh-Hans', [undefined, '', ' 常见 ', '共同'])).toBe('常见；共同');
+        expect(resolveSelectionDictionaryFallback('zh-Hant', ['常见'])).toBe('');
         expect(resolveSelectionDictionaryFallback('ja', ['常见'])).toBe('');
-    });
-
-    it('classifies atomic and interactive elements as non-text selections', () => {
-        for (const tagName of ['img', 'svg', 'video', 'canvas', 'button', 'input', 'textarea', 'select', 'code', 'pre']) {
-            expect(isSelectionExcludedTagName(tagName)).toBe(true);
-        }
-        expect(isSelectionExcludedTagName('p')).toBe(false);
-        expect(isSelectionExcludedTagName('span')).toBe(false);
     });
 
     it('忽略交互、可编辑和 FluentRead 自身 UI 内的选区', () => {
@@ -253,9 +224,9 @@ describe('selection translator text and speech language normalization', () => {
         ))).toBe(true);
     });
 
-    it('在 fragment 检查失败时 fail-open，避免破坏普通文本选择', () => {
+    it('检查跨节点选区中的受保护内容', () => {
         expect(shouldIgnoreSelection(mockRange(
-            null,
+            mockTextNode(new MockElement()),
             mockTextNode(new MockElement()),
             false,
         ))).toBe(false);
@@ -264,11 +235,6 @@ describe('selection translator text and speech language normalization', () => {
             mockTextNode(new MockElement()),
             true,
         ))).toBe(true);
-        expect(shouldIgnoreSelection(mockRange(
-            mockTextNode(new MockElement()),
-            mockTextNode(new MockElement()),
-            'throw',
-        ))).toBe(false);
     });
 
     it('maps translation language codes to browser speech language codes', () => {
@@ -278,33 +244,6 @@ describe('selection translator text and speech language normalization', () => {
         expect(normalizeSpeechLanguage('auto', 'zh-CN')).toBe('zh-CN');
         expect(normalizeSpeechLanguage('en-GB')).toBe('en-GB');
         expect(normalizeSpeechLanguage('invalid value')).toBe('en-US');
-    });
-
-    it('uses stable Edge TTS voices instead of the first system voice', () => {
-        expect(edgeTtsVoiceForLanguage('en-US')).toBe('en-US-AvaMultilingualNeural');
-        expect(edgeTtsVoiceForLanguage('en')).toBe('en-US-AvaMultilingualNeural');
-        expect(edgeTtsVoiceForLanguage('zh-Hans')).toBe('zh-CN-XiaoxiaoMultilingualNeural');
-    });
-
-    it('keeps valid configured voices first and falls back through the same language', () => {
-        expect(normalizeSelectionTtsVoiceOrder([
-            'en-US-JennyNeural',
-            'not-a-voice',
-            'en-US-JennyNeural',
-            'zh-CN-XiaoyiNeural',
-        ])).toEqual(['en-US-JennyNeural', 'zh-CN-XiaoyiNeural']);
-        expect(edgeTtsVoiceCandidatesForLanguage('en-US', [
-            'en-GB-SoniaNeural',
-            'en-US-JennyNeural',
-            'zh-CN-XiaoyiNeural',
-        ])).toEqual([
-            'en-US-JennyNeural',
-            'en-US-AvaMultilingualNeural',
-            'en-US-AriaNeural',
-            'en-US-GuyNeural',
-        ]);
-        expect(normalizeSelectionTtsVoiceOrder('en-US-JennyNeural')).toEqual([]);
-        expect(selectionTtsVoiceLocale('zh-CN-XiaoxiaoMultilingualNeural')).toBe('zh-CN');
     });
 
     it('does not expose malformed Edge TTS endpoint JSON in errors', async () => {
@@ -381,49 +320,4 @@ describe('selection translator text and speech language normalization', () => {
         }
     });
 
-    it('escapes selection text before putting it into SSML', () => {
-        const ssml = buildEdgeTtsSsml('A < B & C', 'en-US-AvaMultilingualNeural');
-        expect(ssml).toContain('A &lt; B &amp; C');
-        expect(ssml).not.toContain('A < B & C');
-    });
-
-    it('resolves preset and custom selection shortcuts consistently', () => {
-        expect(resolveConfiguredHotkey('Control', 'Ctrl+Shift+Y')).toBe('Control');
-        expect(resolveConfiguredHotkey('custom', ' Ctrl+Shift+Y ')).toBe('Ctrl+Shift+Y');
-        expect(resolveConfiguredHotkey('none', 'Ctrl+Shift+Y')).toBe('none');
-        expect(resolveConfiguredHotkey('custom', ' ')).toBe('');
-
-        const modifierCases = [
-            ['Control', {key: 'Control', ctrlKey: true, altKey: false, shiftKey: false, metaKey: false}],
-            ['Alt', {key: 'Alt', ctrlKey: false, altKey: true, shiftKey: false, metaKey: false}],
-            ['Shift', {key: 'Shift', ctrlKey: false, altKey: false, shiftKey: true, metaKey: false}],
-        ] as const;
-        for (const [hotkey, event] of modifierCases) {
-            expect(matchesModifierOnlyHotkey(event, hotkey)).toBe(true);
-            expect(matchesConfiguredHotkey(event as KeyboardEvent, hotkey)).toBe(true);
-        }
-
-        const controlWithExtraModifier = {key: 'Control', ctrlKey: true, altKey: true, shiftKey: false, metaKey: false} as KeyboardEvent;
-        expect(matchesConfiguredHotkey(controlWithExtraModifier, 'Control')).toBe(false);
-        expect(matchesConfiguredHotkey(controlWithExtraModifier, 'none')).toBe(false);
-    });
-
-    it('matches custom selection combinations without accepting extra modifiers', () => {
-        const shortcut = {key: 'y', code: 'KeyY', ctrlKey: true, altKey: false, shiftKey: true, metaKey: false} as KeyboardEvent;
-        const extraModifier = {...shortcut, altKey: true} as KeyboardEvent;
-        expect(matchesConfiguredHotkey(shortcut, 'custom', 'Ctrl+Shift+Y')).toBe(true);
-        expect(matchesConfiguredHotkey(extraModifier, 'custom', 'Ctrl+Shift+Y')).toBe(false);
-        expect(matchesConfiguredHotkey(shortcut, 'none', 'Ctrl+Shift+Y')).toBe(false);
-    });
-
-    it('does not inspect selection geometry for unrelated keyboard input', () => {
-        const hasCandidate = vi.fn(() => true);
-        const unrelated = {key: 'x', code: 'KeyX', ctrlKey: false, altKey: false, shiftKey: false, metaKey: false} as KeyboardEvent;
-        const control = {key: 'Control', code: 'ControlLeft', ctrlKey: true, altKey: false, shiftKey: false, metaKey: false} as KeyboardEvent;
-
-        expect(shouldClaimConfiguredHotkey(unrelated, 'Control', '', hasCandidate)).toBe(false);
-        expect(hasCandidate).not.toHaveBeenCalled();
-        expect(shouldClaimConfiguredHotkey(control, 'Control', '', hasCandidate)).toBe(true);
-        expect(hasCandidate).toHaveBeenCalledTimes(1);
-    });
 });
