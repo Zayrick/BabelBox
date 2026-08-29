@@ -6,6 +6,7 @@ import {
     incrementConfigCount,
     prepareConfigSaveRequest,
     saveConfig,
+    setCredentialStorageMode,
 } from '@/src/services/config/store';
 import {restoreConfigAutoBackup} from '@/src/services/config/autoBackupStore';
 import type {BackgroundMessageHandler} from '@/src/platform/browser/messageRouter';
@@ -16,6 +17,7 @@ import {
     createConfigPersistenceHandler,
     type ConfigPersistenceContext,
 } from './handlers/configPersistence';
+import {createCredentialStorageModeHandler} from './handlers/credentialStorageMode';
 
 export function createConfigBackgroundHandlers<TContext extends ConfigPersistenceContext>(): Array<BackgroundMessageHandler<TContext>> {
     let mutationQueue: Promise<unknown> = Promise.resolve();
@@ -24,6 +26,7 @@ export function createConfigBackgroundHandlers<TContext extends ConfigPersistenc
         mutationQueue = result.then(() => undefined, () => undefined);
         return result;
     };
+    const isExtensionUrl = (url: string) => url.startsWith(browser.runtime.getURL('/'));
     return [
         createConfigCountIncrementHandler((delta) => mutate(() => incrementConfigCount(delta))),
         createConfigHistoryHandler((action, version) => (
@@ -37,7 +40,11 @@ export function createConfigBackgroundHandlers<TContext extends ConfigPersistenc
             getCurrentConfig: () => config,
             prepareConfigSaveRequest,
             saveConfig: (nextConfig, options) => mutate(() => saveConfig(nextConfig, options)),
-            isExtensionUrl: (url) => url.startsWith(browser.runtime.getURL('/')),
+            isExtensionUrl,
         }),
+        createCredentialStorageModeHandler(
+            (mode) => mutate(() => setCredentialStorageMode(mode)),
+            isExtensionUrl,
+        ),
     ] as Array<BackgroundMessageHandler<TContext>>;
 }

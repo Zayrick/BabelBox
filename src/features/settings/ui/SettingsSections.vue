@@ -528,18 +528,37 @@
     </section>
 
     <section v-show="props.activeSection === 'settings-data'" id="settings-data" class="settings-section data-section settings-data-section">
-        <section class="credential-persistence-panel" aria-label="API 凭据存储">
-          <div class="credential-persistence-copy">
-            <strong>跨浏览器重启保存 API 凭据</strong>
-            <p>默认仅保存在当前浏览器会话，关闭浏览器后清除。开启后会以明文写入扩展本地存储；本机其他可读取浏览器配置或诊断数据的程序可能看到这些凭据。</p>
+        <section class="credential-storage-panel" aria-labelledby="credential-storage-title">
+          <div class="credential-storage-heading">
+            <strong id="credential-storage-title">API 凭据存储</strong>
+            <p>选择浏览器重启后是否继续保留凭据。</p>
           </div>
-          <el-switch
-            :model-value="config.persistCredentials"
-            :loading="credentialPersistenceBusy"
-            aria-label="跨浏览器重启保存 API 凭据"
-            data-testid="persist-credentials-switch"
-            @change="setCredentialPersistence"
-          />
+          <div class="credential-storage-options" role="radiogroup" aria-label="API 凭据存储方式" :aria-busy="credentialStorageBusy">
+            <button
+              type="button"
+              role="radio"
+              :aria-checked="credentialStorageMode === 'device'"
+              :class="{ selected: credentialStorageMode === 'device' }"
+              :disabled="credentialStorageBusy"
+              data-testid="credential-storage-device"
+              @click="setCredentialStorage('device')"
+            >
+              <span><b>保存在此设备</b><em>推荐</em></span>
+              <small>加密保存在此设备，浏览器重启或扩展更新后仍可使用。</small>
+            </button>
+            <button
+              type="button"
+              role="radio"
+              :aria-checked="credentialStorageMode === 'session'"
+              :class="{ selected: credentialStorageMode === 'session' }"
+              :disabled="credentialStorageBusy"
+              data-testid="credential-storage-session"
+              @click="setCredentialStorage('session')"
+            >
+              <span><b>仅本次浏览器会话</b></span>
+              <small>浏览器关闭、扩展重载或更新后需要重新填写。</small>
+            </button>
+          </div>
         </section>
 
         <section class="config-history-panel" aria-label="最近配置">
@@ -643,7 +662,7 @@
             </el-button>
           </el-col>
         </el-row>
-        <p class="config-transfer-note">导出会移除专用 API Key、Secret 与令牌字段；自定义请求体、代理和端点中的内嵌凭据无法自动识别，请在分享前检查。导入旧版配置时，专用凭据会迁移到当前浏览器会话。</p>
+        <p class="config-transfer-note">导出会移除专用 API Key、Secret 与令牌字段；自定义请求体、代理和端点中的内嵌凭据无法自动识别，请在分享前检查。</p>
 
         <!-- 导出配置 -->
         <el-row v-if="showExportBox" class="margin-bottom margin-left-2em">
@@ -746,15 +765,19 @@ import {
   config as runtimeConfig,
   configHistoryReady,
   configReady,
+  getCredentialStorageMode,
   getConfigHistorySnapshot,
+  requestCredentialStorageModeChange,
   requestConfigHistoryAction,
   requestConfigSave,
+  subscribeCredentialStorageMode,
   subscribeConfigHistory,
   subscribeConfig,
   type ConfigHistoryAction,
   type ConfigHistoryEntry,
   type ConfigHistoryState,
 } from '@/src/services/config/store';
+import type {CredentialStorageMode} from '@/src/core/config/credentialStorage';
 import {
   configAutoBackupsReady,
   getConfigAutoBackupsSnapshot,
@@ -997,6 +1020,7 @@ async function removeTranslationService(id: string): Promise<void> {
 // 组件卸载时清理
 onUnmounted(() => {
   unsubscribeConfig();
+  unsubscribeCredentialStorageMode();
   unsubscribeHistory();
   unsubscribeBackups();
 });
@@ -1303,19 +1327,22 @@ const showExportBox = ref(false);
 const exportData = ref('');
 const showImportBox = ref(false);
 const importData = ref('');
-const credentialPersistenceBusy = ref(false);
+const credentialStorageMode = ref<CredentialStorageMode>(getCredentialStorageMode());
+const credentialStorageBusy = ref(false);
+const unsubscribeCredentialStorageMode = subscribeCredentialStorageMode((mode) => {
+  credentialStorageMode.value = mode;
+});
 
-const setCredentialPersistence = async (value: string | number | boolean) => {
-  const enabled = value === true;
-  if (enabled === config.value.persistCredentials || credentialPersistenceBusy.value) return;
+const setCredentialStorage = async (mode: CredentialStorageMode) => {
+  if (mode === credentialStorageMode.value || credentialStorageBusy.value) return;
 
-  if (enabled) {
+  if (mode === 'session') {
     try {
       await ElMessageBox.confirm(
-        '开启后，API Key、访问令牌及其他服务凭据会以明文写入扩展本地存储，并在浏览器重启后继续保留。仅应在受信任的个人设备上开启。',
-        '保存 API 凭据',
+        '切换后会删除此设备上的凭据密文。当前会话仍可继续使用，但关闭浏览器、重载或更新扩展后需要重新填写。',
+        '改为仅本次会话',
         {
-          confirmButtonText: '了解风险并开启',
+          confirmButtonText: '删除设备副本并切换',
           cancelButtonText: '取消',
           type: 'warning',
         },
@@ -1325,23 +1352,19 @@ const setCredentialPersistence = async (value: string | number | boolean) => {
     }
   }
 
-  credentialPersistenceBusy.value = true;
+  credentialStorageBusy.value = true;
   try {
-    const nextConfig = normalizeConfig({...config.value, persistCredentials: enabled});
-    // 后台只有在 session 写入并读回成功后，才会清理关闭开关前的 local 凭据。
-    await persistConfig(nextConfig);
-    applyingExternalConfig = true;
-    try {
-      Object.assign(config.value, nextConfig);
-      lastSerialized = JSON.stringify(nextConfig);
-    } finally {
-      applyingExternalConfig = false;
-    }
-    ElMessage.success(enabled ? '已允许跨浏览器重启保存 API 凭据' : 'API 凭据现仅保存在当前浏览器会话');
+    credentialStorageMode.value = await requestCredentialStorageModeChange(
+      mode,
+      browser.runtime.sendMessage.bind(browser.runtime),
+    );
+    ElMessage.success(mode === 'device'
+      ? 'API 凭据已保存到此设备'
+      : '设备凭据副本已删除，当前仅保存在本次会话');
   } catch (error) {
     ElMessage.error(`凭据存储设置失败：${error instanceof Error ? error.message : '请稍后重试'}`);
   } finally {
-    credentialPersistenceBusy.value = false;
+    credentialStorageBusy.value = false;
   }
 };
 

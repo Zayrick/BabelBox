@@ -2,22 +2,31 @@
   min-width: 0;
 }
 
-.credential-persistence-panel {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
+.credential-storage-panel {
   margin: 0;
   padding: 16px;
   border: 0;
   border-bottom: 1px solid var(--line);
   background: var(--surface);
 }
-.credential-persistence-copy { min-width: 0; }
-.credential-persistence-copy strong { color: var(--ink); font-size: var(--font-body); }
-.credential-persistence-copy p,
+.credential-storage-heading strong { color: var(--ink); font-size: var(--font-subtitle); }
+.credential-storage-heading p,
 .config-transfer-note { margin: 5px 0 0; color: var(--muted); font-size: var(--font-small); line-height: var(--line-height-body); }
+.credential-storage-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+.credential-storage-options button { display: flex; min-width: 0; min-height: 82px; padding: 12px 14px; flex-direction: column; align-items: flex-start; gap: 7px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: var(--surface); text-align: left; cursor: pointer; transition: border-color .16s ease, background .16s ease, box-shadow .16s ease; }
+.credential-storage-options button:hover:not(:disabled) { border-color: var(--brand); background: var(--surface-soft); }
+.credential-storage-options button.selected { border-color: var(--brand); background: var(--brand-soft); box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand) 28%, transparent); }
+.credential-storage-options button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.credential-storage-options button:disabled { cursor: wait; opacity: .68; }
+.credential-storage-options button span { display: flex; align-items: center; gap: 7px; }
+.credential-storage-options button b { font-size: var(--font-body); font-weight: var(--weight-semibold); }
+.credential-storage-options button em { padding: 2px 6px; border-radius: 999px; color: var(--brand-strong); background: var(--surface); font-size: var(--font-caption); font-style: normal; font-weight: var(--weight-semibold); }
+.credential-storage-options button small { color: var(--muted); font-size: var(--font-small); line-height: var(--line-height-body); }
 .config-transfer-note { margin: 0; padding: 0 16px 16px; }
+
+@media (max-width: 720px) {
+  .credential-storage-options { grid-template-columns: 1fr; }
+}
 
 .site-settings-section {
   padding: 0;

@@ -21,13 +21,6 @@ const legacyDefaultAiPrompt = {
 };
 
 describe('AI 模型编号列表', () => {
-    it('API 凭据跨重启持久化默认关闭，且只接受显式布尔 true', () => {
-        expect(new Config().persistCredentials).toBe(false);
-        expect(normalizeConfig({}).persistCredentials).toBe(false);
-        expect(normalizeConfig({persistCredentials: true}).persistCredentials).toBe(true);
-        expect(normalizeConfig({persistCredentials: 'true'}).persistCredentials).toBe(false);
-    });
-
     it('AI 智能上下文默认关闭，并能从旧配置平滑补齐', () => {
         expect(new Config().enableAIContext).toBe(false);
         expect(normalizeConfig({}).enableAIContext).toBe(false);

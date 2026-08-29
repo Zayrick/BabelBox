@@ -169,7 +169,6 @@ export class Config {
     translationCenterServices: string[]; // 翻译中心已选服务及其展示顺序
     translationCenterSourceLanguage: string; // 翻译中心源语言
     translationCenterTargetLanguage: string; // 翻译中心目标语言
-    persistCredentials: boolean; // 是否明确允许跨浏览器重启保存 API 凭据
 
     constructor() {
         this.on = true;
@@ -252,7 +251,6 @@ export class Config {
         this.translationCenterServices = [];
         this.translationCenterSourceLanguage = '';
         this.translationCenterTargetLanguage = '';
-        this.persistCredentials = false;
     }
 }
 
@@ -535,7 +533,6 @@ export function normalizeConfig(value: unknown): Config {
     normalized.translationCenterServices = normalizeStringList(source.translationCenterServices);
     normalized.translationCenterSourceLanguage = normalizeConfigLanguage(source.translationCenterSourceLanguage);
     normalized.translationCenterTargetLanguage = normalizeConfigLanguage(source.translationCenterTargetLanguage);
-    normalized.persistCredentials = source.persistCredentials === true;
     reconcileTranslationServiceReferences(normalized);
 
     return normalized;

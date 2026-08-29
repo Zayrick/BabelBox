@@ -13,7 +13,6 @@ export const CONFIG_HISTORY_SCHEMA_VERSION = 1 as const;
 
 export const CONFIG_NON_RESTORABLE_FIELDS = [
     'count',
-    'persistCredentials',
     'videoServiceDefaultMigrated',
 ] as const;
 
@@ -49,13 +48,12 @@ export function toRestorableConfig(value: unknown): RestorableConfig {
     return restorable as RestorableConfig;
 }
 
-/** 恢复快照时保留当前凭据、统计与显式安全选择。 */
+/** 恢复快照时保留当前凭据与运行时统计。 */
 export function restoreRestorableConfig(value: unknown, currentValue: unknown): Config {
     const current = normalizeConfig(currentValue);
     const target = normalizeConfig({
         ...toRestorableConfig(value),
         count: current.count,
-        persistCredentials: current.persistCredentials,
         videoServiceDefaultMigrated: current.videoServiceDefaultMigrated,
     });
     const credentials = filterConfigCredentialsForDestination(

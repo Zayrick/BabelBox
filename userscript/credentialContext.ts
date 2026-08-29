@@ -2,3 +2,5 @@
 export function isTrustedCredentialStorageContext(): boolean {
     return true;
 }
+
+export const ENCRYPTED_CREDENTIAL_VAULT_ENABLED = false;

@@ -92,28 +92,26 @@ describe('configuration transfer helpers', () => {
     }
   })
 
-  it('导入新版公开配置时保留当前 session 凭据和持久化选择', () => {
-    const currentSecret = 'current-session-secret'
+  it('导入公开配置时保留当前凭据', () => {
+    const currentSecret = 'current-device-secret'
     const prepared = prepareConfigForImport(
-      {...validConfig, to: 'ja', persistCredentials: true},
-      {...validConfig, token: {openai: currentSecret}, persistCredentials: false},
+      {...validConfig, to: 'ja'},
+      {...validConfig, token: {openai: currentSecret}},
     )
 
     expect(prepared.to).toBe('ja')
     expect(prepared.token.openai).toBe(currentSecret)
-    expect(prepared.persistCredentials).toBe(false)
   })
 
-  it('导入旧文件时迁移其中凭据，但不能由文件静默开启本地持久化', () => {
+  it('导入旧文件时迁移其中凭据', () => {
     const legacySecret = 'legacy-import-secret'
     const prepared = prepareConfigForImport(
-      {...validConfig, token: {openai: legacySecret}, extra: {jwt: legacySecret}, persistCredentials: true},
-      {...validConfig, token: {openai: 'current-secret'}, persistCredentials: false},
+      {...validConfig, token: {openai: legacySecret}, extra: {jwt: legacySecret}},
+      {...validConfig, token: {openai: 'current-secret'}},
     )
 
     expect(prepared.token.openai).toBe(legacySecret)
     expect(prepared.extra).toEqual({jwt: legacySecret})
-    expect(prepared.persistCredentials).toBe(false)
   })
 
   it('导入带凭据的旧双模型配置时保留新文档实例的凭据', () => {
@@ -130,7 +128,6 @@ describe('configuration transfer helpers', () => {
       {
         ...validConfig,
         token: {[services.openai]: 'current-session-secret'},
-        persistCredentials: false,
       },
     )
 

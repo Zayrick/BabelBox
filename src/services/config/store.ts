@@ -1,6 +1,15 @@
 import { storage } from '@wxt-dev/storage';
 import { Config, normalizeConfig } from '@/src/core/config/model';
 import {
+    DEFAULT_CREDENTIAL_STORAGE_MODE,
+    CREDENTIAL_STORAGE_MODE_MESSAGE,
+    createCredentialStorageState,
+    isCredentialStorageMode,
+    parseCredentialStorageState,
+    type CredentialStorageMode,
+    type CredentialStorageState,
+} from '@/src/core/config/credentialStorage';
+import {
     LOCAL_CREDENTIALS_STORAGE_KEY,
     SESSION_CREDENTIALS_STORAGE_KEY,
     credentialsEqual,
@@ -14,7 +23,14 @@ import {
     sanitizeConfigHistoryCredentials,
     type ConfigCredentials,
 } from '@/src/core/config/credentials';
-import {isTrustedCredentialStorageContext} from '@/src/platform/storage/credentialContext';
+import {
+    ENCRYPTED_CREDENTIAL_VAULT_ENABLED,
+    isTrustedCredentialStorageContext,
+} from '@/src/platform/storage/credentialContext';
+import {
+    decryptCredentials,
+    encryptCredentials,
+} from '@/src/platform/storage/credentialVault';
 import {
     CONFIG_HISTORY_LIMIT,
     appendConfigHistorySnapshot,
@@ -47,6 +63,7 @@ export type {ConfigHistoryAction, ConfigHistoryEntry, ConfigHistoryState} from '
 
 export const CONFIG_STORAGE_KEY = 'local:config' as const;
 export const CONFIG_HISTORY_STORAGE_KEY = 'local:configHistory' as const;
+export const CREDENTIAL_STORAGE_STATE_KEY = 'local:credentialStorageState' as const;
 export const CONFIG_PERSIST_MESSAGE = 'persistConfig' as const;
 export const CONFIG_HISTORY_MESSAGE = 'configHistoryAction' as const;
 const CONFIG_HISTORY_DEBOUNCE_MS = 350;
@@ -54,9 +71,11 @@ const CONFIG_HISTORY_DEBOUNCE_MS = 350;
 type ConfigListener = (nextConfig: Config) => void;
 
 type ConfigHistoryListener = (nextHistory: ConfigHistoryState) => void;
+type CredentialStorageModeListener = (mode: CredentialStorageMode) => void;
 
 const listeners = new Set<ConfigListener>();
 const historyListeners = new Set<ConfigHistoryListener>();
+const credentialStorageModeListeners = new Set<CredentialStorageModeListener>();
 let storageRevision = 0;
 let initialized = false;
 let lastPersistedSerialized = '';
@@ -211,21 +230,39 @@ function applyConfig(nextConfig: Config): void {
 }
 
 const trustedCredentialStorageContext = isTrustedCredentialStorageContext();
-let credentialCleanupRequired = false;
-let localCredentialSnapshotPresent = false;
+let credentialStorageMode: CredentialStorageMode = DEFAULT_CREDENTIAL_STORAGE_MODE;
+let legacyCredentialCleanupRequired = false;
+let lastCredentialCheckpointSerialized = '';
 let sessionCredentialWatchRegistered = false;
-let sessionCredentialStorageAvailable = false;
 
-async function writeAndVerifyCredentials(
-    key: typeof SESSION_CREDENTIALS_STORAGE_KEY | typeof LOCAL_CREDENTIALS_STORAGE_KEY,
+function setCredentialStorageModeState(mode: CredentialStorageMode, notify = true): void {
+    if (credentialStorageMode === mode) return;
+    credentialStorageMode = mode;
+    if (notify) credentialStorageModeListeners.forEach((listener) => listener(mode));
+}
+
+async function writeSessionCredentials(credentials: ConfigCredentials): Promise<void> {
+    await storage.setItem<ConfigCredentials>(SESSION_CREDENTIALS_STORAGE_KEY, credentials);
+}
+
+async function writeCredentialStorageState(
+    mode: CredentialStorageMode,
     credentials: ConfigCredentials,
 ): Promise<void> {
-    await storage.setItem<ConfigCredentials>(key, credentials);
-    const verified = parseStoredCredentials(await storage.getItem<unknown>(key));
-    if (!verified || !credentialsEqual(credentials, verified)) {
-        throw new Error(`${key} 凭据写入校验失败`);
+    if (!ENCRYPTED_CREDENTIAL_VAULT_ENABLED) {
+        if (mode !== 'device') throw new Error('Userscript 不支持仅会话凭据模式');
+        lastCredentialCheckpointSerialized = serializeConfig(credentials);
+        setCredentialStorageModeState('device');
+        return;
     }
-    if (key === SESSION_CREDENTIALS_STORAGE_KEY) sessionCredentialStorageAvailable = true;
+
+    const encryptedCredentials = mode === 'device' && hasCredentialData(credentials)
+        ? await encryptCredentials(credentials)
+        : undefined;
+    const state = createCredentialStorageState(mode, encryptedCredentials);
+    await storage.setItem<CredentialStorageState>(CREDENTIAL_STORAGE_STATE_KEY, state);
+    lastCredentialCheckpointSerialized = serializeConfig(credentials);
+    setCredentialStorageModeState(mode);
 }
 
 async function sanitizeStoredHistory(rawHistory?: unknown): Promise<void> {
@@ -262,17 +299,17 @@ function queueStorageWrite(nextConfig: Config, serialized: string, revision: num
                 }
 
                 const credentials = extractConfigCredentials(nextConfig);
-                const mustCheckpointCredentials = hasCredentialData(credentials)
-                    || credentialCleanupRequired
-                    || localCredentialSnapshotPresent
-                    || sessionCredentialStorageAvailable
-                    || nextConfig.persistCredentials;
+                const credentialsSerialized = serializeConfig(credentials);
+                const credentialSnapshotChanged = credentialsSerialized !== lastCredentialCheckpointSerialized;
+                const mustCheckpointCredentials = credentialSnapshotChanged
+                    || legacyCredentialCleanupRequired;
                 if (mustCheckpointCredentials) {
-                    await writeAndVerifyCredentials(SESSION_CREDENTIALS_STORAGE_KEY, credentials);
+                    await writeSessionCredentials(credentials);
                 }
-                if (nextConfig.persistCredentials) {
-                    await writeAndVerifyCredentials(LOCAL_CREDENTIALS_STORAGE_KEY, credentials);
-                    localCredentialSnapshotPresent = true;
+                if (credentialStorageMode === 'device' && credentialSnapshotChanged) {
+                    await writeCredentialStorageState('device', credentials);
+                } else if (credentialSnapshotChanged) {
+                    lastCredentialCheckpointSerialized = credentialsSerialized;
                 }
 
                 await storage.setItem(CONFIG_STORAGE_KEY, {
@@ -280,12 +317,10 @@ function queueStorageWrite(nextConfig: Config, serialized: string, revision: num
                     [CONFIG_REVISION_FIELD]: storedRevision,
                 });
 
-                if (!nextConfig.persistCredentials && (credentialCleanupRequired || localCredentialSnapshotPresent)) {
-                    // 先保证 session 中有已读回确认的快照，并清理历史泄漏，再删除本地凭据。
+                if (legacyCredentialCleanupRequired) {
                     await sanitizeStoredHistory();
                     await storage.removeItem(LOCAL_CREDENTIALS_STORAGE_KEY);
-                    credentialCleanupRequired = false;
-                    localCredentialSnapshotPresent = false;
+                    legacyCredentialCleanupRequired = false;
                 }
             } catch (error) {
                 if (lastPersistedSerialized === serialized) lastPersistedSerialized = '';
@@ -334,12 +369,19 @@ function handleStoredConfigChange(value: unknown): void {
 // 在首次读取前注册监听，避免设置页打开期间丢失其他上下文的更新。
 storage.watch(CONFIG_STORAGE_KEY, handleStoredConfigChange);
 storage.watch(CONFIG_HISTORY_STORAGE_KEY, handleStoredHistoryChange);
+if (trustedCredentialStorageContext && ENCRYPTED_CREDENTIAL_VAULT_ENABLED) {
+    storage.watch(CREDENTIAL_STORAGE_STATE_KEY, (value) => {
+        const state = parseCredentialStorageState(value);
+        setCredentialStorageModeState(state?.mode || DEFAULT_CREDENTIAL_STORAGE_MODE);
+    });
+}
 
 function registerSessionCredentialWatch(): void {
     if (!trustedCredentialStorageContext || sessionCredentialWatchRegistered) return;
     try {
         storage.watch(SESSION_CREDENTIALS_STORAGE_KEY, (value) => {
             const nextCredentials = parseStoredCredentials(value) || extractConfigCredentials({});
+            lastCredentialCheckpointSerialized = serializeConfig(nextCredentials);
             const normalized = normalizeConfig(mergeConfigCredentials(config, nextCredentials));
             const serialized = serializeConfig(normalized);
             if (serialized === serializeConfig(config)) return;
@@ -383,7 +425,32 @@ async function initializeConfig(): Promise<void> {
             : null;
         const localCredentialsValue = await storage.getItem<unknown>(LOCAL_CREDENTIALS_STORAGE_KEY);
         const localCredentials = parseStoredCredentials(localCredentialsValue);
-        localCredentialSnapshotPresent = localCredentials !== null;
+
+        let storedCredentialState: CredentialStorageState | null = null;
+        let deviceCredentials: ConfigCredentials | null = null;
+        if (ENCRYPTED_CREDENTIAL_VAULT_ENABLED) {
+            storedCredentialState = parseCredentialStorageState(
+                await storage.getItem<unknown>(CREDENTIAL_STORAGE_STATE_KEY),
+            );
+            // 升级时保留用户已选择的仅会话模式；新安装仍使用新默认值。
+            setCredentialStorageModeState(
+                storedCredentialState?.mode
+                    || (parsed?.persistCredentials === false
+                        ? 'session'
+                        : DEFAULT_CREDENTIAL_STORAGE_MODE),
+                false,
+            );
+            if (storedCredentialState?.mode === 'device' && storedCredentialState.encryptedCredentials) {
+                try {
+                    deviceCredentials = await decryptCredentials(storedCredentialState.encryptedCredentials);
+                } catch (error) {
+                    console.warn('[BabelBox] 设备凭据保险库读取失败', error);
+                }
+            }
+        } else {
+            setCredentialStorageModeState('device', false);
+            deviceCredentials = localCredentials;
+        }
         const rawHistory = await storage.getItem<unknown>(CONFIG_HISTORY_STORAGE_KEY);
         const sanitizedRawHistory = sanitizeConfigHistoryCredentials(rawHistory);
         const historyNeedsSanitizing = rawHistory !== null
@@ -396,12 +463,12 @@ async function initializeConfig(): Promise<void> {
             sessionCredentials = parseStoredCredentials(
                 await storage.getItem<unknown>(SESSION_CREDENTIALS_STORAGE_KEY),
             );
-            sessionCredentialStorageAvailable = true;
         } catch (error) {
             sessionReadError = error;
         }
 
         const activeCredentials = sessionCredentials
+            || deviceCredentials
             || localCredentials
             || legacyCredentials
             || extractConfigCredentials({});
@@ -416,16 +483,22 @@ async function initializeConfig(): Promise<void> {
 
         initialized = true;
         applyConfig(normalized);
+        credentialStorageModeListeners.forEach((listener) => listener(credentialStorageMode));
 
-        const hasLegacyCredentialStorage = Boolean(legacyCredentials || localCredentials || historyNeedsSanitizing);
-        credentialCleanupRequired = hasLegacyCredentialStorage && !normalized.persistCredentials;
-        const mustCheckpointCredentials = hasCredentialData(checkpointCredentials) || hasLegacyCredentialStorage;
+        const hasLegacyCredentialStorage = Boolean(
+            legacyCredentials
+            || localCredentials
+            || historyNeedsSanitizing,
+        );
+        legacyCredentialCleanupRequired = hasLegacyCredentialStorage;
+        const mustCheckpointCredentials = hasCredentialData(checkpointCredentials)
+            || hasLegacyCredentialStorage
+            || deviceCredentials !== null;
 
-        // 凭据迁移严格先写 session 并读回。失败时不改写旧 config/history，亦不删除 local 凭据。
         if (mustCheckpointCredentials) {
             try {
                 if (sessionReadError) throw sessionReadError;
-                await writeAndVerifyCredentials(SESSION_CREDENTIALS_STORAGE_KEY, checkpointCredentials);
+                await writeSessionCredentials(checkpointCredentials);
             } catch (error) {
                 lastPersistedSerialized = serialized;
                 console.warn('[BabelBox] session 凭据不可用，保留旧凭据存储以避免数据丢失', error);
@@ -434,18 +507,24 @@ async function initializeConfig(): Promise<void> {
             }
         }
 
-        if (!normalized.persistCredentials
-            && legacyCredentials
-            && hasCredentialData(legacyCredentials)
-            && !localCredentials) {
-            // 旧 config 的迁移可能在后续 config/history 写入时中断。先建立一个
-            // 可读回的 local 临时检查点，成功清理全部旧载体后再删，避免崩溃窗口丢 Key。
-            await writeAndVerifyCredentials(LOCAL_CREDENTIALS_STORAGE_KEY, checkpointCredentials);
-            localCredentialSnapshotPresent = true;
-        }
-        if (normalized.persistCredentials) {
-            await writeAndVerifyCredentials(LOCAL_CREDENTIALS_STORAGE_KEY, checkpointCredentials);
-            localCredentialSnapshotPresent = true;
+        if (ENCRYPTED_CREDENTIAL_VAULT_ENABLED) {
+            const needsCredentialStateWrite = (!storedCredentialState && credentialStorageMode === 'session')
+                || (credentialStorageMode === 'device' && (
+                    hasLegacyCredentialStorage
+                    || (!storedCredentialState && hasCredentialData(checkpointCredentials))
+                    || (deviceCredentials !== null
+                        && !credentialsEqual(deviceCredentials, checkpointCredentials))
+                    || (storedCredentialState?.mode === 'device'
+                        && !storedCredentialState.encryptedCredentials
+                        && hasCredentialData(checkpointCredentials))
+                ));
+            if (needsCredentialStateWrite) {
+                await writeCredentialStorageState(credentialStorageMode, checkpointCredentials);
+            } else {
+                lastCredentialCheckpointSerialized = serializeConfig(checkpointCredentials);
+            }
+        } else {
+            lastCredentialCheckpointSerialized = serializeConfig(checkpointCredentials);
         }
 
         const nextStoredConfig = {
@@ -463,11 +542,10 @@ async function initializeConfig(): Promise<void> {
             });
         }
         if (historyNeedsSanitizing) await sanitizeStoredHistory(rawHistory);
-        if (!normalized.persistCredentials && hasLegacyCredentialStorage) {
+        if (hasLegacyCredentialStorage) {
             await storage.removeItem(LOCAL_CREDENTIALS_STORAGE_KEY);
-            credentialCleanupRequired = false;
-            localCredentialSnapshotPresent = false;
         }
+        legacyCredentialCleanupRequired = false;
         lastPersistedSerialized = serialized;
         registerSessionCredentialWatch();
     } catch (error) {
@@ -493,6 +571,60 @@ export function subscribeConfig(listener: ConfigListener): () => void {
     listeners.add(listener);
     if (initialized) listener(normalizeConfig(config));
     return () => listeners.delete(listener);
+}
+
+export function getCredentialStorageMode(): CredentialStorageMode {
+    return credentialStorageMode;
+}
+
+export function subscribeCredentialStorageMode(listener: CredentialStorageModeListener): () => void {
+    credentialStorageModeListeners.add(listener);
+    if (initialized) listener(credentialStorageMode);
+    return () => credentialStorageModeListeners.delete(listener);
+}
+
+/** 切到仅会话前先写入 session，再删除设备密文。 */
+export async function setCredentialStorageMode(mode: CredentialStorageMode): Promise<CredentialStorageMode> {
+    if (!trustedCredentialStorageContext) throw new Error('当前上下文无权修改 API 凭据存储方式');
+    await configReady;
+    if (mode === credentialStorageMode) return credentialStorageMode;
+
+    const credentials = extractConfigCredentials(config);
+    writeQueue = writeQueue
+        .catch(() => undefined)
+        .then(async () => {
+            await writeSessionCredentials(credentials);
+            await writeCredentialStorageState(mode, credentials);
+            if (legacyCredentialCleanupRequired) {
+                await sanitizeStoredHistory();
+                await storage.removeItem(LOCAL_CREDENTIALS_STORAGE_KEY);
+                legacyCredentialCleanupRequired = false;
+            }
+        });
+    await writeQueue;
+    return credentialStorageMode;
+}
+
+type CredentialStorageModeMessageResponse = {
+    success?: boolean;
+    error?: string;
+    mode?: CredentialStorageMode;
+} | undefined;
+
+type CredentialStorageModeMessageSender = (message: {
+    type: typeof CREDENTIAL_STORAGE_MODE_MESSAGE;
+    mode: CredentialStorageMode;
+}) => Promise<CredentialStorageModeMessageResponse>;
+
+export async function requestCredentialStorageModeChange(
+    mode: CredentialStorageMode,
+    sendMessage: CredentialStorageModeMessageSender,
+): Promise<CredentialStorageMode> {
+    const response = await sendMessage({type: CREDENTIAL_STORAGE_MODE_MESSAGE, mode});
+    if (response?.success === false) throw new Error(response.error || 'API 凭据存储设置失败');
+    if (!isCredentialStorageMode(response?.mode)) throw new Error('后台没有返回有效的 API 凭据存储方式');
+    setCredentialStorageModeState(response.mode);
+    return response.mode;
 }
 
 /** 翻译计数只做后台原子增量，不提交可能过期的整份页面配置。 */
@@ -533,7 +665,7 @@ export async function requestConfigCountIncrement(
 }
 
 /**
- * 网页/content 发来的保存请求只能修改公开配置；凭据与持久化偏好必须由
+ * 网页/content 发来的保存请求只能修改公开配置；凭据必须由
  * popup/options 等扩展 origin 明确更新，避免无凭据的 content 快照清空后台 session。
  */
 export function prepareConfigSaveRequest(
@@ -554,7 +686,6 @@ export function prepareConfigSaveRequest(
     const targetConfig = normalizeConfig({
         ...sanitizeConfigCredentials(incomingConfig),
         count: currentConfig.count,
-        persistCredentials: currentConfig.persistCredentials,
         videoServiceDefaultMigrated: currentConfig.videoServiceDefaultMigrated,
     });
     const credentials = filterConfigCredentialsForDestination(

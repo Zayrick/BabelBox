@@ -81,11 +81,11 @@ feature
 
 ## 配置与消息
 
-- `src/core/config`：类型、默认值和纯 normalize/validate 规则。
-- `src/services/config`：持久化、历史、保存顺序与凭据协调。
-- `src/platform/storage`：受信任上下文和浏览器存储边界。
+- `src/core/config`：普通配置、凭据存储状态和纯 normalize/validate 规则。
+- `src/services/config`：普通配置持久化、历史、保存顺序与运行时凭据协调。
+- `src/platform/storage`：受信任上下文和基于 IndexedDB 非导出密钥的凭据加密边界。
 
-网页消息和导入文件是不可信输入，在最靠近边界的位置解析一次；模块内部使用已经验证的类型。API 密钥和令牌只进入现有凭据存储，不写入日志、源码、测试夹具或普通配置导出。
+网页消息和导入文件是不可信输入，在最靠近边界的位置解析一次；模块内部使用已经验证的类型。凭据存储状态独立于普通配置，API 密钥和令牌不写入日志、源码、测试夹具、历史快照或配置导出。
 
 ## UI 与样式
 

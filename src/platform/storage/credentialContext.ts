@@ -11,3 +11,6 @@ const TRUSTED_EXTENSION_PROTOCOLS = new Set([
 export function isTrustedCredentialStorageContext(protocol = globalThis.location?.protocol): boolean {
     return typeof protocol === 'string' && TRUSTED_EXTENSION_PROTOCOLS.has(protocol);
 }
+
+/** Userscript 构建通过同名平台模块将该常量替换为 false。 */
+export const ENCRYPTED_CREDENTIAL_VAULT_ENABLED = true;

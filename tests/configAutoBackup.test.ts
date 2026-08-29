@@ -24,11 +24,10 @@ describe('配置定时备份', () => {
         let state = createBaselineConfigAutoBackups({
             ...baseConfig,
             count: 9,
-            persistCredentials: true,
             token: {freeTranslation: 'secret'},
         }, 'baseline');
         const baseline = state.entries[0].config as Record<string, unknown>;
-        expect(['count', 'persistCredentials', 'token'].some((field) => field in baseline)).toBe(false);
+        expect(['count', 'token'].some((field) => field in baseline)).toBe(false);
 
         for (let index = 0; index < 11; index += 1) {
             state = appendConfigAutoBackup(state, {...baseConfig, to: `lang-${index}`}, `time-${index}`);

@@ -60,7 +60,6 @@ export function sanitizeConfigForExport(value: unknown): ConfigRecord {
   ) as ConfigRecord
   delete sanitized.__babelboxConfigRevision
   delete sanitized.count
-  delete sanitized.persistCredentials
   removeDefaultEntries(sanitized, 'system_role', defaultOption.system_role)
   removeDefaultEntries(sanitized, 'user_role', defaultOption.user_role)
   removeEmptyCustomBodies(sanitized)
@@ -68,8 +67,7 @@ export function sanitizeConfigForExport(value: unknown): ConfigRecord {
 }
 
 /**
- * 新版导出不含凭据，因此导入时保留当前 session 凭据；旧版导出若含凭据，
- * 则显式迁移该凭据。持久化开关始终保留当前值，不能由导入文件静默开启。
+ * 导入公开配置时保留当前凭据；旧版文件中的专用凭据仍会迁移。
  */
 export function prepareConfigForImport(value: unknown, current: unknown): Config {
   const currentConfig = normalizeConfig(current)
@@ -85,7 +83,6 @@ export function prepareConfigForImport(value: unknown, current: unknown): Config
   return normalizeConfig(mergeConfigCredentials({
     ...sanitizeConfigCredentials(importedConfig),
     count: currentConfig.count,
-    persistCredentials: currentConfig.persistCredentials,
     videoServiceDefaultMigrated: currentConfig.videoServiceDefaultMigrated,
   }, credentials))
 }

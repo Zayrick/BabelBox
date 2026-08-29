@@ -86,7 +86,7 @@
 
     <el-row v-if="presentation.fields.token" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner">
-        <SettingsHelpLabel content="可选。留空时不发送鉴权信息；填写后默认仅保存在当前浏览器会话。只有在配置管理中明确开启后，才会以明文写入扩展本地存储并跨重启保留。">访问令牌</SettingsHelpLabel>
+        <SettingsHelpLabel content="可选。留空时不发送鉴权信息；填写后默认加密保存在此设备，并在浏览器重启或扩展更新后继续保留。可在配置管理中改为仅本次会话。">访问令牌</SettingsHelpLabel>
       </el-col>
       <el-col :span="12"><el-input v-model="apiKey" type="password" show-password placeholder="可选；留空时不发送鉴权信息" @change="refreshModelCatalogIfSupported" /></el-col>
     </el-row>

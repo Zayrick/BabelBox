@@ -23,6 +23,7 @@ vi.mock('@wxt-dev/storage', () => ({
 // Userscript Vite 使用同名平台替换模块；这里验证该可信 GM 模式下的完整读写生命周期。
 vi.mock('@/src/platform/storage/credentialContext', () => ({
     isTrustedCredentialStorageContext: () => true,
+    ENCRYPTED_CREDENTIAL_VAULT_ENABLED: false,
 }));
 
 async function loadConfigStore() {
