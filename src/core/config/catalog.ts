@@ -562,7 +562,7 @@ export const defaultOption = {
     from: "auto",
     to: "zh-Hans",
     style: 1,
-    display: 1,
+    display: 0,
     hotkey: "Control",
     service: services.freeTranslation,
     custom: "http://localhost:11434/v1/chat/completions",

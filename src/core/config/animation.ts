@@ -7,7 +7,7 @@ export const animationModeOptions = [
 export type AnimationMode = typeof animationModeOptions[number]['value'];
 
 export const ANIMATION_MODES: readonly AnimationMode[] = animationModeOptions.map(({value}) => value);
-export const DEFAULT_ANIMATION_MODE: AnimationMode = 'default';
+export const DEFAULT_ANIMATION_MODE: AnimationMode = 'shimmer';
 
 export function normalizeAnimationMode(
     value: unknown,
@@ -16,8 +16,6 @@ export function normalizeAnimationMode(
     if (typeof value === 'string' && ANIMATION_MODES.includes(value as AnimationMode)) {
         return value as AnimationMode;
     }
-    if (value === true) return 'default';
-    if (value === false) return 'static';
     if (legacyAnimations === false) return 'static';
     return DEFAULT_ANIMATION_MODE;
 }

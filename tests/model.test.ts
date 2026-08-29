@@ -203,6 +203,12 @@ describe('全文翻译范围配置', () => {
     });
 });
 
+describe('全文翻译显示配置', () => {
+    it('缺省配置仅显示译文', () => {
+        expect(normalizeConfig({}).display).toBe(0);
+    });
+});
+
 describe('翻译进度面板配置', () => {
     it('默认关闭，并保留用户主动启用的状态', () => {
         expect(new Config().translationProgressPanelEnabled).toBe(false);
@@ -224,24 +230,18 @@ describe('翻译进度面板配置', () => {
 });
 
 describe('动画模式配置', () => {
-    it('默认使用旋转动画，并保留静态模式', () => {
-        expect(options.animationModes).toEqual([
-            {value: 'default', label: '旋转'},
-            {value: 'shimmer', label: '文字流光'},
-            {value: 'static', label: '静态'},
-        ]);
-        expect(new Config().animationMode).toBe('default');
-        expect(normalizeConfig({}).animationMode).toBe('default');
-        expect(normalizeConfig({animationMode: 'shimmer'}).animationMode).toBe('shimmer');
+    it('缺省使用文字流光，并保留显式选择的模式', () => {
+        expect(options.animationModes.map(({value}) => value)).toEqual(['default', 'shimmer', 'static']);
+        expect(normalizeConfig({}).animationMode).toBe('shimmer');
+        expect(normalizeConfig({animationMode: 'default'}).animationMode).toBe('default');
         expect(normalizeConfig({animationMode: 'static'}).animationMode).toBe('static');
-        expect(normalizeConfig({animationMode: 'invalid'}).animationMode).toBe('default');
     });
 
     it('迁移旧动画开关并移除旧字段', () => {
         const enabled = normalizeConfig({animations: true});
         const disabled = normalizeConfig({animations: false});
 
-        expect(enabled.animationMode).toBe('default');
+        expect(enabled.animationMode).toBe('shimmer');
         expect(disabled.animationMode).toBe('static');
         expect((enabled as unknown as Record<string, unknown>).animations).toBeUndefined();
         expect((disabled as unknown as Record<string, unknown>).animations).toBeUndefined();

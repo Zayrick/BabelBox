@@ -1277,15 +1277,7 @@ function resolveStatefulMutationTarget(element: Element): HTMLElement | false {
     return false;
 }
 
-/**
- * Renderer/code/no-translate descendants are atomic host-owned regions. Their
- * internal churn must not invalidate the translated prose ancestor. Attribute
- * changes intentionally exclude the mutation target itself: adding/removing a
- * protection marker must restore/reclassify the old translation, while style
- * churn on an already-protected root reaches the debounced source-slot check.
- * Extension artifacts are deliberately excluded: isOwnMutation runs first,
- * and host tampering inside a wrapper must continue through the stale path.
- */
+/** Protected descendants may redraw without changing their translated prose owner. */
 function isCoreProtectedDescendantMutation(
     node: Node,
     core: ReturnType<typeof getCurrentTranslationCore>,
@@ -1305,15 +1297,7 @@ function isCoreProtectedDescendantMutation(
     return false;
 }
 
-/**
- * Materializing an inline run moves its source nodes into a synthetic span and
- * then appends one loading spinner. Those real childList records are delivered
- * after beginTranslation, while an asynchronous provider is still pending.
- * Accept them only while the exact source ownership, HTML and Text-slot
- * identities captured for this generation remain intact. A host insertion --
- * including a lookalike BabelBox artifact -- necessarily fails one of these
- * checks and continues through the stale/restart path.
- */
+/** Match inline-run materialization records against the active loading snapshot. */
 function isIntactLoadingSyntheticChildList(
     target: HTMLElement,
     state: TranslationState,
@@ -1353,9 +1337,7 @@ function isOwnMutation(
         exactMutationElement && isTranslationLayoutOverrideMutation(exactMutationElement as HTMLElement)) {
         return true;
     }
-    // 不能用“位于任意插件节点内”作为判断：站点可能直接改写双语 wrapper
-    // 的文本，必须让这类 mutation 进入 stale/retranslate 分支。加载/错误节点
-    // 没有宿主正文，才可以直接视为插件自身变化。
+    // 加载和错误节点只包含扩展 UI；双语内容仍需比对快照，以识别宿主改写。
     if (mutation.type !== "childList" &&
         isElementNode(mutation.target) &&
         mutation.target.matches('[data-babelbox-translation-owned="true"]') &&
@@ -1403,11 +1385,7 @@ function isOwnMutation(
         return false;
     }
     if (state.phase !== "translated") return false;
-    // MutationObserver records describe earlier operations but are inspected
-    // against the callback's final DOM. A cache hit can finish the translation
-    // before records for source materialization and spinner removal are delivered.
-    // Ignore that transaction only while the exact committed owner DOM and Text
-    // identities still match this generation; a real host edit breaks the snapshot.
+    // 回调看到的是最终 DOM；提交快照仍完全一致时，延迟送达的渲染记录属于当前译文。
     if (mutation.type === "childList") {
         let committedDOMIsCurrent = committedDOMChecks.get(state);
         if (committedDOMIsCurrent === undefined) {
@@ -1427,16 +1405,12 @@ function isOwnMutation(
             ? mutation.target
             : mutation.target.parentElement;
 
-        // wrapper 内部的变化只有在内容仍等于插件最后写入的快照时才算插件自身；
-        // 如果站点脚本改写了译文，必须让后续分支恢复并重新排队。
+        // wrapper 内容保持提交快照时，内部 mutation 属于当前译文。
         if (mutationParent && (mutationParent === wrapper || wrapper.contains(mutationParent))) {
             return wrapper.innerHTML === state.bilingualHTML;
         }
 
-        // 插件会先插入 loading，完成后再移除 loading 并插入译文 wrapper。
-        // 这两类 childList mutation 都可能落在宿主节点上；只要所有增删节点
-        // 都是扩展 artifact，且插件自己的最终快照仍然存在，就不能触发重译。
-        // 若 wrapper 已被宿主移除，则保留 false，让后续逻辑恢复并重新排队。
+        // 宿主节点上的 loading 和译文增删记录以最终 wrapper 快照确认归属。
         if (mutation.type === "childList") {
             const changedNodes = [...Array.from(mutation.addedNodes), ...Array.from(mutation.removedNodes)];
             if (changedNodes.length > 0 && changedNodes.every(isTranslationArtifact)) {
@@ -1529,9 +1503,7 @@ function discardOwnersRemovedByHost(
         const syntheticState = syntheticParent?.matches('[data-babelbox-translation-segment="true"]')
             ? getTranslationState(syntheticParent as HTMLElement)
             : undefined;
-        // materializeCandidate moves a direct inline run into an owned segment
-        // before MutationObserver delivery. Descendant translation owners remain
-        // live in that exact segment and must not be treated as host deletions.
+        // materializeCandidate moves live source nodes into its owned segment.
         if (removed.isConnected && syntheticState?.syntheticSegment === true) return;
         getTranslationOwnersForRemovedNode(removed).forEach((owner) => owners.add(owner));
     });
@@ -1554,9 +1526,7 @@ function discardOwnersRemovedByHost(
         }
         session.statefulAttributeRescanTargets.delete(owner);
         if (removedOnlyFailureUi) {
-            // Keep an error tombstone. Otherwise a framework that strips our
-            // retry child would make the next unrelated mutation auto-request
-            // the same permanently failing provider forever.
+            // 保留失败状态，避免页面移除重试 UI 后自动重复同一请求。
             removeScheduledForStateTarget(session, owner);
             detachFailedTranslationUi(owner, state);
             return;
@@ -1564,8 +1534,7 @@ function discardOwnersRemovedByHost(
         unregisterSessionStatefulTarget(session, owner);
         shouldRescan = true;
         removeScheduledForStateTarget(session, owner);
-        // A host removal is authoritative. Clear our state/artifacts without
-        // reattaching stale source nodes that the framework intentionally removed.
+        // 宿主删除后清理状态，不重新挂载已移除的源节点。
         discardTranslation(owner, state);
     });
     return {shouldRescan};
@@ -1660,14 +1629,9 @@ function createFullPageMutationObserver(
         if (!session.active || fullPageSession !== session) return;
         scheduleDisconnectedCandidatePrune(session);
         const core = getCurrentTranslationCore();
-        // Materializing a wide inline run can enqueue one childList record per
-        // moved source node. Its exact snapshot is stable for this callback, so
-        // validate each loading generation once instead of cloning O(records).
+        // 同一回调内只验证一次 inline run 的 loading 快照。
         const loadingSyntheticChecks = new WeakMap<TranslationState, boolean>();
-        // MathJax v2 can emit hundreds of direct-parent records in one callback.
-        // The live DOM is already at the callback's final state, so compare each
-        // stateful source/slot snapshot once instead of walking a long P for
-        // every Preview <-> staging-span record.
+        // MathJax 批量 mutation 共用一次 source/slot 快照检查。
         const statefulChildListChecks = new WeakMap<TranslationState, boolean>();
         const committedDOMChecks = new WeakMap<TranslationState, boolean>();
         for (const mutation of mutations) {
@@ -1695,11 +1659,7 @@ function createFullPageMutationObserver(
 
             if (mutation.type === "childList") {
                 const changedNodes = [...Array.from(mutation.addedNodes), ...Array.from(mutation.removedNodes)];
-                // Normal extension insertion/removal targets the host owner. If
-                // the mutation target is inside an artifact, isOwnMutation has
-                // already compared every available state snapshot; treating its
-                // newly appended children as artifacts again would hide host
-                // tampering inside bilingual/loading/retry wrappers.
+                // artifact 内部变化已由 isOwnMutation 比对快照，此处只过滤宿主上的扩展节点增删。
                 if (!isTranslationArtifact(mutation.target) &&
                     changedNodes.length > 0 && changedNodes.every((node) => {
                         if (isTranslationArtifact(node)) return true;
@@ -1713,10 +1673,7 @@ function createFullPageMutationObserver(
                 const changedTarget = childListTarget;
                 const changedState = changedTarget ? getTranslationState(changedTarget) : undefined;
 
-                // A protected renderer can replace staging children without
-                // changing the translatable source or its exact Text slots.
-                // Mutations inside or removing the current translation artifact
-                // remain authoritative host changes and restart immediately.
+                // 受保护渲染器可更新内部节点；译文 artifact 的变化仍会重启当前目标。
                 if (changedTarget && changedState && !reconciledChildList) {
                     const touchesArtifact = isTranslationArtifact(mutation.target) ||
                         mutationTouchesCurrentTranslationArtifact(mutation, changedState);
@@ -1730,13 +1687,8 @@ function createFullPageMutationObserver(
                     }
                 }
 
-                // A pure removal can turn a former structural container into a
-                // valid paragraph. Reclassify the mutation target in all cases.
+                // 重扫目标同时覆盖新增后代，并重新分类纯删除后的容器。
                 enqueueFullPageRescan(session, mutation.target);
-
-                // Scanning the mutation target already includes every added
-                // descendant. Enqueuing each child separately turns one React
-                // commit into dozens of redundant dirty roots.
             } else if (mutation.type === "characterData") {
                 const target = mutation.target.parentElement
                     ? resolveStatefulMutationTarget(mutation.target.parentElement)

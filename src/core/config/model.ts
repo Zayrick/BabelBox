@@ -98,7 +98,7 @@ export class Config {
     to: string;
     hotkey: string;
     style: number;
-    display: number = 1;
+    display: number;
     service: string;
     translationServices: TranslationServiceInstance[]; // 已添加的翻译服务实例
     serviceCredentials: Record<string, TranslationServiceCredential>; // 按实例隔离的凭据

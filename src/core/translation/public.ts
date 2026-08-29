@@ -44,7 +44,6 @@ export {
 export {
     createDefaultTranslationFilterConfig,
     createTranslationFilterPolicy,
-    createTranslationFilterSite,
     getTranslationFilterSite,
     normalizeTranslationFilterConfig,
     normalizeTranslationFilterRules,

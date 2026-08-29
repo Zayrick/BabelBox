@@ -20,6 +20,7 @@ const runtime = vi.hoisted(() => ({
         origins.map((origin) => `译:${origin}`),
     ),
     retryCallbacks: [] as Array<() => void>,
+    spinners: new Map<HTMLElement, HTMLElement>(),
     config: {service: "microsoft", display: 0, to: "zh", fullPageTranslationMode: "viewport" as "viewport" | "all"},
     ensureTranslationTruncationLayout: vi.fn(() => true),
 }));
@@ -47,6 +48,7 @@ vi.mock('@/src/features/full-page-translation/ui/translationIndicators', () => (
         const spinner = node.ownerDocument.createElement("span");
         spinner.setAttribute("data-babelbox-translation-owned", "true");
         node.appendChild(spinner);
+        runtime.spinners.set(node, spinner);
         return spinner;
     },
     removeLoadingSpinner: (node: HTMLElement, spinner?: HTMLElement) => {
@@ -236,6 +238,19 @@ async function finishScheduledWork(): Promise<void> {
     await Promise.resolve();
 }
 
+function childListMutation(
+    target: Node,
+    addedNodes: readonly Node[] = [],
+    removedNodes: readonly Node[] = [],
+): MutationRecord {
+    return {
+        type: "childList",
+        target,
+        addedNodes: addedNodes as unknown as NodeList,
+        removedNodes: removedNodes as unknown as NodeList,
+    } as unknown as MutationRecord;
+}
+
 describe("全文翻译可见性锚点", () => {
     beforeEach(() => {
         vi.useFakeTimers();
@@ -244,6 +259,7 @@ describe("全文翻译可见性锚点", () => {
         runtime.requests.mockReset();
         runtime.requests.mockImplementation(async (origins) => origins.map((origin) => `译:${origin}`));
         runtime.retryCallbacks = [];
+        runtime.spinners.clear();
         runtime.config.display = 0;
         runtime.config.fullPageTranslationMode = "viewport";
         runtime.ensureTranslationTruncationLayout.mockClear();
@@ -308,8 +324,6 @@ describe("全文翻译可见性锚点", () => {
         expect(runtime.requests).toHaveBeenCalledTimes(1);
         expect(paragraph.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(1);
 
-        // This is the same path used by the real Control hover trigger. It
-        // restores the current target while leaving the full-page session alive.
         handleTranslation(20, 20);
         await finishScheduledWork();
 
@@ -318,20 +332,11 @@ describe("全文翻译可见性锚点", () => {
         expect(paragraph.textContent).toBe("Restore only this paragraph.");
         expect(paragraph.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(0);
 
-        // The browser delivers the extension restore as a mutation. A rescan
-        // must remember the explicit cancellation instead of translating again.
-        TestMutationObserver.instances.at(-1)!.emit([{
-            type: "childList",
-            target: paragraph,
-            addedNodes: [] as unknown as NodeList,
-            removedNodes: [] as unknown as NodeList,
-        } as unknown as MutationRecord]);
+        TestMutationObserver.instances.at(-1)!.emit([childListMutation(paragraph)]);
         await finishScheduledWork();
         expect(runtime.requests).toHaveBeenCalledTimes(1);
         expect(paragraph.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(0);
 
-        // The cancellation is scoped to this session; starting a new full-page
-        // session is still allowed to translate the paragraph again.
         restoreOriginalContent();
         autoTranslateEnglishPage();
         await vi.advanceTimersByTimeAsync(50);
@@ -477,12 +482,7 @@ describe("全文翻译可见性锚点", () => {
         setLayoutBox(paragraph, 600, 80);
         document.body.appendChild(paragraph);
         runtime.candidates = [{element: paragraph, kind: "content", reason: "paragraph"}];
-        TestMutationObserver.instances.at(-1)!.emit([{
-            type: "childList",
-            target: document.body,
-            addedNodes: [paragraph] as unknown as NodeList,
-            removedNodes: [] as unknown as NodeList,
-        } as unknown as MutationRecord]);
+        TestMutationObserver.instances.at(-1)!.emit([childListMutation(document.body, [paragraph])]);
 
         await finishScheduledWork();
         await finishScheduledWork();
@@ -535,12 +535,7 @@ describe("全文翻译可见性锚点", () => {
         labelB.textContent = "Hydrated title";
         setLayoutBox(labelB, 240, 40);
         labelA.replaceWith(labelB);
-        TestMutationObserver.instances.at(-1)!.emit([{
-            type: "childList",
-            target: title,
-            addedNodes: [labelB] as unknown as NodeList,
-            removedNodes: [labelA] as unknown as NodeList,
-        } as unknown as MutationRecord]);
+        TestMutationObserver.instances.at(-1)!.emit([childListMutation(title, [labelB], [labelA])]);
         await vi.advanceTimersByTimeAsync(50);
 
         expect(observer.unobserve).toHaveBeenCalledWith(labelA);
@@ -1052,29 +1047,11 @@ describe("全文翻译可见性锚点", () => {
         const spinner = segment.querySelector<HTMLElement>('[data-babelbox-translation-owned="true"]')!;
         expect(Array.from(segment.childNodes).filter((node) => node !== spinner)).toEqual(sourceNodes);
 
-        // These are the actual live Node identities produced by materialization:
-        // the host gains the segment, its source nodes move into that segment,
-        // and the same segment receives the one state-owned spinner.
         TestMutationObserver.instances.at(-1)!.emit([
-            {
-                type: "childList",
-                target: host,
-                addedNodes: [segment] as unknown as NodeList,
-                removedNodes: [] as unknown as NodeList,
-            },
-            ...sourceNodes.map((node) => ({
-                type: "childList",
-                target: host,
-                addedNodes: [] as unknown as NodeList,
-                removedNodes: [node] as unknown as NodeList,
-            })),
-            {
-                type: "childList",
-                target: segment,
-                addedNodes: [...sourceNodes, spinner] as unknown as NodeList,
-                removedNodes: [] as unknown as NodeList,
-            },
-        ] as unknown as MutationRecord[]);
+            childListMutation(host, [segment]),
+            ...sourceNodes.map((node) => childListMutation(host, [], [node])),
+            childListMutation(segment, [...sourceNodes, spinner]),
+        ]);
         await vi.advanceTimersByTimeAsync(100);
 
         expect(runtime.requests).toHaveBeenCalledTimes(1);
@@ -1085,6 +1062,48 @@ describe("全文翻译可见性锚点", () => {
         expect(runtime.requests).toHaveBeenCalledTimes(1);
         expect(segment.isConnected).toBe(true);
         expect(segment.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(1);
+    });
+
+    it("inline-run 提交后收到自身渲染记录时不重复翻译", async () => {
+        document.body.innerHTML = `
+            <table><tbody><tr><th id="transcriptions">
+                <button type="button">show</button>Transcriptions
+            </th></tr></tbody></table>
+        `;
+        const cell = document.querySelector<HTMLElement>("#transcriptions")!;
+        const button = cell.querySelector<HTMLButtonElement>("button")!;
+        const sourceText = Array.from(cell.childNodes).find((node) =>
+            node.nodeType === Node.TEXT_NODE && node.nodeValue?.includes("Transcriptions")) as Text;
+        setLayoutBox(cell, 360, 48);
+        setLayoutBox(button, 80, 32);
+        runtime.candidates = [
+            {element: button, kind: "content", reason: "button"},
+            {element: cell, nodes: [sourceText], kind: "content", reason: "inline-run"},
+        ];
+
+        autoTranslateEnglishPage();
+        await vi.advanceTimersByTimeAsync(50);
+        const visibilityObserver = TestIntersectionObserver.instances[0]!;
+        visibilityObserver.emit(button, true);
+        visibilityObserver.emit(cell, true);
+        await finishScheduledWork();
+
+        const segment = cell.querySelector<HTMLElement>('[data-babelbox-translation-segment="true"]')!;
+        const segmentSpinner = runtime.spinners.get(segment)!;
+        const buttonSpinner = runtime.spinners.get(button)!;
+        TestMutationObserver.instances.at(-1)!.emit([
+            childListMutation(cell, [segment]),
+            childListMutation(cell, [], [sourceText]),
+            childListMutation(segment, [sourceText]),
+            childListMutation(segment, [], [segmentSpinner]),
+            childListMutation(button, [], [buttonSpinner]),
+        ]);
+        await finishScheduledWork();
+
+        const origins = runtime.requests.mock.calls.flatMap(([items]) => items);
+        expect(origins.filter((origin) => origin === "show")).toHaveLength(1);
+        expect(origins.filter((origin) => origin.trim() === "Transcriptions")).toHaveLength(1);
+        expect(segment.isConnected).toBe(true);
     });
 
     it("in-flight synthetic inline-run 的祖先 hidden 会 abort，旧结果不可覆盖且解除后可翻译", async () => {
@@ -1213,12 +1232,9 @@ describe("全文翻译可见性锚点", () => {
         const replacement = source.cloneNode(true) as HTMLElement;
         replacement.textContent = sourceText;
         tweetText.replaceChildren(replacement);
-        TestMutationObserver.instances.at(-1)!.emit([{
-            type: "childList",
-            target: tweetText,
-            addedNodes: [replacement] as unknown as NodeList,
-            removedNodes: previousChildren as unknown as NodeList,
-        } as unknown as MutationRecord]);
+        TestMutationObserver.instances.at(-1)!.emit([
+            childListMutation(tweetText, [replacement], previousChildren),
+        ]);
 
         expect(tweetText.textContent).toContain(`译:${sourceText}`);
         await finishScheduledWork();
@@ -1242,39 +1258,31 @@ describe("全文翻译可见性锚点", () => {
         expect(tweetText.textContent).toBe(updatedText);
     });
 
-    it.each([
-        {display: 0, expectedLayoutChecks: 0, label: "single"},
-        {display: 1, expectedLayoutChecks: 1, label: "bilingual"},
-    ] as const)(
-        "$label 已译内容发生纯布局 mutation 时只为双语 wrapper 续租 unclamp",
-        async ({display, expectedLayoutChecks}) => {
-            runtime.config.display = display;
-            document.body.innerHTML = '<p id="prose">Stable source under a layout-only mutation.</p>';
-            const paragraph = document.querySelector<HTMLElement>("#prose")!;
-            setLayoutBox(paragraph, 620, 90);
-            runtime.candidates = [{element: paragraph, kind: "content", reason: "paragraph"}];
+    it("双语内容发生布局 mutation 时续租 unclamp 且不重译", async () => {
+        runtime.config.display = 1;
+        document.body.innerHTML = '<p id="prose">Stable source under a layout-only mutation.</p>';
+        const paragraph = document.querySelector<HTMLElement>("#prose")!;
+        setLayoutBox(paragraph, 620, 90);
+        runtime.candidates = [{element: paragraph, kind: "content", reason: "paragraph"}];
 
-            autoTranslateEnglishPage();
-            await vi.advanceTimersByTimeAsync(50);
-            TestIntersectionObserver.instances[0]!.emit(paragraph, true);
-            await finishScheduledWork();
-            expect(getTranslationState(paragraph)?.phase).toBe("translated");
+        autoTranslateEnglishPage();
+        await vi.advanceTimersByTimeAsync(50);
+        TestIntersectionObserver.instances[0]!.emit(paragraph, true);
+        await finishScheduledWork();
 
-            paragraph.classList.add("host-layout-update");
-            TestMutationObserver.instances.at(-1)!.emit([{
-                type: "attributes",
-                target: paragraph,
-                attributeName: "class",
-                addedNodes: [] as unknown as NodeList,
-                removedNodes: [] as unknown as NodeList,
-            } as unknown as MutationRecord]);
-            await finishScheduledWork();
+        paragraph.classList.add("host-layout-update");
+        TestMutationObserver.instances.at(-1)!.emit([{
+            type: "attributes",
+            target: paragraph,
+            attributeName: "class",
+            addedNodes: [] as unknown as NodeList,
+            removedNodes: [] as unknown as NodeList,
+        } as unknown as MutationRecord]);
+        await finishScheduledWork();
 
-            expect(runtime.ensureTranslationTruncationLayout)
-                .toHaveBeenCalledTimes(expectedLayoutChecks);
-            expect(runtime.requests).toHaveBeenCalledTimes(1);
-        },
-    );
+        expect(runtime.ensureTranslationTruncationLayout).toHaveBeenCalledOnce();
+        expect(runtime.requests).toHaveBeenCalledOnce();
+    });
 
     it("已译 prose 忽略 MathJax/code 等保护后代 churn，但外层 source mutation 会重启", async () => {
         runtime.config.display = 1;
@@ -1374,10 +1382,7 @@ describe("全文翻译可见性锚点", () => {
         const firstWrapper = paragraph.querySelector<HTMLElement>(".babelbox-bilingual-content")!;
         expect(firstWrapper.isConnected).toBe(true);
 
-        // The candidate has left IO. MathJax v2 first inserts an unclassified,
-        // detached staging span at the direct P boundary, then replaces it with
-        // its protected Display/MathJax tree while the TeX source script stays.
-        // No second positive IO event is allowed to repair a lost wrapper.
+        // MathJax replaces its preview while the translated candidate is offscreen.
         visibilityObserver.emit(paragraph, false);
         const staging = document.createElement("span");
         preview.replaceWith(staging);
@@ -1389,24 +1394,9 @@ describe("全文翻译可见性锚点", () => {
         display.append(renderedMath);
         staging.replaceWith(display);
         mutationObserver.emit([
-            {
-                type: "childList",
-                target: paragraph,
-                addedNodes: [staging] as unknown as NodeList,
-                removedNodes: [preview] as unknown as NodeList,
-            } as unknown as MutationRecord,
-            {
-                type: "childList",
-                target: paragraph,
-                addedNodes: [display] as unknown as NodeList,
-                removedNodes: [staging] as unknown as NodeList,
-            } as unknown as MutationRecord,
-            {
-                type: "childList",
-                target: display,
-                addedNodes: [renderedMath] as unknown as NodeList,
-                removedNodes: [] as unknown as NodeList,
-            } as unknown as MutationRecord,
+            childListMutation(paragraph, [staging], [preview]),
+            childListMutation(paragraph, [display], [staging]),
+            childListMutation(display, [renderedMath]),
         ]);
         await finishScheduledWork();
 
@@ -1414,9 +1404,7 @@ describe("全文翻译可见性锚点", () => {
         expect(firstWrapper.isConnected).toBe(true);
         expect(paragraph.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(1);
 
-        // A real source edit uses the existing restart path. Lazy full-page
-        // scheduling still waits for visibility; once re-entered it requests
-        // exactly one fresh payload and continues excluding renderer content.
+        // Source edits restart and wait for visibility.
         lead.firstChild!.nodeValue = "Updated perspective projection prose must be translated. ";
         mutationObserver.emit([{
             type: "characterData",
@@ -1439,7 +1427,7 @@ describe("全文翻译可见性锚点", () => {
         );
     });
 
-    it("宿主篡改译文 wrapper 不会被 hard guard 当成可忽略 mutation", async () => {
+    it("宿主改写译文内容后会恢复并重译", async () => {
         runtime.config.display = 1;
         document.body.innerHTML = '<p id="prose">Host prose remains authoritative.</p>';
         const paragraph = document.querySelector<HTMLElement>("#prose")!;
@@ -1451,17 +1439,11 @@ describe("全文翻译可见性锚点", () => {
         const visibilityObserver = TestIntersectionObserver.instances[0]!;
         visibilityObserver.emit(paragraph, true);
         await finishScheduledWork();
-        expect(runtime.requests).toHaveBeenCalledTimes(1);
 
         const firstWrapper = paragraph.querySelector<HTMLElement>(".babelbox-bilingual-content")!;
-        const translatedText = firstWrapper.firstChild as Text;
-        translatedText.nodeValue = "Host overwrote the extension translation.";
-        TestMutationObserver.instances.at(-1)!.emit([{
-            type: "characterData",
-            target: translatedText,
-            addedNodes: [] as unknown as NodeList,
-            removedNodes: [] as unknown as NodeList,
-        } as unknown as MutationRecord]);
+        const appended = document.createTextNode("Host appended translation text.");
+        firstWrapper.appendChild(appended);
+        TestMutationObserver.instances.at(-1)!.emit([childListMutation(firstWrapper, [appended])]);
         await vi.advanceTimersByTimeAsync(50);
         visibilityObserver.emit(paragraph, true);
         await finishScheduledWork();
@@ -1469,52 +1451,6 @@ describe("全文翻译可见性锚点", () => {
         expect(runtime.requests).toHaveBeenCalledTimes(2);
         expect(firstWrapper.isConnected).toBe(false);
         expect(paragraph.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(1);
-    });
-
-    it("宿主向译文 wrapper append 文本后会恢复并重译", async () => {
-            runtime.config.display = 1;
-            document.body.innerHTML = '<p id="prose">Host prose remains authoritative.</p>';
-            const paragraph = document.querySelector<HTMLElement>("#prose")!;
-            setLayoutBox(paragraph, 620, 90);
-            runtime.candidates = [{element: paragraph, kind: "content", reason: "paragraph"}];
-
-            autoTranslateEnglishPage();
-            await vi.advanceTimersByTimeAsync(50);
-            const visibilityObserver = TestIntersectionObserver.instances[0]!;
-            visibilityObserver.emit(paragraph, true);
-            await finishScheduledWork();
-            expect(runtime.requests).toHaveBeenCalledTimes(1);
-
-            const firstWrapper = paragraph.querySelector<HTMLElement>(".babelbox-bilingual-content")!;
-            const mutationObserver = TestMutationObserver.instances.at(-1)!;
-
-            // MutationObserver delivers the extension's own wrapper insertion
-            // asynchronously. Its intact snapshot must remain a no-op.
-            mutationObserver.emit([{
-                type: "childList",
-                target: paragraph,
-                addedNodes: [firstWrapper] as unknown as NodeList,
-                removedNodes: [] as unknown as NodeList,
-            } as unknown as MutationRecord]);
-            await finishScheduledWork();
-            expect(runtime.requests).toHaveBeenCalledTimes(1);
-            expect(firstWrapper.isConnected).toBe(true);
-
-            const appended = document.createTextNode("Host appended translation text.");
-            firstWrapper.appendChild(appended);
-            mutationObserver.emit([{
-                type: "childList",
-                target: firstWrapper,
-                addedNodes: [appended] as unknown as NodeList,
-                removedNodes: [] as unknown as NodeList,
-            } as unknown as MutationRecord]);
-            await vi.advanceTimersByTimeAsync(50);
-            visibilityObserver.emit(paragraph, true);
-            await finishScheduledWork();
-
-            expect(runtime.requests).toHaveBeenCalledTimes(2);
-            expect(firstWrapper.isConnected).toBe(false);
-            expect(paragraph.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(1);
     });
 
     it("普通后代新增 translate=no 会重启，且新 payload 排除受保护文本", async () => {

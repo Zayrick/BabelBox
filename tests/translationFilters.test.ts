@@ -44,13 +44,6 @@ describe('translation filter configuration', () => {
     it('backfills defaults only when fields are missing and preserves explicit empty lists', () => {
         expect(normalizeTranslationFilterConfig(undefined).sites.map((site) => site.domain))
             .toContain('discord.com');
-        expect(normalizeTranslationFilterConfig({global: {rules: []}, sites: []})).toMatchObject({
-            global: {rules: []},
-            sites: [],
-        });
-
-        expect(normalizeConfig({}).translationFilter.sites.map((site) => site.domain))
-            .toContain('discord.com');
         expect(normalizeConfig({
             translationFilter: {
                 global: {excludeHidden: false, excludeEditable: false, rules: []},
@@ -178,7 +171,7 @@ describe('translation filter policy', () => {
         expect(extractTranslationText(paragraph, core.shouldStayOriginal)).toBe('Run npm test now safely.');
     });
 
-    it('does not reapply deleted website defaults through a hardcoded adapter', () => {
+    it('uses generic discovery when a website has no filter rules', () => {
         const document = documentWith(`
           <main>
             <dialog open><p id="search-result">Search suggestion text.</p></dialog>

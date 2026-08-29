@@ -447,19 +447,14 @@ export function getTranslationFilterSite(
     return config.sites.find((site) => site.domain === domain) ?? null;
 }
 
-export function createTranslationFilterSite(domainInput: string | URL): TranslationFilterSiteConfig | null {
-    const domain = getSiteBaseDomain(domainInput);
-    return domain ? {domain, rules: []} : null;
-}
-
 export function upsertTranslationFilterSite(
     config: TranslationFilterConfig,
     siteValue: TranslationFilterSiteConfig,
 ): TranslationFilterConfig {
-    const site = createTranslationFilterSite(siteValue.domain);
-    if (!site) return normalizeTranslationFilterConfig(config);
-    site.rules = normalizeTranslationFilterRules(siteValue.rules);
     const normalized = normalizeTranslationFilterConfig(config);
+    const domain = getSiteBaseDomain(siteValue.domain);
+    if (!domain) return normalized;
+    const site = {domain, rules: normalizeTranslationFilterRules(siteValue.rules)};
     const existingIndex = normalized.sites.findIndex((item) => item.domain === site.domain);
     if (existingIndex < 0) normalized.sites.push(site);
     else normalized.sites.splice(existingIndex, 1, site);

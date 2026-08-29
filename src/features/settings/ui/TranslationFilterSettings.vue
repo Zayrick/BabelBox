@@ -115,7 +115,6 @@ import {ElMessageBox} from 'element-plus';
 import {getSiteBaseDomain} from '@/src/core/site-rules/domain';
 import {
   createDefaultTranslationFilterConfig,
-  createTranslationFilterSite,
   normalizeTranslationFilterConfig,
   removeTranslationFilterSite,
   upsertTranslationFilterSite,
@@ -169,9 +168,7 @@ function addSite() {
     siteError.value = `${domain} 已经存在。`;
     return;
   }
-  const site = createTranslationFilterSite(domain);
-  if (!site) return;
-  commit(upsertTranslationFilterSite(filterConfig.value, site));
+  commit(upsertTranslationFilterSite(filterConfig.value, {domain, rules: []}));
   siteInput.value = '';
   siteError.value = '';
 }
