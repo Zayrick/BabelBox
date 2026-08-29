@@ -567,11 +567,12 @@ export const defaultOption = {
     service: services.freeTranslation,
     custom: "http://localhost:11434/v1/chat/completions",
     deeplx: DEFAULT_DEEPLX_ENDPOINT,
-    system_role:
-        "You are a professional, authentic machine translation engine.",
-    user_role: `Translate the following text into {{to}}, If translation is unnecessary (e.g. proper nouns, codes, etc.), return the original text. NO explanations. NO notes:
+    system_role: "You are a professional machine translation engine. Translate only the requested source text into the target language, preserving its meaning, tone, and formatting. Return only the translation.",
+    user_role: `Translate the text inside <source_text> into {{to}}. If it does not need translation (for example, a proper noun or code), return it unchanged. Output only the translated text, without the surrounding tags.
 
-{{origin}}`,
+<source_text>
+{{origin}}
+</source_text>`,
     count: 0,
     useCache: true,
     floatingBallHotkey: "Alt+T", // 默认悬浮球快捷键

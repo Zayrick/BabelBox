@@ -321,6 +321,17 @@ const modelMigrations: Record<string, Record<string, string>> = {
     },
 };
 
+const LEGACY_DEFAULT_AI_SYSTEM_ROLE = "You are a professional, authentic machine translation engine.";
+const LEGACY_DEFAULT_AI_USER_ROLE = `Translate the following text into {{to}}, If translation is unnecessary (e.g. proper nouns, codes, etc.), return the original text. NO explanations. NO notes:
+
+{{origin}}`;
+
+function migrateLegacyDefaultPrompt(mapping: IMapping, legacyValue: string, currentValue: string): void {
+    for (const key of Object.keys(mapping)) {
+        if (mapping[key] === legacyValue) mapping[key] = currentValue;
+    }
+}
+
 /**
  * 将存储或导入的普通对象补齐为当前配置结构，并迁移已退役或错误的模型编号。
  */
@@ -364,6 +375,16 @@ export function normalizeConfig(value: unknown): Config {
         ...userRoleFactory(),
         ...normalizeStringMapping(source.user_role),
     };
+    migrateLegacyDefaultPrompt(
+        normalized.system_role,
+        LEGACY_DEFAULT_AI_SYSTEM_ROLE,
+        defaultOption.system_role,
+    );
+    migrateLegacyDefaultPrompt(
+        normalized.user_role,
+        LEGACY_DEFAULT_AI_USER_ROLE,
+        defaultOption.user_role,
+    );
     normalized.customBody = normalizeCustomBodyMapping(source.customBody);
     if (typeof normalized.custom !== 'string') normalized.custom = defaultOption.custom;
     if (typeof normalized.newApiUrl !== 'string') normalized.newApiUrl = DEFAULT_NEW_API_URL;
@@ -408,6 +429,8 @@ export function normalizeConfig(value: unknown): Config {
     normalized.translationServices = normalizeTranslationServices(source.translationServices, normalized);
     for (const instance of normalized.translationServices) {
         if (instance.kind !== 'ai') continue;
+        if (instance.systemRole === LEGACY_DEFAULT_AI_SYSTEM_ROLE) instance.systemRole = '';
+        if (instance.userRole === LEGACY_DEFAULT_AI_USER_ROLE) instance.userRole = '';
         const legacyModelId = instance.modelId;
         const usedDefaultName = instance.name === getDefaultTranslationServiceName(
             instance.provider,

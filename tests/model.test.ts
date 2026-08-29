@@ -13,6 +13,13 @@ import {
 import {getMimoEndpoint, MIMO_ENDPOINTS, MINIMAX_ENDPOINTS, tongyiTokenPlanUrl, urls} from '@/src/core/config/constants';
 import {customModelString, defaultModelIds, defaultModels, defaultOption, models, options, resolveConfiguredModel, services, servicesType} from '@/src/core/config/catalog';
 
+const legacyDefaultAiPrompt = {
+    systemRole: 'You are a professional, authentic machine translation engine.',
+    userRole: `Translate the following text into {{to}}, If translation is unnecessary (e.g. proper nouns, codes, etc.), return the original text. NO explanations. NO notes:
+
+{{origin}}`,
+};
+
 describe('AI 模型编号列表', () => {
     it('API 凭据跨重启持久化默认关闭，且只接受显式布尔 true', () => {
         expect(new Config().persistCredentials).toBe(false);
@@ -31,6 +38,29 @@ describe('AI 模型编号列表', () => {
         expect(servicesType.isUseAIContext(services.tongyi, 'qwen-mt-plus')).toBe(false);
         expect(servicesType.isUseAIContext(services.tongyi, resolveConfiguredModel(customModelString, 'qwen-mt-plus'))).toBe(false);
         expect(resolveConfiguredModel(customModelString, 'custom-model')).toBe('custom-model');
+    });
+
+    it('升级历史默认 AI 提示词并让服务实例继续继承默认值', () => {
+        const normalized = normalizeConfig({
+            system_role: {
+                [services.openai]: legacyDefaultAiPrompt.systemRole,
+            },
+            user_role: {
+                [services.openai]: legacyDefaultAiPrompt.userRole,
+            },
+            translationServices: [{
+                id: 'service:openai:legacy-prompts',
+                provider: services.openai,
+                kind: 'ai',
+                systemRole: legacyDefaultAiPrompt.systemRole,
+                userRole: legacyDefaultAiPrompt.userRole,
+            }],
+        });
+
+        expect(normalized.system_role[services.openai]).toBe(defaultOption.system_role);
+        expect(normalized.user_role[services.openai]).toBe(defaultOption.user_role);
+        expect(normalized.translationServices.find((item) => item.id === 'service:openai:legacy-prompts'))
+            .toMatchObject({systemRole: '', userRole: ''});
     });
 
     it('展示当前主流模型，并移除已退役或错误的预设编号', () => {
