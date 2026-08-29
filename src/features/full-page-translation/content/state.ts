@@ -415,6 +415,53 @@ export function setTextSlotsApplied(
     }
 }
 
+export function reconcileEquivalentTranslation(
+    node: HTMLElement,
+    state: TranslationState,
+    currentTextNodes: readonly Text[],
+): boolean {
+    if (states.get(node) !== state || state.phase !== "translated" || !node.isConnected) return false;
+
+    if (state.textSlotsApplied) {
+        const previousNodes = state.translatedTextNodes;
+        const translatedValues = state.translatedTextValues;
+        const originalValues = new Map(
+            state.originalTextValues.map(({node: textNode, value}) => [textNode, value]),
+        );
+        if (!previousNodes || !translatedValues || previousNodes.length !== currentTextNodes.length) return false;
+        const sources = previousNodes.map((textNode) => originalValues.get(textNode));
+        const replacements = previousNodes.map((textNode) => translatedValues.get(textNode));
+        if (sources.some((value) => value === undefined) || replacements.some((value) => value === undefined) ||
+            currentTextNodes.some((textNode, index) => (textNode.nodeValue ?? "") !== sources[index])) return false;
+
+        state.originalTextValues = currentTextNodes.map((textNode, index) => ({
+            node: textNode,
+            value: sources[index]!,
+        }));
+        currentTextNodes.forEach((textNode, index) => {
+            textNode.nodeValue = replacements[index]!;
+        });
+        setTextSlotsApplied(node, currentTextNodes);
+        return true;
+    }
+
+    const content = state.bilingualContent;
+    if (!content || (content.isConnected && content.parentNode !== node)) return false;
+    const sourceClone = node.cloneNode(false) as HTMLElement;
+    Array.from(node.childNodes)
+        .filter((child) => child !== content)
+        .forEach((child) => sourceClone.appendChild(child.cloneNode(true)));
+    if (sourceClone.innerHTML !== state.sourceHTML) return false;
+    state.sourceTextNodes = [...currentTextNodes];
+    if (!content.isConnected) {
+        node.classList.add("babelbox-bilingual");
+        node.appendChild(content);
+    }
+    state.committedHTML = node.innerHTML;
+    refreshOwnershipIndex(node, state);
+    return true;
+}
+
 /**
  * Find states owned by a node that the host removed. This includes a removed
  * translated target and a removed spinner/bilingual wrapper whose owner stays

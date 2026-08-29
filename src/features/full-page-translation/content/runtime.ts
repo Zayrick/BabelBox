@@ -56,6 +56,7 @@ import {
     getTranslationOwnersForRemovedNode,
     markTranslationComplete,
     markTranslationError,
+    reconcileEquivalentTranslation,
     restoreAllTranslations,
     restoreTranslation,
     setBilingualContent,
@@ -280,6 +281,19 @@ function committedTranslationDOMIsCurrent(
     return state.committedHTML !== undefined &&
         node.innerHTML === state.committedHTML &&
         statefulSourceAndTextSlotsAreCurrent(node, state);
+}
+
+function reconcileEquivalentHostRerender(
+    node: HTMLElement,
+    state: TranslationState,
+): boolean {
+    const currentTextNodes = currentStateTextNodes(node, state);
+    if (!reconcileEquivalentTranslation(node, state, currentTextNodes)) return false;
+    if (state.bilingualContent) {
+        ensureTranslationTruncationLayout(node);
+        setRenderedStyleAttribute(node);
+    }
+    return true;
 }
 
 function mutationTouchesCurrentTranslationArtifact(
@@ -1506,7 +1520,8 @@ function scheduleDisconnectedCandidatePrune(session: FullPageSession): void {
 function discardOwnersRemovedByHost(
     session: FullPageSession,
     removedNodes: readonly Node[],
-): {removedAny: boolean; shouldRescan: boolean} {
+    preservedOwner?: HTMLElement,
+): {shouldRescan: boolean} {
     const owners = new Set<HTMLElement>();
     let shouldRescan = false;
     removedNodes.forEach((removed) => {
@@ -1521,6 +1536,7 @@ function discardOwnersRemovedByHost(
         getTranslationOwnersForRemovedNode(removed).forEach((owner) => owners.add(owner));
     });
     owners.forEach((owner) => {
+        if (owner === preservedOwner) return;
         const state = getTranslationState(owner);
         if (!state) {
             unregisterSessionStatefulTarget(session, owner);
@@ -1552,7 +1568,7 @@ function discardOwnersRemovedByHost(
         // reattaching stale source nodes that the framework intentionally removed.
         discardTranslation(owner, state);
     });
-    return {removedAny: owners.size > 0, shouldRescan};
+    return {shouldRescan};
 }
 
 function restartStatefulTarget(session: FullPageSession, target: HTMLElement): boolean {
@@ -1658,9 +1674,22 @@ function createFullPageMutationObserver(
             if (isOwnMutation(mutation, loadingSyntheticChecks, committedDOMChecks)) continue;
             const mutationElement = mutationTargetElement(mutation.target);
             if (isCoreProtectedDescendantMutation(mutation.target, core, mutation.type !== "attributes")) continue;
+            const childListTarget = mutation.type === "childList" && mutationElement
+                ? resolveStatefulMutationTarget(mutationElement)
+                : false;
+            const childListState = childListTarget ? getTranslationState(childListTarget) : undefined;
+            const changesConnectedBilingualContent = Boolean(childListState?.bilingualContent?.isConnected &&
+                mutationTouchesCurrentTranslationArtifact(mutation, childListState));
+            const reconciledChildList = Boolean(childListTarget && childListState &&
+                !changesConnectedBilingualContent &&
+                reconcileEquivalentHostRerender(childListTarget, childListState));
             const removedOwners = mutation.type === "childList"
-                ? discardOwnersRemovedByHost(session, Array.from(mutation.removedNodes))
-                : {removedAny: false, shouldRescan: false};
+                ? discardOwnersRemovedByHost(
+                    session,
+                    Array.from(mutation.removedNodes),
+                    reconciledChildList && childListTarget ? childListTarget : undefined,
+                )
+                : {shouldRescan: false};
             if (removedOwners.shouldRescan && mutationElement) enqueueFullPageRescan(session, mutationElement);
             if (mutationElement && core.shouldIgnoreMutation(mutationElement)) continue;
 
@@ -1681,14 +1710,14 @@ function createFullPageMutationObserver(
             }
 
             if (mutation.type === "childList") {
-                const changedTarget = mutationElement ? resolveStatefulMutationTarget(mutationElement) : false;
+                const changedTarget = childListTarget;
                 const changedState = changedTarget ? getTranslationState(changedTarget) : undefined;
 
                 // A protected renderer can replace staging children without
                 // changing the translatable source or its exact Text slots.
                 // Mutations inside or removing the current translation artifact
                 // remain authoritative host changes and restart immediately.
-                if (changedTarget && changedState) {
+                if (changedTarget && changedState && !reconciledChildList) {
                     const touchesArtifact = isTranslationArtifact(mutation.target) ||
                         mutationTouchesCurrentTranslationArtifact(mutation, changedState);
                     let sourceAndSlotsCurrent = statefulChildListChecks.get(changedState);
@@ -1713,7 +1742,11 @@ function createFullPageMutationObserver(
                     ? resolveStatefulMutationTarget(mutation.target.parentElement)
                     : false;
                 if (target) {
-                    restartStatefulTarget(session, target);
+                    const state = getTranslationState(target);
+                    if (!state || mutationTouchesCurrentTranslationArtifact(mutation, state) ||
+                        !reconcileEquivalentHostRerender(target, state)) {
+                        restartStatefulTarget(session, target);
+                    }
                 } else {
                     // Hydration frameworks often append/replace a Text node without
                     // adding a new Element. Reclassify its nearest semantic block.

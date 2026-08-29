@@ -1183,6 +1183,66 @@ describe("全文翻译可见性锚点", () => {
     });
 
     it.each([
+        {display: 0, label: "单语"},
+        {display: 1, label: "双语"},
+    ] as const)("X hover 等价重绘会续用$label译文，真实更新仍会重译", async ({display}) => {
+        runtime.config.display = display;
+        const sourceText = "A stable X reply.";
+        const updatedText = "A genuinely updated X reply.";
+        document.body.innerHTML = `
+            <article>
+                <div id="tweet-text" data-testid="tweetText"><span class="copy">${sourceText}</span></div>
+            </article>
+        `;
+        const tweetText = document.querySelector<HTMLElement>("#tweet-text")!;
+        setLayoutBox(tweetText, 620, 90);
+        runtime.candidates = [{
+            element: tweetText,
+            kind: "content",
+            reason: "site-filter:X 帖子正文",
+            adapterId: "translation-filter",
+        }];
+
+        autoTranslateEnglishPage();
+        await vi.advanceTimersByTimeAsync(50);
+        TestIntersectionObserver.instances[0]!.emit(tweetText, true);
+        await finishScheduledWork();
+
+        const source = tweetText.querySelector<HTMLElement>(".copy")!;
+        const previousChildren = Array.from(tweetText.childNodes);
+        const replacement = source.cloneNode(true) as HTMLElement;
+        replacement.textContent = sourceText;
+        tweetText.replaceChildren(replacement);
+        TestMutationObserver.instances.at(-1)!.emit([{
+            type: "childList",
+            target: tweetText,
+            addedNodes: [replacement] as unknown as NodeList,
+            removedNodes: previousChildren as unknown as NodeList,
+        } as unknown as MutationRecord]);
+
+        expect(tweetText.textContent).toContain(`译:${sourceText}`);
+        await finishScheduledWork();
+        expect(runtime.requests).toHaveBeenCalledTimes(1);
+
+        const liveSource = replacement.firstChild as Text;
+        liveSource.nodeValue = updatedText;
+        TestMutationObserver.instances.at(-1)!.emit([{
+            type: "characterData",
+            target: liveSource,
+            addedNodes: [] as unknown as NodeList,
+            removedNodes: [] as unknown as NodeList,
+        } as unknown as MutationRecord]);
+        await vi.advanceTimersByTimeAsync(50);
+        TestIntersectionObserver.instances[0]!.emit(tweetText, true);
+        await finishScheduledWork();
+
+        expect(runtime.requests).toHaveBeenCalledTimes(2);
+        expect(tweetText.textContent).toContain(`译:${updatedText}`);
+        restoreOriginalContent();
+        expect(tweetText.textContent).toBe(updatedText);
+    });
+
+    it.each([
         {display: 0, expectedLayoutChecks: 0, label: "single"},
         {display: 1, expectedLayoutChecks: 1, label: "bilingual"},
     ] as const)(
