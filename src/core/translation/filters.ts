@@ -236,6 +236,65 @@ const youtubeDefaultRules: readonly TranslationFilterRule[] = [
     },
 ];
 
+const discordDefaultRules: readonly TranslationFilterRule[] = [
+    {
+        action: 'include',
+        label: 'Discord 频道分组',
+        selector: '[data-list-item-id^="channels___"][role="button"][aria-expanded]',
+    },
+    {
+        action: 'exclude',
+        label: 'Discord 名称与身份信息',
+        selector: [
+            '[data-list-item-id^="channels___"]:not([aria-expanded])',
+            'nav h2',
+            'section[class*="title_"] h1',
+            '[data-list-id^="members-"]',
+            '[data-list-item-id^="chat-messages___"] :is(h2, h3):has([id^="message-username-"])',
+            '[data-list-item-id^="chat-messages___"] .mention',
+            '[id^="message-reply-context-"] span[role="button"]',
+            '[role="grid"] > li a[role="link"][aria-label]:not([href])',
+            '[role="list"] > li a[role="link"][aria-label]:not([href])',
+        ].join(', '),
+    },
+    {
+        action: 'exclude',
+        label: 'Discord 消息元数据',
+        selector: [
+            'span:has([id^="message-timestamp-"])',
+            '[data-list-item-id^="chat-messages___divider-"]',
+            '[id^="message-reactions-"]',
+            '[data-list-item-id^="chat-messages___"] div[class*="executedCommand"]',
+            '[id^="message-accessories-"] [class*="embedAuthor"]',
+            '[id^="message-accessories-"] [class*="embedFooter"]',
+        ].join(', '),
+    },
+    {
+        action: 'include',
+        label: 'Discord 消息正文',
+        selector: '[id^="message-content-"]',
+    },
+    {
+        action: 'include',
+        label: 'Discord 嵌入正文',
+        selector: [
+            '[id^="message-accessories-"] [class*="embedTitle"]',
+            '[id^="message-accessories-"] [class*="embedDescription"]',
+            '[id^="message-accessories-"] [class*="embedFieldName"]',
+            '[id^="message-accessories-"] [class*="embedFieldValue"]',
+        ].join(', '),
+    },
+    {
+        action: 'include',
+        label: 'Discord 论坛与帖子标题',
+        selector: [
+            '[data-list-id="chat-messages"] > div[id^="chat-messages-"] > h3',
+            '[role="grid"] > li > [role="gridcell"] + div > h3',
+            '[role="list"] > li > div > [role="button"] + div h3',
+        ].join(', '),
+    },
+];
+
 const defaultSiteRules: readonly TranslationFilterSiteConfig[] = [
     {domain: 'github.com', rules: [...githubDefaultRules]},
     {domain: 'x.com', rules: [...xDefaultRules]},
@@ -263,14 +322,7 @@ const defaultSiteRules: readonly TranslationFilterSiteConfig[] = [
         domain: 'learnopengl.com',
         rules: [{action: 'exclude', label: 'LearnOpenGL 固定导航', selector: '#nav'}],
     },
-    {
-        domain: 'discord.com',
-        rules: [{
-            action: 'include',
-            label: 'Discord 频道分组',
-            selector: '[data-list-item-id^="channels___"][role="button"][aria-expanded]',
-        }],
-    },
+    {domain: 'discord.com', rules: [...discordDefaultRules]},
 ];
 
 function isRecord(value: unknown): value is Record<string, unknown> {

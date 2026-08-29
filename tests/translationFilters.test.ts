@@ -28,7 +28,7 @@ function emptyFilters(): TranslationFilterConfig {
 }
 
 describe('translation filter configuration', () => {
-    it('moves the previous protections and the Discord fix into editable defaults', () => {
+    it('exposes the global protections as editable defaults', () => {
         const defaults = createDefaultTranslationFilterConfig();
 
         expect(defaults.global.excludeHidden).toBe(true);
@@ -39,11 +39,6 @@ describe('translation filter configuration', () => {
             '网页声明不翻译',
             '数学公式渲染结果',
         ]);
-        expect(getTranslationFilterSite(defaults, 'https://discord.com/channels/1/2')?.rules)
-            .toEqual([expect.objectContaining({
-                action: 'include',
-                label: 'Discord 频道分组',
-            })]);
     });
 
     it('backfills defaults only when fields are missing and preserves explicit empty lists', () => {
@@ -287,30 +282,80 @@ describe('translation filter policy', () => {
         expect(core.discover(document).map((candidate) => candidate.element.id)).toEqual(['keep']);
     });
 
-    it('translates Discord channel categories through the default website rule', () => {
+    it('translates Discord conversation content without translating identity metadata', () => {
         const document = documentWith(`
           <nav>
-            <ul>
-              <li>
-                <div data-list-item-id="channels___699861463375937578_category" role="button" aria-expanded="true">
-                  <h3><div>Language Specific</div></h3>
-                </div>
-              </li>
-            </ul>
+            <div id="channel-category" data-list-item-id="channels___category" role="button" aria-expanded="true">
+              <h3>Language Specific</h3>
+            </div>
           </nav>
+          <div data-list-id="members-channel">Member Name</div>
+          <ol data-list-id="chat-messages">
+            <div id="chat-messages-thread"><h3 id="thread-title">Thread setup guide</h3></div>
+            <li>
+              <div role="article" data-list-item-id="chat-messages___chat-messages-channel-message">
+                <h3><span id="message-username-message">User Name <span>MOD</span></span></h3>
+                <div id="message-content-message">
+                  Message before <span class="mention">@Mentioned User</span> message after.
+                </div>
+                <div id="message-accessories-message">
+                  <div class="embedAuthor__hash">Bot Name</div>
+                  <div id="embed-title" class="embedTitle__hash">Release notes</div>
+                  <div class="embedFooter__hash">By Bot Name</div>
+                </div>
+              </div>
+            </li>
+          </ol>
+          <div role="grid">
+            <li>
+              <div role="gridcell"></div>
+              <div>
+                <a role="link" aria-label="Gallery Author, post author">Gallery Author</a>
+                <h3 id="gallery-title">Gallery post title</h3>
+              </div>
+            </li>
+          </div>
+          <div role="list">
+            <li>
+              <div>
+                <div role="button" aria-label="Post List post title"></div>
+                <div>
+                  <h3 id="list-title">List post title</h3>
+                  <a role="link" aria-label="List Author, post author">List Author</a>
+                </div>
+              </div>
+            </li>
+          </div>
         `);
         const core = createTranslationCore({
             url: new URL('https://discord.com/channels/699861463375937578/1071250182664093706'),
             filterConfig: createDefaultTranslationFilterConfig(),
         });
-        const category = document.querySelector('[data-list-item-id]')!;
-        const candidate = core.discover(document).find((item) => item.element === category);
+        const candidates = core.discover(document);
+        const candidateIds = candidates
+            .map((candidate) => candidate.element.id)
+            .filter(Boolean);
+        const category = document.querySelector('#channel-category')!;
 
-        expect(candidate).toMatchObject({
-            kind: 'control',
-            adapterId: 'translation-filter',
-            reason: 'site-filter:Discord 频道分组',
-        });
         expect(extractTranslationText(category, core.shouldStayOriginal)).toBe('Language Specific');
+        expect(candidateIds).toEqual(expect.arrayContaining([
+            'channel-category',
+            'thread-title',
+            'message-content-message',
+            'embed-title',
+            'gallery-title',
+            'list-title',
+        ]));
+        expect(extractTranslationText(
+            document.querySelector('#message-content-message')!,
+            core.shouldStayOriginal,
+        )).toBe('Message before message after.');
+
+        const translatedText = candidates
+            .map((item) => extractTranslationText(item.element, core.shouldStayOriginal))
+            .join('\n');
+        expect(translatedText).not.toMatch(
+            /Member Name|User Name|Mentioned User|MOD|Bot Name|Gallery Author|List Author/,
+        );
     });
 });
