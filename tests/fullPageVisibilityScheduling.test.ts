@@ -1247,6 +1247,20 @@ describe("全文翻译可见性锚点", () => {
         await finishScheduledWork();
 
         const source = tweetText.querySelector<HTMLElement>(".copy")!;
+        const state = getTranslationState(tweetText);
+        source.setAttribute("data-testid", "hoverCardAnchor");
+        TestMutationObserver.instances.at(-1)!.emit([{
+            type: "attributes",
+            target: source,
+            attributeName: "data-testid",
+            addedNodes: [] as unknown as NodeList,
+            removedNodes: [] as unknown as NodeList,
+        } as unknown as MutationRecord]);
+        await finishScheduledWork();
+
+        expect(getTranslationState(tweetText)).toBe(state);
+        expect(runtime.requests).toHaveBeenCalledTimes(1);
+
         const previousChildren = Array.from(tweetText.childNodes);
         const replacement = source.cloneNode(true) as HTMLElement;
         replacement.textContent = sourceText;

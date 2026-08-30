@@ -254,6 +254,13 @@ function currentStateTextNodes(node: HTMLElement, state: TranslationState): Text
     ).map((slot) => slot.node);
 }
 
+function refreshBilingualSourceHTML(node: HTMLElement, state: TranslationState): void {
+    if (state.phase !== "translated" || state.mode !== "bilingual" || !state.bilingualContent) return;
+    const sourceClone = node.cloneNode(true) as HTMLElement;
+    sourceClone.querySelectorAll(TRANSLATION_ARTIFACT_SELECTOR).forEach((artifact) => artifact.remove());
+    state.sourceHTML = sourceClone.innerHTML;
+}
+
 function statefulSourceAndTextSlotsAreCurrent(
     node: HTMLElement,
     state: TranslationState,
@@ -1566,6 +1573,7 @@ function restartStatefulTarget(session: FullPageSession, target: HTMLElement): b
 function scheduleStatefulAttributeReevaluation(
     session: FullPageSession,
     target: HTMLElement,
+    delayMs = STATEFUL_ATTRIBUTE_DEBOUNCE_MS,
 ): void {
     const currentTimer = session.statefulAttributeTimers.get(target);
     if (currentTimer !== undefined) window.clearTimeout(currentTimer);
@@ -1591,11 +1599,14 @@ function scheduleStatefulAttributeReevaluation(
             if (state.phase === "loading") restartStatefulTarget(session, target);
             return;
         }
+        if (!state.syntheticSegment) {
+            const candidate = core.inspect(target).candidate;
+            if (!candidate || candidate.element !== target || candidate.kind !== state.kind) {
+                restartStatefulTarget(session, target);
+                return;
+            }
+        }
 
-        // Compare both the logical source and exact slot identities. This keeps
-        // pure class/style churn cheap while still detecting same-text label or
-        // inline-link replacement. Live single/control slots are compared with
-        // the values written by this generation rather than their old source.
         const shouldReconcileBilingualLayout =
             state.phase === "translated" &&
             state.mode === "bilingual" &&
@@ -1605,9 +1616,12 @@ function scheduleStatefulAttributeReevaluation(
             restartStatefulTarget(session, target);
             return;
         }
-        if (statefulSourceAndTextSlotsAreCurrent(target, state)) return;
+        if (statefulSourceAndTextSlotsAreCurrent(target, state)) {
+            refreshBilingualSourceHTML(target, state);
+            return;
+        }
         restartStatefulTarget(session, target);
-    }, STATEFUL_ATTRIBUTE_DEBOUNCE_MS);
+    }, delayMs);
     session.statefulAttributeTimers.set(target, timer);
 }
 
@@ -1728,7 +1742,7 @@ function createFullPageMutationObserver(
                             transientVisibilityChange) {
                             scheduleStatefulAttributeReevaluation(session, target);
                         } else {
-                            restartStatefulTarget(session, target);
+                            scheduleStatefulAttributeReevaluation(session, target, 0);
                         }
                     }
                 } else {
