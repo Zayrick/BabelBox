@@ -111,6 +111,37 @@ describe('translation filter configuration', () => {
 });
 
 describe('translation filter policy', () => {
+    it('separates transient visibility from durable source protection', () => {
+        const document = documentWith('<main id="surface" aria-hidden="true"><p id="copy">Stable copy.</p></main>');
+        const config: TranslationFilterConfig = {
+            global: {excludeHidden: true, excludeEditable: true, rules: []},
+            sites: [],
+        };
+        const policy = createTranslationFilterPolicy(config, 'https://example.com/');
+        const core = createTranslationCore({
+            url: new URL('https://example.com/'),
+            filterConfig: config,
+        });
+        const surface = document.querySelector('#surface')!;
+        const copy = document.querySelector('#copy')!;
+
+        expect(policy.evaluateElement(surface)).toMatchObject({action: 'exclude', reason: 'hidden'});
+        expect(policy.evaluateDurableElement(surface)).toEqual({action: 'pass'});
+        expect(policy.isTransientlySuppressedSelf(surface)).toBe(true);
+        expect(core.shouldStayOriginal(copy)).toBe(true);
+        expect(core.shouldStayOriginalForSource(copy)).toBe(false);
+        expect(core.isTemporarilyIneligible(copy)).toBe(true);
+
+        surface.removeAttribute('aria-hidden');
+        surface.setAttribute('translate', 'no');
+        const durableCore = createTranslationCore({
+            url: new URL('https://example.com/'),
+            filterConfig: createDefaultTranslationFilterConfig(),
+        });
+        expect(durableCore.shouldStayOriginalForSource(copy)).toBe(true);
+        expect(durableCore.isTemporarilyIneligible(copy)).toBe(false);
+    });
+
     it('persists reordered rules and gives the earlier matching rule priority', () => {
         const document = documentWith('<button class="target">Channel category</button>');
         const rules = [

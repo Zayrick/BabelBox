@@ -204,6 +204,32 @@ export class TranslationCandidateCore {
             adapter.shouldStayOriginal?.(element, this.context) === true);
     };
 
+    /**
+     * Stable source protection deliberately ignores hidden/inert/aria-hidden.
+     * Those states can be toggled by menus and dialogs without changing the
+     * identity or value of any host text node.
+     */
+    shouldStayOriginalForSource = (element: Element): boolean => {
+        for (const ancestor of composedAncestors(element)) {
+            if (this.filterPolicy.isDurablyExcludedSelf(ancestor)) return true;
+        }
+        return this.adapters.some((adapter) =>
+            adapter.shouldStayOriginal?.(element, this.context) === true);
+    };
+
+    isTemporarilyIneligible = (element: Element): boolean => {
+        let suppressed = false;
+        for (const ancestor of composedAncestors(element)) {
+            if (this.filterPolicy.isDurablyExcludedSelf(ancestor)) return false;
+            if (this.filterPolicy.isTransientlySuppressedSelf(ancestor)) suppressed = true;
+        }
+        return suppressed;
+    };
+
+    shouldIgnoreContentMutation = (element: Element): boolean =>
+        this.shouldStayOriginalForSource(element) || this.adapters.some((adapter) =>
+            adapter.shouldIgnoreMutation?.(element, this.context) === true);
+
     shouldIgnoreMutation = (element: Element): boolean =>
         this.shouldStayOriginal(element) || this.adapters.some((adapter) =>
             adapter.shouldIgnoreMutation?.(element, this.context) === true);

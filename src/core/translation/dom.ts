@@ -48,9 +48,12 @@ export function isProtectedDescendantElement(
     element: Element,
     ignoreExtensionSelf = false,
     filterPolicy: TranslationFilterPolicy = defaultTranslationFilterPolicy,
+    includeTransientVisibility = true,
 ): boolean {
     return (!ignoreExtensionSelf && isExtensionElementSelf(element)) ||
-        filterPolicy.isExcludedSelf(element);
+        (includeTransientVisibility
+            ? filterPolicy.isExcludedSelf(element)
+            : filterPolicy.isDurablyExcludedSelf(element));
 }
 
 export interface HardGuardResult {
