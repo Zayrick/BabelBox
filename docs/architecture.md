@@ -79,16 +79,6 @@ feature
 
 供应商网络实现位于 `src/providers/translation/`。新增服务通过 registry 接入，并同步提供配置可见性、凭据错误和连接测试；UI 不直接发起供应商请求。
 
-### 全文翻译 DOM 对账
-
-全文翻译把宿主 DOM 分为三个独立状态面：
-
-- source identity：原文 Text 节点、值和结构版本。只有 `characterData`、`childList` 与明确承载文本的属性可以使它失效。
-- eligibility：候选是否适合排队或继续工作。`hidden`、`inert`、`aria-hidden`、样式和视口只影响调度；暂时不可见不得还原已提交译文。
-- projection：BabelBox 写入的单语 Text 值、双语节点、generation 与恢复日志。异步提交必须再次验证 generation、连接状态和 source identity。
-
-MutationObserver 回调只分类和合并 dirty target，不直接把展示状态解释为原文变化。显式用户过滤、`translate="no"` 和编辑区域属于持久排除，可以撤销投影；菜单、对话框和折叠区域产生的临时可见性属于软暂停。译文 DOM 按短时间窗口批量提交，提交期间暂停 observer，再恢复所有 document/open ShadowRoot 观察根；IntersectionObserver 只提供优先级，不参与正确性判断。
-
 ## 配置与消息
 
 - `src/core/config`：普通配置、凭据存储状态和纯 normalize/validate 规则。

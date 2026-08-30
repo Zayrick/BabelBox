@@ -1,6 +1,5 @@
 import {clearTranslationLoadingAnimation} from '@/src/features/full-page-translation/ui/loadingAnimation';
 import {releaseTranslationTruncationLayout} from './layout';
-import type {TranslationCandidate} from '@/src/core/translation/public';
 
 /**
  * 指定节点翻译的生命周期状态。
@@ -13,57 +12,45 @@ type TranslationDisplayMode = "bilingual" | "single";
 type TranslationPhase = "loading" | "translated" | "error";
 type TranslationTargetKind = "content" | "control";
 
-export type TranslationEligibilityStatus = "eligible" | "temporarily-suppressed" | "durably-excluded";
-
-export interface TranslationSourceState {
-    text: string;
-    /** Candidate contract captured before inline materialization. */
-    candidate?: TranslationCandidate;
-    /** Text-slot identities captured before this generation writes to the DOM. */
-    textNodes?: readonly Text[];
-    html: string;
-    /** Exact direct children wrapped by a synthetic inline segment. */
-    syntheticNodes?: readonly ChildNode[];
-    /** Original values retained for single/control projection restoration. */
-    originalTextValues: Array<{node: Text; value: string}>;
-}
-
-export interface TranslationProjectionState {
-    originalStyleAttribute: string | null;
-    originalClassAttribute: string | null;
-    renderedStyleAttribute?: string | null;
-    renderedClassAttribute?: string | null;
-    textSlotsApplied?: boolean;
-    translatedTextValues?: WeakMap<Text, string>;
-    translatedTextNodes?: readonly Text[];
-    spinner?: HTMLElement;
-    bilingualContent?: HTMLElement;
-    retryWrapper?: HTMLElement;
-    bilingualHTML?: string;
-    committedHTML?: string;
-}
-
-export interface TranslationEligibilityState {
-    status: TranslationEligibilityStatus;
-    revision: number;
-    reason?: string;
-}
-
 export interface TranslationState {
     mode: TranslationDisplayMode;
     /** 内容块使用上下双语；按钮等交互控件只替换内部可见文字。 */
     kind: TranslationTargetKind;
     phase: TranslationPhase;
     generation: number;
-    /** Immutable source identity for this generation. */
-    source: TranslationSourceState;
-    /** BabelBox-owned rendering and restoration journal. */
-    projection: TranslationProjectionState;
-    /** Scheduling/policy state; never doubles as source identity. */
-    eligibility: TranslationEligibilityState;
+    sourceText: string;
+    /** Text-slot identities visible at request creation, before any live replacement. */
+    sourceTextNodes?: readonly Text[];
+    sourceHTML: string;
     /** Runtime-only wrapper around a direct inline run; removed on every exit path. */
     syntheticSegment: boolean;
+    /** Exact direct children captured before the loading spinner is appended. */
+    syntheticSourceNodes?: readonly ChildNode[];
+    /** 翻译开始前的内联 style 属性，用于可条件恢复。 */
+    originalStyleAttribute: string | null;
+    /** 翻译开始前的 class 属性；恢复时避免留下空 class。 */
+    originalClassAttribute: string | null;
+    /** 插件完成渲染后记录的 style 属性；undefined 表示尚未改动样式。 */
+    renderedStyleAttribute?: string | null;
+    /** 插件完成渲染后记录的 class 属性，用于过滤自身添加 bilingual class 的 mutation。 */
+    renderedClassAttribute?: string | null;
+    /** Translation changed only the original Text nodes; DOM structure stayed live. */
+    textSlotsApplied?: boolean;
+    /** 控件翻译直接修改原 Text 节点；恢复时需要把节点内容写回原值。 */
+    originalTextValues: Array<{node: Text; value: string}>;
+    /** Exact values written by the live text-slot renderer. */
+    translatedTextValues?: WeakMap<Text, string>;
+    /** Text nodes that were visible/translatable when single/control rendering ran. */
+    translatedTextNodes?: readonly Text[];
     controller: AbortController;
+    spinner?: HTMLElement;
+    bilingualContent?: HTMLElement;
+    /** 失败态的重试控件；用于区分扩展写入与宿主移除。 */
+    retryWrapper?: HTMLElement;
+    /** 双语 wrapper 最后一次由插件写入的 HTML，用于区分宿主重绘和插件自身 mutation。 */
+    bilingualHTML?: string;
+    /** This generation's exact owner DOM after the translation commit finished. */
+    committedHTML?: string;
 }
 
 interface TranslationAttempt {
@@ -121,9 +108,9 @@ function refreshOwnershipIndex(owner: HTMLElement, state: TranslationState): voi
     clearOwnershipIndex(owner);
     const indexedNodes = new Set<Node>([
         owner,
-        ...(state.projection.spinner ? [state.projection.spinner] : []),
-        ...(state.projection.bilingualContent ? [state.projection.bilingualContent] : []),
-        ...(state.projection.retryWrapper ? [state.projection.retryWrapper] : []),
+        ...(state.spinner ? [state.spinner] : []),
+        ...(state.bilingualContent ? [state.bilingualContent] : []),
+        ...(state.retryWrapper ? [state.retryWrapper] : []),
     ]);
     indexedNodesByOwner.set(owner, indexedNodes);
     const ownerRef = trackActiveNode(owner);
@@ -142,22 +129,6 @@ export function getTranslationState(node: HTMLElement): TranslationState | undef
     return states.get(node);
 }
 
-export function setTranslationEligibility(
-    node: HTMLElement,
-    status: TranslationEligibilityStatus,
-    reason?: string,
-): boolean {
-    const state = states.get(node);
-    if (!state) return false;
-    if (state.eligibility.status === status && state.eligibility.reason === reason) return true;
-    state.eligibility = {
-        status,
-        revision: state.eligibility.revision + 1,
-        ...(reason ? {reason} : {}),
-    };
-    return true;
-}
-
 /**
  * 开始一次新的节点翻译请求。
  * loading 状态不能重复发起请求；error 状态可以被调用方先恢复后重试。
@@ -169,7 +140,6 @@ export function beginTranslation(
     syntheticSegment = false,
     sourceText = node.textContent ?? "",
     sourceTextNodes?: readonly Text[],
-    candidate?: TranslationCandidate,
 ): TranslationAttempt | null {
     const previous = states.get(node);
     if (previous?.phase === "loading") return null;
@@ -191,20 +161,14 @@ export function beginTranslation(
         kind,
         phase: "loading",
         generation: (previous?.generation ?? 0) + 1,
-        source: {
-            text: sourceText,
-            candidate,
-            textNodes: sourceTextNodes ? [...sourceTextNodes] : undefined,
-            html: node.innerHTML,
-            syntheticNodes: syntheticSegment ? Array.from(node.childNodes) : undefined,
-            originalTextValues,
-        },
-        projection: {
-            originalStyleAttribute: node.getAttribute("style"),
-            originalClassAttribute: node.getAttribute("class"),
-        },
-        eligibility: {status: "eligible", revision: 0},
+        sourceText,
+        sourceTextNodes: sourceTextNodes ? [...sourceTextNodes] : undefined,
+        sourceHTML: node.innerHTML,
         syntheticSegment,
+        syntheticSourceNodes: syntheticSegment ? Array.from(node.childNodes) : undefined,
+        originalStyleAttribute: node.getAttribute("style"),
+        originalClassAttribute: node.getAttribute("class"),
+        originalTextValues,
         controller: new AbortController(),
     };
 
@@ -229,7 +193,7 @@ function isCurrentTranslation(
         state.generation === generation &&
         !state.controller.signal.aborted &&
         node.isConnected &&
-        (!validateSourceHTML || node.innerHTML === state.source.html)
+        (!validateSourceHTML || node.innerHTML === state.sourceHTML)
     );
 }
 
@@ -262,7 +226,7 @@ function transitionPhase(
 ): boolean {
     if (!isCurrentTranslation(node, state, generation, validateSourceHTML)) return false;
     state.phase = phase;
-    state.projection.spinner = undefined;
+    state.spinner = undefined;
     refreshOwnershipIndex(node, state);
     return true;
 }
@@ -276,7 +240,7 @@ function setArtifact(
 ): void {
     const state = states.get(node);
     if (!state) return;
-    state.projection[key] = artifact;
+    state[key] = artifact;
     refreshOwnershipIndex(node, state);
 }
 
@@ -288,8 +252,8 @@ export function setBilingualContent(node: HTMLElement, content: HTMLElement): vo
     setArtifact(node, "bilingualContent", content);
     const state = states.get(node);
     if (state) {
-        state.projection.bilingualHTML = content.innerHTML;
-        state.projection.committedHTML = node.innerHTML;
+        state.bilingualHTML = content.innerHTML;
+        state.committedHTML = node.innerHTML;
     }
 }
 
@@ -307,12 +271,12 @@ export function detachFailedTranslationUi(
     state: TranslationState,
 ): boolean {
     if (states.get(node) !== state || state.phase !== "error") return false;
-    removeExtensionNode(state.projection.retryWrapper);
-    state.projection.retryWrapper = undefined;
+    removeExtensionNode(state.retryWrapper);
+    state.retryWrapper = undefined;
     restoreOriginalStyle(node, state);
     restoreOriginalClass(node, state);
-    state.projection.renderedStyleAttribute = node.getAttribute("style");
-    state.projection.renderedClassAttribute = node.getAttribute("class");
+    state.renderedStyleAttribute = node.getAttribute("style");
+    state.renderedClassAttribute = node.getAttribute("class");
     refreshOwnershipIndex(node, state);
     return true;
 }
@@ -326,8 +290,8 @@ export function detachFailedTranslationUi(
 export function setRenderedStyleAttribute(node: HTMLElement): void {
     const state = states.get(node);
     if (state) {
-        state.projection.renderedStyleAttribute = node.getAttribute("style");
-        state.projection.renderedClassAttribute = node.getAttribute("class");
+        state.renderedStyleAttribute = node.getAttribute("style");
+        state.renderedClassAttribute = node.getAttribute("class");
     }
 }
 
@@ -356,28 +320,26 @@ function unwrapSyntheticSegment(node: HTMLElement, state: TranslationState): voi
 }
 
 function restoreOriginalStyle(node: HTMLElement, state: TranslationState): void {
-    const projection = state.projection;
-    if (projection.renderedStyleAttribute === undefined) return;
-    if (node.getAttribute("style") !== projection.renderedStyleAttribute) return;
+    if (state.renderedStyleAttribute === undefined) return;
+    if (node.getAttribute("style") !== state.renderedStyleAttribute) return;
 
-    if (projection.originalStyleAttribute === null) {
+    if (state.originalStyleAttribute === null) {
         node.removeAttribute("style");
     } else {
-        node.setAttribute("style", projection.originalStyleAttribute);
+        node.setAttribute("style", state.originalStyleAttribute);
     }
 }
 
 function restoreOriginalClass(node: HTMLElement, state: TranslationState): void {
-    const projection = state.projection;
-    if (projection.renderedClassAttribute === undefined) return;
-    if (node.getAttribute("class") === projection.renderedClassAttribute) {
-        if (projection.originalClassAttribute === null) node.removeAttribute("class");
-        else node.setAttribute("class", projection.originalClassAttribute);
+    if (state.renderedClassAttribute === undefined) return;
+    if (node.getAttribute("class") === state.renderedClassAttribute) {
+        if (state.originalClassAttribute === null) node.removeAttribute("class");
+        else node.setAttribute("class", state.originalClassAttribute);
         return;
     }
 
     node.classList.remove("babelbox-bilingual", "babelbox-failure");
-    if (projection.originalClassAttribute === null && node.getAttribute("class") === "") {
+    if (state.originalClassAttribute === null && node.getAttribute("class") === "") {
         node.removeAttribute("class");
     }
 }
@@ -415,15 +377,15 @@ function teardownAttempt(
     state.generation += 1;
     state.controller.abort();
     clearTranslationLoadingAnimation(node);
-    removeExtensionNode(state.projection.spinner);
-    removeExtensionNode(state.projection.bilingualContent);
+    removeExtensionNode(state.spinner);
+    removeExtensionNode(state.bilingualContent);
     removeRetryArtifacts(node);
     releaseTranslationTruncationLayout(node);
 
-    if (restoreTextSlots && state.projection.textSlotsApplied) {
-        state.source.originalTextValues.forEach(({node: textNode, value}) => {
+    if (restoreTextSlots && state.textSlotsApplied) {
+        state.originalTextValues.forEach(({node: textNode, value}) => {
             if (!node.contains(textNode)) return;
-            const translatedValue = state.projection.translatedTextValues?.get(textNode);
+            const translatedValue = state.translatedTextValues?.get(textNode);
             if (translatedValue === undefined || textNode.nodeValue === translatedValue) {
                 textNode.nodeValue = value;
             }
@@ -442,14 +404,14 @@ export function setTextSlotsApplied(
 ): void {
     const state = states.get(node);
     if (state) {
-        state.projection.textSlotsApplied = true;
-        state.projection.translatedTextNodes = translatedTextNodes
+        state.textSlotsApplied = true;
+        state.translatedTextNodes = translatedTextNodes
             ? [...translatedTextNodes]
-            : state.source.originalTextValues.map(({node: textNode}) => textNode);
-        state.projection.translatedTextValues = new WeakMap(
-            state.source.originalTextValues.map(({node: textNode}) => [textNode, textNode.nodeValue ?? ""]),
+            : state.originalTextValues.map(({node: textNode}) => textNode);
+        state.translatedTextValues = new WeakMap(
+            state.originalTextValues.map(({node: textNode}) => [textNode, textNode.nodeValue ?? ""]),
         );
-        state.projection.committedHTML = node.innerHTML;
+        state.committedHTML = node.innerHTML;
     }
 }
 
@@ -460,11 +422,11 @@ export function reconcileEquivalentTranslation(
 ): boolean {
     if (states.get(node) !== state || state.phase !== "translated" || !node.isConnected) return false;
 
-    if (state.projection.textSlotsApplied) {
-        const previousNodes = state.projection.translatedTextNodes;
-        const translatedValues = state.projection.translatedTextValues;
+    if (state.textSlotsApplied) {
+        const previousNodes = state.translatedTextNodes;
+        const translatedValues = state.translatedTextValues;
         const originalValues = new Map(
-            state.source.originalTextValues.map(({node: textNode, value}) => [textNode, value]),
+            state.originalTextValues.map(({node: textNode, value}) => [textNode, value]),
         );
         if (!previousNodes || !translatedValues || previousNodes.length !== currentTextNodes.length) return false;
         const sources = previousNodes.map((textNode) => originalValues.get(textNode));
@@ -472,7 +434,7 @@ export function reconcileEquivalentTranslation(
         if (sources.some((value) => value === undefined) || replacements.some((value) => value === undefined) ||
             currentTextNodes.some((textNode, index) => (textNode.nodeValue ?? "") !== sources[index])) return false;
 
-        state.source.originalTextValues = currentTextNodes.map((textNode, index) => ({
+        state.originalTextValues = currentTextNodes.map((textNode, index) => ({
             node: textNode,
             value: sources[index]!,
         }));
@@ -483,19 +445,19 @@ export function reconcileEquivalentTranslation(
         return true;
     }
 
-    const content = state.projection.bilingualContent;
+    const content = state.bilingualContent;
     if (!content || (content.isConnected && content.parentNode !== node)) return false;
     const sourceClone = node.cloneNode(false) as HTMLElement;
     Array.from(node.childNodes)
         .filter((child) => child !== content)
         .forEach((child) => sourceClone.appendChild(child.cloneNode(true)));
-    if (sourceClone.innerHTML !== state.source.html) return false;
-    state.source.textNodes = [...currentTextNodes];
+    if (sourceClone.innerHTML !== state.sourceHTML) return false;
+    state.sourceTextNodes = [...currentTextNodes];
     if (!content.isConnected) {
         node.classList.add("babelbox-bilingual");
         node.appendChild(content);
     }
-    state.projection.committedHTML = node.innerHTML;
+    state.committedHTML = node.innerHTML;
     refreshOwnershipIndex(node, state);
     return true;
 }

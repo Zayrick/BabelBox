@@ -32,13 +32,9 @@ export interface TranslationFilterPolicy {
     readonly config: TranslationFilterConfig;
     readonly site: TranslationFilterSiteConfig | null;
     readonly observedAttributes: readonly string[];
-    /** Full discovery decision, including transient visibility suppression. */
     evaluateElement(element: Element): TranslationFilterDecision;
-    /** Durable policy decision used to validate an existing source snapshot. */
-    evaluateDurableElement(element: Element): TranslationFilterDecision;
     isExcludedSelf(element: Element): boolean;
     isDurablyExcludedSelf(element: Element): boolean;
-    isTransientlySuppressedSelf(element: Element): boolean;
     isIncludedSelf(element: Element): boolean;
 }
 
@@ -584,17 +580,10 @@ export function createTranslationFilterPolicy(
         return {action: 'pass'};
     };
 
-    const isTransientlySuppressedSelf = (element: Element): boolean => {
-        // Explicit include/exclude rules and editable protection are durable.
-        // Visibility is a scheduling concern only when no durable rule owns the element.
-        if (evaluateDurableElement(element).action !== 'pass') return false;
-        return config.global.excludeHidden && hasHiddenMarker(element);
-    };
-
     const evaluateElement = (element: Element): TranslationFilterDecision => {
         const durableDecision = evaluateDurableElement(element);
         if (durableDecision.action !== 'pass') return durableDecision;
-        if (isTransientlySuppressedSelf(element)) {
+        if (config.global.excludeHidden && hasHiddenMarker(element)) {
             return {action: 'exclude', reason: 'hidden'};
         }
         return {action: 'pass'};
@@ -605,10 +594,8 @@ export function createTranslationFilterPolicy(
         site,
         observedAttributes: collectObservedAttributes(config, site),
         evaluateElement,
-        evaluateDurableElement,
         isExcludedSelf: (element) => evaluateElement(element).action === 'exclude',
         isDurablyExcludedSelf: (element) => evaluateDurableElement(element).action === 'exclude',
-        isTransientlySuppressedSelf,
         isIncludedSelf: (element) => evaluateDurableElement(element).action === 'include',
     };
 }

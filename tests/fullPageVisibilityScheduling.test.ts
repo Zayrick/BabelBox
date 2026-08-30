@@ -4,14 +4,14 @@ import {parseHTML} from "linkedom";
 const runtime = vi.hoisted(() => ({
     candidates: [] as Array<{
         element: HTMLElement;
-        kind: "content" | "control";
+        kind: "content";
         reason: string;
         nodes?: readonly Node[];
         adapterId?: string;
     }>,
     pointCandidate: null as {
         element: HTMLElement;
-        kind: "content" | "control";
+        kind: "content";
         reason: string;
         nodes?: readonly Node[];
         adapterId?: string;
@@ -84,9 +84,8 @@ vi.mock("@/src/core/translation/public", () => {
     ].join(",");
     const transientSelector = "[hidden], [inert], [aria-hidden='true']";
     const isDurablyProtected = (element: Element) => Boolean(element.closest(durableProtectedSelector));
-    const isTransientlySuppressed = (element: Element) => Boolean(element.closest(transientSelector));
     const isProtected = (element: Element) =>
-        isDurablyProtected(element) || isTransientlySuppressed(element);
+        isDurablyProtected(element) || Boolean(element.closest(transientSelector));
     const textSlots = (
         element: HTMLElement,
         shouldStayOriginal: (element: Element) => boolean = isProtected,
@@ -129,13 +128,13 @@ vi.mock("@/src/core/translation/public", () => {
             _ignoreExtensionSelf?: boolean,
             _filterPolicy?: unknown,
             includeTransientVisibility = true,
-        ) => includeTransientVisibility ? isProtected(element) : isDurablyProtected(element),
+        ) => includeTransientVisibility
+            ? isProtected(element)
+            : isDurablyProtected(element),
         getCurrentTranslationCore: () => ({
             shouldStayOriginal: isProtected,
             shouldStayOriginalForSource: isDurablyProtected,
-            isTemporarilyIneligible: isTransientlySuppressed,
-            shouldIgnoreMutation: isProtected,
-            shouldIgnoreContentMutation: isDurablyProtected,
+            shouldIgnoreMutation: isDurablyProtected,
             inspect: (element: HTMLElement) => ({
                 candidate: [...runtime.candidates].reverse().find((candidate) =>
                     candidate.element === element && !isProtected(candidate.element)),
@@ -438,39 +437,6 @@ describe("全文翻译可见性锚点", () => {
         ]);
     });
 
-    it("同一时间完成的全文结果共用一次 MutationObserver 暂停边界", async () => {
-        runtime.config.fullPageTranslationMode = "all";
-        document.body.innerHTML = '<p id="one">One batch</p><p id="two">Two batch</p>';
-        const candidates = Array.from(document.querySelectorAll<HTMLElement>("p"));
-        candidates.forEach((candidate) => setLayoutBox(candidate, 400, 40));
-        runtime.candidates = candidates.map((element) => ({
-            element,
-            kind: "content" as const,
-            reason: "paragraph",
-        }));
-        const requests = [deferred<string[]>(), deferred<string[]>()];
-        let nextRequest = 0;
-        runtime.requests.mockImplementation(() => requests[nextRequest++]!.promise);
-
-        autoTranslateEnglishPage();
-        await vi.advanceTimersByTimeAsync(51);
-        await Promise.resolve();
-        const mutationObserver = TestMutationObserver.instances.at(-1)!;
-        const pausesBeforeResults = mutationObserver.disconnect.mock.calls.length;
-
-        requests[0]!.resolve(["译:One batch"]);
-        requests[1]!.resolve(["译:Two batch"]);
-        await Promise.resolve();
-        await Promise.resolve();
-        await vi.advanceTimersByTimeAsync(25);
-
-        expect(mutationObserver.disconnect.mock.calls.length).toBe(pausesBeforeResults + 1);
-        expect(candidates.map((candidate) => candidate.textContent)).toEqual([
-            "译:One batch",
-            "译:Two batch",
-        ]);
-    });
-
     it("恢复整页翻译会清空会话，且在途结果不会重新写回页面", async () => {
         runtime.config.fullPageTranslationMode = "all";
         document.body.innerHTML = ["One", "Two", "Three", "Four"]
@@ -733,8 +699,7 @@ describe("全文翻译可见性锚点", () => {
             });
 
             requests[0]!.resolve(["译:One"]);
-            // Provider results are committed in a short DOM batch.
-            await vi.advanceTimersByTimeAsync(25);
+            await vi.advanceTimersByTimeAsync(1);
             await Promise.resolve();
             await Promise.resolve();
 
@@ -1015,8 +980,6 @@ describe("全文翻译可见性锚点", () => {
             removedNodes: [] as unknown as NodeList,
         } as unknown as MutationRecord]);
 
-        await vi.advanceTimersByTimeAsync(50);
-
         expect(hoverState.controller.signal.aborted).toBe(true);
         expect(segment.isConnected).toBe(false);
         pendingRequest.resolve(runtime.requests.mock.calls[0]![0].map((origin) => `旧译:${origin}`));
@@ -1200,8 +1163,6 @@ describe("全文翻译可见性锚点", () => {
             removedNodes: [] as unknown as NodeList,
         } as unknown as MutationRecord]);
 
-        await vi.advanceTimersByTimeAsync(50);
-
         expect(firstState.controller.signal.aborted).toBe(true);
         expect(firstSegment.isConnected).toBe(false);
         expect(ancestor.querySelectorAll(
@@ -1342,107 +1303,11 @@ describe("全文翻译可见性锚点", () => {
         expect(runtime.requests).toHaveBeenCalledOnce();
     });
 
-    it.each([
-        {display: 0, label: "单语"},
-        {display: 1, label: "双语"},
-    ] as const)("Floating UI 临时隔离不会还原已提交的$label译文", async ({display}) => {
-        runtime.config.display = display;
+    it("临时隐藏保留译文，隐藏期间的原文更新仍会使译文失效", async () => {
+        runtime.config.display = 1;
         document.body.innerHTML = `
-            <main id="messages-wrapper">
-                <p id="message-a">A stable Discord message.</p>
-                <p id="message-b">Another translated Discord message.</p>
-            </main>
+            <main id="surface"><p id="message">Original host message.</p></main>
         `;
-        const wrapper = document.querySelector<HTMLElement>("#messages-wrapper")!;
-        const messages = Array.from(wrapper.querySelectorAll<HTMLElement>("p"));
-        messages.forEach((message) => setLayoutBox(message, 620, 72));
-        runtime.candidates = messages.map((element) => ({
-            element,
-            kind: "content" as const,
-            reason: "discord-message",
-        }));
-
-        autoTranslateEnglishPage();
-        await vi.advanceTimersByTimeAsync(50);
-        const visibilityObserver = TestIntersectionObserver.instances[0]!;
-        messages.forEach((message) => visibilityObserver.emit(message, true));
-        await finishScheduledWork();
-
-        expect(runtime.requests).toHaveBeenCalledTimes(2);
-        const committedText = messages.map((message) => message.textContent);
-        expect(committedText.every((text) => text?.includes("译:"))).toBe(true);
-
-        document.documentElement.classList.add("mouse-mode");
-        wrapper.setAttribute("aria-hidden", "true");
-        wrapper.setAttribute("data-floating-ui-inert", "");
-        const menuPortal = document.createElement("div");
-        menuPortal.setAttribute("role", "menu");
-        menuPortal.textContent = "Discord message actions";
-        document.body.append(menuPortal);
-        TestMutationObserver.instances.at(-1)!.emit([
-            {
-                type: "attributes",
-                target: document.documentElement,
-                attributeName: "class",
-                oldValue: "",
-            } as unknown as MutationRecord,
-            {
-                type: "attributes",
-                target: wrapper,
-                attributeName: "aria-hidden",
-                oldValue: null,
-            } as unknown as MutationRecord,
-            {
-                type: "childList",
-                target: document.body,
-                addedNodes: [menuPortal] as unknown as NodeList,
-                removedNodes: [] as unknown as NodeList,
-            } as unknown as MutationRecord,
-        ]);
-
-        // Exceed the old 500ms debounce that caused Discord translations to revert.
-        await vi.advanceTimersByTimeAsync(1_000);
-        await finishScheduledWork();
-
-        expect(messages.map((message) => message.textContent)).toEqual(committedText);
-        expect(runtime.requests).toHaveBeenCalledTimes(2);
-        expect(messages.map((message) => getTranslationState(message)?.eligibility.status))
-            .toEqual(["temporarily-suppressed", "temporarily-suppressed"]);
-
-        document.documentElement.classList.remove("mouse-mode");
-        wrapper.removeAttribute("aria-hidden");
-        wrapper.removeAttribute("data-floating-ui-inert");
-        menuPortal.remove();
-        TestMutationObserver.instances.at(-1)!.emit([
-            {
-                type: "childList",
-                target: document.body,
-                addedNodes: [] as unknown as NodeList,
-                removedNodes: [menuPortal] as unknown as NodeList,
-            } as unknown as MutationRecord,
-            {
-                type: "attributes",
-                target: wrapper,
-                attributeName: "aria-hidden",
-                oldValue: "true",
-            } as unknown as MutationRecord,
-            {
-                type: "attributes",
-                target: document.documentElement,
-                attributeName: "class",
-                oldValue: "mouse-mode",
-            } as unknown as MutationRecord,
-        ]);
-        await finishScheduledWork();
-
-        expect(messages.map((message) => message.textContent)).toEqual(committedText);
-        expect(runtime.requests).toHaveBeenCalledTimes(2);
-        expect(messages.map((message) => getTranslationState(message)?.eligibility.status))
-            .toEqual(["eligible", "eligible"]);
-    });
-
-    it("临时隐藏期间的真实 Text 更新仍会使旧投影失效", async () => {
-        document.body.innerHTML = '<main id="surface"><p id="message">Original host message.</p></main>';
         const surface = document.querySelector<HTMLElement>("#surface")!;
         const message = document.querySelector<HTMLElement>("#message")!;
         setLayoutBox(message, 620, 72);
@@ -1453,41 +1318,49 @@ describe("全文翻译可见性锚点", () => {
         const visibilityObserver = TestIntersectionObserver.instances[0]!;
         visibilityObserver.emit(message, true);
         await finishScheduledWork();
-        expect(message.textContent).toBe("译:Original host message.");
 
+        const firstTranslation = message.querySelector<HTMLElement>(".babelbox-bilingual-content")!;
         surface.setAttribute("aria-hidden", "true");
         TestMutationObserver.instances.at(-1)!.emit([{
             type: "attributes",
             target: surface,
             attributeName: "aria-hidden",
+            addedNodes: [] as unknown as NodeList,
+            removedNodes: [] as unknown as NodeList,
         } as unknown as MutationRecord]);
         await finishScheduledWork();
-        expect(message.textContent).toBe("译:Original host message.");
 
-        const liveText = message.firstChild as Text;
-        liveText.nodeValue = "Updated while the menu is open.";
+        expect(firstTranslation.isConnected).toBe(true);
+        expect(runtime.requests).toHaveBeenCalledOnce();
+
+        const sourceText = message.firstChild as Text;
+        sourceText.nodeValue = "Updated while hidden.";
         TestMutationObserver.instances.at(-1)!.emit([{
             type: "characterData",
-            target: liveText,
+            target: sourceText,
+            addedNodes: [] as unknown as NodeList,
+            removedNodes: [] as unknown as NodeList,
         } as unknown as MutationRecord]);
         await finishScheduledWork();
 
         expect(getTranslationState(message)).toBeUndefined();
-        expect(message.textContent).toBe("Updated while the menu is open.");
-        expect(runtime.requests).toHaveBeenCalledTimes(1);
+        expect(message.textContent).toBe("Updated while hidden.");
+        expect(runtime.requests).toHaveBeenCalledOnce();
 
         surface.removeAttribute("aria-hidden");
         TestMutationObserver.instances.at(-1)!.emit([{
             type: "attributes",
             target: surface,
             attributeName: "aria-hidden",
+            addedNodes: [] as unknown as NodeList,
+            removedNodes: [] as unknown as NodeList,
         } as unknown as MutationRecord]);
         await finishScheduledWork();
         visibilityObserver.emit(message, true);
         await finishScheduledWork();
 
         expect(runtime.requests).toHaveBeenCalledTimes(2);
-        expect(message.textContent).toBe("译:Updated while the menu is open.");
+        expect(message.textContent).toContain("译:Updated while hidden.");
     });
 
     it("已译 prose 忽略 MathJax/code 等保护后代 churn，但外层 source mutation 会重启", async () => {
@@ -1698,39 +1571,6 @@ describe("全文翻译可见性锚点", () => {
         expect(runtime.requests.mock.calls[1]![0].join(" ")).not.toContain("This text becomes protected.");
         expect(firstWrapper.isConnected).toBe(false);
         expect(paragraph.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(1);
-    });
-
-    it("role 改变候选契约时从双语内容投影切换为控件文本投影", async () => {
-        runtime.config.display = 1;
-        document.body.innerHTML = '<div id="target">Action label</div>';
-        const target = document.querySelector<HTMLElement>("#target")!;
-        setLayoutBox(target, 320, 48);
-        runtime.candidates = [{element: target, kind: "content", reason: "generic-content"}];
-
-        autoTranslateEnglishPage();
-        await vi.advanceTimersByTimeAsync(50);
-        const visibilityObserver = TestIntersectionObserver.instances[0]!;
-        visibilityObserver.emit(target, true);
-        await finishScheduledWork();
-        expect(target.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(1);
-
-        target.setAttribute("role", "button");
-        runtime.candidates = [{element: target, kind: "control", reason: "interactive-control"}];
-        TestMutationObserver.instances.at(-1)!.emit([{
-            type: "attributes",
-            target,
-            attributeName: "role",
-            addedNodes: [] as unknown as NodeList,
-            removedNodes: [] as unknown as NodeList,
-        } as unknown as MutationRecord]);
-        await vi.advanceTimersByTimeAsync(50);
-        visibilityObserver.emit(target, true);
-        await finishScheduledWork();
-
-        expect(runtime.requests).toHaveBeenCalledTimes(2);
-        expect(target.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(0);
-        expect(getTranslationState(target)?.kind).toBe("control");
-        expect(target.textContent).toBe("译:Action label");
     });
 
 });

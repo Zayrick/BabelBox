@@ -88,8 +88,8 @@ describe("指定节点翻译状态机", () => {
             [],
         );
 
-        expect(attempt?.state.source.text).toBe("Exact protected-aware source");
-        expect(attempt?.state.source.textNodes).toEqual([]);
+        expect(attempt?.state.sourceText).toBe("Exact protected-aware source");
+        expect(attempt?.state.sourceTextNodes).toEqual([]);
     });
 
     it("synthetic source children 在 spinner 插入前归档到同一代状态", () => {
@@ -106,8 +106,8 @@ describe("指定节点翻译状态机", () => {
         const spinner = {type: "spinner"};
         node.appendChild(spinner);
 
-        expect(attempt?.state.source.syntheticNodes).toEqual([firstSource, secondSource]);
-        expect(attempt?.state.source.syntheticNodes).not.toContain(spinner);
+        expect(attempt?.state.syntheticSourceNodes).toEqual([firstSource, secondSource]);
+        expect(attempt?.state.syntheticSourceNodes).not.toContain(spinner);
     });
 
     it("旧一代请求在重新开始后不再被视为当前请求", () => {
@@ -229,12 +229,12 @@ describe("指定节点翻译状态机", () => {
         const link = target.querySelector('a')!;
         const attempt = beginTranslation(target, 'single');
         expect(attempt).not.toBeNull();
-        const originalNodes = attempt!.state.source.originalTextValues.map(({node: textNode}) => textNode);
+        const originalNodes = attempt!.state.originalTextValues.map(({node: textNode}) => textNode);
 
         originalNodes[0]!.nodeValue = '打开 ';
         originalNodes[1]!.nodeValue = '指南';
         setTextSlotsApplied(target, [originalNodes[0]!]);
-        expect(attempt!.state.projection.translatedTextNodes).toEqual([originalNodes[0]]);
+        expect(attempt!.state.translatedTextNodes).toEqual([originalNodes[0]]);
         originalNodes[1]!.nodeValue = 'Host updated link';
 
         expect(restoreTranslation(target)).toBe(true);
@@ -276,7 +276,7 @@ describe("指定节点翻译状态机", () => {
         expect(detachFailedTranslationUi(target, attempt.state)).toBe(true);
         expect(getTranslationState(target)).toBe(attempt.state);
         expect(attempt.state.phase).toBe('error');
-        expect(attempt.state.projection.retryWrapper).toBeUndefined();
+        expect(attempt.state.retryWrapper).toBeUndefined();
         expect(target.className).toBe('host');
         expect(getTranslationOwnersForRemovedNode(retryWrapper)).toEqual([]);
         expect(restoreTranslation(target)).toBe(true);
@@ -358,15 +358,15 @@ describe("指定节点翻译状态机", () => {
         const second = document.querySelector("#second") as HTMLElement;
         const firstAttempt = beginTranslation(first, "single")!;
         beginTranslation(second, "bilingual");
-        const originalTextNodes = firstAttempt.state.source.originalTextValues.map(({node: textNode}) => textNode);
+        const originalTextNodes = firstAttempt.state.originalTextValues.map(({node: textNode}) => textNode);
 
         originalTextNodes.forEach((textNode, index) => {
             textNode.nodeValue = `译文 ${index}`;
         });
         setTextSlotsApplied(first);
 
-        expect(firstAttempt.state.projection.translatedTextNodes).toEqual(originalTextNodes);
-        expect(firstAttempt.state.projection.translatedTextValues?.get(originalTextNodes[0]!)).toBe("译文 0");
+        expect(firstAttempt.state.translatedTextNodes).toEqual(originalTextNodes);
+        expect(firstAttempt.state.translatedTextValues?.get(originalTextNodes[0]!)).toBe("译文 0");
 
         restoreAllTranslations();
 
