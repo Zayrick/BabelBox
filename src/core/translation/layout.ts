@@ -182,9 +182,11 @@ export function getDirectInlineRuns(
     skipStructuralAncestorCheck = false,
     isAdditionalBarrier?: (element: Element) => boolean,
     protectionCache?: TranslationTextProtectionCache,
+    excludeStructural = true,
 ): ChildNode[][] {
-    if (isDocumentSurface(element) || isStructuralContainer(element) ||
-        (!skipStructuralAncestorCheck && hasStructuralAncestor(element))) return [];
+    if (isDocumentSurface(element) || (excludeStructural &&
+        (isStructuralContainer(element) ||
+            (!skipStructuralAncestorCheck && hasStructuralAncestor(element))))) return [];
     if (shouldKeepElementOriginal(element, shouldStayOriginal) || !isBlockBoundary(element)) return [];
     if (!hasDirectReadableText(element, shouldStayOriginal, protectionCache)) return [];
     const hasBlockBarrier = hasReadableBlockChild(element, shouldStayOriginal, protectionCache);
@@ -228,10 +230,12 @@ export function classifyGenericCandidate(
     shouldStayOriginal?: (element: Element) => boolean,
     skipStructuralAncestorCheck = false,
     protectionCache?: TranslationTextProtectionCache,
+    excludeStructural = true,
 ): GenericClassification | null {
     const semanticHeading = isSemanticHeadingElement(element);
-    if (isDocumentSurface(element) || isStructuralContainer(element) ||
-        (!skipStructuralAncestorCheck && hasStructuralAncestor(element) && !semanticHeading)) {
+    if (isDocumentSurface(element) || (excludeStructural &&
+        (isStructuralContainer(element) ||
+            (!skipStructuralAncestorCheck && hasStructuralAncestor(element) && !semanticHeading)))) {
         return null;
     }
     if (shouldKeepElementOriginal(element, shouldStayOriginal)) return null;

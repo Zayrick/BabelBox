@@ -22,7 +22,12 @@ function documentWith(html: string): Document {
 
 function emptyFilters(): TranslationFilterConfig {
     return {
-        global: {excludeHidden: false, excludeEditable: false, rules: []},
+        global: {
+            excludeHidden: false,
+            excludeEditable: false,
+            excludeStructural: false,
+            rules: [],
+        },
         sites: [],
     };
 }
@@ -33,6 +38,7 @@ describe('translation filter configuration', () => {
 
         expect(defaults.global.excludeHidden).toBe(true);
         expect(defaults.global.excludeEditable).toBe(true);
+        expect(defaults.global.excludeStructural).toBe(true);
         expect(defaults.global.rules.map((rule) => rule.label)).toEqual([
             '脚本、表单与媒体',
             '代码与等宽文本',
@@ -44,9 +50,18 @@ describe('translation filter configuration', () => {
     it('backfills defaults only when fields are missing and preserves explicit empty lists', () => {
         expect(normalizeTranslationFilterConfig(undefined).sites.map((site) => site.domain))
             .toContain('discord.com');
+        expect(normalizeTranslationFilterConfig({
+            global: {excludeHidden: false, excludeEditable: false, rules: []},
+            sites: [],
+        }).global.excludeStructural).toBe(true);
         expect(normalizeConfig({
             translationFilter: {
-                global: {excludeHidden: false, excludeEditable: false, rules: []},
+                global: {
+                    excludeHidden: false,
+                    excludeEditable: false,
+                    excludeStructural: false,
+                    rules: [],
+                },
                 sites: [],
             },
         }).translationFilter).toEqual(emptyFilters());
@@ -57,6 +72,7 @@ describe('translation filter configuration', () => {
             global: {
                 excludeHidden: true,
                 excludeEditable: true,
+                excludeStructural: true,
                 rules: [
                     {action: 'exclude', selector: '.duplicate'},
                     {action: 'invalid', selector: '.ignored'},
@@ -83,6 +99,7 @@ describe('translation filter configuration', () => {
             global: {
                 excludeHidden: true,
                 excludeEditable: true,
+                excludeStructural: true,
                 rules: [{action: 'exclude', selector: '#panel[data-state="closed"]:lang(en)'}],
             },
             sites: [{domain: 'discord.com', rules: [{
@@ -156,6 +173,7 @@ describe('translation filter policy', () => {
             global: {
                 excludeHidden: false,
                 excludeEditable: false,
+                excludeStructural: false,
                 rules: [{action: 'include' as const, selector: '.shared-filter-target'}],
             },
         };
@@ -202,6 +220,31 @@ describe('translation filter policy', () => {
             .toEqual(expect.arrayContaining(['search-result', 'body-copy']));
     });
 
+    it('lets users include navigation content by disabling structural filtering', () => {
+        const document = documentWith(`
+          <nav>
+            <div id="discord-channel" role="treeitem">Development discussions</div>
+          </nav>
+        `);
+        const filteredConfig = emptyFilters();
+        filteredConfig.global.excludeStructural = true;
+        const filtered = createTranslationCore({
+            url: new URL('https://discord.com/channels/1/2'),
+            filterConfig: filteredConfig,
+        });
+        const unrestricted = createTranslationCore({
+            url: new URL('https://discord.com/channels/1/2'),
+            filterConfig: emptyFilters(),
+        });
+        const channelText = document.querySelector('#discord-channel')?.firstChild;
+
+        expect(filtered.discover(document)).toEqual([]);
+        expect(filtered.resolve(channelText)).toBeNull();
+        expect(unrestricted.discover(document).map((candidate) => candidate.element.id))
+            .toContain('discord-channel');
+        expect(unrestricted.resolve(channelText)?.element.id).toBe('discord-channel');
+    });
+
     it('applies custom global exclusions to discovery and provider text', () => {
         const document = documentWith(`
             <main>
@@ -216,6 +259,7 @@ describe('translation filter policy', () => {
                 global: {
                     excludeHidden: false,
                     excludeEditable: false,
+                    excludeStructural: false,
                     rules: [{action: 'exclude', selector: '.secret'}],
                 },
             },
@@ -234,6 +278,7 @@ describe('translation filter policy', () => {
                 global: {
                     excludeHidden: false,
                     excludeEditable: false,
+                    excludeStructural: false,
                     rules: [{action: 'exclude', selector: '.target'}],
                 },
                 sites: [{
@@ -260,6 +305,7 @@ describe('translation filter policy', () => {
                 global: {
                     excludeHidden: false,
                     excludeEditable: false,
+                    excludeStructural: false,
                     rules: [{action: 'exclude', selector: '.shell'}],
                 },
                 sites: [{domain: 'example.com', rules: [{action: 'include', selector: '.target'}]}],
@@ -279,6 +325,7 @@ describe('translation filter policy', () => {
                 global: {
                     excludeHidden: false,
                     excludeEditable: false,
+                    excludeStructural: false,
                     rules: [
                         {action: 'exclude', selector: '::not-valid('},
                         {action: 'exclude', selector: '.skip'},

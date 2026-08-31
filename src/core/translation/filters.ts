@@ -11,6 +11,7 @@ export interface TranslationFilterRule {
 export interface TranslationFilterGlobalConfig {
     excludeHidden: boolean;
     excludeEditable: boolean;
+    excludeStructural: boolean;
     rules: TranslationFilterRule[];
 }
 
@@ -392,6 +393,7 @@ export function createDefaultTranslationFilterConfig(): TranslationFilterConfig 
         global: {
             excludeHidden: true,
             excludeEditable: true,
+            excludeStructural: true,
             rules: defaultGlobalRules.map(cloneRule),
         },
         sites: defaultSiteRules.map((site) => ({
@@ -416,6 +418,9 @@ export function normalizeTranslationFilterConfig(value: unknown): TranslationFil
         excludeEditable: typeof globalValue.excludeEditable === 'boolean'
             ? globalValue.excludeEditable
             : defaults.global.excludeEditable,
+        excludeStructural: typeof globalValue.excludeStructural === 'boolean'
+            ? globalValue.excludeStructural
+            : defaults.global.excludeStructural,
         rules: globalRules,
     };
 

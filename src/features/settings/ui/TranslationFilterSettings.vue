@@ -40,6 +40,17 @@
             @change="updateGlobalOption('excludeEditable', Boolean($event))"
           />
         </label>
+        <label>
+          <span>
+            <strong>跳过页面结构区域</strong>
+            <small>导航、页眉、页脚和页面侧栏</small>
+          </span>
+          <el-switch
+            :model-value="filterConfig.global.excludeStructural"
+            aria-label="跳过页面结构区域"
+            @change="updateGlobalOption('excludeStructural', Boolean($event))"
+          />
+        </label>
       </div>
 
       <TranslationFilterRulesEditor
@@ -139,7 +150,10 @@ function commit(value: TranslationFilterConfig) {
   emit('update:modelValue', normalizeTranslationFilterConfig(value));
 }
 
-function updateGlobalOption(option: 'excludeHidden' | 'excludeEditable', value: boolean) {
+function updateGlobalOption(
+  option: 'excludeHidden' | 'excludeEditable' | 'excludeStructural',
+  value: boolean,
+) {
   commit({
     ...filterConfig.value,
     global: {...filterConfig.value.global, [option]: value},

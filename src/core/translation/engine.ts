@@ -147,12 +147,14 @@ export class TranslationCandidateCore {
     readonly url: URL;
     readonly adapters: readonly TranslationSiteAdapter[];
     readonly filterPolicy: TranslationFilterPolicy;
+    private readonly excludeStructuralContent: boolean;
     private readonly context: AdapterContext;
     private readonly discoveredCandidateChildBarriers = new WeakMap<Element, ReadonlySet<Element>>();
 
     constructor(options: TranslationCoreOptions = {}) {
         this.url = options.url ?? currentURL();
         this.filterPolicy = createTranslationFilterPolicy(options.filterConfig, this.url);
+        this.excludeStructuralContent = this.filterPolicy.config.global.excludeStructural;
         this.adapters = (options.adapters ?? [])
             .map((adapter, index) => ({adapter, index}))
             .filter(({adapter}) => adapter.matches(this.url))
@@ -266,7 +268,7 @@ export class TranslationCandidateCore {
     ): boolean {
         const cached = evaluationContext.structuralContainers.get(element);
         if (cached !== undefined) return cached;
-        const result = isStructuralContainer(element);
+        const result = this.excludeStructuralContent && isStructuralContainer(element);
         evaluationContext.structuralContainers.set(element, result);
         return result;
     }
@@ -274,7 +276,7 @@ export class TranslationCandidateCore {
     private hasStructuralAncestorForResolution(
         element: Element,
     ): boolean {
-        return hasStructuralAncestor(element);
+        return this.excludeStructuralContent && hasStructuralAncestor(element);
     }
 
     inspect(element: Element): TranslationCoreInspection {
@@ -334,6 +336,7 @@ export class TranslationCandidateCore {
             this.shouldStayOriginal,
             evaluationContext !== undefined,
             textProtectionCache,
+            this.excludeStructuralContent,
         );
         if (!classification) {
             return {candidate: null};
@@ -373,6 +376,7 @@ export class TranslationCandidateCore {
             skipStructuralAncestorCheck,
             isDirectRunBarrier,
             textProtectionCache,
+            this.excludeStructuralContent,
         )) {
             const partitions = partitionInlineRunAtBarriers(
                 run,
@@ -401,12 +405,13 @@ export class TranslationCandidateCore {
         insideStructural: boolean,
         textProtectionCache: TranslationTextProtectionCache,
     ): TranslationCandidate | null {
-        if (insideStructural && !isSemanticHeadingElement(element)) return null;
+        if (this.excludeStructuralContent && insideStructural && !isSemanticHeadingElement(element)) return null;
         const classification = classifyGenericCandidate(
             element,
             this.shouldStayOriginal,
             true,
             textProtectionCache,
+            this.excludeStructuralContent,
         );
         if (!classification) return null;
         return {
@@ -557,7 +562,7 @@ export class TranslationCandidateCore {
                 candidateChildBarriers: new Set(),
                 exitIndex: 0,
                 checkAncestors: true,
-                insideStructural: hasStructuralAncestor(rootElement),
+                insideStructural: this.excludeStructuralContent && hasStructuralAncestor(rootElement),
                 pruned: false,
             }];
 
@@ -612,7 +617,8 @@ export class TranslationCandidateCore {
                             candidateChildBarriers: new Set(),
                             exitIndex: 0,
                             checkAncestors: false,
-                            insideStructural: frame.insideStructural || isStructuralContainer(frame.element),
+                            insideStructural: this.excludeStructuralContent &&
+                                (frame.insideStructural || isStructuralContainer(frame.element)),
                             pruned: false,
                         });
                         continue;
@@ -632,7 +638,8 @@ export class TranslationCandidateCore {
                             candidateChildBarriers: new Set(),
                             exitIndex: 0,
                             checkAncestors: false,
-                            insideStructural: frame.insideStructural || isStructuralContainer(frame.element),
+                            insideStructural: this.excludeStructuralContent &&
+                                (frame.insideStructural || isStructuralContainer(frame.element)),
                             pruned: false,
                         });
                         continue;
