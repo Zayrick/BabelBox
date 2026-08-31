@@ -939,7 +939,7 @@ describe("全文翻译可见性锚点", () => {
             expect(runtime.requests).toHaveBeenCalledTimes(1);
     });
 
-    it("全文 discovery enter 会登记启动前 in-flight hover synthetic 状态且旧结果不可覆盖", async () => {
+    it("全文 discovery enter 会登记启动前 in-flight hover synthetic 状态且临时隐藏不取消", async () => {
         runtime.config.display = 1;
         document.body.innerHTML = `
             <section id="ancestor">
@@ -980,13 +980,13 @@ describe("全文翻译可见性锚点", () => {
             removedNodes: [] as unknown as NodeList,
         } as unknown as MutationRecord]);
 
-        expect(hoverState.controller.signal.aborted).toBe(true);
-        expect(segment.isConnected).toBe(false);
-        pendingRequest.resolve(runtime.requests.mock.calls[0]![0].map((origin) => `旧译:${origin}`));
+        expect(hoverState.controller.signal.aborted).toBe(false);
+        expect(segment.isConnected).toBe(true);
+        pendingRequest.resolve(runtime.requests.mock.calls[0]![0].map((origin) => `译:${origin}`));
         await finishScheduledWork();
 
-        expect(ancestor.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(0);
-        expect(ancestor.querySelectorAll('[data-babelbox-translation-owned="true"]')).toHaveLength(0);
+        expect(getTranslationState(segment)?.phase).toBe("translated");
+        expect(ancestor.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(1);
         expect(runtime.requests).toHaveBeenCalledTimes(1);
     });
 
@@ -1125,7 +1125,7 @@ describe("全文翻译可见性锚点", () => {
         expect(segment.isConnected).toBe(true);
     });
 
-    it("in-flight synthetic inline-run 的祖先 hidden 会 abort，旧结果不可覆盖且解除后可翻译", async () => {
+    it("in-flight synthetic inline-run 的原文变化会 abort，旧结果不可覆盖且新内容会重译", async () => {
         runtime.config.display = 1;
         document.body.innerHTML = `
             <section id="ancestor">
@@ -1134,7 +1134,6 @@ describe("全文翻译可见性锚点", () => {
                 </div>
             </section>
         `;
-        const ancestor = document.querySelector<HTMLElement>("#ancestor")!;
         const host = document.querySelector<HTMLElement>("#mixed")!;
         const sourceNodes = [host.firstChild as Text, document.querySelector<HTMLElement>("#emphasis")!] as const;
         setLayoutBox(host, 640, 120);
@@ -1154,34 +1153,25 @@ describe("全文翻译可见性锚点", () => {
         expect(runtime.requests).toHaveBeenCalledTimes(1);
         expect(firstState.phase).toBe("loading");
 
-        ancestor.hidden = true;
+        sourceNodes[0].nodeValue = "Updated inline prefix ";
         TestMutationObserver.instances.at(-1)!.emit([{
-            type: "attributes",
-            target: ancestor,
-            attributeName: "hidden",
+            type: "characterData",
+            target: sourceNodes[0],
             addedNodes: [] as unknown as NodeList,
             removedNodes: [] as unknown as NodeList,
         } as unknown as MutationRecord]);
 
         expect(firstState.controller.signal.aborted).toBe(true);
         expect(firstSegment.isConnected).toBe(false);
-        expect(ancestor.querySelectorAll(
+        expect(host.querySelectorAll(
             '[data-babelbox-translation-segment="true"], [data-babelbox-translation-owned="true"]',
         )).toHaveLength(0);
 
         firstRequest.resolve(runtime.requests.mock.calls[0]![0].map((origin) => `旧译:${origin}`));
         await finishScheduledWork();
-        expect(ancestor.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(0);
+        expect(host.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(0);
         expect(runtime.requests).toHaveBeenCalledTimes(1);
 
-        ancestor.hidden = false;
-        TestMutationObserver.instances.at(-1)!.emit([{
-            type: "attributes",
-            target: ancestor,
-            attributeName: "hidden",
-            addedNodes: [] as unknown as NodeList,
-            removedNodes: [] as unknown as NodeList,
-        } as unknown as MutationRecord]);
         await vi.advanceTimersByTimeAsync(50);
         visibilityObserver.emit(host, true);
         await finishScheduledWork();
@@ -1190,6 +1180,7 @@ describe("全文翻译可见性锚点", () => {
         expect(host.querySelectorAll('[data-babelbox-translation-segment="true"]')).toHaveLength(1);
         expect(host.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(1);
         expect(host.textContent).not.toContain("旧译:");
+        expect(runtime.requests.mock.calls[1]![0].join(" ")).toContain("Updated inline prefix");
     });
 
     it("显式 unchanged 在同一全文会话形成 source 签名墓碑，普通 rescan 不重复请求", async () => {
@@ -1520,7 +1511,7 @@ describe("全文翻译可见性锚点", () => {
         );
     });
 
-    it("宿主改写译文内容后会恢复并重译", async () => {
+    it("宿主改写译文节点不会触发 provider 重译", async () => {
         runtime.config.display = 1;
         document.body.innerHTML = '<p id="prose">Host prose remains authoritative.</p>';
         const paragraph = document.querySelector<HTMLElement>("#prose")!;
@@ -1541,8 +1532,9 @@ describe("全文翻译可见性锚点", () => {
         visibilityObserver.emit(paragraph, true);
         await finishScheduledWork();
 
-        expect(runtime.requests).toHaveBeenCalledTimes(2);
-        expect(firstWrapper.isConnected).toBe(false);
+        expect(runtime.requests).toHaveBeenCalledTimes(1);
+        expect(firstWrapper.isConnected).toBe(true);
+        expect(firstWrapper.textContent).toContain("Host appended translation text.");
         expect(paragraph.querySelectorAll(".babelbox-bilingual-content")).toHaveLength(1);
     });
 

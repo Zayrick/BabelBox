@@ -2,17 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {parseHTML} from "linkedom";
 import {
     beginTranslation,
-    detachFailedTranslationUi,
-    discardTranslation,
-    getTranslationOwnersForRemovedNode,
     getTranslationState,
     markTranslationComplete,
     markTranslationError,
     restoreAllTranslations,
     restoreTranslation,
-    setBilingualContent,
     setRenderedStyleAttribute,
-    setRetryWrapper,
     setTextSlotsApplied,
 } from "@/src/features/full-page-translation/content/state";
 
@@ -23,8 +18,6 @@ import {
 class FakeElement {
     isConnected = true;
     textContent = "Original text";
-    innerHTML = "Original text";
-    outerHTML = "<p>Original text</p>";
     childNodes: object[] = [{ type: "original-child" }];
     classList = { remove: vi.fn() };
     attributes = new Map<string, string>();
@@ -151,40 +144,11 @@ describe("指定节点翻译状态机", () => {
 
         const hostChild = { type: "host-rerendered-child" };
         node.childNodes = [hostChild];
-        node.innerHTML = "Host rerendered text";
         attempt!.state.phase = "translated";
 
         expect(restoreTranslation(node as unknown as HTMLElement)).toBe(true);
         expect(node.childNodes).toEqual([hostChild]);
         expect(getTranslationState(node as unknown as HTMLElement)).toBeUndefined();
-    });
-
-    it("站点在请求期间重渲染时，不把失败状态写入新内容", () => {
-        const attempt = beginTranslation(node as unknown as HTMLElement, "bilingual");
-        expect(attempt).not.toBeNull();
-
-        node.innerHTML = "Host rerendered text";
-
-        expect(markTranslationError(
-            node as unknown as HTMLElement,
-            attempt!.state,
-            attempt!.generation,
-        )).toBe(false);
-        expect(getTranslationState(node as unknown as HTMLElement)).toBe(attempt!.state);
-        expect(attempt!.state.phase).toBe("loading");
-    });
-
-    it("调用方完成精确 source 校验后，可忽略仅属性导致的 innerHTML 差异", () => {
-        const attempt = beginTranslation(node as unknown as HTMLElement, "bilingual");
-        expect(attempt).not.toBeNull();
-        node.innerHTML = '<span class="animated">Original text</span>';
-
-        expect(markTranslationComplete(
-            node as unknown as HTMLElement,
-            attempt!.state,
-            attempt!.generation,
-            false,
-        )).toBe(true);
     });
 
     it("恢复双语翻译时还原插件临时修改的内联样式", () => {
@@ -244,93 +208,7 @@ describe("指定节点翻译状态机", () => {
         expect(originalNodes[1]!.nodeValue).toBe('Host updated link');
     });
 
-    it("能在宿主移除双语 wrapper 后找到并清理其 owner", () => {
-        const {document} = parseHTML('<html><body><p id="target">Readable paragraph.</p></body></html>');
-        const target = document.querySelector('#target') as HTMLElement;
-        const attempt = beginTranslation(target, 'bilingual');
-        expect(attempt).not.toBeNull();
-        const wrapper = document.createElement('span');
-        wrapper.setAttribute('data-babelbox-translation-owned', 'true');
-        target.appendChild(wrapper);
-        setBilingualContent(target, wrapper);
-        wrapper.remove();
-
-        expect(getTranslationOwnersForRemovedNode(wrapper)).toEqual([target]);
-        expect(restoreTranslation(target)).toBe(true);
-        expect(getTranslationOwnersForRemovedNode(wrapper)).toEqual([]);
-    });
-
-    it("宿主移除失败 UI 后保留 error tombstone，但清除 UI ownership 和失败 class", () => {
-        const {document} = parseHTML('<html><body><p id="target" class="host">Readable paragraph.</p></body></html>');
-        const target = document.querySelector('#target') as HTMLElement;
-        const attempt = beginTranslation(target, 'bilingual')!;
-        expect(markTranslationError(target, attempt.state, attempt.generation)).toBe(true);
-        const retryWrapper = document.createElement('span');
-        retryWrapper.setAttribute('data-babelbox-translation-owned', 'true');
-        target.appendChild(retryWrapper);
-        target.classList.add('babelbox-failure');
-        setRetryWrapper(target, retryWrapper);
-        setRenderedStyleAttribute(target);
-        retryWrapper.remove();
-
-        expect(detachFailedTranslationUi(target, attempt.state)).toBe(true);
-        expect(getTranslationState(target)).toBe(attempt.state);
-        expect(attempt.state.phase).toBe('error');
-        expect(attempt.state.retryWrapper).toBeUndefined();
-        expect(target.className).toBe('host');
-        expect(getTranslationOwnersForRemovedNode(retryWrapper)).toEqual([]);
-        expect(restoreTranslation(target)).toBe(true);
-    });
-
-    it("removed ancestor 和 owner 自身移除都能通过 subtree 索引找到 owner", () => {
-        const {document} = parseHTML(`
-            <html><body>
-                <section id="removed"><div><p id="target">Readable paragraph.</p></div></section>
-            </body></html>
-        `);
-        const removed = document.querySelector("#removed") as HTMLElement;
-        const target = document.querySelector("#target") as HTMLElement;
-        const attempt = beginTranslation(target, "bilingual");
-        expect(attempt).not.toBeNull();
-
-        removed.remove();
-
-        expect(getTranslationOwnersForRemovedNode(removed)).toEqual([target]);
-        expect(getTranslationOwnersForRemovedNode(target)).toEqual([target]);
-        expect(restoreTranslation(target)).toBe(true);
-    });
-
-    it("discard 后 owner 和已脱离的 artifact 都不再命中索引", () => {
-        const {document} = parseHTML('<html><body><p id="target">Readable paragraph.</p></body></html>');
-        const target = document.querySelector("#target") as HTMLElement;
-        const attempt = beginTranslation(target, "bilingual")!;
-        const wrapper = document.createElement("span");
-        target.appendChild(wrapper);
-        setBilingualContent(target, wrapper);
-        wrapper.remove();
-
-        expect(discardTranslation(target, attempt.state)).toBe(true);
-        expect(getTranslationOwnersForRemovedNode(target)).toEqual([]);
-        expect(getTranslationOwnersForRemovedNode(wrapper)).toEqual([]);
-    });
-
-    it("新一代 begin 会移除旧 artifact 的 ownership", () => {
-        const {document} = parseHTML('<html><body><p id="target">Readable paragraph.</p></body></html>');
-        const target = document.querySelector("#target") as HTMLElement;
-        const first = beginTranslation(target, "bilingual")!;
-        const oldWrapper = document.createElement("span");
-        target.appendChild(oldWrapper);
-        setBilingualContent(target, oldWrapper);
-        first.state.phase = "error";
-
-        const second = beginTranslation(target, "bilingual")!;
-
-        expect(getTranslationOwnersForRemovedNode(oldWrapper)).toEqual([]);
-        expect(getTranslationOwnersForRemovedNode(target)).toEqual([target]);
-        expect(discardTranslation(target, second.state)).toBe(true);
-    });
-
-    it("synthetic segment restore 解包后不会残留 ownership", () => {
+    it("synthetic segment restore 会解包原文节点", () => {
         const {document} = parseHTML(`
             <html><body><p id="parent">Before <span id="synthetic">inline segment</span> after.</p></body></html>
         `);
@@ -338,13 +216,11 @@ describe("指定节点翻译状态机", () => {
         const synthetic = document.querySelector("#synthetic") as HTMLElement;
         const attempt = beginTranslation(synthetic, "bilingual", "content", true);
         expect(attempt).not.toBeNull();
-        expect(getTranslationOwnersForRemovedNode(synthetic)).toEqual([synthetic]);
 
         expect(restoreTranslation(synthetic)).toBe(true);
 
         expect(parent.querySelector("#synthetic")).toBeNull();
         expect(parent.textContent).toContain("inline segment");
-        expect(getTranslationOwnersForRemovedNode(synthetic)).toEqual([]);
     });
 
     it("text-slot 默认记录所有原始文本节点，restoreAllTranslations 可统一清理活跃状态", () => {

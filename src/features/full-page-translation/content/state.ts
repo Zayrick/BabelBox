@@ -21,7 +21,6 @@ export interface TranslationState {
     sourceText: string;
     /** Text-slot identities visible at request creation, before any live replacement. */
     sourceTextNodes?: readonly Text[];
-    sourceHTML: string;
     /** Runtime-only wrapper around a direct inline run; removed on every exit path. */
     syntheticSegment: boolean;
     /** Exact direct children captured before the loading spinner is appended. */
@@ -45,12 +44,8 @@ export interface TranslationState {
     controller: AbortController;
     spinner?: HTMLElement;
     bilingualContent?: HTMLElement;
-    /** 失败态的重试控件；用于区分扩展写入与宿主移除。 */
+    /** 失败态的重试控件。 */
     retryWrapper?: HTMLElement;
-    /** 双语 wrapper 最后一次由插件写入的 HTML，用于区分宿主重绘和插件自身 mutation。 */
-    bilingualHTML?: string;
-    /** This generation's exact owner DOM after the translation commit finished. */
-    committedHTML?: string;
 }
 
 interface TranslationAttempt {
@@ -61,8 +56,6 @@ interface TranslationAttempt {
 const states = new WeakMap<HTMLElement, TranslationState>();
 const activeNodeRefs = new Set<WeakRef<HTMLElement>>();
 const activeRefsByNode = new WeakMap<HTMLElement, WeakRef<HTMLElement>>();
-const ownersByIndexedNode = new WeakMap<Node, Set<WeakRef<HTMLElement>>>();
-const indexedNodesByOwner = new WeakMap<HTMLElement, Set<Node>>();
 
 function forEachActiveNode(callback: (node: HTMLElement, state: TranslationState) => void): void {
     for (const ref of activeNodeRefs) {
@@ -87,42 +80,6 @@ function trackActiveNode(node: HTMLElement): WeakRef<HTMLElement> {
     activeRefsByNode.set(node, ref);
     activeNodeRefs.add(ref);
     return ref;
-}
-
-function clearOwnershipIndex(owner: HTMLElement): void {
-    const indexedNodes = indexedNodesByOwner.get(owner);
-    if (!indexedNodes) return;
-
-    indexedNodes.forEach((indexedNode) => {
-        const owners = ownersByIndexedNode.get(indexedNode);
-        owners?.forEach((ref) => {
-            const candidate = ref.deref();
-            if (!candidate || candidate === owner) owners.delete(ref);
-        });
-        if (owners?.size === 0) ownersByIndexedNode.delete(indexedNode);
-    });
-    indexedNodesByOwner.delete(owner);
-}
-
-function refreshOwnershipIndex(owner: HTMLElement, state: TranslationState): void {
-    clearOwnershipIndex(owner);
-    const indexedNodes = new Set<Node>([
-        owner,
-        ...(state.spinner ? [state.spinner] : []),
-        ...(state.bilingualContent ? [state.bilingualContent] : []),
-        ...(state.retryWrapper ? [state.retryWrapper] : []),
-    ]);
-    indexedNodesByOwner.set(owner, indexedNodes);
-    const ownerRef = trackActiveNode(owner);
-
-    indexedNodes.forEach((indexedNode) => {
-        let owners = ownersByIndexedNode.get(indexedNode);
-        if (!owners) {
-            owners = new Set<WeakRef<HTMLElement>>();
-            ownersByIndexedNode.set(indexedNode, owners);
-        }
-        owners.add(ownerRef);
-    });
 }
 
 export function getTranslationState(node: HTMLElement): TranslationState | undefined {
@@ -163,7 +120,6 @@ export function beginTranslation(
         generation: (previous?.generation ?? 0) + 1,
         sourceText,
         sourceTextNodes: sourceTextNodes ? [...sourceTextNodes] : undefined,
-        sourceHTML: node.innerHTML,
         syntheticSegment,
         syntheticSourceNodes: syntheticSegment ? Array.from(node.childNodes) : undefined,
         originalStyleAttribute: node.getAttribute("style"),
@@ -174,26 +130,19 @@ export function beginTranslation(
 
     states.set(node, state);
     trackActiveNode(node);
-    refreshOwnershipIndex(node, state);
     return { state, generation: state.generation };
 }
 
-/**
- * 异步请求返回后，确认它仍然属于当前节点的当前一代请求。
- * sourceHTML 的检查应在移除扩展自己的 spinner 后调用。
- */
 function isCurrentTranslation(
     node: HTMLElement,
     state: TranslationState,
     generation: number,
-    validateSourceHTML = true,
 ): boolean {
     return (
         states.get(node) === state &&
         state.generation === generation &&
         !state.controller.signal.aborted &&
-        node.isConnected &&
-        (!validateSourceHTML || node.innerHTML === state.sourceHTML)
+        node.isConnected
     );
 }
 
@@ -201,20 +150,16 @@ export function markTranslationComplete(
     node: HTMLElement,
     state: TranslationState,
     generation: number,
-    validateSourceHTML = true,
 ): boolean {
-    return transitionPhase(node, state, generation, "translated", validateSourceHTML);
+    return transitionPhase(node, state, generation, "translated");
 }
 
 export function markTranslationError(
     node: HTMLElement,
     state: TranslationState,
     generation: number,
-    validateSourceHTML = true,
 ): boolean {
-    // 失败结果也不能覆盖站点在请求期间写入的新内容。
-    // 调用方会先移除插件自己的 spinner，再进行这次快照校验。
-    return transitionPhase(node, state, generation, "error", validateSourceHTML);
+    return transitionPhase(node, state, generation, "error");
 }
 
 function transitionPhase(
@@ -222,12 +167,10 @@ function transitionPhase(
     state: TranslationState,
     generation: number,
     phase: Extract<TranslationPhase, "translated" | "error">,
-    validateSourceHTML: boolean,
 ): boolean {
-    if (!isCurrentTranslation(node, state, generation, validateSourceHTML)) return false;
+    if (!isCurrentTranslation(node, state, generation)) return false;
     state.phase = phase;
     state.spinner = undefined;
-    refreshOwnershipIndex(node, state);
     return true;
 }
 
@@ -241,7 +184,6 @@ function setArtifact(
     const state = states.get(node);
     if (!state) return;
     state[key] = artifact;
-    refreshOwnershipIndex(node, state);
 }
 
 export function setSpinner(node: HTMLElement, spinner: HTMLElement): void {
@@ -250,35 +192,10 @@ export function setSpinner(node: HTMLElement, spinner: HTMLElement): void {
 
 export function setBilingualContent(node: HTMLElement, content: HTMLElement): void {
     setArtifact(node, "bilingualContent", content);
-    const state = states.get(node);
-    if (state) {
-        state.bilingualHTML = content.innerHTML;
-        state.committedHTML = node.innerHTML;
-    }
 }
 
 export function setRetryWrapper(node: HTMLElement, wrapper: HTMLElement): void {
     setArtifact(node, "retryWrapper", wrapper);
-}
-
-/**
- * The host removed only our failure UI. Keep an error tombstone so generic
- * discovery cannot turn a permanent provider failure into automatic retries;
- * a real source mutation or an explicit user action can still clear it.
- */
-export function detachFailedTranslationUi(
-    node: HTMLElement,
-    state: TranslationState,
-): boolean {
-    if (states.get(node) !== state || state.phase !== "error") return false;
-    removeExtensionNode(state.retryWrapper);
-    state.retryWrapper = undefined;
-    restoreOriginalStyle(node, state);
-    restoreOriginalClass(node, state);
-    state.renderedStyleAttribute = node.getAttribute("style");
-    state.renderedClassAttribute = node.getAttribute("class");
-    refreshOwnershipIndex(node, state);
-    return true;
 }
 
 /**
@@ -306,7 +223,6 @@ function removeRetryArtifacts(node: HTMLElement): void {
 
 function clearState(node: HTMLElement): void {
     states.delete(node);
-    clearOwnershipIndex(node);
     const ref = activeRefsByNode.get(node);
     if (ref) activeNodeRefs.delete(ref);
     activeRefsByNode.delete(node);
@@ -411,7 +327,6 @@ export function setTextSlotsApplied(
         state.translatedTextValues = new WeakMap(
             state.originalTextValues.map(({node: textNode}) => [textNode, textNode.nodeValue ?? ""]),
         );
-        state.committedHTML = node.innerHTML;
     }
 }
 
@@ -445,66 +360,17 @@ export function reconcileEquivalentTranslation(
         return true;
     }
 
+    // The caller has already compared the effective source text. DOM shape and
+    // attributes are not translation identity, so a detached bilingual wrapper
+    // can be reattached without another provider request.
     const content = state.bilingualContent;
     if (!content || (content.isConnected && content.parentNode !== node)) return false;
-    const sourceClone = node.cloneNode(false) as HTMLElement;
-    Array.from(node.childNodes)
-        .filter((child) => child !== content)
-        .forEach((child) => sourceClone.appendChild(child.cloneNode(true)));
-    if (sourceClone.innerHTML !== state.sourceHTML) return false;
     state.sourceTextNodes = [...currentTextNodes];
     if (!content.isConnected) {
         node.classList.add("babelbox-bilingual");
         node.appendChild(content);
     }
-    state.committedHTML = node.innerHTML;
-    refreshOwnershipIndex(node, state);
     return true;
-}
-
-/**
- * Find states owned by a node that the host removed. This includes a removed
- * translated target and a removed spinner/bilingual wrapper whose owner stays
- * connected. Walk only the removed subtree and consult the incrementally
- * maintained ownership index; unrelated active translations are never scanned.
- * The runtime uses this before its generic artifact filter.
- */
-export function getTranslationOwnersForRemovedNode(removed: Node): HTMLElement[] {
-    const owners = new Set<HTMLElement>();
-    const stack: Node[] = [removed];
-
-    while (stack.length > 0) {
-        const current = stack.pop();
-        if (!current) continue;
-
-        getTranslationOwnersForIndexedNode(current).forEach((owner) => owners.add(owner));
-
-        if (current.nodeType === 1) {
-            const shadowRoot = (current as Element).shadowRoot;
-            if (shadowRoot) stack.push(shadowRoot);
-        }
-
-        for (let index = current.childNodes.length - 1; index >= 0; index -= 1) {
-            const child = current.childNodes.item(index);
-            if (child) stack.push(child);
-        }
-    }
-
-    return [...owners];
-}
-
-/** Resolve only owners indexed directly on this node; dead weak references are pruned lazily. */
-function getTranslationOwnersForIndexedNode(indexedNode: Node): HTMLElement[] {
-    const refs = ownersByIndexedNode.get(indexedNode);
-    if (!refs) return [];
-    const owners = new Set<HTMLElement>();
-    refs.forEach((ref) => {
-        const owner = ref.deref();
-        if (!owner || !states.has(owner)) refs.delete(ref);
-        else owners.add(owner);
-    });
-    if (refs.size === 0) ownersByIndexedNode.delete(indexedNode);
-    return [...owners];
 }
 
 /**
