@@ -1,7 +1,11 @@
 <!-- Popup 页面归 app 层所有；WXT 入口只负责调用挂载函数。 -->
 <template>
-  <main
+  <el-scrollbar
     class="popup-shell"
+    tag="main"
+    view-class="popup-content"
+    max-height="min(600px, 100vh)"
+    :tabindex="0"
     :class="{ 'config-loading': !hydrated }"
     :aria-busy="!hydrated"
     :data-config-ready="hydrated ? 'true' : 'false'"
@@ -551,11 +555,12 @@
 
     <CustomHotkeyInput v-model="showCustomMouseHotkeyDialog" :current-value="config.customHotkey" @confirm="confirmMouseHotkey" @cancel="cancelMouseHotkey" />
     <CustomHotkeyInput v-model="showCustomSelectionHotkeyDialog" :current-value="config.customSelectionTranslatorHotkey" @confirm="confirmSelectionHotkey" @cancel="cancelSelectionHotkey" />
-  </main>
+  </el-scrollbar>
 </template>
 
 <script lang="ts" setup>
 import { computed, defineAsyncComponent, onMounted, onUnmounted, ref, watch } from 'vue';
+import { ElScrollbar } from 'element-plus';
 import {browser} from 'wxt/browser';
 import {useDocumentTheme} from '@/src/ui/composables/useDocumentTheme';
 import {

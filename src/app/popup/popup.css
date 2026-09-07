@@ -14,9 +14,11 @@ html, body, #app {
   width: 400px;
   min-width: 400px;
   margin: 0;
-  overflow-x: hidden;
+  overflow: hidden;
   background: var(--page);
 }
+/* 先提供弹窗的首选高度，再让滚动区适应浏览器实际分配的视口。 */
+body { height: 600px; }
 button { font: inherit; }
 button { color: inherit; }
 button:focus-visible {
@@ -25,10 +27,12 @@ button:focus-visible {
 }
 
 .popup-shell {
-  padding: 12px;
+  height: auto;
   background: var(--page);
 }
 .popup-shell.config-loading { pointer-events: none; }
+.popup-shell > .el-scrollbar__wrap { overflow-x: hidden; }
+.popup-content { padding: 12px; }
 
 .popup-header {
   display: flex;
