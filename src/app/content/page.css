@@ -29,7 +29,8 @@
 }
 
 /* 文字流光只改变现有像素的透明度，不覆盖宿主页面的文字颜色。 */
-[data-babelbox-translation-shimmer="true"] {
+[data-babelbox-translation-shimmer="true"],
+.babelbox-input-translating[data-babelbox-input-animation="shimmer"] {
     mask-image: var(--babelbox-shimmer-mask);
     mask-repeat: no-repeat;
     mask-size: var(--babelbox-shimmer-band) 100%;
@@ -72,7 +73,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    [data-babelbox-translation-shimmer="true"] {
+    [data-babelbox-translation-shimmer="true"],
+    .babelbox-input-translating[data-babelbox-input-animation="shimmer"] {
         animation: none !important;
         mask-image: none;
         -webkit-mask-image: none;

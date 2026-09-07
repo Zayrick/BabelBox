@@ -2,7 +2,7 @@ import type { ContentScriptContext } from 'wxt/utils/content-script-context';
 import type { ShadowRootContentScriptUi } from 'wxt/utils/content-script-ui/shadow-root';
 import { CircleAlert, CircleCheck, LoaderCircle, type IconNode } from 'lucide';
 import { createLucideIconElement } from '@/src/ui/icons/lucideDom';
-import {usesAnimatedEffects, type AnimationMode} from '@/src/core/config/animation';
+import {DEFAULT_ANIMATION_MODE, usesAnimatedEffects, type AnimationMode} from '@/src/core/config/animation';
 import {
     canCommitInputBoxTranslation,
     getDeepActiveElement,
@@ -78,6 +78,21 @@ export function setInputBoxText(element: HTMLElement, text: string): void {
     }
 
     if (isInputElement(element)) {
+        if (element.getAttribute('data-slate-editor') === 'true') {
+            // Slate 通过 beforeinput 更新实际草稿模型。
+            const range = element.ownerDocument.createRange();
+            range.selectNodeContents(element);
+            element.dispatchEvent(new InputEvent('beforeinput', {
+                bubbles: true,
+                cancelable: true,
+                composed: true,
+                inputType: 'insertReplacementText',
+                data: text,
+                targetRanges: [new StaticRange(range)],
+            }));
+            return;
+        }
+
         element.innerText = text;
         element.dispatchEvent(new Event('input', { bubbles: true }));
     }
@@ -122,6 +137,10 @@ export function createInputTranslationContentFeature(
 
     const isEnabled = () => isInputBoxTranslationEnabled(deps.config, deps.isSiteDisabled());
     const animationsEnabled = () => usesAnimatedEffects(deps.config.animationMode);
+    const clearInputLoadingAnimation = (element: HTMLElement): void => {
+        element.classList.remove('babelbox-input-translating');
+        element.removeAttribute('data-babelbox-input-animation');
+    };
 
     const removeExistingTooltip = (ownerRequestId?: number): void => {
         if (ownerRequestId !== undefined && inputTooltipOwnerRequestId !== ownerRequestId) return;
@@ -143,7 +162,7 @@ export function createInputTranslationContentFeature(
 
     const invalidate = (): void => {
         activeInputTranslationRequestId += 1;
-        activeInputTranslationElement?.classList.remove('babelbox-input-translating');
+        if (activeInputTranslationElement) clearInputLoadingAnimation(activeInputTranslationElement);
         activeInputTranslationElement = null;
         removeExistingTooltip();
     };
@@ -156,6 +175,9 @@ export function createInputTranslationContentFeature(
         if (!animationsEnabled()) return;
 
         element.classList.remove('babelbox-input-translating', 'babelbox-input-success', 'babelbox-input-error');
+        if (animationType === 'translating') {
+            element.setAttribute('data-babelbox-input-animation', deps.config.animationMode ?? DEFAULT_ANIMATION_MODE);
+        }
         element.classList.add(`babelbox-input-${animationType}`);
 
         if (animationType !== 'translating') {
@@ -315,7 +337,7 @@ export function createInputTranslationContentFeature(
             });
         const clearOwnedVisuals = () => {
             if (requestId !== activeInputTranslationRequestId) return;
-            element.classList.remove('babelbox-input-translating');
+            clearInputLoadingAnimation(element);
             if (activeInputTranslationElement === element) activeInputTranslationElement = null;
             removeExistingTooltip(requestId);
         };
@@ -351,7 +373,7 @@ export function createInputTranslationContentFeature(
                     clearOwnedVisuals();
                     return;
                 }
-                element.classList.remove('babelbox-input-translating');
+                clearInputLoadingAnimation(element);
                 addInputBoxAnimation(element, 'error', requestId);
                 removeExistingTooltip(requestId);
                 await createTranslationTooltip(element, '微软翻译失败', 'error', requestId, signal);
@@ -366,7 +388,7 @@ export function createInputTranslationContentFeature(
                 return;
             }
 
-            element.classList.remove('babelbox-input-translating');
+            clearInputLoadingAnimation(element);
             removeExistingTooltip(requestId);
             if (translatedText && translatedText !== cleanedText) {
                 setInputBoxText(element, translatedText);

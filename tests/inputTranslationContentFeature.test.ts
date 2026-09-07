@@ -56,7 +56,8 @@ function fakeElement(tagName: string, attributes: Record<string, string> = {}): 
         dispatchEvent: vi.fn(),
         appendChild: vi.fn((child: any) => element.children.push(child)),
         getAttribute: vi.fn((name: string) => attributes[name] ?? null),
-        setAttribute: vi.fn(),
+        setAttribute: vi.fn((name: string, value: string) => { attributes[name] = value; }),
+        removeAttribute: vi.fn((name: string) => { delete attributes[name]; }),
         getBoundingClientRect: vi.fn(() => ({left: 10, width: 80, bottom: 20})),
     };
     return element;
@@ -130,6 +131,7 @@ function mountHarness(overrides: {
 
 afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllGlobals();
 });
 
 describe('input translation content feature', () => {
@@ -206,6 +208,35 @@ describe('input translation content feature', () => {
         expect(sendMessage).toHaveBeenCalledWith(expect.objectContaining({text: 'Other'}));
     });
 
+    it('通过替换输入事件将整段译文交给 Slate', () => {
+        const editable = fakeElement('div', {contenteditable: 'true', 'data-slate-editor': 'true'});
+        editable.innerText = 'Hello';
+        const range = {selectNodeContents: vi.fn()};
+        editable.ownerDocument = {createRange: () => range};
+        vi.stubGlobal('StaticRange', vi.fn(function (value) { return value; }));
+        vi.stubGlobal('InputEvent', class extends Event {
+            constructor(type: string, init: InputEventInit) {
+                super(type, init);
+                Object.assign(this, {
+                    inputType: init.inputType,
+                    data: init.data,
+                    getTargetRanges: () => init.targetRanges,
+                });
+            }
+        });
+
+        setInputBoxText(editable, '你好\n世界');
+
+        const [event] = editable.dispatchEvent.mock.calls[0];
+        expect(event).toMatchObject({
+            type: 'beforeinput', inputType: 'insertReplacementText', data: '你好\n世界',
+            bubbles: true, cancelable: true, composed: true,
+        });
+        expect(range.selectNodeContents).toHaveBeenCalledWith(editable);
+        expect(event.getTargetRanges()).toEqual([range]);
+        expect(editable.innerText).toBe('Hello');
+    });
+
     it('空输入或清理触发符号后为空时不会请求 background', async () => {
         const empty = mountHarness();
         const emptyInput = fakeElement('input');
@@ -267,12 +298,15 @@ describe('input translation content feature', () => {
 
     it('旧请求返回时不能清理新请求拥有的视觉状态', async () => {
         let resolveFirst: (value: unknown) => void = () => undefined;
+        let resolveSecond: (value: unknown) => void = () => undefined;
         const first = new Promise(resolve => { resolveFirst = resolve; });
+        const second = new Promise(resolve => { resolveSecond = resolve; });
         const sendMessage = vi.fn()
             .mockReturnValueOnce(first)
-            .mockResolvedValueOnce({success: true, translatedText: '第二次'});
+            .mockReturnValueOnce(second);
         const harness = mountHarness({
             sendMessage,
+            config: {animationMode: 'shimmer'},
         });
         const input = fakeElement('input');
         input.value = 'Hello';
@@ -280,11 +314,17 @@ describe('input translation content feature', () => {
 
         const firstRun = harness.fakeDocument.emit('keydown', trustedKey({key: 'Enter', ctrlKey: true}));
         while (sendMessage.mock.calls.length === 0) await Promise.resolve();
-        await harness.fakeDocument.emit('keydown', trustedKey({key: 'Enter', ctrlKey: true}));
+        const secondRun = harness.fakeDocument.emit('keydown', trustedKey({key: 'Enter', ctrlKey: true}));
+        while (sendMessage.mock.calls.length < 2) await Promise.resolve();
         resolveFirst({success: true, translatedText: '第一次'});
         await firstRun;
 
+        expect(input.value).toBe('Hello');
+        expect(input.getAttribute('data-babelbox-input-animation')).toBe('shimmer');
+        resolveSecond({success: true, translatedText: '第二次'});
+        await secondRun;
         expect(input.value).toBe('第二次');
+        expect(input.getAttribute('data-babelbox-input-animation')).toBeNull();
     });
 
     it('tooltip 创建后若 signal 已失效，则移除临时 UI 并拒绝继续请求', async () => {
@@ -300,7 +340,7 @@ describe('input translation content feature', () => {
             tooltipRecords.push({options, ui});
             resolveUi = () => resolve(ui);
         }));
-        const harness = mountHarness({createUi});
+        const harness = mountHarness({createUi, config: {animationMode: 'shimmer'}});
         const input = fakeElement('input');
         input.value = 'Hello';
         harness.fakeDocument.activeElement = input;
@@ -312,6 +352,7 @@ describe('input translation content feature', () => {
 
         expect(tooltipRecords[0].ui.remove).toHaveBeenCalledOnce();
         expect(harness.sendMessage).not.toHaveBeenCalled();
+        expect(input.getAttribute('data-babelbox-input-animation')).toBeNull();
     });
 
     it('翻译返回相同文本或失败时不写回，并显示错误提示', async () => {
