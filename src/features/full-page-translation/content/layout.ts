@@ -140,11 +140,6 @@ export function releaseTranslationTruncationLayout(owner: HTMLElement): void {
     ownerRefs.delete(owner);
 }
 
-export function isTranslationLayoutOverrideMutation(element: HTMLElement): boolean {
-    const override = sharedOverrides.get(element);
-    return Boolean(override && element.getAttribute('style') === override.renderedStyleAttribute);
-}
-
 function reconcileTranslationLayoutOverrides(owner: HTMLElement): boolean {
     const elements = overrideElementsByOwner.get(owner);
     if (!elements) return true;

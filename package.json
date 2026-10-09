@@ -33,7 +33,7 @@
     "test:regression:all": "node scripts/testing/run-full-regression.mjs",
     "verify:extension-manifests": "node scripts/testing/verify-extension-manifests.mjs",
     "test:document": "vitest run tests/documentTranslation.test.ts tests/documentTranslationApi.test.ts tests/documentTranslationBinary.test.ts tests/documentTranslationExamplesApi.test.ts tests/documentTranslationPresentation.test.ts tests/documentTranslationRegression.test.ts",
-    "test:translation-core": "vitest run tests/translationCore.test.ts tests/translationState.test.ts tests/serializationPerformance.test.ts tests/translateApiPerformance.test.ts tests/translateQueue.test.ts tests/pageContext.test.ts tests/pageContextDefuddle.test.ts",
+    "test:translation-core": "vitest run tests/translationCore.test.ts tests/fullPageTranslation.test.ts tests/serializationPerformance.test.ts tests/translateApiPerformance.test.ts tests/translateQueue.test.ts tests/pageContext.test.ts tests/pageContextDefuddle.test.ts",
     "test:selection-triggers": "node scripts/run-selection-trigger-test.cjs",
     "test:translation-sites": "node scripts/run-site-translation-matrix.cjs",
     "test:video:fixture": "node scripts/run-video-subtitle-fixture-test.cjs",

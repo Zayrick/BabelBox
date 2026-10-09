@@ -192,7 +192,7 @@ export function collectLiveTranslationTextSlots(
 
 export function applyTranslationsToSnapshot(
     snapshot: TranslationSourceSnapshot,
-    translations: readonly string[],
+    translations: readonly (string | undefined)[],
 ): string {
     snapshot.slots.forEach((slot, index) => {
         const translation = translations[index];

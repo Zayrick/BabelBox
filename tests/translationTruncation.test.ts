@@ -17,10 +17,11 @@ import {options} from '@/src/core/config/catalog';
 import {
     beginTranslation,
     restoreTranslation,
-    setBilingualContent,
 } from '@/src/features/full-page-translation/content/state';
 import {ensureTranslationTruncationLayout} from '@/src/features/full-page-translation/content/layout';
 import {appendBilingualTranslation} from '@/src/features/full-page-translation/content/renderer';
+
+const bilingual = {mode: 'bilingual', kind: 'content', syntheticSegment: false, sourceText: ''} as const;
 
 function installStylePriorityApi(element: HTMLElement): void {
     if (typeof element.style.getPropertyPriority === 'function') return;
@@ -192,11 +193,11 @@ describe('translation truncation layout', () => {
             } as CSSStyleDeclaration),
         });
 
-        const attempt = beginTranslation(owner, 'bilingual')!;
+        const attempt = beginTranslation(owner, bilingual)!;
         expect(ensureTranslationTruncationLayout(owner)).toBe(true);
         expect(host.style.getPropertyValue('-webkit-line-clamp')).toBe('unset');
 
-        attempt.state.phase = 'translated';
+        attempt.phase = 'translated';
         expect(restoreTranslation(owner)).toBe(true);
         expect(host.style.getPropertyValue('-webkit-line-clamp')).toBe('2');
     });
@@ -208,10 +209,10 @@ describe('translation truncation layout', () => {
         const priorityTracking = trackStylePriorities(clamp);
 
         await withDocumentRealm(document, async () => {
-            const attempt = beginTranslation(first, 'bilingual')!;
-            attempt.state.phase = 'translated';
+            const attempt = beginTranslation(first, bilingual)!;
+            attempt.phase = 'translated';
             const wrapper = appendBilingualTranslation(first, '模型介绍已翻译。');
-            setBilingualContent(first, wrapper);
+            attempt.bilingualContent = wrapper;
 
             expect(wrapper.parentElement).toBe(first);
             expect(wrapper.textContent).toBe('模型介绍已翻译。');
@@ -247,8 +248,8 @@ describe('translation truncation layout', () => {
                     {value: 7, class: 'babelbox-disabled-style', disabled: true},
                 ] as typeof options.styles;
 
-                const attempt = beginTranslation(owner, 'bilingual')!;
-                attempt.state.phase = 'translated';
+                const attempt = beginTranslation(owner, bilingual)!;
+                attempt.phase = 'translated';
                 const wrapper = appendBilingualTranslation(owner, [
                     '<a href="https://example.com/read" title="Read"><strong>safe link</strong></a>',
                     '<a href="javascript:alert(1)" title="Unsafe">bad href</a>',
@@ -287,19 +288,19 @@ describe('translation truncation layout', () => {
             'style',
             '-webkit-line-clamp: 2 !important; max-height: 40px; color: red;',
         );
-        const firstAttempt = beginTranslation(first, 'bilingual')!;
-        const secondAttempt = beginTranslation(second, 'bilingual')!;
+        const firstAttempt = beginTranslation(first, bilingual)!;
+        const secondAttempt = beginTranslation(second, bilingual)!;
 
         expect(ensureTranslationTruncationLayout(first)).toBe(true);
         expect(clamp.style.getPropertyValue('-webkit-line-clamp')).toBe('unset');
 
         expect(ensureTranslationTruncationLayout(second)).toBe(true);
-        firstAttempt.state.phase = 'translated';
+        firstAttempt.phase = 'translated';
         expect(restoreTranslation(first)).toBe(true);
         expect(clamp.style.getPropertyValue('-webkit-line-clamp')).toBe('unset');
 
         clamp.style.setProperty('background-color', 'blue');
-        secondAttempt.state.phase = 'translated';
+        secondAttempt.phase = 'translated';
         expect(restoreTranslation(second)).toBe(true);
         expect(clamp.style.getPropertyValue('-webkit-line-clamp')).toMatch(/^2(?: !important)?$/u);
         expect(clamp.style.getPropertyValue('max-height')).toBe('40px');
@@ -311,11 +312,11 @@ describe('translation truncation layout', () => {
     it('preserves a host clamp rewrite instead of restoring the stale pre-translation value', () => {
         const {clamp, first} = openRouterFixture();
         clamp.style.setProperty('-webkit-line-clamp', '2');
-        const attempt = beginTranslation(first, 'bilingual')!;
+        const attempt = beginTranslation(first, bilingual)!;
         ensureTranslationTruncationLayout(first);
 
         clamp.style.setProperty('-webkit-line-clamp', '4', 'important');
-        attempt.state.phase = 'translated';
+        attempt.phase = 'translated';
         expect(restoreTranslation(first)).toBe(true);
 
         expect(clamp.style.getPropertyValue('-webkit-line-clamp')).toBe('4');
@@ -325,9 +326,9 @@ describe('translation truncation layout', () => {
         const {clamp, first} = openRouterFixture();
         const originalStyle = 'COLOR: red; -webkit-line-clamp: 2; max-height: 40px';
         clamp.setAttribute('style', originalStyle);
-        const attempt = beginTranslation(first, 'bilingual')!;
+        const attempt = beginTranslation(first, bilingual)!;
         ensureTranslationTruncationLayout(first);
-        attempt.state.phase = 'translated';
+        attempt.phase = 'translated';
 
         expect(restoreTranslation(first)).toBe(true);
         expect(clamp.getAttribute('style')).toBe(originalStyle);
@@ -336,11 +337,11 @@ describe('translation truncation layout', () => {
     it('removes a temporary style attribute when the unclamped ancestor originally had none', () => {
         const {clamp, first} = openRouterFixture();
         expect(clamp.getAttribute('style')).toBeNull();
-        const attempt = beginTranslation(first, 'bilingual')!;
+        const attempt = beginTranslation(first, bilingual)!;
         ensureTranslationTruncationLayout(first);
         expect(clamp.getAttribute('style')).not.toBeNull();
 
-        attempt.state.phase = 'translated';
+        attempt.phase = 'translated';
         expect(restoreTranslation(first)).toBe(true);
         expect(clamp.getAttribute('style')).toBeNull();
     });
