@@ -26,7 +26,6 @@ import {
   ElDialog,
   ElDivider,
   ElInputNumber,
-  ElDrawer
 } from 'element-plus'
 
 const ELEMENT_COMPONENTS = [
@@ -51,7 +50,6 @@ const ELEMENT_COMPONENTS = [
   ElDialog,
   ElDivider,
   ElInputNumber,
-  ElDrawer
 ] as const
 
 /** Popup 的唯一组装入口：注册页面依赖后挂载 Vue 根组件。 */

@@ -23,9 +23,9 @@
 }
 
 .page-notice {
-    --babelbox-notice-font-caption: 10px;
-    --babelbox-notice-font-small: 11px;
-    --babelbox-notice-font-body: 13px;
+    --babelbox-notice-font-caption: 12px;
+    --babelbox-notice-font-small: 13px;
+    --babelbox-notice-font-body: 14px;
     --babelbox-notice-weight-medium: 600;
     --babelbox-notice-weight-semibold: 700;
     --babelbox-notice-weight-bold: 800;

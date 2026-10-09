@@ -110,7 +110,7 @@ h1, h2, p { margin-top: 0; }
 .document-control-select .el-select__wrapper.is-hovering:not(.is-focused),
 .document-zoom-select .el-select__wrapper.is-hovering:not(.is-focused) { border-color: var(--el-color-primary-light-3); box-shadow: none; }
 .document-control-select .el-select__wrapper.is-focused,
-.document-zoom-select .el-select__wrapper.is-focused { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
+.document-zoom-select .el-select__wrapper.is-focused { box-shadow: var(--focus-ring); }
 .document-app .el-select__selected-item,
 .document-app .el-select__placeholder { color: var(--ink); }
 .document-app .el-select__wrapper.is-disabled { border-color: var(--line); background: var(--surface-soft); box-shadow: none; opacity: .58; }

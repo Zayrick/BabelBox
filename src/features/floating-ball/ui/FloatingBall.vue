@@ -333,7 +333,7 @@ watch(() => props.initialTranslating, (nextState) => {
   --babelbox-floating-on-brand: #fff;
   --babelbox-floating-tooltip-surface: rgba(17, 24, 39, .9);
   --babelbox-floating-tooltip-ink: #fff;
-  --babelbox-floating-font-small: 11px;
+  --babelbox-floating-font-small: 13px;
   position: fixed;
   z-index: 2147483647;
   display: flex;

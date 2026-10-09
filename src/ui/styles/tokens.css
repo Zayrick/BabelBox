@@ -6,32 +6,34 @@
   --babelbox-color-brand-strong: #dc315f;
   --babelbox-color-brand-soft: #fff0f4;
   --babelbox-color-ink: #172033;
-  --babelbox-color-muted: #737c8f;
-  --babelbox-color-line: #e5e8ef;
-  --babelbox-color-page: #f5f6fa;
+  --babelbox-color-muted: #646d80;
+  --babelbox-color-line: #e3e6ee;
+  --babelbox-color-page: #f4f5f9;
   --babelbox-color-surface: #fff;
   --babelbox-color-surface-soft: #f7f8fb;
   --babelbox-color-canvas: #e9eef6;
   --babelbox-color-mask: rgba(17, 20, 29, .42);
   --babelbox-font-family: Inter, "SF Pro Display", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
-  --babelbox-font-size-caption: 10px;
-  --babelbox-font-size-small: 11px;
-  --babelbox-font-size-body: 13px;
-  --babelbox-font-size-subtitle: 15px;
-  --babelbox-font-size-reading: 17px;
+  --babelbox-font-family-mono: "JetBrains Mono", "SF Mono", "Cascadia Code", Consolas, ui-monospace, monospace;
+  --babelbox-font-size-caption: 12px;
+  --babelbox-font-size-small: 13px;
+  --babelbox-font-size-body: 14px;
+  --babelbox-font-size-subtitle: 16px;
+  --babelbox-font-size-reading: 18px;
   --babelbox-font-size-title: 20px;
-  --babelbox-font-size-display: 26px;
-  --babelbox-font-weight-medium: 600;
-  --babelbox-font-weight-semibold: 700;
-  --babelbox-font-weight-bold: 800;
-  --babelbox-line-height-tight: 1.35;
-  --babelbox-line-height-body: 1.55;
-  --babelbox-radius-control: 8px;
-  --babelbox-radius-panel: 12px;
-  --babelbox-radius-overlay: 14px;
-  --babelbox-control-height-small: 32px;
-  --babelbox-control-height: 38px;
-  --babelbox-control-height-large: 44px;
+  --babelbox-font-size-display: 24px;
+  --babelbox-font-weight-medium: 500;
+  --babelbox-font-weight-semibold: 600;
+  --babelbox-font-weight-bold: 700;
+  --babelbox-line-height-tight: 1.4;
+  --babelbox-line-height-body: 1.6;
+  --babelbox-radius-control: 10px;
+  --babelbox-radius-panel: 14px;
+  --babelbox-radius-overlay: 16px;
+  --babelbox-control-height-small: 34px;
+  --babelbox-control-height: 40px;
+  --babelbox-control-height-large: 46px;
+  --babelbox-shadow-card: 0 1px 2px rgba(23, 32, 51, .04), 0 1px 3px rgba(23, 32, 51, .04);
 
   --brand: var(--babelbox-color-brand);
   --brand-strong: var(--babelbox-color-brand-strong);
@@ -45,6 +47,7 @@
   --canvas: var(--babelbox-color-canvas);
   --mask: var(--babelbox-color-mask);
   --font-family: var(--babelbox-font-family);
+  --font-mono: var(--babelbox-font-family-mono);
   --font-caption: var(--babelbox-font-size-caption);
   --font-small: var(--babelbox-font-size-small);
   --font-body: var(--babelbox-font-size-body);
@@ -63,6 +66,7 @@
   --control-height-small: var(--babelbox-control-height-small);
   --control-height: var(--babelbox-control-height);
   --control-height-large: var(--babelbox-control-height-large);
+  --shadow-card: var(--babelbox-shadow-card);
 }
 
 :root.dark,
@@ -71,13 +75,14 @@
   --babelbox-color-brand-strong: #ff7aa2;
   --babelbox-color-brand-soft: rgba(239, 71, 118, .16);
   --babelbox-color-ink: #f4f5f8;
-  --babelbox-color-muted: #b8bec9;
+  --babelbox-color-muted: #bcc2cd;
   --babelbox-color-line: #343844;
   --babelbox-color-page: #14161b;
   --babelbox-color-surface: #20232a;
   --babelbox-color-surface-soft: #292c34;
   --babelbox-color-canvas: #151a23;
   --babelbox-color-mask: rgba(0, 0, 0, .62);
+  --babelbox-shadow-card: none;
 }
 
 /*
@@ -129,7 +134,7 @@
   --el-font-size-medium: var(--font-subtitle);
   --el-font-size-large: var(--font-title);
   --el-border-radius-base: var(--radius-control);
-  --el-border-radius-small: 6px;
+  --el-border-radius-small: 8px;
   --el-border-radius-round: 999px;
   --el-border-radius-circle: 50%;
   --el-transition-duration: .3s;
@@ -138,6 +143,9 @@
   --el-component-size: var(--control-height);
   --el-component-size-large: var(--control-height-large);
 
+  /* 焦点环画在控件内侧：外侧阴影会被限宽或 overflow 裁剪的父容器切掉。 */
+  --focus-ring: inset 0 0 0 1.5px var(--el-color-primary-light-3);
+  --invalid-ring: inset 0 0 0 1.5px var(--el-color-danger, #d9345e);
   --on-brand: var(--el-color-white, #fff);
   --success: var(--el-color-success, #18835d);
   --success-soft: var(--el-color-success-light-9, #effaf5);

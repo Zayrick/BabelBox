@@ -210,52 +210,59 @@ async function resetDefaults() {
 </script>
 
 <style scoped>
-.translation-filter-settings { border-top: 1px solid var(--line); background: var(--surface); }
-.translation-filter-settings-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 16px; border-bottom: 1px solid var(--line); }
+.translation-filter-settings { margin: 0; }
+.translation-filter-settings-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
 .translation-filter-settings-heading > div { min-width: 0; }
-.translation-filter-settings-heading h3 { margin: 0 0 5px; color: var(--ink); font-size: var(--font-subtitle); }
-.translation-filter-settings-heading p { margin: 0; color: var(--muted); font-size: var(--font-small); line-height: var(--line-height-body); }
-.translation-filter-reset { display: inline-flex; min-height: 32px; flex: none; align-items: center; gap: 5px; padding: 0 9px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); background: var(--surface); font-size: var(--font-caption); font-weight: var(--weight-semibold); cursor: pointer; }
-.translation-filter-reset:hover { color: var(--brand-strong); border-color: var(--el-color-primary-light-5); background: var(--brand-soft); }
+.translation-filter-settings-heading h3 { margin: 0; color: var(--ink); font-size: var(--font-subtitle); font-weight: var(--weight-semibold); }
+.translation-filter-settings-heading p { margin: 4px 0 0; color: var(--muted); font-size: var(--font-small); line-height: var(--line-height-body); }
+.translation-filter-reset { display: inline-flex; min-height: 32px; flex: none; align-items: center; gap: 6px; padding: 0 10px; border: 0; border-radius: var(--radius-control); color: var(--muted); background: transparent; font-size: var(--font-small); cursor: pointer; }
+.translation-filter-reset:hover { color: var(--ink); background: var(--surface-soft); }
 .translation-filter-reset svg { width: 14px; height: 14px; }
-.translation-filter-scope, .translation-filter-sites { padding: 16px; border-bottom: 1px solid var(--line); }
-.translation-filter-scope-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.translation-filter-scope-heading > div { display: flex; min-width: 0; flex-direction: column; gap: 4px; }
-.translation-filter-scope-heading strong { color: var(--ink); font-size: var(--font-body); }
-.translation-filter-scope-heading small { color: var(--muted); font-size: var(--font-caption); line-height: var(--line-height-tight); }
-.translation-filter-scope-heading > span { flex: none; color: var(--muted); font-size: var(--font-caption); font-weight: var(--weight-semibold); }
-.translation-filter-toggles { margin-top: 12px; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; }
-.translation-filter-toggles label { display: flex; min-height: 54px; align-items: center; justify-content: space-between; gap: 14px; padding: 8px 10px; border-bottom: 1px solid var(--line); }
-.translation-filter-toggles label:last-child { border-bottom: 0; }
-.translation-filter-toggles label > span { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
-.translation-filter-toggles strong { color: var(--ink); font-size: var(--font-small); }
-.translation-filter-toggles small { color: var(--muted); font-size: var(--font-caption); line-height: var(--line-height-tight); }
-.translation-filter-boundary-note { display: flex; align-items: center; gap: 6px; margin: 12px 16px 0; padding: 8px 9px; border-radius: 7px; color: var(--muted); background: var(--surface-soft); font-size: var(--font-caption); line-height: var(--line-height-tight); }
-.translation-filter-boundary-note svg { width: 14px; height: 14px; flex: none; color: var(--brand-strong); }
+
+.translation-filter-scope, .translation-filter-sites { padding: 24px 0 0; }
+.translation-filter-scope-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.translation-filter-scope-heading > div { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+.translation-filter-scope-heading strong { color: var(--ink); font-size: var(--font-body); font-weight: var(--weight-medium); }
+.translation-filter-scope-heading small { color: var(--muted); font-size: var(--font-small); line-height: var(--line-height-body); }
+.translation-filter-scope-heading > span { flex: none; color: var(--muted); font-family: var(--font-mono); font-size: var(--font-caption); }
+
+.translation-filter-toggles { margin-top: 8px; border-top: 1px solid var(--line); }
+.translation-filter-toggles label { display: flex; min-height: 64px; align-items: center; justify-content: space-between; gap: 24px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.translation-filter-toggles label > span { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+.translation-filter-toggles strong { color: var(--ink); font-size: var(--font-body); font-weight: var(--weight-medium); }
+.translation-filter-toggles small { color: var(--muted); font-size: var(--font-small); line-height: var(--line-height-body); }
+
+.translation-filter-boundary-note { display: flex; align-items: center; gap: 8px; margin: 16px 0 0; color: var(--muted); font-size: var(--font-small); line-height: var(--line-height-tight); }
+.translation-filter-boundary-note svg { width: 14px; height: 14px; flex: none; }
+
 .translation-filter-site-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; margin-top: 12px; }
-.translation-filter-site-form input { box-sizing: border-box; width: 100%; min-height: var(--control-height); padding: 0 11px; border: 1px solid var(--line); border-radius: 8px; outline: 0; color: var(--ink); background: var(--surface); font-size: var(--font-small); }
-.translation-filter-site-form input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-soft); }
-.translation-filter-site-form input[aria-invalid="true"] { border-color: var(--danger); }
-.translation-filter-site-form button { min-width: 88px; min-height: var(--control-height); padding: 0 12px; border: 0; border-radius: 8px; color: #fff; background: var(--brand); font-size: var(--font-small); font-weight: var(--weight-semibold); cursor: pointer; }
+.translation-filter-site-form input { box-sizing: border-box; width: 100%; min-height: var(--control-height); padding: 0 12px; border: 0; border-radius: var(--radius-control); outline: 0; color: var(--ink); background: var(--surface-soft); font-family: var(--font-mono); font-size: var(--font-small); }
+.translation-filter-site-form input::placeholder { color: var(--muted); font-family: var(--font-family); }
+.translation-filter-site-form input:focus { box-shadow: var(--focus-ring); }
+.translation-filter-site-form input[aria-invalid="true"] { box-shadow: var(--invalid-ring); }
+.translation-filter-site-form button { min-height: var(--control-height); padding: 0 16px; border: 0; border-radius: var(--radius-control); color: var(--surface); background: var(--ink); font-size: var(--font-small); font-weight: var(--weight-medium); cursor: pointer; }
+.translation-filter-site-form button:hover { opacity: .86; }
 .translation-filter-site-error { margin: 6px 0 0; color: var(--danger); font-size: var(--font-caption); line-height: var(--line-height-tight); }
-.translation-filter-site-list { display: grid; gap: 8px; margin-top: 10px; }
-.translation-filter-site-item { overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); }
-.translation-filter-site-item summary { display: grid; min-height: 54px; grid-template-columns: 32px minmax(0, 1fr) auto auto; align-items: center; gap: 9px; padding: 7px 10px; list-style: none; cursor: pointer; }
+
+.translation-filter-site-list { display: flex; flex-direction: column; margin-top: 12px; border-top: 1px solid var(--line); }
+.translation-filter-site-item { border-bottom: 1px solid var(--line); }
+.translation-filter-site-item summary { display: grid; min-height: 52px; grid-template-columns: 20px minmax(0, 1fr) auto auto; align-items: center; gap: 12px; list-style: none; cursor: pointer; }
 .translation-filter-site-item summary::-webkit-details-marker { display: none; }
-.translation-filter-site-icon { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 8px; color: var(--brand-strong); background: var(--brand-soft); }
+.translation-filter-site-icon { display: grid; width: 20px; height: 20px; place-items: center; color: var(--muted); }
 .translation-filter-site-icon svg { width: 16px; height: 16px; }
-.translation-filter-site-item summary > span:nth-child(2) { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
-.translation-filter-site-item summary strong { overflow: hidden; color: var(--ink); font-size: var(--font-small); text-overflow: ellipsis; white-space: nowrap; }
+.translation-filter-site-item summary > span:nth-child(2) { display: flex; min-width: 0; flex-direction: column; gap: 1px; }
+.translation-filter-site-item summary strong { overflow: hidden; color: var(--ink); font-family: var(--font-mono); font-size: var(--font-small); font-weight: var(--weight-medium); text-overflow: ellipsis; white-space: nowrap; }
 .translation-filter-site-item summary small { color: var(--muted); font-size: var(--font-caption); }
-.translation-filter-site-remove { display: grid; width: 30px; height: 30px; margin-right: -4px; padding: 0; place-items: center; border: 0; border-radius: 7px; color: var(--muted); background: transparent; cursor: pointer; }
+.translation-filter-site-remove { display: grid; width: 30px; height: 30px; padding: 0; place-items: center; border: 0; border-radius: 8px; color: var(--muted); background: transparent; cursor: pointer; }
 .translation-filter-site-remove:hover, .translation-filter-site-remove:focus-visible { color: var(--danger); background: var(--danger-soft); }
 .translation-filter-site-remove svg { width: 14px; height: 14px; }
 .translation-filter-site-item summary > svg { width: 16px; height: 16px; color: var(--muted); transition: transform 160ms ease; }
 .translation-filter-site-item[open] summary > svg { transform: rotate(180deg); }
-.translation-filter-site-body { padding: 12px; border-top: 1px solid var(--line); background: var(--surface-soft); }
+.translation-filter-site-body { padding: 4px 0 16px 32px; }
 .translation-filter-site-body :deep(.translation-filter-rule-editor) { margin-top: 0; }
-.translation-filter-site-empty { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 12px; border: 1px dashed var(--line); border-radius: 9px; color: var(--muted); }
-.translation-filter-site-empty > span { display: flex; flex-direction: column; gap: 3px; }
-.translation-filter-site-empty strong { color: var(--ink); font-size: var(--font-small); }
+.translation-filter-site-empty { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 14px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: var(--muted); }
+.translation-filter-site-empty > svg { display: none; }
+.translation-filter-site-empty > span { display: flex; flex-direction: column; gap: 2px; }
+.translation-filter-site-empty strong { color: var(--muted); font-size: var(--font-small); font-weight: var(--weight-medium); }
 .translation-filter-site-empty small { font-size: var(--font-caption); }
 </style>

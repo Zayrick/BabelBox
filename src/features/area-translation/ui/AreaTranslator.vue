@@ -275,7 +275,7 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.babelbox-area-translator-root { --babelbox-area-font-caption: 10px; --babelbox-area-font-small: 11px; --babelbox-area-font-body: 13px; --babelbox-area-weight-semibold: 700; position: fixed; inset: 0; z-index: 2147483647; width: 100vw; height: 100vh; pointer-events: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #25252a; }
+.babelbox-area-translator-root { --babelbox-area-font-caption: 12px; --babelbox-area-font-small: 13px; --babelbox-area-font-body: 14px; --babelbox-area-weight-semibold: 700; position: fixed; inset: 0; z-index: 2147483647; width: 100vw; height: 100vh; pointer-events: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #25252a; }
 .babelbox-area-selection { position: fixed; box-sizing: border-box; border: 2px solid #ef4b86; border-radius: 9px; background: rgba(239, 75, 134, .12); box-shadow: 0 0 0 1px rgba(255, 255, 255, .8), 0 8px 26px rgba(163, 35, 91, .2); pointer-events: none; }
 .babelbox-area-selection span { position: absolute; left: 8px; top: 8px; padding: 4px 8px; border-radius: 999px; background: rgba(44, 35, 43, .88); color: #fff; font-size: var(--babelbox-area-font-small); white-space: nowrap; }
 .babelbox-area-loading, .babelbox-area-error { position: fixed; box-sizing: border-box; pointer-events: auto; }

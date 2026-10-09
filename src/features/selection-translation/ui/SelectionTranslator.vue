@@ -1210,10 +1210,10 @@ onBeforeUnmount(() => {
 .babelbox-selection-indicator-glyph { width: 11px; height: 11px; stroke-width: 2.4; }
 .babelbox-translation-tooltip, .babelbox-translation-tooltip * { box-sizing: border-box; }
 .babelbox-translation-tooltip, .babelbox-copy-success-toast, .babelbox-action-toast {
-  --babelbox-selection-font-caption: 10px;
-  --babelbox-selection-font-small: 11px;
-  --babelbox-selection-font-body: 13px;
-  --babelbox-selection-font-subtitle: 15px;
+  --babelbox-selection-font-caption: 12px;
+  --babelbox-selection-font-small: 13px;
+  --babelbox-selection-font-body: 14px;
+  --babelbox-selection-font-subtitle: 16px;
   --babelbox-selection-font-reading: 18px;
   --babelbox-selection-font-display: 27px;
   --babelbox-selection-weight-medium: 600;

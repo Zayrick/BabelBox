@@ -1,6 +1,6 @@
 <template>
   <details class="advanced-request-parameters">
-    <summary>高级请求参数</summary>
+    <summary><ChevronRight class="summary-icon" aria-hidden="true" />高级请求参数</summary>
     <label class="advanced-request-field">
       <span>自定义请求体</span>
       <el-input
@@ -17,6 +17,8 @@
 </template>
 
 <script setup lang="ts">
+import { ChevronRight } from '@lucide/vue'
+
 withDefaults(defineProps<{
   modelValue: string
   invalid?: boolean
@@ -34,21 +36,30 @@ const emit = defineEmits<{
 <style scoped>
 .advanced-request-parameters {
   width: 100%;
-  padding-top: 4px;
-  border-top: 1px solid var(--line);
+  padding-top: 8px;
 }
 
 summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 10px 0;
-  color: var(--brand-strong);
+  color: var(--muted);
   font-size: var(--font-small);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-medium);
   cursor: pointer;
+  list-style: none;
 }
+
+summary::-webkit-details-marker { display: none; }
+.summary-icon { width: 15px; height: 15px; flex: none; transition: transform 140ms ease; }
+.advanced-request-parameters[open] > summary .summary-icon { transform: rotate(90deg); }
+summary:hover { color: var(--ink); }
 
 .advanced-request-field {
   display: grid;
-  gap: 6px;
+  gap: 8px;
+  padding: 4px 0 12px;
   color: var(--ink);
   font-size: var(--font-small);
   font-weight: var(--weight-medium);

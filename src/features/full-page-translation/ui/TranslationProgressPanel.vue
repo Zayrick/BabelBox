@@ -106,9 +106,9 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .babelbox-translation-progress {
-  --babelbox-progress-font-caption: 10px;
-  --babelbox-progress-font-small: 11px;
-  --babelbox-progress-font-body: 13px;
+  --babelbox-progress-font-caption: 12px;
+  --babelbox-progress-font-small: 13px;
+  --babelbox-progress-font-body: 14px;
   --babelbox-progress-weight-semibold: 700;
   --babelbox-progress-weight-bold: 800;
   --babelbox-progress-border: rgba(229, 88, 139, 0.24);

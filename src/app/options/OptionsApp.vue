@@ -3,15 +3,16 @@
     <aside class="sidebar">
       <div class="brand">
         <img src="/icon/128.png" alt="" />
-        <div><strong>翻译机</strong><small>BabelBox · V{{ version }}</small></div>
+        <strong>翻译机</strong>
+        <code class="brand-version">v{{ version }}</code>
       </div>
 
-      <el-scrollbar
-        class="sidebar-navigation"
-        tag="nav"
-        aria-label="设置分类"
-        view-class="sidebar-navigation-view"
-      >
+      <label class="search-box">
+        <Search :size="15" :stroke-width="1.8" aria-hidden="true" focusable="false" />
+        <input v-model.trim="query" type="search" aria-label="搜索设置" placeholder="搜索设置" />
+      </label>
+
+      <nav class="sidebar-navigation" aria-label="设置分类">
         <section v-for="group in navigationGroups" :key="group.label" class="nav-group">
           <span class="nav-group-label">{{ group.label }}</span>
           <button
@@ -23,69 +24,73 @@
             :aria-current="activeSection === item.id ? 'page' : undefined"
             @click="selectSection(item.id)"
           >
-            <span class="nav-icon" aria-hidden="true">
-              <component :is="navigationIcons[item.icon]" :size="18" :stroke-width="1.9" focusable="false" />
-            </span>
-            <span class="nav-title">
-              <strong>{{ item.label }}</strong>
-              <span v-if="item.badge" class="nav-badge">{{ item.badge }}</span>
-            </span>
+            <component :is="navigationIcons[item.icon]" class="nav-icon" :size="17" :stroke-width="1.7" aria-hidden="true" focusable="false" />
+            <span class="nav-title">{{ item.label }}</span>
+            <span v-if="item.badge" class="nav-badge">{{ item.badge }}</span>
           </button>
         </section>
-      </el-scrollbar>
+      </nav>
     </aside>
 
-    <main class="workspace">
-      <header class="topbar">
-        <h1>{{ activeItem.title }}</h1>
-        <label class="search-box">
-          <Search :size="17" :stroke-width="1.8" aria-hidden="true" focusable="false" />
-          <input v-model.trim="query" type="search" placeholder="搜索设置，例如：快捷键、缓存、OpenAI" />
-        </label>
-      </header>
+    <main
+      ref="workspace"
+      class="workspace"
+      :class="{ 'is-services': !query && activeSection === 'settings-services' }"
+    >
+      <div class="workspace-column">
+        <template v-if="query">
+          <header class="page-header">
+            <h1>搜索结果</h1>
+            <p>“{{ query }}”</p>
+          </header>
+          <div v-if="filteredResults.length" class="search-results">
+            <button v-for="result in filteredResults" :key="result.id" type="button" @click="selectResult(result.id)">
+              <span><strong>{{ result.label }}</strong><small>{{ result.searchDescription }}</small></span>
+              <ArrowRight :size="16" :stroke-width="1.8" aria-hidden="true" focusable="false" />
+            </button>
+          </div>
+          <p v-else class="search-empty">没有找到相关设置。</p>
+        </template>
 
-      <div v-if="query && filteredResults.length" class="search-results">
-        <button v-for="result in filteredResults" :key="result.id" type="button" @click="selectResult(result.id)">
-          <span><strong>{{ result.label }}</strong><small>{{ result.searchDescription }}</small></span>
-          <b>打开 <ArrowRight :size="13" :stroke-width="2" aria-hidden="true" focusable="false" /></b>
-        </button>
-      </div>
-      <div v-else-if="query" class="search-empty">没有找到“{{ query }}”相关设置</div>
+        <template v-else>
+          <header class="page-header">
+            <h1>{{ activeItem.title }}</h1>
+            <p>{{ activeItem.description }}</p>
+          </header>
 
-      <el-scrollbar
-        ref="settingsScrollbar"
-        class="settings-card"
-        :class="{ 'services-view': activeSection === 'settings-services', 'translation-center-view': activeSection === 'settings-translation-center', 'vocabulary-view': activeSection === 'settings-vocabulary' }"
-        tag="section"
-        :aria-label="activeItem.title"
-        view-class="settings-card-view"
-      >
-        <section v-if="activeSection === 'settings-about'" id="settings-about" class="about-page" aria-labelledby="about-title">
-          <div class="about-summary">
-            <img class="about-logo" src="/icon/128.png" alt="翻译机图标" />
-            <div>
-              <h2 id="about-title">翻译机</h2>
-              <span class="about-version">BabelBox · V{{ version }}</span>
+          <section
+            class="settings-card"
+            :class="{ 'services-view': activeSection === 'settings-services', 'translation-center-view': activeSection === 'settings-translation-center', 'vocabulary-view': activeSection === 'settings-vocabulary' }"
+            :aria-label="activeItem.title"
+          >
+            <div class="settings-card-view">
+              <section v-if="activeSection === 'settings-about'" id="settings-about" class="about-page" aria-labelledby="about-title">
+                <div class="about-summary">
+                  <img class="about-logo" src="/icon/128.png" alt="翻译机图标" />
+                  <div>
+                    <h2 id="about-title">翻译机</h2>
+                    <code class="about-version">BabelBox v{{ version }}</code>
+                  </div>
+                </div>
+                <p class="about-description">一款提供网页双语翻译、划词翻译与多翻译服务支持的开源浏览器扩展。</p>
+                <div class="about-links">
+                  <a href="https://github.com/Zayrick/BabelBox" target="_blank" rel="noreferrer">开源项目 <ExternalLink :size="15" :stroke-width="1.8" aria-hidden="true" focusable="false" /></a>
+                  <a href="https://github.com/Zayrick/BabelBox/tree/main/docs" target="_blank" rel="noreferrer">使用文档 <ExternalLink :size="15" :stroke-width="1.8" aria-hidden="true" focusable="false" /></a>
+                  <a href="https://github.com/Zayrick/BabelBox/issues" target="_blank" rel="noreferrer">问题反馈 <ExternalLink :size="15" :stroke-width="1.8" aria-hidden="true" focusable="false" /></a>
+                </div>
+              </section>
+              <VocabularyBook v-else-if="activeSection === 'settings-vocabulary'" @navigate="selectSection" />
+              <SettingsSections v-else :active-section="activeSection" />
             </div>
-          </div>
-          <p class="about-description">一款提供网页双语翻译、划词翻译与多翻译服务支持的开源浏览器扩展。</p>
-          <div class="about-links">
-            <a href="https://github.com/Zayrick/BabelBox" target="_blank" rel="noreferrer">开源项目 <ExternalLink :size="16" :stroke-width="1.8" aria-hidden="true" focusable="false" /></a>
-            <a href="https://github.com/Zayrick/BabelBox/tree/main/docs" target="_blank" rel="noreferrer">使用文档 <ExternalLink :size="16" :stroke-width="1.8" aria-hidden="true" focusable="false" /></a>
-            <a href="https://github.com/Zayrick/BabelBox/issues" target="_blank" rel="noreferrer">问题反馈 <ExternalLink :size="16" :stroke-width="1.8" aria-hidden="true" focusable="false" /></a>
-          </div>
-        </section>
-        <VocabularyBook v-else-if="activeSection === 'settings-vocabulary'" @navigate="selectSection" />
-        <SettingsSections v-else :active-section="activeSection" />
-      </el-scrollbar>
-
+          </section>
+        </template>
+      </div>
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
-import { ElScrollbar, type ScrollbarInstance } from 'element-plus'
 import {
   ArrowRight,
   BookMarked,
@@ -123,7 +128,7 @@ import {
 const version = process.env.VUE_APP_VERSION
 const query = ref('')
 const activeSection = ref('settings-general')
-const settingsScrollbar = ref<ScrollbarInstance | null>(null)
+const workspace = ref<HTMLElement | null>(null)
 const theme = ref(runtimeConfig.theme || 'auto')
 const unsubscribeTheme = subscribeConfig((nextConfig) => {
   theme.value = nextConfig.theme || 'auto'
@@ -160,15 +165,23 @@ function selectSection(id: string) {
   activeSection.value = id
   query.value = ''
   history.replaceState(null, '', `#${id}`)
-  void nextTick(() => settingsScrollbar.value?.scrollTo({ top: 0, left: 0, behavior: 'smooth' }))
+  void nextTick(() => workspace.value?.scrollTo({ top: 0, left: 0 }))
 }
 
 function selectResult(id: string) {
   selectSection(id)
 }
 
+// hash 同时是分区 id，浏览器加载时会把滚动区跳到该锚点；分区切换后应始终从页首开始。
+function resetWorkspaceScroll() {
+  workspace.value?.scrollTo({ top: 0, left: 0 })
+  window.scrollTo({ top: 0, left: 0 })
+}
+
 onMounted(() => {
   activeSection.value = resolveRequestedSection(window.location.hash)
+  requestAnimationFrame(resetWorkspaceScroll)
+  if (document.readyState !== 'complete') window.addEventListener('load', resetWorkspaceScroll, { once: true })
 })
 
 onBeforeUnmount(unsubscribeTheme)

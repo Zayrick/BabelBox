@@ -24,10 +24,6 @@
     :data-service-configuration-service="instanceId"
     :data-custom-service-configuration="presentation.fields.customService ? 'true' : 'false'"
   >
-    <div class="subsection-heading">
-      <strong>连接参数</strong>
-    </div>
-
     <template v-if="isAIInstance">
       <el-row class="margin-bottom margin-left-2em">
         <el-col :span="12" class="lightblue rounded-corner">
@@ -116,10 +112,12 @@
       </el-col>
     </el-row>
 
-    <div v-if="presentation.fields.minimaxRegion" class="minimax-endpoint" data-minimax-endpoint>
-      <span>当前 API 地址</span>
-      <code>{{ minimaxEndpoint }}</code>
-    </div>
+    <el-row v-if="presentation.fields.minimaxRegion" class="margin-bottom margin-left-2em" data-minimax-endpoint>
+      <el-col :span="12" class="lightblue rounded-corner">
+        <SettingsHelpLabel content="由计费方式和区域自动决定，无需手动填写。">API 地址</SettingsHelpLabel>
+      </el-col>
+      <el-col :span="12"><code class="derived-endpoint" :title="minimaxEndpoint">{{ minimaxEndpoint }}</code></el-col>
+    </el-row>
 
     <p v-if="presentation.fields.mimoRegion && mimoKeyMismatch" class="mimo-key-note is-warning">
       {{ mimoKeyMismatch }}
@@ -147,10 +145,12 @@
       </el-col>
     </el-row>
 
-    <div v-if="presentation.fields.mimoRegion" class="mimo-endpoint" data-mimo-endpoint>
-      <span>当前 API 地址</span>
-      <code>{{ mimoEndpoint }}</code>
-    </div>
+    <el-row v-if="presentation.fields.mimoRegion" class="margin-bottom margin-left-2em" data-mimo-endpoint>
+      <el-col :span="12" class="lightblue rounded-corner">
+        <SettingsHelpLabel content="由计费方式和 API 集群自动决定，无需手动填写。">API 地址</SettingsHelpLabel>
+      </el-col>
+      <el-col :span="12"><code class="derived-endpoint" :title="mimoEndpoint">{{ mimoEndpoint }}</code></el-col>
+    </el-row>
 
     <el-row v-if="presentation.fields.azureOpenaiEndpoint && !isAIInstance" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner">
@@ -762,13 +762,6 @@ onBeforeUnmount(() => {
   to { transform: rotate(360deg); }
 }
 
-.subsection-heading {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 12px;
-}
-
 .custom-template-heading {
   display: flex;
   align-items: flex-start;
@@ -803,51 +796,23 @@ onBeforeUnmount(() => {
   justify-content: center;
   gap: 6px;
   min-width: 94px;
+  min-height: 34px;
   flex: 0 0 auto;
-  padding: 7px 12px;
-  border: 1px solid var(--brand);
-  border-radius: 9px;
-  color: var(--brand-strong);
-  background: var(--brand-soft);
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-control);
+  color: var(--ink);
+  background: var(--surface-soft);
   font-size: var(--font-small);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-medium);
   cursor: pointer;
-  transition: 160ms ease;
+  transition: background 160ms ease, color 160ms ease;
 }
 
-.connection-test-button:hover:not(:disabled) {
-  color: var(--on-brand);
-  background: var(--brand);
-}
-
-.connection-test-button:disabled {
-  cursor: wait;
-  opacity: .65;
-}
-
-.connection-test-button.is-success {
-  border-color: var(--success-border);
-  color: var(--success);
-  background: var(--success-soft);
-}
-
-.connection-test-button.is-success:hover:not(:disabled) {
-  border-color: var(--success);
-  color: var(--on-brand);
-  background: var(--success);
-}
-
-.connection-test-button.is-error {
-  border-color: var(--danger-border);
-  color: var(--danger);
-  background: var(--danger-soft);
-}
-
-.connection-test-button.is-error:hover:not(:disabled) {
-  border-color: var(--danger);
-  color: var(--on-brand);
-  background: var(--danger);
-}
+.connection-test-button:hover:not(:disabled) { background: var(--line); }
+.connection-test-button:disabled { cursor: wait; opacity: .65; }
+.connection-test-button.is-success { color: var(--success); background: var(--success-soft); }
+.connection-test-button.is-error { color: var(--danger); background: var(--danger-soft); }
 
 .minimax-key-note {
   margin: -6px 0 10px;
@@ -871,44 +836,24 @@ onBeforeUnmount(() => {
   color: var(--danger);
 }
 
-.minimax-endpoint {
+/* 只读地址与输入框同尺寸，但去掉填充底色，避免被误认为可编辑。 */
+.derived-endpoint {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin: -4px 0 10px;
+  min-height: var(--control-height);
+  align-items: center;
+  padding: 0 12px;
+  overflow: hidden;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-control);
   color: var(--muted);
-  font-size: var(--font-small);
-  line-height: var(--line-height-body);
-}
-
-.minimax-endpoint code {
-  overflow-wrap: anywhere;
-  color: var(--ink);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-
-.mimo-endpoint {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin: -4px 0 10px;
-  color: var(--muted);
-  font-size: var(--font-small);
-  line-height: var(--line-height-body);
-}
-
-.mimo-endpoint code {
-  overflow-wrap: anywhere;
-  color: var(--ink);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: all;
 }
 
 @media (max-width: 700px) {
-  .subsection-heading {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
   .connection-test-button {
     width: 100%;
     margin-left: 0;

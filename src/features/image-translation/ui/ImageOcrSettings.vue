@@ -11,7 +11,7 @@
       </header>
       <div class="image-ocr-pack-list">
         <article v-for="pack in languagePacks" :key="pack.code" class="image-ocr-pack-card">
-          <div class="image-ocr-pack-icon">{{ pack.code === 'chi_sim' ? '中' : pack.code === 'eng' ? 'A' : '日' }}</div>
+          <div class="image-ocr-pack-icon">{{ pack.code === 'chi_sim' ? 'zh' : pack.code === 'eng' ? 'en' : 'ja' }}</div>
           <div class="image-ocr-pack-copy">
             <div class="image-ocr-pack-title">
               <strong>{{ pack.label }}</strong>
