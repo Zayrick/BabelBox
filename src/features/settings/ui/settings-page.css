@@ -219,9 +219,12 @@ button:focus-visible, a:focus-visible, input[type="checkbox"]:focus-visible {
 .settings-app .el-input-group__prepend,
 .settings-app .el-input-group__append { border: 0; background: var(--surface-soft); box-shadow: none; }
 .settings-app .el-switch { --el-switch-on-color: var(--brand); }
-.settings-app .el-button { border-radius: var(--radius-control); font-weight: var(--weight-medium); }
+.settings-app .el-button,
+.el-overlay .el-button { border-radius: var(--radius-control); font-weight: var(--weight-medium); }
 .settings-app .el-button.is-text { color: var(--muted); }
 .settings-app .el-button.is-text:not(.is-disabled):hover { color: var(--ink); background: var(--surface-soft); }
+.el-overlay .el-button:not(.el-button--primary, .el-button--danger) { border-color: transparent; background: var(--surface-soft); }
+.el-overlay .el-button:not(.el-button--primary, .el-button--danger):hover { color: var(--ink); background: color-mix(in srgb, var(--line) 55%, var(--surface-soft)); }
 .el-select-dropdown__item { height: 36px; font-size: var(--font-body); line-height: 36px; }
 .el-select-dropdown__item.is-selected { color: var(--brand-strong); font-weight: var(--weight-semibold); }
 
@@ -263,6 +266,43 @@ button:focus-visible, a:focus-visible, input[type="checkbox"]:focus-visible {
 .settings-card .el-collapse-item__wrap { border: 0; background: transparent; }
 .settings-card .el-collapse-item__content { padding: 4px 0 16px; }
 .settings-card .el-divider__text { color: var(--muted); font-size: var(--font-caption); background: var(--surface); }
+
+/* ---------- 浮层 ---------- */
+/* Dialog 与 MessageBox 挂在 body 上，拿不到 .settings-app 作用域，单独对齐页面的平面语言。 */
+.el-overlay .el-dialog {
+  --el-dialog-padding-primary: 24px;
+  --el-dialog-border-radius: var(--radius-overlay);
+  --el-dialog-title-font-size: var(--font-subtitle);
+  --el-dialog-box-shadow: var(--shadow-overlay);
+}
+.el-overlay .el-message-box {
+  --el-messagebox-padding-primary: 24px;
+  --el-messagebox-border-radius: var(--radius-overlay);
+  --el-messagebox-width: 440px;
+  --el-messagebox-font-size: var(--font-subtitle);
+  --el-messagebox-content-color: var(--muted);
+  --el-messagebox-box-shadow: var(--shadow-overlay);
+}
+.el-dialog,
+.el-message-box { font-family: var(--font-family); }
+.el-dialog__title,
+.el-message-box__title { color: var(--ink); font-weight: var(--weight-semibold); line-height: var(--line-height-tight); }
+.el-dialog__header,
+.el-message-box__header { padding-bottom: 8px; }
+.el-message-box__message { font-size: var(--font-body); line-height: var(--line-height-body); }
+.el-message-box__status { display: none; }
+.el-dialog__footer,
+.el-message-box__btns { display: flex; justify-content: flex-end; gap: 8px; padding-top: 24px; }
+.el-dialog__footer .el-button + .el-button,
+.el-message-box__btns .el-button + .el-button { margin-left: 0; }
+.el-dialog__headerbtn,
+.el-message-box__headerbtn { top: 16px; right: 16px; width: 32px; height: 32px; border-radius: var(--radius-control); transition: background 120ms ease; }
+.el-dialog__headerbtn:hover,
+.el-message-box__headerbtn:hover { background: var(--surface-soft); }
+.el-dialog__headerbtn .el-dialog__close,
+.el-message-box__headerbtn .el-message-box__close { color: var(--muted); }
+.el-dialog__headerbtn:hover .el-dialog__close,
+.el-message-box__headerbtn:hover .el-message-box__close { color: var(--ink); }
 
 /* ---------- 关于 ---------- */
 .about-page { display: flex; flex-direction: column; gap: 24px; }

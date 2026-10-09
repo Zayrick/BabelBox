@@ -686,6 +686,7 @@ async function removeTranslationService(id: string): Promise<void> {
       '删除 AI 翻译服务',
       {
         confirmButtonText: '删除',
+        confirmButtonType: 'danger',
         cancelButtonText: '取消',
         type: 'warning',
       },
@@ -1008,6 +1009,7 @@ const setCredentialStorage = async (mode: CredentialStorageMode) => {
         '改为仅本次会话',
         {
           confirmButtonText: '删除并切换',
+          confirmButtonType: 'danger',
           cancelButtonText: '取消',
           type: 'warning',
         },

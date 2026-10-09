@@ -34,6 +34,7 @@
   --babelbox-control-height: 40px;
   --babelbox-control-height-large: 46px;
   --babelbox-shadow-card: 0 1px 2px rgba(23, 32, 51, .04), 0 1px 3px rgba(23, 32, 51, .04);
+  --babelbox-shadow-overlay: 0 24px 48px -12px rgba(23, 32, 51, .18), 0 0 0 1px var(--babelbox-color-line);
 
   --brand: var(--babelbox-color-brand);
   --brand-strong: var(--babelbox-color-brand-strong);
@@ -67,6 +68,7 @@
   --control-height: var(--babelbox-control-height);
   --control-height-large: var(--babelbox-control-height-large);
   --shadow-card: var(--babelbox-shadow-card);
+  --shadow-overlay: var(--babelbox-shadow-overlay);
 }
 
 :root.dark,
@@ -83,6 +85,7 @@
   --babelbox-color-canvas: #151a23;
   --babelbox-color-mask: rgba(0, 0, 0, .62);
   --babelbox-shadow-card: none;
+  --babelbox-shadow-overlay: 0 24px 48px -12px rgba(0, 0, 0, .5), 0 0 0 1px var(--babelbox-color-line);
 }
 
 /*

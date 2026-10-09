@@ -370,6 +370,7 @@ function handleCancel() {
 </script>
 
 <style scoped>
+/* 与设置页同一套平面语言：无描边卡片，用浅底色区分可交互区域，分区之间只靠留白。 */
 .custom-hotkey-overlay {
   position: fixed;
   z-index: 3000;
@@ -380,20 +381,20 @@ function handleCancel() {
   overflow: hidden;
   padding: 20px;
   background: var(--mask);
-  font-family: inherit;
+  font-family: var(--font-family);
 }
 
 .custom-hotkey-dialog {
   display: flex;
-  width: min(560px, 100%);
-  max-height: min(760px, calc(100vh - 32px));
+  width: min(520px, 100%);
+  max-height: min(720px, calc(100vh - 32px));
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid var(--line);
   border-radius: var(--radius-overlay);
   outline: none;
+  color: var(--ink);
   background: var(--surface);
-  box-shadow: var(--el-box-shadow);
+  box-shadow: var(--shadow-overlay);
 }
 
 .dialog-header {
@@ -401,9 +402,7 @@ function handleCancel() {
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding: 20px 22px 16px;
-  border-bottom: 1px solid var(--line);
-  background: var(--surface);
+  padding: 24px 24px 4px;
 }
 
 .dialog-heading,
@@ -415,17 +414,17 @@ function handleCancel() {
 .section-heading h3 {
   margin: 0;
   color: var(--ink);
-  letter-spacing: -.03em;
+  font-weight: var(--weight-semibold);
+  line-height: var(--line-height-tight);
 }
 
 .dialog-heading h2 {
-  font-size: var(--font-title);
-  line-height: var(--line-height-tight);
+  font-size: var(--font-subtitle);
 }
 
 .dialog-heading p {
   max-width: 410px;
-  margin: 5px 0 0;
+  margin: 4px 0 0;
   color: var(--muted);
   font-size: var(--font-small);
   line-height: var(--line-height-body);
@@ -433,30 +432,29 @@ function handleCancel() {
 
 .dialog-close {
   display: grid;
-  width: 34px;
-  height: 34px;
-  flex: 0 0 34px;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
   place-items: center;
-  margin: -4px -6px 0 0;
-  border: 1px solid transparent;
-  border-radius: 8px;
+  margin: -8px -8px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
   color: var(--muted);
   background: transparent;
   cursor: pointer;
-  line-height: 1;
-  transition: color 160ms ease, background 160ms ease, border-color 160ms ease;
+  transition: color 120ms ease, background 120ms ease;
 }
 
 .dialog-close svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 .dialog-close:hover,
 .dialog-close:focus-visible {
-  border-color: var(--el-color-primary-light-7);
-  color: var(--brand-strong);
-  background: var(--brand-soft);
+  color: var(--ink);
+  background: var(--surface-soft);
 }
 
 .dialog-body-scrollbar {
@@ -467,43 +465,35 @@ function handleCancel() {
 
 .dialog-body {
   display: grid;
-  gap: 14px;
-  padding: 18px 22px;
+  gap: 20px;
+  padding: 16px 24px;
 }
 
 .recording-card {
   display: grid;
-  gap: 12px;
-  padding: 0 0 16px;
-  border: 0;
-  border-bottom: 1px solid var(--line);
-  background: transparent;
-}
-
-.recording-card.is-recording {
-  border-color: var(--el-color-primary-light-5);
+  gap: 10px;
 }
 
 .section-heading {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
 .section-heading h3 {
-  font-size: var(--font-subtitle);
-  line-height: var(--line-height-tight);
+  font-size: var(--font-body);
 }
 
 .state-badge {
   flex: 0 0 auto;
-  padding: 5px 9px;
-  border-radius: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
   color: var(--muted);
   background: var(--surface-soft);
   font-size: var(--font-caption);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-medium);
+  line-height: var(--line-height-body);
   white-space: nowrap;
 }
 
@@ -515,56 +505,46 @@ function handleCancel() {
 
 .hotkey-input-field {
   display: flex;
-  min-height: 68px;
+  min-height: 72px;
   align-items: center;
   justify-content: center;
   width: 100%;
   padding: 14px 18px;
-  border: 1px dashed var(--line);
+  border: 0;
   border-radius: var(--radius-control);
   color: var(--muted);
   background: var(--surface-soft);
   cursor: pointer;
   font: inherit;
-  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+  transition: background 140ms ease, box-shadow 140ms ease, color 140ms ease;
 }
 
 .hotkey-input-field:hover {
-  border-color: var(--el-color-primary-light-3);
-  color: var(--brand-strong);
-  background: var(--surface);
+  background: color-mix(in srgb, var(--line) 55%, var(--surface-soft));
 }
 
 .hotkey-input-field:focus-visible {
-  border-color: var(--brand);
-  outline: 3px solid var(--brand-soft);
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .hotkey-input-field.recording {
-  border-style: solid;
-  border-color: var(--brand);
   color: var(--brand-strong);
   background: var(--brand-soft);
+  box-shadow: var(--focus-ring);
 }
 
 .hotkey-input-field.error {
-  border-style: solid;
-  border-color: var(--danger-border);
   color: var(--danger);
   background: var(--danger-soft);
 }
 
 .hotkey-input-field.warning {
-  border-style: solid;
-  border-color: var(--warning-border);
   color: var(--warning);
   background: var(--warning-soft);
 }
 
 .hotkey-input-field.success {
-  border-style: solid;
-  border-color: var(--success-border);
   color: var(--success);
   background: var(--success-soft);
 }
@@ -594,63 +574,41 @@ function handleCancel() {
 .preset-button kbd {
   display: inline-flex;
   align-items: center;
-  min-height: var(--control-height-small);
-  padding: 5px 10px;
+  padding: 3px 8px;
   border: 1px solid var(--line);
   border-bottom-width: 2px;
   border-radius: 6px;
   color: var(--ink);
   background: var(--surface);
-  font-family: 'SFMono-Regular', 'SF Mono', 'Cascadia Code', 'Roboto Mono', monospace;
-  font-size: var(--font-body);
-  font-weight: var(--weight-semibold);
-  letter-spacing: .02em;
+  font-family: var(--font-mono);
+  font-size: var(--font-small);
+  font-weight: var(--weight-medium);
 }
 
 .hotkey-display kbd {
-  padding: 8px 15px;
-  border-color: var(--el-color-primary-light-5);
-  color: var(--brand-strong);
-  background: var(--brand-soft);
+  padding: 6px 14px;
   font-size: var(--font-subtitle);
+  font-weight: var(--weight-semibold);
 }
 
 .section-note {
   color: var(--muted);
   font-size: var(--font-small);
-  line-height: var(--line-height-body);
-  padding-top: 2px;
   white-space: nowrap;
 }
 
 .hotkey-status {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
-  padding: 10px 12px;
-  border: 1px solid;
-  border-radius: var(--radius-control);
+  margin-top: -10px;
   font-size: var(--font-small);
   line-height: var(--line-height-body);
 }
 
-.hotkey-status.error {
-  border-color: var(--danger-border);
-  color: var(--danger);
-  background: var(--danger-soft);
-}
-
-.hotkey-status.warning {
-  border-color: var(--warning-border);
-  color: var(--warning);
-  background: var(--warning-soft);
-}
-
-.hotkey-status.success {
-  border-color: var(--success-border);
-  color: var(--success);
-  background: var(--success-soft);
-}
+.hotkey-status.error { color: var(--danger); }
+.hotkey-status.warning { color: var(--warning); }
+.hotkey-status.success { color: var(--success); }
 
 .preset-section {
   display: grid;
@@ -665,42 +623,42 @@ function handleCancel() {
 
 .preset-button {
   display: flex;
-  min-height: 50px;
+  min-height: var(--control-height-large);
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 9px 10px 9px 12px;
-  border: 1px solid var(--line);
+  padding: 0 8px 0 12px;
+  border: 0;
   border-radius: var(--radius-control);
   color: var(--muted);
-  background: var(--surface);
+  background: var(--surface-soft);
   cursor: pointer;
   font: inherit;
   text-align: left;
-  transition: border-color 160ms ease, color 160ms ease, background 160ms ease;
+  transition: color 120ms ease, background 120ms ease;
 }
 
-.preset-button:hover,
+.preset-button:hover {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--line) 55%, var(--surface-soft));
+}
+
 .preset-button:focus-visible {
-  border-color: var(--el-color-primary-light-3);
-  color: var(--brand-strong);
-  background: var(--brand-soft);
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .preset-button.selected {
-  border-color: var(--el-color-primary-light-5);
   color: var(--brand-strong);
   background: var(--brand-soft);
 }
 
 .preset-button kbd {
   flex: 0 0 auto;
-  color: var(--ink);
-  font-size: var(--font-small);
 }
 
 .preset-button.selected kbd {
-  border-color: var(--el-color-primary-light-5);
+  border-color: var(--el-color-primary-light-7);
   color: var(--brand-strong);
 }
 
@@ -716,40 +674,39 @@ function handleCancel() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  padding: 14px 22px 18px;
-  border-top: 1px solid var(--line);
-  background: var(--surface);
+  gap: 12px;
+  padding: 8px 24px 24px;
 }
 
 .dialog-actions {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 8px;
   margin-left: auto;
 }
 
 .clear-button,
 .secondary-button,
 .primary-button {
-  min-height: var(--control-height);
+  min-height: var(--control-height-small);
   padding: 0 16px;
+  border: 0;
   border-radius: var(--radius-control);
   cursor: pointer;
   font: inherit;
   font-size: var(--font-small);
-  font-weight: var(--weight-semibold);
-  transition: border-color 160ms ease, color 160ms ease, background 160ms ease;
+  font-weight: var(--weight-medium);
+  transition: color 120ms ease, background 120ms ease;
 }
 
 .clear-button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 0;
-  border: 0;
-  color: var(--danger);
+  margin-left: -10px;
+  padding: 0 10px;
+  color: var(--muted);
   background: transparent;
 }
 
@@ -761,38 +718,32 @@ function handleCancel() {
 .clear-button:hover,
 .clear-button:focus-visible {
   color: var(--danger);
-  text-decoration: underline;
+  background: var(--danger-soft);
 }
 
 .secondary-button {
-  border: 1px solid var(--line);
   color: var(--ink);
-  background: var(--surface);
+  background: var(--surface-soft);
 }
 
 .secondary-button:hover,
 .secondary-button:focus-visible {
-  border-color: var(--el-border-color-dark);
-  background: var(--surface-soft);
+  background: color-mix(in srgb, var(--line) 55%, var(--surface-soft));
 }
 
 .primary-button {
-  border: 1px solid var(--brand);
   color: var(--on-brand);
   background: var(--brand);
 }
 
 .primary-button:hover:not(:disabled),
 .primary-button:focus-visible:not(:disabled) {
-  border-color: var(--brand-strong);
   background: var(--brand-strong);
 }
 
 .primary-button:disabled {
-  border-color: var(--line);
   color: var(--muted);
   background: var(--surface-soft);
-  box-shadow: none;
   cursor: not-allowed;
 }
 
@@ -804,23 +755,14 @@ function handleCancel() {
 
   .custom-hotkey-dialog {
     max-height: calc(100vh - 28px);
-    border-radius: 14px;
   }
 
-  .dialog-header {
-    padding: 18px 20px 14px;
-  }
-
-  .dialog-body {
-    padding: 16px 20px;
-  }
+  .dialog-header { padding: 20px 20px 4px; }
+  .dialog-body { padding: 16px 20px; }
+  .dialog-footer { padding: 8px 20px 20px; }
 
   .preset-buttons {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .dialog-footer {
-    padding: 13px 20px 16px;
   }
 }
 
@@ -836,8 +778,8 @@ function handleCancel() {
   .dialog-header,
   .dialog-body,
   .dialog-footer {
-    padding-right: 15px;
-    padding-left: 15px;
+    padding-right: 16px;
+    padding-left: 16px;
   }
 
   .section-note {
