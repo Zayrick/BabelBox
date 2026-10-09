@@ -155,8 +155,7 @@ h1 { margin: 0; font-size: var(--font-display); line-height: var(--line-height-t
   background: var(--surface);
 }
 .settings-card .settings-preference-row,
-.settings-card .settings-control-row,
-.settings-card .settings-status-row {
+.settings-card .settings-control-row {
   display: grid !important;
   min-height: 56px;
   grid-template-columns: minmax(0, 1fr) clamp(200px, 32vw, 340px);
@@ -170,8 +169,7 @@ h1 { margin: 0; font-size: var(--font-display); line-height: var(--line-height-t
   background: var(--surface);
 }
 .settings-card .settings-preference-row > .el-col,
-.settings-card .settings-control-row > .el-col,
-.settings-card .settings-status-row > .el-col {
+.settings-card .settings-control-row > .el-col {
   width: auto !important;
   max-width: none !important;
   min-width: 0;
@@ -180,8 +178,7 @@ h1 { margin: 0; font-size: var(--font-display); line-height: var(--line-height-t
 .settings-card .settings-control-label { display: flex; min-width: 0; align-items: center; }
 .settings-card .popup-text { color: var(--ink); font-size: var(--font-body); font-weight: var(--weight-medium); line-height: var(--line-height-body); }
 .settings-card .settings-control-field,
-.settings-card .settings-preference-row > .el-col:last-child,
-.settings-card .settings-status-row > .el-col:last-child {
+.settings-card .settings-preference-row > .el-col:last-child {
   display: flex;
   width: 100%;
   min-width: 0;
@@ -235,8 +232,7 @@ h1 { margin: 0; font-size: var(--font-display); line-height: var(--line-height-t
 
 .settings-card .settings-control-row .hotkey-config { display: grid; gap: 6px; }
 .settings-card .settings-control-row .el-switch,
-.settings-card .settings-control-row .settings-toggle,
-.settings-card .settings-status-row .el-switch {
+.settings-card .settings-control-row .settings-toggle {
   --el-switch-on-color: var(--brand);
   --el-switch-off-color: var(--el-border-color);
   --el-switch-border-color: var(--el-border-color);
@@ -345,15 +341,13 @@ h1 { margin: 0; font-size: var(--font-display); line-height: var(--line-height-t
 @media (max-width: 600px) {
   .settings-card .settings-preference-row,
   .settings-card .settings-control-row,
-  .settings-card .settings-status-row,
   .settings-card .service-connection-section > .el-row:not(.settings-control-row) {
     grid-template-columns: minmax(0, 1fr);
     gap: 7px;
     padding: 10px 12px;
   }
   .settings-card .settings-control-field,
-  .settings-card .settings-preference-row > .el-col:last-child,
-  .settings-card .settings-status-row > .el-col:last-child { justify-content: stretch; }
+  .settings-card .settings-preference-row > .el-col:last-child { justify-content: stretch; }
   .settings-card .settings-preference-row > .el-col:last-child > .el-select,
   .settings-card .settings-control-field > .el-select,
   .settings-card .settings-control-field > .el-input,
@@ -368,8 +362,7 @@ h1 { margin: 0; font-size: var(--font-display); line-height: var(--line-height-t
   .settings-card .service-connection-section > .el-row:not(.settings-control-row) > .el-col:last-child > .model-catalog-control {
     max-width: 100% !important;
   }
-  .settings-card .settings-control-field > .el-switch,
-  .settings-card .settings-status-row .el-switch { margin-left: auto; }
+  .settings-card .settings-control-field > .el-switch { margin-left: auto; }
   .about-logo { width: 56px; height: 56px; border-radius: 12px; }
 }
 

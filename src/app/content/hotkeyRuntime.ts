@@ -64,7 +64,7 @@ export function createContentHotkeyRuntime(isSiteDisabled: () => boolean): Conte
     };
 
     const shouldReserveSelectionShortcut = (event: KeyboardEvent): boolean => {
-        if (isSiteDisabled() || !config.on || config.selectionTranslatorMode === 'disabled'
+        if (isSiteDisabled() || config.selectionTranslatorMode === 'disabled'
             || config.disableSelectionTranslator) return false;
         return shouldClaimConfiguredHotkey(
             event,
@@ -81,7 +81,7 @@ export function createContentHotkeyRuntime(isSiteDisabled: () => boolean): Conte
     };
 
     const matchesSelectionTranslatorShortcut = (event: KeyboardEvent): boolean => {
-        if (isSiteDisabled() || !config.on || config.selectionTranslatorMode === 'disabled'
+        if (isSiteDisabled() || config.selectionTranslatorMode === 'disabled'
             || config.disableSelectionTranslator) return false;
         return matchesConfiguredHotkey(
             event,
@@ -155,8 +155,7 @@ export function createContentHotkeyRuntime(isSiteDisabled: () => boolean): Conte
             const parts = configuredParts();
             if (parts.length === 0
                 || !parts.every((key) => hotkeysPressed.has(key))
-                || parts.length !== hotkeysPressed.size
-                || !config.on) return;
+                || parts.length !== hotkeysPressed.size) return;
 
             event.preventDefault();
             event.stopPropagation();
@@ -179,7 +178,7 @@ export function createContentHotkeyRuntime(isSiteDisabled: () => boolean): Conte
             if (isSiteDisabled()) return;
             if (pendingFullPageToggle) {
                 pendingFullPageToggle = false;
-                if (config.on && !hasActiveSelectionTranslationCandidate()) {
+                if (!hasActiveSelectionTranslationCandidate()) {
                     event.preventDefault();
                     event.stopPropagation();
                     toggleFullPageTranslation();

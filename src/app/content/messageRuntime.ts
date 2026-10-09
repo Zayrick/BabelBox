@@ -127,7 +127,7 @@ export function createContentRuntimeMessageHandler(ctx: ContentScriptContext, st
         }
 
         if (payload.type === 'contextMenuTranslate') {
-            if (config.on === false || state.isSiteDisabled()) {
+            if (state.isSiteDisabled()) {
                 sendResponse({status: 'disabled'});
                 return true;
             }

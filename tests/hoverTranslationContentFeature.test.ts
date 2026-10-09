@@ -43,7 +43,6 @@ function mountHarness(overrides: Partial<HoverTranslationContentDependencies> = 
     const documentTarget = new FakeTarget();
     const windowTarget = new FakeTarget();
     const config = {
-        on: true,
         hotkey: 'Control',
         customHotkey: '',
         mouseHoverTranslationDelay: 120,
@@ -420,15 +419,4 @@ describe('hover translation content feature', () => {
         expect(deps.handleTranslation).not.toHaveBeenCalled();
     });
 
-    it('配置关闭时仍记录状态但不拦截事件、不触发翻译', () => {
-        const {deps, windowTarget} = mountHarness();
-        deps.config.on = false;
-        const keydown = trustedEvent({key: 'Control', code: 'ControlLeft', ctrlKey: true});
-
-        windowTarget.emit('keydown', keydown);
-        windowTarget.emit('keyup', trustedEvent({key: 'Control', code: 'ControlLeft'}));
-
-        expect(keydown.preventDefault).not.toHaveBeenCalled();
-        expect(deps.handleTranslation).not.toHaveBeenCalled();
-    });
 });

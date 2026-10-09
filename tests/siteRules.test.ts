@@ -82,7 +82,6 @@ describe('始终翻译网站规则', () => {
         expect(isExtensionDisabledOnSite('https://news.example.com/article', disabledDomains)).toBe(true);
         expect(isExtensionDisabledOnSite('https://notexample.com/article', disabledDomains)).toBe(false);
         expect(shouldAutoTranslatePage('https://news.example.com/article', {
-            on: true,
             autoTranslate: true,
             alwaysTranslateDomains: [],
             disabledExtensionDomains: disabledDomains,
@@ -106,27 +105,18 @@ describe('始终翻译网站规则', () => {
 
     it('同时保留旧全局自动翻译开关，并只对网站名单限制网页协议', () => {
         expect(shouldAutoTranslatePage('https://unlisted.example/', {
-            on: true,
             autoTranslate: true,
             alwaysTranslateDomains: [],
         })).toBe(true);
         expect(shouldAutoTranslatePage('https://news.example.com/', {
-            on: true,
             autoTranslate: false,
             alwaysTranslateDomains: ['example.com'],
         })).toBe(true);
-        expect(shouldAutoTranslatePage('https://news.example.com/', {
-            on: false,
-            autoTranslate: true,
-            alwaysTranslateDomains: ['example.com'],
-        })).toBe(false);
         expect(shouldAutoTranslatePage('file:///tmp/article.html', {
-            on: true,
             autoTranslate: true,
             alwaysTranslateDomains: [],
         })).toBe(true);
         expect(shouldAutoTranslatePage('file:///tmp/article.html', {
-            on: true,
             autoTranslate: false,
             alwaysTranslateDomains: ['example.com'],
         })).toBe(false);

@@ -229,7 +229,6 @@ async function main() {
       throw new Error(`新配置的视频字幕翻译应默认关闭：${JSON.stringify(initialPopupVideoState)}`);
     }
     await persistExtensionConfig(control, {
-      on: true,
       from: 'auto',
       to: 'zh-Hans',
       videoTranslationEnabled: true,

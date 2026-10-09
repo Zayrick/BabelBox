@@ -2,7 +2,6 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 
 const mocks = vi.hoisted(() => ({
     config: {
-        on: true,
         disableFloatingBall: false,
         selectionTranslatorMode: 'bilingual',
         disableSelectionTranslator: false,
@@ -54,7 +53,6 @@ beforeEach(() => {
     vi.resetModules();
     vi.unstubAllGlobals();
     Object.assign(mocks.config, {
-        on: true,
         disableFloatingBall: false,
         selectionTranslatorMode: 'bilingual',
         disableSelectionTranslator: false,

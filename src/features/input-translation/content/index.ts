@@ -15,7 +15,6 @@ import {
 } from './inputBox';
 
 export interface InputTranslationContentConfig {
-    on?: boolean;
     inputBoxTranslationTrigger: string;
     inputBoxTranslationTarget: string;
     animationMode?: AnimationMode;
@@ -51,18 +50,16 @@ export interface InputTranslationContentFeature {
 
 export function inputBoxTranslationConfigKey(value: InputTranslationContentConfig): string {
     return JSON.stringify([
-        value.on,
         value.inputBoxTranslationTrigger,
         value.inputBoxTranslationTarget,
     ]);
 }
 
 export function isInputBoxTranslationEnabled(
-    config: Pick<InputTranslationContentConfig, 'on' | 'inputBoxTranslationTrigger'>,
+    config: Pick<InputTranslationContentConfig, 'inputBoxTranslationTrigger'>,
     isSiteDisabled = false,
 ): boolean {
     return !isSiteDisabled
-        && config.on !== false
         && config.inputBoxTranslationTrigger !== 'disabled';
 }
 

@@ -8,7 +8,6 @@ import {
 import {normalizeConfig} from '@/src/core/config/model'
 
 const validConfig = {
-  on: true,
   service: 'openai',
   display: 1,
   from: 'auto',

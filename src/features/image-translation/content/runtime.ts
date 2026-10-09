@@ -219,7 +219,7 @@ function getState(image: HTMLImageElement): ImageTranslationState {
 }
 
 function showImageButton(image: HTMLImageElement): void {
-    if (!mounted || !config.on || image.closest(`[${IMAGE_TRANSLATION_OVERLAY}]`) || image.closest('video')) return;
+    if (!mounted || image.closest(`[${IMAGE_TRANSLATION_OVERLAY}]`) || image.closest('video')) return;
     const state = getState(image);
     clearHoverTimer(state);
     updateOverlayPosition(state);

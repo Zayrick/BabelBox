@@ -89,7 +89,6 @@ export interface TranslationServiceCredential {
 }
 
 export class Config {
-    on: boolean; // 是否开启
     autoTranslate: boolean; // 是否即时翻译
     alwaysTranslateDomains: string[]; // 始终自动翻译的可注册域名（eTLD+1）
     disabledExtensionDomains: string[]; // 禁用扩展的可注册域名（eTLD+1）
@@ -171,7 +170,6 @@ export class Config {
     translationCenterTargetLanguage: string; // 翻译中心目标语言
 
     constructor() {
-        this.on = true;
         this.autoTranslate = false;
         this.alwaysTranslateDomains = [];
         this.disabledExtensionDomains = [];
@@ -352,6 +350,8 @@ export function normalizeConfig(value: unknown): Config {
             : false;
     }
     delete (normalized as unknown as Record<string, unknown>).translationStatus;
+    // 旧版的全局启用开关已由浏览器的扩展启用状态取代；残留的 false 不能再暂停功能。
+    delete (normalized as unknown as Record<string, unknown>).on;
     // __babelboxConfigRevision 只用于 storage 的写入顺序判断，不能进入运行时
     // 配置或历史快照，否则默认配置与同值的页面快照会因内部字段不同而无法去重。
     delete (normalized as unknown as Record<string, unknown>).__babelboxConfigRevision;

@@ -25,7 +25,7 @@ export function parseStoredConfig(value: unknown): Record<string, unknown> | nul
     }
 
     if (!isConfigRecord(parsed)) return null;
-    if (!['on', 'service', 'from', 'to'].every((key) => key in parsed)) return null;
+    if (!['service', 'from', 'to'].every((key) => key in parsed)) return null;
     return parsed;
 }
 

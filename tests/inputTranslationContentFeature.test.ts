@@ -102,7 +102,6 @@ function mountHarness(overrides: {
     const fakeDocument = new FakeDocument();
     const tooltipRecords: any[] = [];
     const config: InputTranslationContentConfig = {
-        on: true,
         inputBoxTranslationTrigger: 'ctrl_enter',
         inputBoxTranslationTarget: 'zh',
         animationMode: 'static',
@@ -137,14 +136,12 @@ afterEach(() => {
 describe('input translation content feature', () => {
     it('生成配置 key 并判断 feature 是否可用', () => {
         expect(inputBoxTranslationConfigKey({
-            on: true,
             inputBoxTranslationTrigger: 'ctrl_enter',
             inputBoxTranslationTarget: 'en',
-        })).toBe(JSON.stringify([true, 'ctrl_enter', 'en']));
-        expect(isInputBoxTranslationEnabled({on: true, inputBoxTranslationTrigger: 'ctrl_enter'}, false)).toBe(true);
-        expect(isInputBoxTranslationEnabled({on: false, inputBoxTranslationTrigger: 'ctrl_enter'}, false)).toBe(false);
-        expect(isInputBoxTranslationEnabled({on: true, inputBoxTranslationTrigger: 'disabled'}, false)).toBe(false);
-        expect(isInputBoxTranslationEnabled({on: true, inputBoxTranslationTrigger: 'ctrl_enter'}, true)).toBe(false);
+        })).toBe(JSON.stringify(['ctrl_enter', 'en']));
+        expect(isInputBoxTranslationEnabled({inputBoxTranslationTrigger: 'ctrl_enter'}, false)).toBe(true);
+        expect(isInputBoxTranslationEnabled({inputBoxTranslationTrigger: 'disabled'}, false)).toBe(false);
+        expect(isInputBoxTranslationEnabled({inputBoxTranslationTrigger: 'ctrl_enter'}, true)).toBe(false);
     });
 
     it('写回 input/textarea/contenteditable 时派发页面可感知事件', () => {

@@ -278,7 +278,6 @@ async function extensionStorageEvidence(extensionContext, credentialMarker = nul
       encryptedStateContainsSentinel: containsMarker(credentialState, credentialMarker),
     } : null,
     configProjection: config ? {
-      on: config.on,
       autoTranslate: config.autoTranslate,
       disableFloatingBall: config.disableFloatingBall,
       selectionTranslatorMode: config.selectionTranslatorMode,
@@ -359,7 +358,6 @@ async function configurePrivacySurfaces(worker) {
     }
     const next = {
       ...current,
-      on: true,
       autoTranslate: false,
       floatingBallHotkey: 'Alt+T',
       disableFloatingBall: false,
@@ -387,7 +385,6 @@ async function configurePrivacySurfaces(worker) {
       throw new Error('privacy surface config was not durably written');
     }
     return {
-      on: verified.on,
       autoTranslate: verified.autoTranslate,
       disableFloatingBall: verified.disableFloatingBall,
       selectionTranslatorMode: verified.selectionTranslatorMode,

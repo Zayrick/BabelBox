@@ -558,7 +558,6 @@ export const options = {
 };
 
 export const defaultOption = {
-    on: true,
     from: "auto",
     to: "zh-Hans",
     style: 1,

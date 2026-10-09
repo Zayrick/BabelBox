@@ -220,6 +220,10 @@ describe('翻译进度面板配置', () => {
         expect((enabled as unknown as Record<string, unknown>).translationStatus).toBeUndefined();
         expect((disabled as unknown as Record<string, unknown>).translationStatus).toBeUndefined();
     });
+
+    it('移除旧版全局启用开关，残留的关闭状态不再写回配置', () => {
+        expect('on' in normalizeConfig({on: false})).toBe(false);
+    });
 });
 
 describe('动画模式配置', () => {

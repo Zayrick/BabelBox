@@ -890,8 +890,7 @@ export function mountVideoSubtitleTranslation(): () => void {
 
   const canTranslateVideo = () => {
     const displayMode = normalizeVideoSubtitleDisplayMode(config.videoSubtitleDisplayMode);
-    return config.on
-      && config.videoTranslationEnabled
+    return config.videoTranslationEnabled
       && config.videoSubtitleVisible !== false
       && displayMode !== 'original-only';
   };
@@ -1273,12 +1272,10 @@ export function mountVideoSubtitleTranslation(): () => void {
     if (button instanceof HTMLButtonElement) buttonElement = button;
     if (menu instanceof HTMLElement) menuElement = menu;
 
-    const enabled = config.on && config.videoTranslationEnabled;
+    const enabled = config.videoTranslationEnabled;
     const mode = normalizeVideoSubtitleDisplayMode(config.videoSubtitleDisplayMode);
     const visible = config.videoSubtitleVisible !== false;
-    const status = config.on
-      ? (config.videoTranslationEnabled ? '已开启' : '已关闭')
-      : 'BabelBox 总开关已关闭';
+    const status = enabled ? '已开启' : '已关闭';
 
     button.classList.toggle(VIDEO_TRANSLATION_ACTIVE_CLASS, enabled);
     button.setAttribute('aria-pressed', String(enabled));
@@ -1288,12 +1285,9 @@ export function mountVideoSubtitleTranslation(): () => void {
 
     const toggle = menu.querySelector<HTMLButtonElement>('[data-action="toggle-translation"]');
     if (toggle) {
-      toggle.disabled = !config.on;
       toggle.setAttribute('aria-checked', String(enabled));
       replaceLucideIcon(toggle.querySelector<HTMLElement>('[data-check]')!, enabled ? Check : null);
-      toggle.querySelector<HTMLElement>('[data-state]')!.textContent = config.on
-        ? (enabled ? '已开启' : '立即开启')
-        : status;
+      toggle.querySelector<HTMLElement>('[data-state]')!.textContent = enabled ? '已开启' : '立即开启';
     }
     const service = menu.querySelector<HTMLElement>('[data-service-label]');
     if (service) service.textContent = getVideoServiceLabel(config.videoService);
@@ -1432,7 +1426,7 @@ export function mountVideoSubtitleTranslation(): () => void {
       const downloadButton = target as HTMLButtonElement;
       const state = downloadButton.querySelector<HTMLElement>('[data-state]');
       downloadButton.disabled = true;
-      if (!config.on || !config.videoTranslationEnabled) {
+      if (!config.videoTranslationEnabled) {
         if (state) state.textContent = '请先开启翻译';
         window.setTimeout(() => {
           downloadButton.disabled = false;
@@ -1741,7 +1735,7 @@ export function mountVideoSubtitleTranslation(): () => void {
     container.classList.add('notranslate');
     applyVideoDisplayState(container);
     const displayMode = normalizeVideoSubtitleDisplayMode(config.videoSubtitleDisplayMode);
-    const canTranslate = config.on && config.videoTranslationEnabled && config.videoSubtitleVisible !== false && displayMode !== 'original-only';
+    const canTranslate = config.videoTranslationEnabled && config.videoSubtitleVisible !== false && displayMode !== 'original-only';
     if (!canTranslate) {
       resetTranslationState();
       return;
@@ -1865,8 +1859,8 @@ export function mountVideoSubtitleTranslation(): () => void {
       applyVideoDisplayState(observedContainer);
       syncTranslationOverlayPosition(observedContainer);
     }
-    if (!nextConfig.on || !nextConfig.videoTranslationEnabled || nextConfig.videoSubtitleVisible === false || normalizeVideoSubtitleDisplayMode(nextConfig.videoSubtitleDisplayMode) === 'original-only') {
-      if (!nextConfig.on || !nextConfig.videoTranslationEnabled) subtitleDownloadAbortController?.abort();
+    if (!nextConfig.videoTranslationEnabled || nextConfig.videoSubtitleVisible === false || normalizeVideoSubtitleDisplayMode(nextConfig.videoSubtitleDisplayMode) === 'original-only') {
+      if (!nextConfig.videoTranslationEnabled) subtitleDownloadAbortController?.abort();
       clearPretranslationState(false);
       resetTranslationState();
       return;

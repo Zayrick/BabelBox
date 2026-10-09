@@ -41,7 +41,6 @@ import {setMainWorldBridgesEnabled} from './mainWorldBridgeLifecycle';
 import {configureCurrentTranslationFilters} from '@/src/core/translation/public';
 function shouldAutomaticallyTranslateCurrentPage(nextConfig: typeof config): boolean {
     return shouldAutoTranslatePage(window.location.href, {
-        on: nextConfig.on,
         autoTranslate: nextConfig.autoTranslate,
         alwaysTranslateDomains: nextConfig.alwaysTranslateDomains,
         disabledExtensionDomains: nextConfig.disabledExtensionDomains,
@@ -150,14 +149,14 @@ export async function startContentApp(ctx: ContentScriptContext,
         const pageFeatureRegistry = createContentFeatureRegistry([
             {
                 id: 'floating-ball',
-                isEnabled: () => config.on && config.disableFloatingBall !== true,
+                isEnabled: () => config.disableFloatingBall !== true,
                 mount: () => mountFloatingBall(ctx),
                 unmount: unmountFloatingBall,
                 isMounted: () => Boolean(document.getElementById('babelbox-floating-ball-container')),
             },
             {
                 id: 'selection-translator',
-                isEnabled: () => config.on && config.disableSelectionTranslator !== true,
+                isEnabled: () => config.disableSelectionTranslator !== true,
                 mount: () => mountSelectionTranslator(ctx),
                 unmount: unmountSelectionTranslator,
                 isMounted: () => Boolean(document.getElementById('babelbox-selection-translator-container')),
@@ -165,7 +164,7 @@ export async function startContentApp(ctx: ContentScriptContext,
             {
                 id: 'selection-area-translator',
                 requiredCapability: 'areaTranslation',
-                isEnabled: () => config.on && config.selectionAreaEnabled === true,
+                isEnabled: () => config.selectionAreaEnabled === true,
                 mount: () => mountAreaTranslator(ctx),
                 unmount: unmountAreaTranslator,
                 isMounted: isAreaTranslatorMounted,
@@ -173,7 +172,7 @@ export async function startContentApp(ctx: ContentScriptContext,
             {
                 id: 'image-translator',
                 requiredCapability: 'imageTranslation',
-                isEnabled: () => config.on && config.disableImageTranslator !== true,
+                isEnabled: () => config.disableImageTranslator !== true,
                 mount: () => mountImageTranslator(),
                 unmount: unmountImageTranslator,
             },

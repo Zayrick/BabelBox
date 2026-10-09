@@ -12,7 +12,7 @@ import { getTranslationServiceInstance } from './translationServices'
 
 type ConfigRecord = Record<string, any>
 
-const requiredConfigFields = ['on', 'service', 'display', 'from', 'to'] as const
+const requiredConfigFields = ['service', 'display', 'from', 'to'] as const
 
 function isRecord(value: unknown): value is ConfigRecord {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -21,7 +21,6 @@ function isRecord(value: unknown): value is ConfigRecord {
 export function isConfigImportValid(value: unknown): value is ConfigRecord {
   if (!isRecord(value)) return false
   if (!requiredConfigFields.every((field) => field in value)) return false
-  if (typeof value.on !== 'boolean') return false
   if (value.display !== 0 && value.display !== 1) return false
   if (typeof value.from !== 'string' || !value.from.trim()) return false
   if (typeof value.to !== 'string' || !value.to.trim()) return false

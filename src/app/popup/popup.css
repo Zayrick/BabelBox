@@ -14,11 +14,10 @@ html, body, #app {
   width: 400px;
   min-width: 400px;
   margin: 0;
-  overflow: hidden;
   background: var(--page);
 }
-/* 先提供弹窗的首选高度，再让滚动区适应浏览器实际分配的视口。 */
-body { height: 600px; }
+/* 弹窗高度跟随内容；浏览器自身的弹窗高度上限之外的内容由页面滚动查看。 */
+html { overflow-x: hidden; overflow-y: auto; }
 button { font: inherit; }
 button { color: inherit; }
 button:focus-visible {
@@ -89,7 +88,6 @@ button:focus-visible {
   align-items: center;
   justify-content: space-between;
 }
-.hero-switches { display: flex; align-items: center; }
 h1, h2, p { margin-top: 0; }
 h1 {
   margin-bottom: 0;

@@ -20,7 +20,6 @@ import {
 } from '@/src/services/config/schema';
 
 const baseConfig = {
-    on: true,
     service: 'freeTranslation',
     from: 'auto',
     to: 'zh-Hans',
@@ -56,10 +55,10 @@ describe('配置 schema 与历史纯状态机', () => {
         expect(parseStoredConfig('')).toBeNull();
         expect(parseStoredConfig('{bad-json')).toBeNull();
         expect(parseStoredConfig('[]')).toBeNull();
-        expect(parseStoredConfig({on: true})).toBeNull();
+        expect(parseStoredConfig({service: 'openai'})).toBeNull();
         expect(parseStoredConfig(JSON.stringify(baseConfig))).toEqual(baseConfig);
         expect(parseStoredConfig(baseConfig)).toBe(baseConfig);
-        expect(serializeConfig({on: true})).toBe('{"on":true}');
+        expect(serializeConfig({to: 'en'})).toBe('{"to":"en"}');
     });
 
     it('公开快照与克隆始终移除凭据且不共享可变引用', () => {
@@ -98,7 +97,7 @@ describe('配置 schema 与历史纯状态机', () => {
         expect(parseConfigHistory({entries: [{version: -1, savedAt: 'x', config: baseConfig}]})).toBeNull();
         expect(parseConfigHistory({entries: [{version: 1.5, savedAt: 'x', config: baseConfig}]})).toBeNull();
         expect(parseConfigHistory({entries: [{version: 1, savedAt: 123, config: baseConfig}]})).toBeNull();
-        expect(parseConfigHistory({entries: [{version: 1, savedAt: 'x', config: {on: true}}]})).toBeNull();
+        expect(parseConfigHistory({entries: [{version: 1, savedAt: 'x', config: {service: 'openai'}}]})).toBeNull();
 
         const parsed = parseConfigHistory({
             entries: Array.from({length: 12}, (_, index) => entry(index + 1, `lang-${index}`)),

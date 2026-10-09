@@ -20,7 +20,6 @@ const storageMock = vi.hoisted(() => ({
 vi.mock('@wxt-dev/storage', () => ({ storage: storageMock }));
 
 const storedConfig = {
-    on: true,
     service: 'openai',
     from: 'auto',
     to: 'zh-Hans',
@@ -235,10 +234,10 @@ describe('统一配置存储', () => {
 
         await expect(configStore.configReady).resolves.toBeUndefined();
 
-        expect(configStore.config.on).toBe(true);
+        expect(configStore.config.to).toBe('zh-Hans');
         expect(storageMock.setItem).toHaveBeenCalledWith(
             'local:config',
-            expect.objectContaining({ on: true }),
+            expect.objectContaining({ to: 'zh-Hans' }),
         );
     });
 
@@ -247,19 +246,19 @@ describe('统一配置存储', () => {
         await configStore.configReady;
         storageMock.setItem.mockClear();
 
-        const firstSave = configStore.saveConfig({ ...configStore.config, on: false });
-        const latestSave = configStore.saveConfig({ ...configStore.config, on: true, to: 'en' });
+        const firstSave = configStore.saveConfig({ ...configStore.config, to: 'ja' });
+        const latestSave = configStore.saveConfig({ ...configStore.config, to: 'en' });
         await Promise.all([firstSave, latestSave]);
 
         const configWrites = storageMock.setItem.mock.calls.filter(([key]) => key === 'local:config');
         expect(configWrites).toHaveLength(1);
         expect(configWrites[0]).toEqual([
             'local:config',
-            expect.objectContaining({ on: true, to: 'en' }),
+            expect.objectContaining({ to: 'en' }),
         ]);
 
         storageMock.setItem.mockClear();
-        await configStore.saveConfig({ ...configStore.config, on: true, to: 'en' });
+        await configStore.saveConfig({ ...configStore.config, to: 'en' });
         expect(storageMock.setItem).not.toHaveBeenCalled();
     });
 
@@ -270,10 +269,10 @@ describe('统一配置存储', () => {
         const unsubscribe = configStore.subscribeConfig(listener);
         const watchCallback = storageMock.watch.mock.calls[0][1];
 
-        watchCallback({ ...storedConfig, on: false }, storedConfig);
+        watchCallback({ ...storedConfig, to: 'en' }, storedConfig);
 
-        expect(configStore.config.on).toBe(false);
-        expect(listener).toHaveBeenCalledWith(expect.objectContaining({ on: false }));
+        expect(configStore.config.to).toBe('en');
+        expect(listener).toHaveBeenCalledWith(expect.objectContaining({ to: 'en' }));
         unsubscribe();
     });
 
@@ -286,9 +285,9 @@ describe('统一配置存储', () => {
         listener.mockClear();
         storageMock.setItem.mockClear();
 
-        watchCallback({ ...storedConfig, on: false }, storedConfig);
+        watchCallback({ ...storedConfig, to: 'en' }, storedConfig);
         unsubscribe();
-        watchCallback({ ...storedConfig, on: true }, { ...storedConfig, on: false });
+        watchCallback({ ...storedConfig, to: 'ja' }, { ...storedConfig, to: 'en' });
 
         expect(storageMock.setItem).not.toHaveBeenCalled();
         expect(listener).toHaveBeenCalledTimes(1);

@@ -4,7 +4,6 @@
     class="popup-shell"
     tag="main"
     view-class="popup-content"
-    max-height="min(600px, 100vh)"
     :tabindex="0"
     :class="{ 'config-loading': !hydrated }"
     :aria-busy="!hydrated"
@@ -57,28 +56,20 @@
 
     <section class="hero-card">
       <div class="hero-heading">
-        <h1>{{ config.on ? '网页翻译' : '翻译功能已暂停' }}</h1>
-        <div class="hero-switches">
-          <el-switch
-            class="popup-switch"
-            :model-value="config.on"
-            :aria-label="config.on ? '暂停插件' : '启用插件'"
-            @change="setPluginEnabled(Boolean($event))"
-          />
-        </div>
+        <h1>网页翻译</h1>
       </div>
 
       <div class="language-pair">
         <label>
           <span>源语言</span>
-          <el-select v-model="config.from" aria-label="网页翻译源语言" :disabled="!config.on">
+          <el-select v-model="config.from" aria-label="网页翻译源语言">
             <el-option v-for="item in options.form" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </label>
         <span class="arrow" aria-hidden="true"><ArrowRight /></span>
         <label>
           <span>目标语言</span>
-          <el-select v-model="config.to" aria-label="网页翻译目标语言" :disabled="!config.on">
+          <el-select v-model="config.to" aria-label="网页翻译目标语言">
             <el-option v-for="item in options.to" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </label>
@@ -88,7 +79,6 @@
         <button
           class="service-field"
           type="button"
-          :disabled="!config.on"
           aria-haspopup="listbox"
           :aria-expanded="servicePickerOpen"
           :aria-label="servicePickerAriaLabel"
@@ -131,7 +121,7 @@
           class="translate-button"
           :class="{ translated: pageTranslated, 'has-feedback': actionFeedbacks.page, 'feedback-error': actionFeedbacks.page?.tone === 'error' }"
           type="button"
-          :disabled="!config.on || translationActionPending || Boolean(selectedServiceUnavailableMessage)"
+          :disabled="translationActionPending || Boolean(selectedServiceUnavailableMessage)"
           :aria-pressed="pageTranslated"
           :aria-busy="activeTranslationAction === 'page'"
           @click="togglePageTranslation"
@@ -163,7 +153,7 @@
           :aria-pressed="config.enableAIContext"
           :aria-label="config.enableAIContext ? '关闭上下文' : '开启上下文'"
           :title="config.enableAIContext ? '关闭上下文' : '开启上下文'"
-          :disabled="!config.on || translationActionPending"
+          :disabled="translationActionPending"
           @click="toggleAIContext"
         >
           <span class="ai-context-copy">上下文</span>
@@ -251,7 +241,7 @@
     <section class="features">
       <span class="eyebrow features-eyebrow">快捷功能</span>
       <div class="feature-grid">
-        <button class="feature-card" type="button" :disabled="!config.on" @click="openDrawer('hover')">
+        <button class="feature-card" type="button" @click="openDrawer('hover')">
           <span class="feature-icon rose" aria-hidden="true"><MousePointer /></span>
           <span><strong>鼠标悬停翻译</strong><small>{{ hoverSummary }}</small></span>
           <span class="feature-indicators" aria-hidden="true">
@@ -259,7 +249,7 @@
             <ChevronRight />
           </span>
         </button>
-        <button class="feature-card" type="button" :disabled="!config.on" @click="openDrawer('selection')">
+        <button class="feature-card" type="button" @click="openDrawer('selection')">
           <span class="feature-icon violet" aria-hidden="true"><TextSelect /></span>
           <span><strong>划词翻译</strong><small>{{ selectionSummary }}</small></span>
           <span class="feature-indicators" aria-hidden="true">
@@ -267,12 +257,12 @@
             <ChevronRight />
           </span>
         </button>
-        <button class="feature-card" type="button" :disabled="!config.on" @click="openDrawer('appearance')">
+        <button class="feature-card" type="button" @click="openDrawer('appearance')">
           <span class="feature-icon amber" aria-hidden="true"><Type /></span>
           <span><strong>译文显示</strong><small>{{ displaySummary }}</small></span>
           <ChevronRight class="feature-chevron" aria-hidden="true" />
         </button>
-        <button class="feature-card" type="button" :disabled="!config.on" @click="openDrawer('image')">
+        <button class="feature-card" type="button" @click="openDrawer('image')">
           <span class="feature-icon teal" aria-hidden="true"><ImageIcon /></span>
           <span class="feature-copy">
             <span class="feature-title"><strong>图片翻译</strong><em class="beta-badge">Beta 测试</em></span>
@@ -288,7 +278,6 @@
           :class="{ 'needs-enable': !config.videoTranslationEnabled }"
           data-feature="video-subtitle"
           type="button"
-          :disabled="!config.on"
           :aria-label="config.videoTranslationEnabled ? '打开视频字幕设置，当前已开启' : '打开视频字幕设置，点击开启字幕翻译'"
           @click="openDrawer('video')"
         >
@@ -306,7 +295,6 @@
           class="feature-card document-feature-card"
           data-feature="document-translation"
           type="button"
-          :disabled="!config.on"
           aria-label="打开文档翻译，Beta 测试"
           @click="openDocumentTranslation()"
         >
@@ -831,7 +819,6 @@ function handleServicePickerKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') closeServicePicker();
 }
 function toggleServicePicker() {
-  if (!config.value.on) return;
   servicePickerOpen.value = !servicePickerOpen.value;
 }
 function selectService(value: string) {
@@ -839,7 +826,7 @@ function selectService(value: string) {
   servicePickerOpen.value = false;
 }
 function toggleAIContext() {
-  if (!canUseAIContext.value || !config.value.on || translationActionPending.value) return;
+  if (!canUseAIContext.value || translationActionPending.value) return;
   config.value.enableAIContext = !config.value.enableAIContext;
 }
 onMounted(() => {
@@ -929,10 +916,6 @@ async function setCurrentSiteAlwaysTranslated(enabled: boolean) {
     return;
   }
 
-  if (!config.value.on) {
-    showActionFeedback('site-rule', '已保存，启用后生效');
-    return;
-  }
   if (credentialWarning.value) {
     showActionFeedback('site-rule', '已保存，请先配置服务', 'error');
     return;
@@ -980,26 +963,6 @@ async function broadcast(message: Record<string, unknown>) {
   const tabs = await browser.tabs.query({});
   const tabIds = tabs.map((tab) => tab.id).filter(isBrowserTabId);
   await Promise.allSettled(tabIds.map((tabId) => browser.tabs.sendMessage(tabId, message)));
-}
-
-function setPluginEnabled(enabled: boolean) {
-  config.value.on = enabled;
-  if (!enabled) {
-    void broadcast({ type: 'toggleFloatingBall', isEnabled: false });
-    void broadcast({ type: 'updateSelectionTranslatorMode', mode: 'disabled' });
-    void broadcast({ type: 'toggleSelectionAreaTranslator', isEnabled: false });
-    void broadcast({ type: 'toggleImageTranslator', isEnabled: false });
-    return;
-  }
-
-  void broadcast({ type: 'toggleFloatingBall', isEnabled: !config.value.disableFloatingBall });
-  void broadcast({ type: 'updateSelectionTranslatorMode', mode: config.value.selectionTranslatorMode });
-  if (browserCapabilities.areaTranslation) {
-    void broadcast({ type: 'toggleSelectionAreaTranslator', isEnabled: config.value.selectionAreaEnabled });
-  }
-  if (browserCapabilities.imageTranslation) {
-    void broadcast({ type: 'toggleImageTranslator', isEnabled: !config.value.disableImageTranslator });
-  }
 }
 
 function openDrawer(name: DrawerName) { activeDrawer.value = name; drawerVisible.value = true; }

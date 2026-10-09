@@ -30,12 +30,11 @@ async function bootstrap(): Promise<void> {
     setRuntimeFetch(userscriptFetch);
     await ensureUserscriptConfig();
 
-    const [platformModule, settingsModule, contentModule, translationModule, configModule] = await Promise.all([
+    const [platformModule, settingsModule, contentModule, translationModule] = await Promise.all([
         import('./platform'),
         import('./settings'),
         import('@/src/app/content/runtime'),
         import('@/src/features/full-page-translation/public'),
-        import('@/src/services/config/store'),
     ]);
     const ctx = createUserscriptContentContext();
     const openSettings = () => void settingsModule.openUserscriptSettings(ctx);
@@ -56,21 +55,6 @@ async function bootstrap(): Promise<void> {
     registerMenu('翻译机：翻译 / 恢复当前网页', () => {
         if (translationModule.isFullPageTranslationActive()) translationModule.restoreOriginalContent();
         else void translationModule.autoTranslateEnglishPage();
-    });
-    registerMenu('翻译机：启用 / 暂停', () => {
-        const enabled = !configModule.config.on;
-        configModule.config.on = enabled;
-        void configModule.saveConfig().then(async () => {
-            await browser.tabs.sendMessage(1, {
-                type: 'toggleFloatingBall',
-                isEnabled: enabled && !configModule.config.disableFloatingBall,
-            });
-            await browser.tabs.sendMessage(1, {
-                type: 'updateSelectionTranslatorMode',
-                mode: enabled ? configModule.config.selectionTranslatorMode : 'disabled',
-            });
-            if (!enabled) translationModule.restoreOriginalContent();
-        });
     });
     registerMenu('翻译机：清空翻译缓存', () => {
         void browser.runtime.sendMessage({type: 'clearTranslationCache'});

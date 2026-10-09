@@ -16,7 +16,6 @@
       <div class="settings-grid">
         <fieldset>
           <legend>基础设置</legend>
-          <label class="toggle"><span>启用 BabelBox</span><el-switch v-model="draft.on" class="babelbox-userscript-switch" aria-label="启用 BabelBox" /></label>
           <label><span>源语言</span><el-select v-model="draft.from" class="babelbox-userscript-select" aria-label="源语言" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.form" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
           <label><span>目标语言</span><el-select v-model="draft.to" class="babelbox-userscript-select" aria-label="目标语言" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.to" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
           <label><span>译文显示</span><el-select v-model="draft.display" class="babelbox-userscript-select" aria-label="译文显示" :teleported="false" :popper-options="selectPopperOptions"><el-option v-for="item in options.display" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
@@ -458,15 +457,15 @@ function close(): void {
 async function syncCurrentPage(next: Config): Promise<void> {
   await browser.tabs.sendMessage(1, {
     type: 'toggleFloatingBall',
-    isEnabled: next.on && !next.disableFloatingBall,
+    isEnabled: !next.disableFloatingBall,
   });
   await browser.tabs.sendMessage(1, {
     type: 'updateSelectionTranslatorMode',
-    mode: next.on ? next.selectionTranslatorMode : 'disabled',
+    mode: next.selectionTranslatorMode,
   });
   await browser.tabs.sendMessage(1, {
     type: 'toggleTranslationProgressPanel',
-    isEnabled: next.on && next.translationProgressPanelEnabled,
+    isEnabled: next.translationProgressPanelEnabled,
   });
 }
 

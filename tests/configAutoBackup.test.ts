@@ -12,7 +12,6 @@ import {
 } from '@/src/app/background/configAutoBackupRuntime';
 
 const baseConfig = {
-    on: true,
     service: 'freeTranslation',
     display: 1,
     from: 'auto',

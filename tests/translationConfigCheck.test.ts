@@ -2,7 +2,6 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 
 const mocks = vi.hoisted(() => ({
     config: {
-        on: true,
         service: 'microsoft',
         translationServices: [] as Array<{
             id: string;
@@ -27,20 +26,12 @@ import {checkConfig} from '@/src/features/full-page-translation/content/configCh
 
 describe('translation configuration guard', () => {
     beforeEach(() => {
-        mocks.config.on = true;
         mocks.config.service = services.microsoft;
         mocks.config.translationServices = [];
         mocks.config.model = {};
         mocks.config.customModel = {};
         mocks.config.display = 1;
         mocks.sendErrorMessage.mockReset();
-    });
-
-    it('插件关闭时直接停止且不显示误导提示', () => {
-        mocks.config.on = false;
-
-        expect(checkConfig()).toBe(false);
-        expect(mocks.sendErrorMessage).not.toHaveBeenCalled();
     });
 
     it('AI 服务实例缺少模型时给出可执行提示', () => {

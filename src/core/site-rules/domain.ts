@@ -11,7 +11,6 @@ const HOST_PORT_PATTERN = /^(?:\[[^\]]+\]|[^/?#:@]+):\d+(?:[/?#]|$)/u;
 const DNS_LABEL_PATTERN = /^[a-z\d](?:[a-z\d-]*[a-z\d])?$/u;
 
 export interface AutoTranslatePageConfig {
-    on: boolean;
     autoTranslate: boolean;
     alwaysTranslateDomains: readonly string[];
     disabledExtensionDomains?: readonly string[];
@@ -138,7 +137,6 @@ export function shouldAutoTranslatePage(
     input: string | URL,
     config: AutoTranslatePageConfig,
 ): boolean {
-    if (config.on !== true) return false;
     if (isExtensionDisabledOnSite(input, config.disabledExtensionDomains)) return false;
     // 全局开关对所有可注入页面生效；HTTP(S) 与可注册域名限制只用于网站名单。
     if (config.autoTranslate === true) return true;

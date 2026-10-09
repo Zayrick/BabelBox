@@ -224,7 +224,6 @@ async function main() {
     await context.addInitScript(() => {
       const store = new Map();
       store.set('local:config', JSON.stringify({
-        on: true,
         autoTranslate: false,
         from: 'auto',
         to: 'zh-Hans',

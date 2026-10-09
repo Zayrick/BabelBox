@@ -41,7 +41,6 @@ describe('userscript credential persistence regression', () => {
 
     it('从旧 GM 配置迁移、保存公开设置并重载后仍保留 Token', async () => {
         userscriptStorage.values.set('local:config', {
-            on: true,
             service: 'openai',
             from: 'auto',
             to: 'zh-Hans',

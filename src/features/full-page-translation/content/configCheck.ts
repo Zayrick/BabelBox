@@ -7,8 +7,6 @@ import {config} from '@/src/services/config/store';
 import {sendErrorMessage} from '@/src/features/page-notice/public';
 
 export function checkConfig(): boolean {
-    if (!config.on) return false;
-
     // content 无法读取 session 凭据，统一由 background 校验。
 
     const provider = getTranslationServiceProvider(config, config.service);

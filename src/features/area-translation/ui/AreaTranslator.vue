@@ -95,7 +95,7 @@ function isEditableTarget(target: EventTarget | null): boolean {
 }
 
 function isEnabled(): boolean {
-  return config.on !== false && config.selectionAreaEnabled === true;
+  return config.selectionAreaEnabled === true;
 }
 
 function clearResult(): void {
@@ -233,9 +233,9 @@ function handleViewportChange(): void {
   if (!isSelecting.value) clearResult();
 }
 
-const stopConfigWatch = watch(() => [config.on, config.selectionAreaEnabled, config.theme] as const, ([enabled]) => {
+const stopConfigWatch = watch(() => [config.selectionAreaEnabled, config.theme] as const, ([enabled]) => {
   updateTheme();
-  if (!enabled || config.selectionAreaEnabled !== true) {
+  if (enabled !== true) {
     areaHotkeyPressed = false;
     cancelSelection();
     clearResult();

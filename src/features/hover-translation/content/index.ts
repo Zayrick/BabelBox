@@ -1,5 +1,4 @@
 export interface HoverTranslationContentConfig {
-    on?: boolean;
     hotkey?: string;
     customHotkey?: string;
     mouseHoverTranslationDelay?: number;
@@ -188,10 +187,8 @@ export function mountHoverTranslationContentFeature(
         if (matchesPressed(getConfiguredMouseHotkeyParts())) {
             screen.hotkeyPressed = true;
             screen.otherKeyPressed = false;
-            if (deps.config.on) {
-                event.preventDefault();
-                if (!matchesSelectionShortcut) event.stopPropagation();
-            }
+            event.preventDefault();
+            if (!matchesSelectionShortcut) event.stopPropagation();
         } else if (screen.hotkeyPressed) {
             // Ctrl+C 等额外组合键会作废已排队的悬浮翻译。
             screen.otherKeyPressed = true;
@@ -216,11 +213,9 @@ export function mountHoverTranslationContentFeature(
         removeReleasedKey(event, mouseHotkeysPressed);
 
         if (screen.hotkeyPressed && mouseHotkeysPressed.size === 0 && !screen.otherKeyPressed && !screen.hasSlideTranslation) {
-            if (deps.config.on) {
-                event.preventDefault();
-                event.stopPropagation();
-                deps.handleTranslation(screen.mouseX, screen.mouseY);
-            }
+            event.preventDefault();
+            event.stopPropagation();
+            deps.handleTranslation(screen.mouseX, screen.mouseY);
         }
 
         if (mouseHotkeysPressed.size === 0) resetHoverHotkeyState();
@@ -239,7 +234,7 @@ export function mountHoverTranslationContentFeature(
             clearTimeout(longPressTimer);
             longPressTimer = undefined;
         }
-        if (screen.hotkeyPressed && deps.config.on) {
+        if (screen.hotkeyPressed) {
             if (cancelHoverForActiveSelection()) return;
             screen.hasSlideTranslation = true;
             deps.handleTranslation(screen.mouseX, screen.mouseY, deps.config.mouseHoverTranslationDelay);
@@ -264,13 +259,13 @@ export function mountHoverTranslationContentFeature(
                 return;
         }
 
-        if (deps.config.on && coordinate) deps.handleTranslation(coordinate.x, coordinate.y);
+        if (coordinate) deps.handleTranslation(coordinate.x, coordinate.y);
     }, { signal, capture: true });
 
     rootDocument.addEventListener('dblclick', event => {
         if (!event.isTrusted) return;
         if (deps.isSiteDisabled()) return;
-        if (deps.config.hotkey === deps.constants.DoubleClick && deps.config.on) {
+        if (deps.config.hotkey === deps.constants.DoubleClick) {
             deps.handleTranslation(event.clientX, event.clientY);
         }
     }, { signal });
@@ -291,7 +286,7 @@ export function mountHoverTranslationContentFeature(
             longPressStart.y = event.clientY;
             longPressTimer = setTimeout(() => {
                 longPressTimer = undefined;
-                if (!deps.isSiteDisabled() && deps.config.on) {
+                if (!deps.isSiteDisabled()) {
                     deps.handleTranslation(event.clientX, event.clientY);
                 }
             }, 500);
@@ -301,7 +296,7 @@ export function mountHoverTranslationContentFeature(
     rootDocument.addEventListener('mousedown', event => {
         if (!event.isTrusted) return;
         if (deps.isSiteDisabled()) return;
-        if (deps.config.hotkey === deps.constants.MiddleClick && deps.config.on && event.button === 1) {
+        if (deps.config.hotkey === deps.constants.MiddleClick && event.button === 1) {
             deps.handleTranslation(event.clientX, event.clientY);
         }
     }, { signal });
@@ -322,7 +317,7 @@ export function mountHoverTranslationContentFeature(
         } else if (touchCount === requiredTouches) {
             clearTimeout(touchTimer);
             touchCount = 0;
-            if (deps.config.on) deps.handleTranslation(event.touches[0].clientX, event.touches[0].clientY);
+            deps.handleTranslation(event.touches[0].clientX, event.touches[0].clientY);
         }
     }, { signal });
 
