@@ -194,7 +194,7 @@ function updateServiceEnabled(item: TranslationServiceOption, value: boolean | s
 </script>
 
 <style scoped>
-.service-catalog { display: flex; height: max(520px, calc(100vh - 200px)); margin: 0; border-top: 1px solid var(--line); overflow: hidden; flex-direction: column; }
+.service-catalog { display: flex; min-height: 520px; flex: 1; margin: 0; border-top: 1px solid var(--line); overflow: hidden; flex-direction: column; }
 .catalog-layout { display: grid; grid-template-columns: 272px minmax(0, 1fr); min-height: 0; flex: 1; overflow: hidden; }
 .service-rail { height: auto; min-height: 0; border-right: 1px solid var(--line); }
 .service-rail-content { min-height: 100%; padding: 16px 16px 16px 0; }

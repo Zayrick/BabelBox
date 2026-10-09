@@ -128,7 +128,9 @@ button:focus-visible, a:focus-visible, input[type="checkbox"]:focus-visible {
 }
 /* 所有分区共用同一版心宽度，切换分区时内容边缘保持对齐。 */
 .workspace-column { max-width: calc(var(--settings-column-width) + 96px); }
-.workspace.is-services .workspace-column { padding-bottom: 32px; }
+/* 服务页让目录撑满视口剩余高度，列表在目录内部滚动。 */
+.workspace.is-services .workspace-column { display: flex; height: 100%; padding-bottom: 0; flex-direction: column; }
+.workspace.is-services :is(.settings-card, .settings-card-view, .settings-main-sections, #settings-services) { display: flex; min-height: 0; flex: 1; flex-direction: column; }
 
 .page-header { margin-bottom: 32px; }
 .page-header h1 { font-size: var(--font-display); font-weight: var(--weight-semibold); line-height: var(--line-height-tight); letter-spacing: -.02em; }
