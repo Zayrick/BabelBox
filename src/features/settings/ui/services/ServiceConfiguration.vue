@@ -206,10 +206,7 @@
 
     <template v-if="fields.prompts">
       <div class="custom-template-heading">
-        <div>
-          <strong>提示词</strong>
-          <small>留空使用默认提示词</small>
-        </div>
+        <strong>提示词</strong>
         <el-button type="primary" link size="small" @click="resetPrompts"><el-icon><RotateCcw /></el-icon>恢复默认</el-button>
       </div>
 
@@ -613,30 +610,16 @@ onBeforeUnmount(() => {
 
 .custom-template-heading {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin: 4px 0 8px;
   padding-top: 12px;
-  border-top: 1px solid var(--line);
-}
-
-.custom-template-heading > div {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 3px;
 }
 
 .custom-template-heading strong {
   color: var(--ink);
   font-size: var(--font-small);
-}
-
-.custom-template-heading small {
-  color: var(--muted);
-  font-size: var(--font-small);
-  line-height: var(--line-height-body);
 }
 
 .connection-test-button {
