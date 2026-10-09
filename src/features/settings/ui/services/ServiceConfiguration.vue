@@ -27,13 +27,13 @@
     <template v-if="isAIInstance">
       <el-row class="margin-bottom margin-left-2em">
         <el-col :span="12" class="lightblue rounded-corner">
-          <SettingsHelpLabel content="显示在服务列表、下拉菜单和翻译中心中的名称。">服务名称</SettingsHelpLabel>
+          <SettingsHelpLabel content="显示在服务列表和下拉菜单中">服务名称</SettingsHelpLabel>
         </el-col>
         <el-col :span="12"><el-input v-model="instanceName" maxlength="80" placeholder="请输入服务名称" /></el-col>
       </el-row>
       <el-row v-if="servicesType.isUseModel(service)" class="margin-bottom margin-left-2em">
         <el-col :span="12" class="lightblue rounded-corner">
-          <SettingsHelpLabel content="当前服务实例实际请求的模型标识；同一供应商可以添加多个不同模型。">模型 ID</SettingsHelpLabel>
+          <SettingsHelpLabel content="同一供应商可以添加多个服务，分别使用不同模型">模型 ID</SettingsHelpLabel>
         </el-col>
         <el-col :span="12">
           <div v-if="modelCatalogSupported" class="model-catalog-control">
@@ -74,17 +74,17 @@
       </el-row>
       <el-row v-if="showInstanceEndpoint" class="margin-bottom margin-left-2em">
         <el-col :span="12" class="lightblue rounded-corner">
-          <SettingsHelpLabel content="可选。留空时使用供应商默认请求地址；自定义、New API 和 Azure OpenAI 服务必须填写。">请求地址</SettingsHelpLabel>
+          <SettingsHelpLabel content="留空使用默认地址；自定义接口、New API 和 Azure OpenAI 必填">请求地址</SettingsHelpLabel>
         </el-col>
-        <el-col :span="12"><el-input v-model="instanceEndpoint" inputmode="url" placeholder="留空使用供应商默认地址" @change="refreshModelCatalogIfSupported" /></el-col>
+        <el-col :span="12"><el-input v-model="instanceEndpoint" inputmode="url" placeholder="留空使用默认地址" @change="refreshModelCatalogIfSupported" /></el-col>
       </el-row>
     </template>
 
     <el-row v-if="presentation.fields.token" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner">
-        <SettingsHelpLabel content="可选。留空时不发送鉴权信息；填写后默认加密保存在此设备，并在浏览器重启或扩展更新后继续保留。可在配置管理中改为仅本次会话。">访问令牌</SettingsHelpLabel>
+        <SettingsHelpLabel content="加密保存在此设备，可在“配置管理”中改为仅本次会话">访问令牌</SettingsHelpLabel>
       </el-col>
-      <el-col :span="12"><el-input v-model="apiKey" type="password" show-password placeholder="可选；留空时不发送鉴权信息" @change="refreshModelCatalogIfSupported" /></el-col>
+      <el-col :span="12"><el-input v-model="apiKey" type="password" show-password placeholder="选填" @change="refreshModelCatalogIfSupported" /></el-col>
     </el-row>
     <p v-if="presentation.fields.minimaxRegion && minimaxKeyMismatch" class="minimax-key-note is-warning">
       {{ minimaxKeyMismatch }}
@@ -92,7 +92,7 @@
 
     <el-row v-if="presentation.fields.minimaxRegion" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner">
-        <SettingsHelpLabel content="按量付费和 Token Plan 使用不同的账户权益；请按控制台中 Key 的来源选择。">MiniMax 计费方式</SettingsHelpLabel>
+        <SettingsHelpLabel content="与控制台中 Key 的类型一致">MiniMax 计费方式</SettingsHelpLabel>
       </el-col>
       <el-col :span="12">
         <el-select v-model="minimaxBillingPlan" aria-label="MiniMax 计费方式" placeholder="请选择 MiniMax 计费方式" @change="refreshModelCatalogIfSupported">
@@ -103,7 +103,7 @@
 
     <el-row v-if="presentation.fields.minimaxRegion" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner">
-        <SettingsHelpLabel content="选择与 MiniMax Key 来源一致的 API 区域。Token Plan Key（sk-cp-）和按量付费 Key 不能互换。">MiniMax 区域</SettingsHelpLabel>
+        <SettingsHelpLabel content="与 Key 所属区域一致">MiniMax 区域</SettingsHelpLabel>
       </el-col>
       <el-col :span="12">
         <el-select v-model="minimaxRegion" aria-label="MiniMax API 区域" placeholder="请选择 MiniMax API 区域" @change="refreshModelCatalogIfSupported">
@@ -114,7 +114,7 @@
 
     <el-row v-if="presentation.fields.minimaxRegion" class="margin-bottom margin-left-2em" data-minimax-endpoint>
       <el-col :span="12" class="lightblue rounded-corner">
-        <SettingsHelpLabel content="由计费方式和区域自动决定，无需手动填写。">API 地址</SettingsHelpLabel>
+        <SettingsHelpLabel content="根据计费方式和区域自动确定">API 地址</SettingsHelpLabel>
       </el-col>
       <el-col :span="12"><code class="derived-endpoint" :title="minimaxEndpoint">{{ minimaxEndpoint }}</code></el-col>
     </el-row>
@@ -125,7 +125,7 @@
 
     <el-row v-if="presentation.fields.mimoRegion" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner">
-        <SettingsHelpLabel content="按量付费和 Token Plan 使用不同的账户权益；请按小米 MiMo 控制台中 Key 的来源选择。">小米 MiMo 计费方式</SettingsHelpLabel>
+        <SettingsHelpLabel content="与控制台中 Key 的类型一致">小米 MiMo 计费方式</SettingsHelpLabel>
       </el-col>
       <el-col :span="12">
         <el-select v-model="mimoBillingPlan" aria-label="小米 MiMo 计费方式" placeholder="请选择小米 MiMo 计费方式" @change="refreshModelCatalogIfSupported">
@@ -136,7 +136,7 @@
 
     <el-row v-if="presentation.fields.mimoRegion" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner">
-        <SettingsHelpLabel content="Token Plan 必须使用购买页面提供的集群地址；中国、新加坡和欧洲集群的 tp- Key 不能混用。按量付费统一使用 api.xiaomimimo.com。">MiMo API 集群</SettingsHelpLabel>
+        <SettingsHelpLabel content="Token Plan 需选择购买时的集群，各集群的 Key 不通用；按量付费统一使用 api.xiaomimimo.com">MiMo API 集群</SettingsHelpLabel>
       </el-col>
       <el-col :span="12">
         <el-select v-model="mimoRegion" aria-label="小米 MiMo API 集群" placeholder="请选择小米 MiMo API 集群" @change="refreshModelCatalogIfSupported">
@@ -147,79 +147,79 @@
 
     <el-row v-if="presentation.fields.mimoRegion" class="margin-bottom margin-left-2em" data-mimo-endpoint>
       <el-col :span="12" class="lightblue rounded-corner">
-        <SettingsHelpLabel content="由计费方式和 API 集群自动决定，无需手动填写。">API 地址</SettingsHelpLabel>
+        <SettingsHelpLabel content="根据计费方式和集群自动确定">API 地址</SettingsHelpLabel>
       </el-col>
       <el-col :span="12"><code class="derived-endpoint" :title="mimoEndpoint">{{ mimoEndpoint }}</code></el-col>
     </el-row>
 
     <el-row v-if="presentation.fields.azureOpenaiEndpoint && !isAIInstance" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner">
-        <SettingsHelpLabel content="Azure OpenAI 服务端点地址，必须包含完整的部署信息。">Azure 端点</SettingsHelpLabel>
+        <SettingsHelpLabel content="需包含完整的部署路径">Azure 端点</SettingsHelpLabel>
       </el-col>
       <el-col :span="12">
         <el-input v-model="config.azureOpenaiEndpoint" placeholder="https://your-resource.openai.azure.com/openai/deployments/your-model/chat/completions?api-version=2024-02-15-preview" :class="{ 'input-error': config.azureOpenaiEndpoint && !isValidAzureEndpoint(config.azureOpenaiEndpoint) }" />
-        <div v-if="config.azureOpenaiEndpoint && !isValidAzureEndpoint(config.azureOpenaiEndpoint)" class="error-text">端点地址格式不正确，请确保包含 openai.azure.com 域名和 /chat/completions 路径</div>
+        <div v-if="config.azureOpenaiEndpoint && !isValidAzureEndpoint(config.azureOpenaiEndpoint)" class="error-text">端点格式不正确，需包含 openai.azure.com 和 /chat/completions</div>
       </el-col>
     </el-row>
 
     <el-row v-if="presentation.fields.deepLxEndpoint" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner">
-        <el-tooltip class="box-item" effect="dark" content="DeepLX API 服务地址，默认为本地地址。如果使用远程 DeepLX 服务，请修改为对应的服务地址" placement="top-start" :show-after="500"><span class="popup-text popup-vertical-left">服务地址</span></el-tooltip>
+        <el-tooltip class="box-item" effect="dark" content="默认为本地地址，使用远程服务时请修改" placement="top-start" :show-after="500"><span class="popup-text popup-vertical-left">服务地址</span></el-tooltip>
       </el-col>
       <el-col :span="12"><el-input v-model="config.deeplx" placeholder="http://localhost:1188/translate" /></el-col>
     </el-row>
 
     <el-row v-if="presentation.fields.youdaoCredentials" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="有道翻译服务提供的 App Key。" :show-after="300">App Key</SettingsHelpLabel></el-col>
+      <el-col :span="12" class="lightblue rounded-corner"><span class="popup-text popup-vertical-left">App Key</span></el-col>
       <el-col :span="12">
         <el-input v-model="appKey" :class="{ 'input-error': !appKey.trim() }" placeholder="有道 App Key" />
-        <div v-if="!appKey.trim()" class="error-text">App Key 为必填项</div>
+        <div v-if="!appKey.trim()" class="error-text">请填写 App Key</div>
       </el-col>
     </el-row>
     <el-row v-if="presentation.fields.youdaoCredentials" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="有道翻译服务提供的 App Secret。" :show-after="300">App Secret</SettingsHelpLabel></el-col>
+      <el-col :span="12" class="lightblue rounded-corner"><span class="popup-text popup-vertical-left">App Secret</span></el-col>
       <el-col :span="12">
         <el-input v-model="appSecret" :class="{ 'input-error': !appSecret.trim() }" type="password" show-password placeholder="有道 App Secret" />
-        <div v-if="!appSecret.trim()" class="error-text">App Secret 为必填项</div>
+        <div v-if="!appSecret.trim()" class="error-text">请填写 App Secret</div>
       </el-col>
     </el-row>
 
     <el-row v-if="presentation.fields.tencentCredentials" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="腾讯云翻译服务提供的 SecretId。" :show-after="300">Secret ID</SettingsHelpLabel></el-col>
+      <el-col :span="12" class="lightblue rounded-corner"><span class="popup-text popup-vertical-left">Secret ID</span></el-col>
       <el-col :span="12">
         <el-input v-model="secretId" :class="{ 'input-error': !secretId.trim() }" placeholder="腾讯云 SecretId" />
-        <div v-if="!secretId.trim()" class="error-text">Secret ID 为必填项</div>
+        <div v-if="!secretId.trim()" class="error-text">请填写 Secret ID</div>
       </el-col>
     </el-row>
     <el-row v-if="presentation.fields.tencentCredentials" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="腾讯云翻译服务提供的 SecretKey。" :show-after="300">Secret Key</SettingsHelpLabel></el-col>
+      <el-col :span="12" class="lightblue rounded-corner"><span class="popup-text popup-vertical-left">Secret Key</span></el-col>
       <el-col :span="12">
         <el-input v-model="secretKey" :class="{ 'input-error': !secretKey.trim() }" type="password" show-password placeholder="腾讯云 SecretKey" />
-        <div v-if="!secretKey.trim()" class="error-text">Secret Key 为必填项</div>
+        <div v-if="!secretKey.trim()" class="error-text">请填写 Secret Key</div>
       </el-col>
     </el-row>
 
     <el-row v-if="presentation.fields.robotId" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="填写对应 Coze 机器人的 ID。" :show-after="300">机器人ID</SettingsHelpLabel></el-col>
-      <el-col :span="12"><el-input v-model="robotId" placeholder="请输入Coze机器人ID" /></el-col>
+      <el-col :span="12" class="lightblue rounded-corner"><span class="popup-text popup-vertical-left">机器人 ID</span></el-col>
+      <el-col :span="12"><el-input v-model="robotId" placeholder="Coze 机器人 ID" /></el-col>
     </el-row>
 
     <el-row v-if="presentation.fields.customService && !isAIInstance" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="填写兼容翻译请求的自定义接口地址。" :show-after="300">自定义接口</SettingsHelpLabel></el-col>
-      <el-col :span="12"><el-input v-model="config.custom" placeholder="请输入自定义接口地址" /></el-col>
+      <el-col :span="12" class="lightblue rounded-corner"><span class="popup-text popup-vertical-left">接口地址</span></el-col>
+      <el-col :span="12"><el-input v-model="config.custom" placeholder="兼容 OpenAI 格式的接口地址" /></el-col>
     </el-row>
 
     <el-row v-if="presentation.fields.customService" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="可选的代理地址；填写后，自定义接口请求会优先发送到这里。" :show-after="300">代理地址</SettingsHelpLabel></el-col>
-      <el-col :span="12"><el-input v-model="proxy" placeholder="默认直连自定义接口" /></el-col>
+      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="填写后请求会经由此地址转发" :show-after="300">代理地址</SettingsHelpLabel></el-col>
+      <el-col :span="12"><el-input v-model="proxy" placeholder="选填" /></el-col>
     </el-row>
     <el-row v-if="presentation.fields.newApiEndpoint && !isAIInstance" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="填写 New API 服务的接口地址。" :show-after="300">NewAPI接口</SettingsHelpLabel></el-col>
-      <el-col :span="12"><el-input v-model="config.newApiUrl" placeholder="请输入您的New API接口地址" /></el-col>
+      <el-col :span="12" class="lightblue rounded-corner"><span class="popup-text popup-vertical-left">New API 地址</span></el-col>
+      <el-col :span="12"><el-input v-model="config.newApiUrl" placeholder="New API 接口地址" /></el-col>
     </el-row>
 
     <el-row v-if="presentation.fields.customModel && !isAIInstance" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="填写服务商支持的模型标识；选择自定义模型后，网页翻译会使用这里的值。" :show-after="300">{{ service === 'doubao' ? '接入点' : '自定义模型' }}</SettingsHelpLabel></el-col>
+      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="选择自定义模型时使用此处填写的模型名" :show-after="300">{{ service === 'doubao' ? '接入点' : '自定义模型' }}</SettingsHelpLabel></el-col>
       <el-col :span="12"><el-input v-model="config.customModel[service]" placeholder="例如：gemma:7b" /></el-col>
     </el-row>
 
@@ -227,14 +227,14 @@
       <div class="custom-template-heading">
         <div>
           <strong>请求模板</strong>
-          <small>按 OpenAI Chat Completions 格式发送。</small>
+          <small>OpenAI Chat Completions 格式</small>
         </div>
         <el-button type="primary" link size="small" @click="resetCustomTemplate"><el-icon><RotateCcw /></el-icon>恢复默认模板</el-button>
       </div>
 
       <el-row class="settings-control-row">
         <el-col :span="8" class="settings-control-label lightblue rounded-corner">
-          <SettingsHelpLabel content="以 system 身份发送的对话内容。" :show-after="300">system</SettingsHelpLabel>
+          <span class="popup-text popup-vertical-left">system</span>
         </el-col>
         <el-col :span="16" class="settings-control-field">
           <el-input v-model="systemRole" type="textarea" maxlength="8192" placeholder="system message" />
@@ -243,7 +243,7 @@
 
       <el-row class="settings-control-row">
         <el-col :span="8" class="settings-control-label lightblue rounded-corner">
-          <SettingsHelpLabel content="以 user 身份发送的对话模板；{{to}} 表示目标语言，{{origin}} 表示待翻译文本。" :show-after="300">user</SettingsHelpLabel>
+          <SettingsHelpLabel content="{{to}} 为目标语言，{{origin}} 为原文" :show-after="300">user</SettingsHelpLabel>
         </el-col>
         <el-col :span="16" class="settings-control-field">
           <el-input v-model="userRole" type="textarea" maxlength="8192" placeholder="user message template" />
@@ -252,11 +252,11 @@
     </template>
 
     <el-row v-if="presentation.fields.deepseekApiType" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="选择 DeepSeek 接口使用的 API 格式。" :show-after="300">API 格式</SettingsHelpLabel></el-col>
+      <el-col :span="12" class="lightblue rounded-corner"><span class="popup-text popup-vertical-left">API 格式</span></el-col>
       <el-col :span="12"><el-select v-model="deepseekApiType" placeholder="请选择 API 格式"><el-option class="select-left" v-for="item in options.deepseekApiType" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-col>
     </el-row>
     <el-row v-if="presentation.fields.deepseekThinkingMode" class="margin-bottom margin-left-2em">
-      <el-col :span="12" class="lightblue rounded-corner"><SettingsHelpLabel content="控制 DeepSeek 是否启用思考过程。" :show-after="300">思考模式</SettingsHelpLabel></el-col>
+      <el-col :span="12" class="lightblue rounded-corner"><span class="popup-text popup-vertical-left">思考模式</span></el-col>
       <el-col :span="12"><el-select v-model="deepseekThinkingMode" placeholder="请选择思考模式"><el-option class="select-left" v-for="item in options.deepseekThinkingMode" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-col>
     </el-row>
 
@@ -264,7 +264,7 @@
       v-if="presentation.fields.customBody"
       v-model="customBody"
       :invalid="!isValidCustomBody(customBody)"
-      invalid-message="请输入合法的 JSON 对象，否则该配置将被忽略"
+      invalid-message="不是有效的 JSON 对象，此项不会生效"
     />
   </section>
 </template>
@@ -543,13 +543,13 @@ const minimaxKeyKind = computed(() => {
 const minimaxKeyMismatch = computed(() => {
   if (minimaxKeyKind.value === 'empty') return ''
   if (minimaxBillingPlan.value === 'token-plan' && minimaxKeyKind.value !== 'token-plan') {
-    return '当前选择的是 Token Plan，但 Key 不是 sk-cp- 开头；请确认 Key 来源，Token Plan 订阅必须有效。'
+    return 'Token Plan 的 Key 应以 sk-cp- 开头，请检查 Key 或计费方式。'
   }
   if (minimaxBillingPlan.value === 'payg' && minimaxKeyKind.value === 'token-plan') {
-    return '当前选择的是按量付费，但检测到 sk-cp- Token Plan Key；两类 Key 不能互换，请切换计费方式或更换 Key。'
+    return '这是 Token Plan 的 Key（sk-cp-），不能用于按量付费，请切换计费方式或更换 Key。'
   }
   return minimaxBillingPlan.value === 'token-plan'
-    ? '当前使用 Token Plan Key；请确认 Token Plan 订阅有效。'
+    ? '请确保 Token Plan 订阅仍有效。'
     : ''
 })
 
@@ -569,16 +569,16 @@ const mimoKeyKind = computed(() => {
 const mimoKeyMismatch = computed(() => {
   if (mimoKeyKind.value === 'empty') return ''
   if (mimoBillingPlan.value === 'token-plan' && mimoKeyKind.value !== 'token-plan') {
-    return '当前选择的是 MiMo Token Plan，但 Key 不是 tp- 开头；请确认 Key 来源和订阅状态。'
+    return 'Token Plan 的 Key 应以 tp- 开头，请检查 Key 或计费方式。'
   }
   if (mimoBillingPlan.value === 'payg' && mimoKeyKind.value === 'token-plan') {
-    return '当前选择的是 MiMo 按量付费，但检测到 tp- Token Plan Key；两类 Key 不能互换，请切换计费方式或更换 Key。'
+    return '这是 Token Plan 的 Key（tp-），不能用于按量付费，请切换计费方式或更换 Key。'
   }
   if (mimoBillingPlan.value === 'payg' && mimoKeyKind.value === 'other') {
-    return 'MiMo 按量付费 Key 通常以 sk- 开头；请确认 Key 来自 API Keys 页面。'
+    return '按量付费的 Key 通常以 sk- 开头，请确认是从 API Keys 页面获取的。'
   }
   return mimoBillingPlan.value === 'token-plan'
-    ? '当前使用 MiMo Token Plan Key；请确认订阅仍在有效期内。'
+    ? '请确保 Token Plan 订阅仍有效。'
     : ''
 })
 
@@ -629,7 +629,7 @@ async function testConnection(): Promise<void> {
   clearConnectionTestResetTimer()
   connectionTestBusy.value = true
   connectionTestState.value = 'testing'
-  connectionTestMessage.value = '正在保存当前配置并请求服务…'
+  connectionTestMessage.value = '正在发送测试请求…'
 
   try {
     await requestConfigSave(config.value, browser.runtime.sendMessage.bind(browser.runtime))
@@ -643,7 +643,7 @@ async function testConnection(): Promise<void> {
     }
 
     connectionTestState.value = 'success'
-    connectionTestMessage.value = `已完成真实翻译请求${typeof response.durationMs === 'number' ? `（${response.durationMs} ms）` : ''}。`
+    connectionTestMessage.value = `翻译成功${typeof response.durationMs === 'number' ? `，耗时 ${response.durationMs} ms` : ''}`
   } catch (error) {
     connectionTestState.value = 'error'
     connectionTestMessage.value = error instanceof Error ? error.message : String(error)
@@ -655,7 +655,7 @@ async function testConnection(): Promise<void> {
 
 function resetCustomTemplate(): void {
   void ElMessageBox.confirm(
-    '确定要恢复自定义接口的默认 system 和 user 模板吗？此操作会覆盖当前模板。',
+    '当前的 system 和 user 模板会被覆盖。',
     '恢复默认模板',
     {
       confirmButtonText: '确定',
@@ -665,7 +665,7 @@ function resetCustomTemplate(): void {
   ).then(() => {
     systemRole.value = defaultOption.system_role
     userRole.value = defaultOption.user_role
-    ElMessage.success('已恢复自定义接口默认模板')
+    ElMessage.success('已恢复默认模板')
   }).catch(() => {
     // 用户取消操作，不做任何处理。
   })

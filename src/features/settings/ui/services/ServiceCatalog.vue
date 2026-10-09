@@ -78,7 +78,7 @@
         <div class="detail-hero">
           <ServiceIcon :service="selectedService ? serviceProvider(selectedService) : service" :label="selectedService?.label" size="large" />
           <div class="detail-hero-copy">
-            <h4>{{ selectedService?.label || '尚未配置服务' }}</h4>
+            <h4>{{ selectedService?.label || '未选择服务' }}</h4>
             <small v-if="selectedService && serviceModelId(selectedService)" :title="serviceModelId(selectedService)">
               {{ serviceModelId(selectedService) }}
             </small>

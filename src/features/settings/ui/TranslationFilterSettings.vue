@@ -3,7 +3,7 @@
     <header class="translation-filter-settings-heading">
       <div>
         <h3 id="translation-filter-title">内容过滤</h3>
-        <p>设置网页内容的翻译范围。</p>
+        <p>指定网页中哪些内容不翻译或强制翻译</p>
       </div>
       <button class="translation-filter-reset" type="button" @click="resetDefaults">
         <RotateCcw aria-hidden="true" />恢复默认
@@ -12,7 +12,7 @@
 
     <p class="translation-filter-boundary-note">
       <Info aria-hidden="true" />
-      <span>父级已设为“不翻译”时，子级的“强制翻译”不会生效。</span>
+      <span>父元素设为“不翻译”时，子元素的“强制翻译”无效。</span>
     </p>
 
     <section class="translation-filter-scope" aria-labelledby="global-filter-title">
@@ -33,21 +33,21 @@
           />
         </label>
         <label>
-          <span><strong>跳过编辑区域</strong></span>
+          <span><strong>跳过输入框和编辑区</strong></span>
           <el-switch
             :model-value="filterConfig.global.excludeEditable"
-            aria-label="跳过编辑区域"
+            aria-label="跳过输入框和编辑区"
             @change="updateGlobalOption('excludeEditable', Boolean($event))"
           />
         </label>
         <label>
           <span>
-            <strong>跳过页面结构区域</strong>
-            <small>导航、页眉、页脚和页面侧栏</small>
+            <strong>跳过页面框架</strong>
+            <small>导航、页眉、页脚和侧栏</small>
           </span>
           <el-switch
             :model-value="filterConfig.global.excludeStructural"
-            aria-label="跳过页面结构区域"
+            aria-label="跳过页面框架"
             @change="updateGlobalOption('excludeStructural', Boolean($event))"
           />
         </label>
@@ -55,7 +55,7 @@
 
       <TranslationFilterRulesEditor
         :model-value="filterConfig.global.rules"
-        empty-description="未添加规则时，仅使用上方开关。"
+        empty-description="未添加时只使用上方开关"
         @update:model-value="updateGlobalRules"
       />
     </section>
@@ -64,7 +64,7 @@
       <div class="translation-filter-scope-heading">
         <div>
           <strong id="site-filter-title">网站规则</strong>
-          <small>同一元素上优先于全局规则，并应用到所有子域。</small>
+          <small>优先于全局规则，对子域同样生效</small>
         </div>
         <span>{{ filterConfig.sites.length }} 个网站</span>
       </div>
@@ -89,7 +89,7 @@
         <details v-for="site in filterConfig.sites" :key="site.domain" class="translation-filter-site-item">
           <summary>
             <span class="translation-filter-site-icon" aria-hidden="true"><Globe2 /></span>
-            <span><strong>{{ site.domain }}</strong><small>{{ site.rules.length }} 条网站规则</small></span>
+            <span><strong>{{ site.domain }}</strong><small>{{ site.rules.length }} 条规则</small></span>
             <button
               class="translation-filter-site-remove"
               type="button"
@@ -105,7 +105,7 @@
             <TranslationFilterRulesEditor
               compact
               :model-value="site.rules"
-              empty-description="未添加规则时，使用全局规则。"
+              empty-description="未添加时沿用全局规则"
               @update:model-value="updateSiteRules(site.domain, $event)"
             />
           </div>
@@ -113,7 +113,7 @@
       </div>
       <div v-else class="translation-filter-site-empty">
         <Globe2 :size="24" :stroke-width="1.7" aria-hidden="true" />
-        <span><strong>暂无网站规则</strong><small>添加后可单独设置。</small></span>
+        <span><strong>暂无网站规则</strong></span>
       </div>
     </section>
   </section>
@@ -171,15 +171,15 @@ function addSite() {
   const input = siteInput.value.trim();
   const domain = getSiteBaseDomain(input);
   if (!input) {
-    siteError.value = '请输入域名或网址。';
+    siteError.value = '请输入域名或网址';
     return;
   }
   if (!domain) {
-    siteError.value = '无法识别有效的网站主域名。';
+    siteError.value = '无法识别该网址';
     return;
   }
   if (filterConfig.value.sites.some((site) => site.domain === domain)) {
-    siteError.value = `${domain} 已经存在。`;
+    siteError.value = `${domain} 已存在`;
     return;
   }
   commit(upsertTranslationFilterSite(filterConfig.value, {domain, rules: []}));
@@ -198,7 +198,7 @@ function removeSite(domain: string) {
 async function resetDefaults() {
   try {
     await ElMessageBox.confirm(
-      '将恢复内置全局规则和默认网站规则，当前自定义内容过滤会被替换。',
+      '当前的内容过滤规则会被替换为默认规则。',
       '恢复默认内容过滤',
       {confirmButtonText: '恢复默认', cancelButtonText: '取消', type: 'warning'},
     );

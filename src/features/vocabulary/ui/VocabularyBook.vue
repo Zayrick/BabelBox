@@ -4,7 +4,7 @@
       <div class="beta-copy">
         <div>
           <h3>{{ betaEnabled ? '单词本已开启' : '开启单词本' }}</h3>
-          <p>划词后点击星标即可收藏。关闭后，已有单词仍会保留。</p>
+          <p>在划词结果中点击星标收藏单词。关闭后已收藏的单词不会删除。</p>
         </div>
       </div>
       <el-switch
@@ -17,13 +17,13 @@
     </section>
 
     <div v-if="betaEnabled && !selectionTranslatorEnabled" class="selection-reminder" role="note">
-      <span>划词翻译未开启，暂时无法收藏单词。</span>
+      <span>开启划词翻译后才能收藏单词。</span>
       <button type="button" @click="emit('navigate', 'settings-shortcuts')">去开启<ArrowRight class="button-icon" aria-hidden="true" /></button>
     </div>
 
     <section class="privacy-note" aria-label="本地存储说明">
       <span class="privacy-note-icon" aria-hidden="true"><HardDrive /></span>
-      <div><strong>数据只保存在当前浏览器</strong><small>无需账号，不会上传。卸载扩展前请先导出；无痕窗口不保存单词。</small></div>
+      <div><strong>数据只保存在当前浏览器</strong><small>不会上传。卸载扩展前请先导出，无痕窗口中不会保存。</small></div>
     </section>
 
     <div v-if="loadError" class="error-state" role="alert">
@@ -49,14 +49,14 @@
           <div class="review-prompt">
             <p v-if="currentClozeContext" class="cloze-context">{{ currentClozeContext }}</p>
             <h3 v-else>{{ currentReview.term }}</h3>
-            <small>{{ currentClozeContext ? '回忆空缺处的单词和含义' : '先在心里回忆它的含义' }}</small>
+            <small>{{ currentClozeContext ? '回忆空缺处的单词和含义' : '回忆它的含义' }}</small>
           </div>
 
           <button v-if="!reviewAnswerVisible" class="reveal-button" type="button" @click="reviewAnswerVisible = true">显示答案 <kbd>Space</kbd></button>
 
           <div v-else class="review-answer">
             <div class="answer-heading"><h3>{{ currentReview.term }}</h3><span v-if="currentReview.phonetic">{{ currentReview.phonetic }}</span></div>
-            <p class="answer-translation">{{ entryTranslation(currentReview) || '暂无可用译义' }}</p>
+            <p class="answer-translation">{{ entryTranslation(currentReview) || '暂无释义' }}</p>
             <p v-if="latestContext(currentReview)?.text" class="answer-context">{{ latestContext(currentReview)?.text }}</p>
             <a v-if="latestContext(currentReview)?.sourceUrl" :href="latestContext(currentReview)?.sourceUrl" target="_blank" rel="noreferrer">查看收藏来源<ExternalLink class="inline-link-icon" aria-hidden="true" /></a>
             <div class="review-actions">
@@ -78,7 +78,7 @@
         <section class="primary-actions">
           <button class="start-review" type="button" :disabled="loading || actionBusy || reviewPlan.length === 0" @click="startReview">
             <span aria-hidden="true"><Play /></span>
-            <strong>{{ reviewPlan.length ? `开始复习 ${reviewPlan.length} 个` : '今天没有到期单词' }}</strong>
+            <strong>{{ reviewPlan.length ? `开始复习 ${reviewPlan.length} 个` : '今天没有要复习的单词' }}</strong>
           </button>
           <button type="button" class="refresh-button" :disabled="loading" @click="loadEntries"><RefreshCw class="button-icon" aria-hidden="true" />{{ loading ? '读取中…' : '刷新' }}</button>
         </section>
@@ -100,21 +100,21 @@
           </el-select>
         </section>
 
-        <section v-if="loading && entries.length === 0" class="empty-state"><span class="loading-ring" /><p>正在读取本地单词本…</p></section>
+        <section v-if="loading && entries.length === 0" class="empty-state"><span class="loading-ring" /><p>加载中…</p></section>
         <section v-else-if="entries.length === 0" class="empty-state">
-          <BookOpen class="empty-state-icon" aria-hidden="true" /><h3>还没有收藏单词</h3><p>开启单词本后，划选一个英文单词，点击学习卡上的星标即可收藏。</p>
+          <BookOpen class="empty-state-icon" aria-hidden="true" /><h3>还没有收藏单词</h3><p>划选英文单词后，点击学习卡上的星标即可收藏。</p>
         </section>
-        <section v-else-if="filteredEntries.length === 0" class="empty-state"><Search class="empty-state-icon" aria-hidden="true" /><h3>没有匹配的词条</h3><p>试试清空搜索内容或切换掌握状态。</p></section>
+        <section v-else-if="filteredEntries.length === 0" class="empty-state"><Search class="empty-state-icon" aria-hidden="true" /><h3>没有匹配的词条</h3><p>换个关键词或筛选条件试试。</p></section>
 
         <section v-else class="word-list" aria-label="收藏的单词">
           <article v-for="entry in pagedEntries" :key="entry.id" class="word-row">
             <div class="word-main">
               <div class="word-heading"><h3>{{ entry.term }}</h3><span v-if="entry.phonetic">{{ entry.phonetic }}</span></div>
-              <p>{{ entryTranslation(entry) || '暂无可用译义' }}</p>
+              <p>{{ entryTranslation(entry) || '暂无释义' }}</p>
               <small v-if="latestContext(entry)?.text" class="context-preview">{{ latestContext(entry)?.text }}</small>
               <div class="word-meta">
                 <span v-if="entry.partOfSpeech">{{ entry.partOfSpeech }}</span>
-                <span>{{ entry.encounterCount }} 次收藏记录</span>
+                <span>收藏 {{ entry.encounterCount }} 次</span>
                 <a v-if="latestContext(entry)?.sourceUrl" :href="latestContext(entry)?.sourceUrl" target="_blank" rel="noreferrer">{{ sourceHost(latestContext(entry)?.sourceUrl) }}<ExternalLink class="inline-link-icon" aria-hidden="true" /></a>
               </div>
             </div>
@@ -137,8 +137,8 @@
         </section>
 
         <section class="data-panel">
-          <div class="data-heading"><div><h3>独立备份与迁移</h3><p>不会混入普通配置 JSON，也不会被清除翻译缓存。</p></div></div>
-          <label class="privacy-export"><input v-model="includePrivateContext" type="checkbox" /><span><strong>导出上下文和来源</strong><small>可能包含浏览过的页面标题、文本片段与去参数后的网址，默认不导出。</small></span></label>
+          <div class="data-heading"><div><h3>备份与迁移</h3><p>单词本单独导出，不包含在配置中，清除缓存也不受影响。</p></div></div>
+          <label class="privacy-export"><input v-model="includePrivateContext" type="checkbox" /><span><strong>导出上下文和来源</strong><small>包括页面标题、原文片段和网址</small></span></label>
           <div class="data-actions">
             <button type="button" :disabled="actionBusy || entries.length === 0" @click="exportJson"><Download class="button-icon" aria-hidden="true" />导出 BabelBox JSON</button>
             <button type="button" :disabled="actionBusy || entries.length === 0" @click="exportAnki"><Download class="button-icon" aria-hidden="true" />导出 Anki TSV</button>
@@ -371,7 +371,7 @@ async function setBetaEnabled(enabled: boolean): Promise<void> {
   betaEnabled.value = enabled;
   try {
     await requestConfigSave(runtimeConfig, browser.runtime.sendMessage.bind(browser.runtime));
-    showToast(enabled ? '单词本已开启' : '单词本已关闭，已有单词仍会保留');
+    showToast(enabled ? '单词本已开启' : '单词本已关闭，已收藏的单词不会删除');
   } catch (cause) {
     runtimeConfig.vocabularyBookEnabled = previous;
     betaEnabled.value = previous;
@@ -547,13 +547,13 @@ async function importJson(event: Event): Promise<void> {
   if (!file) return;
   if (vocabularyImportNeedsConfirmation(file.size)) {
     const sizeMb = Math.ceil(file.size / (1024 * 1024));
-    if (!window.confirm(`这个备份约 ${sizeMb} MB，读取和校验可能需要较长时间。确认继续吗？`)) return;
+    if (!window.confirm(`文件约 ${sizeMb} MB，导入可能需要一些时间，是否继续？`)) return;
   }
   actionBusy.value = true;
   try {
     const data = JSON.parse(await file.text()) as unknown;
     const count = Array.isArray((data as { entries?: unknown[] })?.entries) ? (data as { entries: unknown[] }).entries.length : 0;
-    if (!window.confirm(`将把文件中的 ${count} 个词条合并到当前单词本，继续吗？`)) return;
+    if (!window.confirm(`将合并 ${count} 个词条到单词本，是否继续？`)) return;
     const result = await requestVocabulary<VocabularyImportResult>({ type: VOCABULARY_BOOK_MESSAGE, action: 'importData', data });
     await loadEntries();
     showToast(`导入完成：新增 ${result.inserted}，更新 ${result.updated}，跳过 ${result.skipped}`);
@@ -562,7 +562,7 @@ async function importJson(event: Event): Promise<void> {
 }
 
 async function clearAll(): Promise<void> {
-  if (!window.confirm('确认清空全部词条和复习记录吗？此操作无法撤销。')) return;
+  if (!window.confirm('清空所有单词和复习记录？此操作无法撤销。')) return;
   actionBusy.value = true;
   try {
     await requestVocabulary<boolean>({ type: VOCABULARY_BOOK_MESSAGE, action: 'clear' });

@@ -3,7 +3,7 @@
     <div class="translation-filter-rule-heading">
       <div>
         <strong>CSS 规则</strong>
-        <small v-if="rules.length > 1">从上到下匹配，靠前优先。</small>
+        <small v-if="rules.length > 1">靠前的规则优先</small>
       </div>
       <button class="filter-rule-add-trigger" type="button" @click="startAdding">
         <Plus aria-hidden="true" />添加规则
@@ -25,7 +25,7 @@
             :disabled="rules.length < 2 || editingIndex !== null"
             :aria-label="`拖动 ${rule.label || rule.selector} 调整顺序，第 ${index + 1} 项，共 ${rules.length} 项`"
             aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
-            title="拖动调整优先级，也可用 Alt+↑/↓"
+            title="拖动排序（Alt+↑/↓）"
             @keydown.alt.arrow-up.prevent="moveRule(rule.selector, -1)"
             @keydown.alt.arrow-down.prevent="moveRule(rule.selector, 1)"
           >
@@ -108,7 +108,7 @@ const props = withDefaults(defineProps<{
 }>(), {
   modelValue: () => [],
   compact: false,
-  emptyDescription: '使用 CSS 选择器匹配网页内容。',
+  emptyDescription: '用 CSS 选择器匹配网页元素',
 });
 
 const emit = defineEmits<{
@@ -172,7 +172,7 @@ function validateSelector(selector: string, currentIndex: number): string {
   }
   const duplicateIndex = rules.value.findIndex((rule, index) =>
     index !== currentIndex && rule.selector === selector);
-  return duplicateIndex >= 0 ? '相同选择器已经存在。' : '';
+  return duplicateIndex >= 0 ? '该选择器已存在。' : '';
 }
 
 function saveDraft() {
@@ -208,7 +208,7 @@ function reorderRule(fromSelector: string, targetIndex: number) {
   const movedRule = rules.value[fromIndex];
   if (!movedRule) return;
   rules.value = reorderTranslationFilterRules(rules.value, fromIndex, targetIndex);
-  sortAnnouncement.value = `${movedRule.label || movedRule.selector} 已移到第 ${targetIndex + 1} 项，越靠前的规则优先。`;
+  sortAnnouncement.value = `${movedRule.label || movedRule.selector} 已移到第 ${targetIndex + 1} 项`;
 }
 
 function moveRule(selector: string, offset: number) {

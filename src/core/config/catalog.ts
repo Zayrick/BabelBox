@@ -420,7 +420,7 @@ export const options = {
         {
             value: services.freeTranslation,
             label: "免费翻译服务",
-            description: "免费提供，按微软翻译、DeepLX、谷歌翻译依次尝试；翻译质量和可用性不作保证。",
+            description: "依次尝试微软翻译、DeepLX 和谷歌翻译；不保证稳定可用。",
         },
         {value: services.microsoft, label: "微软翻译"},
         {value: services.google, label: "谷歌翻译"},
@@ -460,59 +460,59 @@ export const options = {
         {value: services.custom, label: "自定义接口"},
     ],
     display: [
-        {value: 0, label: "仅译文模式"},
-        {value: 1, label: "双语对照模式"},
+        {value: 0, label: "仅译文"},
+        {value: 1, label: "双语对照"},
     ],
     animationModes: animationModeOptions,
     // 双语翻译样式
     styles: [
         // 基础样式
-        {value: "basic", label: "基础样式", disabled: true},
-        {value: 0, label: "朴素模式", class: "babelbox-display-default", group: "basic"},
-        {value: 1, label: "加粗显示", class: "babelbox-display-bold", group: "basic"},
-        {value: 2, label: "优雅斜体", class: "babelbox-display-italic", group: "basic"},
-        {value: 3, label: "立体阴影", class: "babelbox-display-text-shadow", group: "basic"},
+        {value: "basic", label: "基础", disabled: true},
+        {value: 0, label: "无样式", class: "babelbox-display-default", group: "basic"},
+        {value: 1, label: "加粗", class: "babelbox-display-bold", group: "basic"},
+        {value: 2, label: "斜体", class: "babelbox-display-italic", group: "basic"},
+        {value: 3, label: "阴影", class: "babelbox-display-text-shadow", group: "basic"},
 
         // 下划线系列
-        {value: "underline", label: "下划线系列", disabled: true},
+        {value: "underline", label: "下划线", disabled: true},
         {value: 4, label: "蓝色实线", class: "babelbox-display-solid-underline", group: "underline"},
-        {value: 5, label: "优雅虚线", class: "babelbox-display-dot-underline", group: "underline"},
-        {value: 6, label: "活泼波浪", class: "babelbox-display-wavy", group: "underline"},
+        {value: 5, label: "虚线", class: "babelbox-display-dot-underline", group: "underline"},
+        {value: 6, label: "波浪线", class: "babelbox-display-wavy", group: "underline"},
 
         // 卡片系列
-        {value: "card", label: "卡片系列", disabled: true},
-        {value: 7, label: "简约卡片", class: "babelbox-display-card-mode", group: "card"},
+        {value: "card", label: "卡片", disabled: true},
+        {value: 7, label: "普通卡片", class: "babelbox-display-card-mode", group: "card"},
         {value: 8, label: "渐变卡片", class: "babelbox-display-modern-card", group: "card"},
-        {value: 9, label: "纸张卡片", class: "babelbox-display-paper", group: "card"},
+        {value: 9, label: "纸张", class: "babelbox-display-paper", group: "card"},
 
         // 高亮系列
-        {value: "highlight", label: "高亮系列", disabled: true},
+        {value: "highlight", label: "高亮", disabled: true},
         {value: 10, label: "学习标记", class: "babelbox-display-learning-mode", group: "highlight"},
-        {value: 11, label: "荧光标记", class: "babelbox-display-marker", group: "highlight"},
-        {value: 12, label: "柔和渐变", class: "babelbox-display-highlight-fade", group: "highlight"},
+        {value: 11, label: "荧光笔", class: "babelbox-display-marker", group: "highlight"},
+        {value: 12, label: "渐变高亮", class: "babelbox-display-highlight-fade", group: "highlight"},
 
         // 背景色系列
-        {value: "background", label: "背景色系列", disabled: true},
-        {value: 13, label: "温暖黄底", class: "babelbox-display-lightyellow", group: "background"},
-        {value: 14, label: "清新蓝底", class: "babelbox-display-lightblue", group: "background"},
-        {value: 15, label: "素雅灰底", class: "babelbox-display-lightgray", group: "background"},
+        {value: "background", label: "背景色", disabled: true},
+        {value: 13, label: "黄色背景", class: "babelbox-display-lightyellow", group: "background"},
+        {value: 14, label: "蓝色背景", class: "babelbox-display-lightblue", group: "background"},
+        {value: 15, label: "灰色背景", class: "babelbox-display-lightgray", group: "background"},
 
         // 特殊效果
-        {value: "special", label: "特殊效果", disabled: true},
-        {value: 16, label: "典雅引用", class: "babelbox-display-quote", group: "special"},
-        {value: 17, label: "轻巧边框", class: "babelbox-display-border", group: "special"},
-        {value: 18, label: "阅读焦点", class: "babelbox-display-focus", group: "special"},
-        {value: 19, label: "简约底线", class: "babelbox-display-clean", group: "special"},
+        {value: "special", label: "其他", disabled: true},
+        {value: 16, label: "引用", class: "babelbox-display-quote", group: "special"},
+        {value: 17, label: "边框", class: "babelbox-display-border", group: "special"},
+        {value: 18, label: "聚焦", class: "babelbox-display-focus", group: "special"},
+        {value: 19, label: "底线", class: "babelbox-display-clean", group: "special"},
 
         // 专业样式
-        {value: "pro", label: "专业样式", disabled: true},
-        {value: 20, label: "代码风格", class: "babelbox-display-tech", group: "pro"},
-        {value: 21, label: "书籍风格", class: "babelbox-display-elegant", group: "pro"},
+        {value: "pro", label: "排版", disabled: true},
+        {value: 20, label: "代码", class: "babelbox-display-tech", group: "pro"},
+        {value: 21, label: "书籍", class: "babelbox-display-elegant", group: "pro"},
 
         // 透明度
-        {value: "transparent", label: "透明效果", disabled: true},
-        {value: 22, label: "半透明弱化", class: "babelbox-display-dimmed", group: "transparent"},
-        {value: 23, label: "轻透明感", class: "babelbox-display-transparent-mode", group: "transparent"},
+        {value: "transparent", label: "透明", disabled: true},
+        {value: 22, label: "淡化", class: "babelbox-display-dimmed", group: "transparent"},
+        {value: 23, label: "半透明", class: "babelbox-display-transparent-mode", group: "transparent"},
     ],
     // 悬浮球快捷键选项
     floatingBallHotkeys: [
@@ -531,9 +531,9 @@ export const options = {
         {value: "custom", label: "自定义快捷键（测试版）"},
     ],
     theme: [
-        {value: "auto", label: "跟随操作系统"},
-        {value: "light", label: "亮色主题"},
-        {value: "dark", label: "暗色主题"},
+        {value: "auto", label: "跟随系统"},
+        {value: "light", label: "浅色"},
+        {value: "dark", label: "深色"},
     ],
     // 输入框翻译目标语言选项
     inputBoxTranslationTarget: [

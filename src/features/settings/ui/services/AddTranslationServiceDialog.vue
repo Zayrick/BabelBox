@@ -8,7 +8,7 @@
     append-to-body
     @closed="providerQuery = ''"
   >
-    <p class="dialog-intro">选择供应商后会直接添加一项默认服务。模型、凭据和请求参数请在服务详情中配置。</p>
+    <p class="dialog-intro">添加后可在服务详情中配置模型和密钥。</p>
 
     <label class="provider-search">
       <Search :size="16" aria-hidden="true" />
@@ -32,13 +32,13 @@
           <ServiceIcon :service="provider.value" :label="provider.label" size="large" />
           <span class="provider-copy">
             <strong>{{ provider.label }}</strong>
-            <small>{{ providerDescription(provider.value) || '添加后配置模型和连接参数' }}</small>
+            <small v-if="providerDescription(provider.value)">{{ providerDescription(provider.value) }}</small>
           </span>
           <Plus :size="17" aria-hidden="true" />
         </button>
       </div>
     </el-scrollbar>
-    <div v-else class="provider-empty">没有匹配的 AI 翻译供应商</div>
+    <div v-else class="provider-empty">没有匹配的供应商</div>
 
     <template #footer>
       <el-button @click="open = false">关闭</el-button>

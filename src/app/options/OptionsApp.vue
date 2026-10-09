@@ -55,7 +55,6 @@
         <template v-else>
           <header class="page-header">
             <h1>{{ activeItem.title }}</h1>
-            <p>{{ activeItem.description }}</p>
           </header>
 
           <section
@@ -72,7 +71,7 @@
                     <code class="about-version">BabelBox v{{ version }}</code>
                   </div>
                 </div>
-                <p class="about-description">一款提供网页双语翻译、划词翻译与多翻译服务支持的开源浏览器扩展。</p>
+                <p class="about-description">开源的浏览器翻译扩展，支持网页双语对照、划词翻译和多种翻译服务。</p>
                 <div class="about-links">
                   <a href="https://github.com/Zayrick/BabelBox" target="_blank" rel="noreferrer">开源项目 <ExternalLink :size="15" :stroke-width="1.8" aria-hidden="true" focusable="false" /></a>
                   <a href="https://github.com/Zayrick/BabelBox/tree/main/docs" target="_blank" rel="noreferrer">使用文档 <ExternalLink :size="15" :stroke-width="1.8" aria-hidden="true" focusable="false" /></a>

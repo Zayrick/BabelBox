@@ -44,8 +44,8 @@
               </svg>
             </a>
           </el-tooltip>
-          <el-tooltip content="完整设置" placement="bottom">
-            <button class="header-icon-button" type="button" aria-label="打开完整设置" @click="openOptions()">
+          <el-tooltip content="设置" placement="bottom">
+            <button class="header-icon-button" type="button" aria-label="打开设置" @click="openOptions()">
               <Settings aria-hidden="true" />
             </button>
           </el-tooltip>
@@ -299,12 +299,12 @@
         <div v-if="activeView === 'hover'" class="view-content">
           <div class="setting-list">
             <div class="setting-row">
-              <span><strong>启用悬停翻译</strong><small>按住快捷键并把鼠标悬停在文本上</small></span>
+              <span><strong>悬停翻译</strong><small>按住快捷键，将鼠标移到文字上</small></span>
               <el-switch class="popup-switch" :model-value="config.hotkey !== 'none'" aria-label="启用或关闭鼠标悬停翻译" @change="toggleHover" />
             </div>
           </div>
           <div class="choice-block">
-            <span class="choice-label">触发快捷键</span>
+            <span class="choice-label">快捷键</span>
             <div class="chips two">
               <button v-for="item in hoverChoices" :key="item.value" type="button" :class="{ selected: config.hotkey === item.value }" @click="setHoverHotkey(item.value)">{{ item.label }}</button>
             </div>
@@ -323,7 +323,7 @@
           <div v-if="selectionTab === 'text'" id="selection-text-panel" class="view-stack" role="tabpanel">
             <div class="setting-list">
               <div class="setting-row">
-                <span><strong>启用划词翻译</strong><small>选中网页文字后显示翻译</small></span>
+                <span><strong>划词翻译</strong><small>选中文字后显示翻译</small></span>
                 <el-switch
                   class="popup-switch"
                   :model-value="config.selectionTranslatorMode !== 'disabled'"
@@ -332,7 +332,7 @@
                 />
               </div>
               <div class="setting-row">
-                <span><strong>显示延迟</strong><small>选区稳定后再显示，0 表示不延迟</small></span>
+                <span><strong>显示延迟</strong><small>0 表示立即显示</small></span>
                 <div class="delay-control">
                   <el-input-number
                     v-model="config.selectionTranslatorDelay"
@@ -363,7 +363,7 @@
               </button>
             </div>
             <div class="choice-block">
-              <span class="choice-label">朗读语音回退顺序</span>
+              <span class="choice-label">朗读音色</span>
               <el-select
                 v-model="config.selectionTtsVoices"
                 class="full-width-select"
@@ -371,8 +371,8 @@
                 filterable
                 collapse-tags
                 collapse-tags-tooltip
-                aria-label="划词翻译语音回退顺序"
-                placeholder="自动按语言选择"
+                aria-label="划词翻译朗读音色"
+                placeholder="自动"
                 no-data-text="没有可用音色"
               >
                 <el-option
@@ -382,11 +382,11 @@
                   :value="item.value"
                 />
               </el-select>
-              <small class="choice-hint">留空时自动选择音色。</small>
+              <small class="choice-hint">按顺序尝试，留空则自动选择</small>
             </div>
             <button class="link-row" type="button" @click="openOptions('settings-vocabulary')">
               <span class="row-icon" aria-hidden="true"><Star /></span>
-              <span class="link-row-copy"><strong>单词本 <em class="beta-badge">Beta</em></strong><small>{{ config.vocabularyBookEnabled ? '查看收藏、今日复习与掌握程度' : '开启后可从单词学习卡收藏并复习' }}</small></span>
+              <span class="link-row-copy"><strong>单词本 <em class="beta-badge">Beta</em></strong><small>{{ config.vocabularyBookEnabled ? '查看收藏和复习进度' : '收藏单词并定期复习' }}</small></span>
               <ChevronRight class="row-trailing-icon" aria-hidden="true" />
             </button>
           </div>
@@ -394,12 +394,12 @@
           <div v-else id="selection-area-panel" class="view-stack" role="tabpanel">
             <div v-if="!browserCapabilities.areaTranslation" class="capability-unavailable" role="status">
               <strong>当前浏览器暂不支持圈选翻译</strong>
-              <small>原有开关偏好已保留；回到 Chrome 后仍会按原设置生效。</small>
+              <small>设置已保留，在 Chrome 中可正常使用</small>
             </div>
             <template v-else>
               <div class="setting-list">
                 <div class="setting-row">
-                  <span><strong>启用圈选翻译</strong><small>翻译图片或无法直接选中的页面文字</small></span>
+                  <span><strong>圈选翻译</strong><small>翻译图片或无法选中的文字</small></span>
                   <el-switch class="popup-switch" :model-value="config.selectionAreaEnabled" aria-label="启用或关闭圈选翻译" @change="setAreaEnabled(Boolean($event))" />
                 </div>
               </div>
@@ -411,11 +411,11 @@
         <div v-else-if="activeView === 'image'" class="view-content">
           <div v-if="!browserCapabilities.imageTranslation" class="capability-unavailable" role="status">
             <strong>当前浏览器暂不支持图片翻译与 OCR</strong>
-            <small>原有开关偏好已保留；请在 Chrome 中使用此功能。</small>
+            <small>设置已保留，在 Chrome 中可正常使用</small>
           </div>
           <div v-else class="setting-list">
             <div class="setting-row">
-              <span><strong>启用图片翻译</strong><small>在网页图片左下角显示翻译按钮</small></span>
+              <span><strong>图片翻译</strong><small>在图片左下角显示翻译按钮</small></span>
               <el-switch class="popup-switch" :model-value="!config.disableImageTranslator" aria-label="启用或关闭图片翻译" @change="setImageTranslatorEnabled(Boolean($event))" />
             </div>
           </div>
@@ -424,7 +424,7 @@
         <div v-else-if="activeView === 'video'" class="view-content">
           <div class="setting-list">
             <div class="setting-row video-enable-row" :class="{ 'needs-enable': !config.videoTranslationEnabled }">
-              <span><strong>{{ config.videoTranslationEnabled ? '字幕翻译已开启' : '开启字幕翻译' }}</strong><small>在 YouTube 原生字幕下方显示译文</small></span>
+              <span><strong>字幕翻译</strong><small>目前支持 YouTube</small></span>
               <el-switch class="popup-switch" :model-value="config.videoTranslationEnabled" aria-label="启用或关闭视频字幕翻译" @change="setVideoTranslationEnabled(Boolean($event))" />
             </div>
           </div>
@@ -434,26 +434,25 @@
               <el-option v-if="selectedVideoServiceUnavailableMessage" :label="`${videoServiceLabel}（当前浏览器不可用）`" :value="config.videoService" disabled />
               <el-option v-for="item in videoServiceOptions" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
-            <small class="choice-hint" :class="{ 'capability-warning': selectedVideoServiceUnavailableMessage }">{{ selectedVideoServiceUnavailableMessage || '与网页翻译服务独立保存' }}</small>
+            <small class="choice-hint" :class="{ 'capability-warning': selectedVideoServiceUnavailableMessage }">{{ selectedVideoServiceUnavailableMessage || '仅用于视频字幕' }}</small>
           </label>
           <label class="choice-block">
             <span class="choice-label">字幕字号</span>
             <el-select v-model="config.videoSubtitleFontSize" class="full-width-select" aria-label="视频字幕字号" :disabled="!config.videoTranslationEnabled">
               <el-option v-for="size in videoSubtitleFontSizeOptions" :key="size" :label="size === 100 ? '默认' : `${size}%`" :value="size" />
             </el-select>
-            <small class="choice-hint">只调整 BabelBox 显示的原文和译文</small>
           </label>
         </div>
 
         <div v-else-if="activeView === 'filter'" class="view-content site-filter-view">
           <div class="site-filter-intro">
-            <span><strong>{{ currentSiteDomain }}</strong><small>优先于全局规则，并应用到所有子域。</small></span>
+            <span><strong>{{ currentSiteDomain }}</strong><small>优先于全局规则，对子域同样生效</small></span>
             <em>{{ currentSiteFilterRuleCount }} 条</em>
           </div>
           <TranslationFilterRulesEditor
             compact
             :model-value="currentSiteFilterRules"
-            empty-description="未添加规则时，使用全局规则。"
+            empty-description="未添加时沿用全局规则"
             @update:model-value="setCurrentSiteFilterRules"
           />
           <button
@@ -461,7 +460,7 @@
             class="remove-site-filter-button"
             type="button"
             @click="removeCurrentSiteFilter"
-          >移除此网站的全部内容过滤规则</button>
+          >删除此网站的全部规则</button>
         </div>
 
         <div v-else-if="activeView === 'appearance'" class="view-content">
@@ -482,12 +481,11 @@
             <el-select v-model="config.theme" class="full-width-select" aria-label="界面主题">
               <el-option v-for="item in options.theme" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
-            <small class="choice-hint">同时应用到完整设置页面</small>
           </label>
         </div>
 
         <button class="view-settings-link" type="button" @click="openOptions(viewSettingsSection[activeView])">
-          <span>在完整设置中查看全部选项</span>
+          <span>更多设置</span>
           <ExternalLink aria-hidden="true" />
         </button>
       </template>
@@ -658,7 +656,7 @@ const currentSiteSwitchLabel = computed(() => currentSiteSupported.value
   ? currentSiteExtensionDisabled.value
     ? `${currentSiteDomain.value} 已禁用扩展，无法开启始终翻译`
     : config.value.autoTranslate
-    ? `所有网站自动翻译已开启，${currentSiteDomain.value} 会自动翻译`
+    ? `已开启自动翻译所有网站，${currentSiteDomain.value} 会自动翻译`
     : `始终翻译 ${currentSiteDomain.value}`
   : '始终翻译当前网站（当前页面不可用）');
 const currentSiteExtensionSwitchLabel = computed(() => currentSiteSupported.value
@@ -686,7 +684,7 @@ const pageActionPresentation = computed(() => {
       showHotkey: false,
     } as const;
   }
-  const label = pageTranslated.value ? '恢复当前网页' : '翻译当前网页';
+  const label = pageTranslated.value ? '恢复原文' : '翻译页面';
   if (activeTranslationAction.value === 'page' && pagePendingVisible.value) {
     return { key: `pending-${label}`, state: 'pending', label, showHotkey: false } as const;
   }
@@ -853,11 +851,11 @@ async function setCurrentSiteAlwaysTranslated(enabled: boolean) {
   if (!domain || tabId === null) return;
   clearActionFeedback('site-rule');
   if (config.value.autoTranslate) {
-    showNotice('所有网站自动翻译已开启，请在完整设置中关闭全局开关');
+    showNotice('已开启自动翻译所有网站，可在设置中关闭');
     return;
   }
   if (currentSiteExtensionDisabled.value) {
-    showNotice(`当前已在 ${domain} 禁用扩展，请先恢复扩展`);
+    showNotice(`已在 ${domain} 禁用扩展，请先恢复`);
     return;
   }
 
@@ -984,7 +982,7 @@ async function togglePageTranslation() {
       ? response.isTranslated
       : action === 'fullPage';
     finishPagePendingPresentation();
-    showActionFeedback('page', pageTranslated.value ? '网页翻译已开启' : '已恢复网页原文');
+    showActionFeedback('page', pageTranslated.value ? '已翻译' : '已恢复原文');
   } catch (error) {
     console.error(error);
     finishPagePendingPresentation();

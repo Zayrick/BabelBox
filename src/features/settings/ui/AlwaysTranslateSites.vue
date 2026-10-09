@@ -35,8 +35,8 @@
     <p :id="labels.feedbackId" class="site-rules-feedback" :class="{ error: errorMessage }" aria-live="polite">
       <template v-if="errorMessage">{{ errorMessage }}</template>
       <template v-else-if="statusMessage">{{ statusMessage }}</template>
-      <template v-else-if="normalizedPreview">将保存为 <strong>{{ normalizedPreview }}</strong>，并包含所有子域。</template>
-      <template v-else>支持粘贴完整 URL；端口、路径和参数不会进入规则。</template>
+      <template v-else-if="normalizedPreview">将保存为 <strong>{{ normalizedPreview }}</strong>（含子域）</template>
+      <template v-else>可直接粘贴网址，只保留主域名</template>
     </p>
 
     <el-scrollbar
@@ -102,34 +102,34 @@ const labels = computed(() => props.variant === 'disable-extension'
     titleId: 'disabled-extension-sites-title',
     feedbackId: 'disabled-extension-sites-feedback',
     title: '禁用扩展网站',
-    description: '输入任意域名或网址，保存时统一归并到主域名；该网站及其所有子域都不会运行扩展功能。',
+    description: '在这些网站及其子域上不运行扩展。',
     countLabel: '禁用扩展网站数量',
     inputLabel: '添加禁用扩展网站',
-    placeholder: '例如：https://docs.example.com/article',
+    placeholder: '域名或网址，如 example.com',
     addButton: '添加网站',
     listLabel: '禁用扩展网站名单',
-    emptyTitle: '还没有禁用扩展的网站',
-    emptyDescription: '可从上方手动添加，也可在扩展弹窗中为当前网站快速禁用。',
-    duplicateMessage: (domain: string) => `${domain} 已在禁用扩展名单中。`,
-    addedMessage: (domain: string) => `已添加 ${domain}。`,
-    removedMessage: (domain: string) => `已删除 ${domain}。`,
+    emptyTitle: '暂无网站',
+    emptyDescription: '也可以在扩展弹窗中禁用当前网站',
+    duplicateMessage: (domain: string) => `${domain} 已在列表中`,
+    addedMessage: (domain: string) => `已添加 ${domain}`,
+    removedMessage: (domain: string) => `已删除 ${domain}`,
   }
   : {
     settingId: 'always-translate-sites',
     titleId: 'always-translate-sites-title',
     feedbackId: 'always-translate-sites-feedback',
     title: '始终翻译网站',
-    description: '输入任意域名或网址，保存时统一归并到主域名，并对它的所有子域生效。',
+    description: '打开这些网站及其子域时自动翻译。',
     countLabel: '始终翻译网站数量',
     inputLabel: '添加始终翻译网站',
-    placeholder: '例如：https://docs.example.com/article',
+    placeholder: '域名或网址，如 example.com',
     addButton: '添加网站',
     listLabel: '始终翻译网站名单',
-    emptyTitle: '还没有始终翻译的网站',
-    emptyDescription: '可从上方手动添加，也可在扩展弹窗中为当前网站快速开启。',
-    duplicateMessage: (domain: string) => `${domain} 已在始终翻译名单中。`,
-    addedMessage: (domain: string) => `已添加 ${domain}。`,
-    removedMessage: (domain: string) => `已删除 ${domain}。`,
+    emptyTitle: '暂无网站',
+    emptyDescription: '也可以在扩展弹窗中添加当前网站',
+    duplicateMessage: (domain: string) => `${domain} 已在列表中`,
+    addedMessage: (domain: string) => `已添加 ${domain}`,
+    removedMessage: (domain: string) => `已删除 ${domain}`,
   });
 
 function clearFeedback() {
@@ -140,13 +140,13 @@ function clearFeedback() {
 function addDomain() {
   const input = inputValue.value.trim();
   if (!input) {
-    errorMessage.value = '请输入域名或网址。';
+    errorMessage.value = '请输入域名或网址';
     return;
   }
 
   const domain = getSiteBaseDomain(input);
   if (!domain) {
-    errorMessage.value = '无法识别有效的网站主域名，请检查输入内容。';
+    errorMessage.value = '无法识别该网址';
     return;
   }
   if (domains.value.includes(domain)) {

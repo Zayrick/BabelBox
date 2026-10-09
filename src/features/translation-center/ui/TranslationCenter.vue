@@ -1,7 +1,7 @@
 <template>
   <el-scrollbar class="translation-center-scrollbar" tag="section" aria-label="翻译中心">
     <div class="translation-center">
-      <p v-if="hiddenUnavailableServices.length" class="translation-capability-warning" role="status">当前浏览器暂不支持 Chrome 内置翻译；该对比项已暂时隐藏，原配置会保留。</p>
+      <p v-if="hiddenUnavailableServices.length" class="translation-capability-warning" role="status">当前浏览器不支持 Chrome 内置翻译，已暂时隐藏。</p>
       <div class="translation-center-toolbar">
       <div class="language-picker-group">
         <label for="translation-center-source">源语言</label>
@@ -82,12 +82,12 @@
                     <ServiceIcon :service="item.provider" :label="item.label" size="small" />
                     <span class="service-picker-option-copy">
                       <strong>{{ item.label }}</strong>
-                      <small>{{ serviceDescription(item.value) }}</small>
+                      <small v-if="serviceDescription(item.value)">{{ serviceDescription(item.value) }}</small>
                     </span>
                     <span class="service-picker-option-add" aria-hidden="true"><Plus /></span>
                   </button>
                 </section>
-                <p v-if="filteredServiceGroups.length === 0">没有找到可添加的翻译服务</p>
+                <p v-if="filteredServiceGroups.length === 0">没有匹配的服务</p>
               </div>
             </el-scrollbar>
           </div>
@@ -107,7 +107,7 @@
         <textarea
           v-model="sourceText"
           maxlength="5000"
-          placeholder="输入要翻译的句子…"
+          placeholder="输入要翻译的文本"
           aria-label="待翻译文本"
           @keydown.ctrl.enter.prevent="runTranslation"
           @keydown.meta.enter.prevent="runTranslation"
@@ -163,7 +163,7 @@
                     :disabled="cards.length < 2"
                     :aria-label="`拖动${serviceLabel(card.service)}调整顺序，第 ${index + 1} 项，共 ${cards.length} 项`"
                     aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
-                    title="拖动调整顺序，也可用 Alt+↑/↓"
+                    title="拖动排序（Alt+↑/↓）"
                     @keydown.alt.arrow-up.prevent="moveCard(card.service, -1)"
                     @keydown.alt.arrow-down.prevent="moveCard(card.service, 1)"
                   >
@@ -191,7 +191,7 @@
               </header>
 
               <div v-if="card.status === 'idle'" class="translation-result-placeholder">
-                点击“开始翻译”，在这里查看结果
+                等待翻译
               </div>
               <div v-else-if="card.status === 'loading'" class="translation-result-placeholder loading-placeholder">
                 <span class="loading-bars"><i /><i /><i /></span>
@@ -348,7 +348,7 @@ function serviceProvider(service: string): string {
 function serviceDescription(service: string): string {
   const option = enabledServiceOptionById.value.get(service)
   if (option?.description) return option.description.split('；')[0]
-  return service === 'freeTranslation' ? '无需密钥，自动尝试多个免费接口' : '使用设置中已保存的连接配置'
+  return ''
 }
 
 function languageLabel(value: string): string {
@@ -585,7 +585,7 @@ async function translateCard(card: TranslationCard, text: string, runId: number,
     })
     if (runId !== activeRunId) return
     card.status = 'success'
-    card.result = result.trim() || '服务返回了空译文。'
+    card.result = result.trim() || '译文为空'
     card.duration = Math.max(1, Math.round(performance.now() - startedAt))
   } catch (error) {
     if (runId !== activeRunId) return

@@ -2,12 +2,12 @@
   <section id="settings-image-translation" class="settings-section settings-list-section image-ocr-section">
     <div v-if="!browserCapabilities.imageOcr" class="image-ocr-unavailable" role="status">
       <strong>当前浏览器暂不支持图片翻译与 OCR</strong>
-      <p>原有图片翻译偏好和语言包记录会保留；请在 Chrome 中使用及管理此功能。</p>
+      <p>设置和已下载的语言包都会保留，在 Chrome 中可正常使用。</p>
     </div>
     <template v-else>
       <header class="image-ocr-list-heading">
-        <h2>语言列表</h2>
-        <p>下载对应语言包后，才能识别该语言的图片文字。</p>
+        <h2>语言包</h2>
+        <p>下载后才能识别对应语言的图片文字。</p>
       </header>
       <div class="image-ocr-pack-list">
         <article v-for="pack in languagePacks" :key="pack.code" class="image-ocr-pack-card">

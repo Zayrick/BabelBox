@@ -1,7 +1,7 @@
 <template>
   <section v-show="props.activeSection === 'settings-general'" id="settings-general" class="settings-section">
     <SettingsGroup title="翻译">
-      <SettingsRow label="翻译模式" description="双语对照保留原文，仅译文直接替换页面文字。">
+      <SettingsRow label="翻译模式">
         <el-select v-model="config.display" aria-label="翻译模式" placeholder="请选择翻译模式">
           <el-option v-for="item in options.display" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
@@ -11,14 +11,14 @@
           <el-option v-for="item in options.to" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </SettingsRow>
-      <SettingsRow label="文本翻译服务" description="网页、划词和悬停翻译使用的默认服务。">
+      <SettingsRow label="翻译服务" description="用于网页、划词和悬停翻译">
         <el-select v-model="config.service" aria-label="文本翻译服务" placeholder="请选择文本翻译服务">
           <el-option v-if="selectedTextServiceUnavailableMessage" :label="`${selectedTextServiceLabel}（当前浏览器不可用）`" :value="config.service" disabled />
           <el-option v-for="item in availableServiceOptions" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
         <p v-if="selectedTextServiceUnavailableMessage" class="capability-warning">{{ selectedTextServiceUnavailableMessage }}</p>
       </SettingsRow>
-      <SettingsRow label="视频翻译服务" description="YouTube 字幕译文独立使用此服务。">
+      <SettingsRow label="视频翻译服务">
         <el-select v-model="config.videoService" aria-label="视频翻译服务" placeholder="请选择视频翻译服务">
           <el-option v-if="selectedVideoServiceUnavailableMessage" :label="`${selectedVideoServiceLabel}（当前浏览器不可用）`" :value="config.videoService" disabled />
           <el-option v-for="item in videoServiceOptions" :key="item.value" :label="item.label" :value="item.value" />
@@ -28,13 +28,13 @@
     </SettingsGroup>
 
     <SettingsGroup title="外观">
-      <SettingsRow label="界面主题" description="同时应用到扩展弹窗与设置页。">
+      <SettingsRow label="界面主题">
         <el-select v-model="config.theme" aria-label="界面主题" placeholder="请选择主题模式">
           <el-option v-for="item in options.theme" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </SettingsRow>
       <template v-if="config.display === 1">
-        <SettingsRow label="译文样式" description="双语模式下译文在网页中的呈现方式。">
+        <SettingsRow label="译文样式">
           <el-select v-model="config.style" aria-label="译文样式" placeholder="请选择译文显示样式">
             <el-option-group v-for="group in styleGroups" :key="group.value" :label="group.label">
               <el-option v-for="item in group.options" :key="item.value" :label="item.label" :value="item.value" :class="item.class" />
@@ -42,8 +42,8 @@
           </el-select>
         </SettingsRow>
         <div class="style-preview" aria-live="polite">
-          <p class="style-preview-source">Reading should feel calm and effortless.</p>
-          <p :key="config.style" class="style-preview-text" :class="currentStyleClass">阅读应该轻松、自然，不打断你的节奏。</p>
+          <p class="style-preview-source">The quick brown fox jumps over the lazy dog.</p>
+          <p :key="config.style" class="style-preview-text" :class="currentStyleClass">敏捷的棕色狐狸跳过了那只懒狗。</p>
         </div>
       </template>
     </SettingsGroup>
@@ -51,8 +51,8 @@
 
   <section v-show="props.activeSection === 'settings-sites'" id="settings-sites" class="settings-section site-settings-section">
     <SettingsGroup>
-      <SettingsRow label="所有网站自动翻译" description="打开任意网页时自动开始全文翻译。" data-setting="global-auto-translate">
-        <el-switch v-model="config.autoTranslate" aria-label="所有网站自动翻译" />
+      <SettingsRow label="自动翻译所有网站" data-setting="global-auto-translate">
+        <el-switch v-model="config.autoTranslate" aria-label="自动翻译所有网站" />
       </SettingsRow>
     </SettingsGroup>
     <AlwaysTranslateSites v-model="config.alwaysTranslateDomains" />
@@ -67,8 +67,8 @@
   <div class="settings-main-sections">
     <section v-show="props.activeSection === 'settings-services'" id="settings-services" class="settings-section">
       <div v-if="selectedTextServiceUnavailableMessage" class="settings-inline-alert" role="status">
-        <strong>当前默认服务在此浏览器不可用</strong>
-        <span>{{ selectedTextServiceUnavailableMessage }}请在“通用设置”中选择可用服务。</span>
+        <strong>默认翻译服务不可用</strong>
+        <span>{{ selectedTextServiceUnavailableMessage }}请到“通用设置”中更换。</span>
       </div>
       <ServiceCatalog
         :service="selectedConfigurationService"
@@ -96,11 +96,11 @@
     <ImageOcrSettings v-show="props.activeSection === 'settings-image-translation'" />
 
     <section v-show="props.activeSection === 'settings-video'" id="settings-video" class="settings-section">
-      <SettingsGroup title="字幕翻译" description="仅处理播放器已经提供的字幕文本，不上传音频或视频内容。">
-        <SettingsRow label="启用视频字幕翻译" description="在 YouTube 原生字幕下方显示译文。">
+      <SettingsGroup title="字幕翻译" description="只翻译播放器自带的字幕，不上传音视频。">
+        <SettingsRow label="字幕翻译" description="目前支持 YouTube">
           <el-switch v-model="config.videoTranslationEnabled" aria-label="视频字幕翻译" />
         </SettingsRow>
-        <SettingsRow label="视频翻译服务" description="AI 服务会提前预取字幕，网页翻译仍使用文本翻译服务。">
+        <SettingsRow label="翻译服务" description="使用 AI 服务时会提前翻译后续字幕">
           <el-select v-model="config.videoService" aria-label="视频字幕翻译服务" :disabled="!config.videoTranslationEnabled" placeholder="请选择服务">
             <el-option v-if="selectedVideoServiceUnavailableMessage" :label="`${selectedVideoServiceLabel}（当前浏览器不可用）`" :value="config.videoService" disabled />
             <el-option v-for="item in videoServiceOptions" :key="item.value" :label="item.label" :value="item.value" />
@@ -109,17 +109,17 @@
         </SettingsRow>
       </SettingsGroup>
       <SettingsGroup title="显示">
-        <SettingsRow label="显示 BabelBox 字幕" description="暂时隐藏字幕层，不改变其他偏好。">
-          <el-switch v-model="config.videoSubtitleVisible" aria-label="显示 BabelBox 视频字幕" :disabled="!config.videoTranslationEnabled" />
+        <SettingsRow label="显示译文字幕">
+          <el-switch v-model="config.videoSubtitleVisible" aria-label="显示译文字幕" :disabled="!config.videoTranslationEnabled" />
         </SettingsRow>
-        <SettingsRow label="字幕显示模式">
+        <SettingsRow label="显示内容">
           <el-select v-model="config.videoSubtitleDisplayMode" aria-label="视频字幕显示模式" :disabled="!config.videoTranslationEnabled || !config.videoSubtitleVisible">
             <el-option label="双语显示" value="bilingual" />
             <el-option label="只显示译文" value="translation-only" />
             <el-option label="只显示原文" value="original-only" />
           </el-select>
         </SettingsRow>
-        <SettingsRow label="字幕字号" description="不影响 YouTube 原生字幕设置。">
+        <SettingsRow label="字号">
           <el-select v-model="config.videoSubtitleFontSize" aria-label="视频字幕字号" :disabled="!config.videoTranslationEnabled" placeholder="请选择字号">
             <el-option v-for="size in videoSubtitleFontSizeOptions" :key="size" :label="size === 100 ? '默认' : `${size}%`" :value="size" />
           </el-select>
@@ -129,23 +129,23 @@
 
     <section v-show="props.activeSection === 'settings-shortcuts'" id="settings-shortcuts" class="settings-section">
       <SettingsGroup title="悬停翻译">
-        <SettingsRow label="鼠标悬浮快捷键" description="按住快捷键并悬停在文本上进行翻译。">
+        <SettingsRow label="快捷键" description="按住后将鼠标移到文字上即可翻译">
           <div class="hotkey-config">
-            <el-select v-model="config.hotkey" aria-label="鼠标悬浮快捷键" placeholder="请选择快捷键" @change="handleMouseHotkeyChange">
+            <el-select v-model="config.hotkey" aria-label="悬停翻译快捷键" placeholder="请选择快捷键" @change="handleMouseHotkeyChange">
               <el-option v-for="item in options.keys" :key="item.value" :label="item.label" :value="item.value" :disabled="item.disabled" :class="{ 'select-divider': item.disabled }" />
             </el-select>
-            <button v-if="config.hotkey === 'custom'" class="hotkey-chip" type="button" aria-label="编辑鼠标悬浮快捷键" @click="openCustomMouseHotkeyDialog">
+            <button v-if="config.hotkey === 'custom'" class="hotkey-chip" type="button" aria-label="编辑悬停翻译快捷键" @click="openCustomMouseHotkeyDialog">
               <kbd v-if="config.customHotkey">{{ getCustomMouseHotkeyDisplayName() }}</kbd>
               <span v-else>点击录制快捷键</span>
               <Edit aria-hidden="true" />
             </button>
           </div>
         </SettingsRow>
-        <SettingsRow label="悬浮翻译延迟" description="移动鼠标后等待一段时间再翻译，可减少 Ctrl+C 等组合键的误触。">
+        <SettingsRow label="翻译延迟" description="适当延迟可避免按 Ctrl+C 等组合键时误触发">
           <div class="number-field">
             <el-input-number
               v-model="config.mouseHoverTranslationDelay"
-              aria-label="悬浮翻译延迟"
+              aria-label="悬停翻译延迟"
               :min="MOUSE_HOVER_TRANSLATION_DELAY_MIN"
               :max="MOUSE_HOVER_TRANSLATION_DELAY_MAX"
               :step="MOUSE_HOVER_TRANSLATION_DELAY_STEP"
@@ -158,7 +158,7 @@
       </SettingsGroup>
 
       <SettingsGroup title="全文翻译">
-        <SettingsRow label="全文翻译快捷键" description="无需点击悬浮球即可切换全文翻译。">
+        <SettingsRow label="快捷键">
           <div class="hotkey-config">
             <el-select v-model="config.floatingBallHotkey" aria-label="全文翻译快捷键" placeholder="选择快捷键" @change="handleHotkeyChange">
               <el-option v-for="item in options.floatingBallHotkeys" :key="item.value" :label="item.label" :value="item.value" />
@@ -170,19 +170,19 @@
             </button>
           </div>
         </SettingsRow>
-        <SettingsRow label="全文翻译范围" description="翻译到网页底部会持续处理新增内容，无限滚动页面可能产生较多请求。下次启动全文翻译时生效。">
+        <SettingsRow label="翻译范围" description="翻译整页时，新加载的内容也会翻译，无限滚动的页面请求较多。下次翻译时生效。">
           <el-select v-model="config.fullPageTranslationMode" aria-label="全文翻译范围">
-            <el-option label="按阅读进度（推荐）" value="viewport" />
-            <el-option label="立即翻译到网页底部" value="all" />
+            <el-option label="随滚动翻译（推荐）" value="viewport" />
+            <el-option label="一次翻译整页" value="all" />
           </el-select>
         </SettingsRow>
-        <SettingsRow label="右键全文翻译" description="在网页右键菜单中显示翻译与取消翻译入口。">
-          <el-switch v-model="config.contextMenuEnabled" aria-label="右键全文翻译" />
+        <SettingsRow label="添加到右键菜单">
+          <el-switch v-model="config.contextMenuEnabled" aria-label="添加到右键菜单" />
         </SettingsRow>
       </SettingsGroup>
 
       <SettingsGroup title="划词翻译">
-        <SettingsRow label="划词翻译" description="选中文本后显示翻译。">
+        <SettingsRow label="显示方式">
           <el-select v-model="config.selectionTranslatorMode" aria-label="划词翻译模式" placeholder="选择模式">
             <el-option label="关闭" value="disabled" />
             <el-option label="双语显示" value="bilingual" />
@@ -190,7 +190,7 @@
           </el-select>
         </SettingsRow>
         <template v-if="config.selectionTranslatorMode !== 'disabled'">
-          <SettingsRow label="划词触发方式" description="选择快捷键后，选中文字时不再显示图标或小点。">
+          <SettingsRow label="触发方式" description="使用快捷键时，选中文字后不再显示图标">
             <div class="hotkey-config">
               <el-select v-model="config.selectionTranslatorTrigger" aria-label="划词翻译触发方式" placeholder="选择触发方式" @change="handleSelectionTriggerChange">
                 <el-option v-for="item in options.selectionTranslatorTriggers" :key="item.value" :label="item.label" :value="item.value" />
@@ -202,7 +202,7 @@
               </button>
             </div>
           </SettingsRow>
-          <SettingsRow label="划词显示延迟" description="选区稳定后开始计时，再显示图标、小点或翻译面板。">
+          <SettingsRow label="显示延迟">
             <div class="number-field">
               <el-input-number
                 v-model="config.selectionTranslatorDelay"
@@ -222,13 +222,13 @@
 
     <section v-show="props.activeSection === 'settings-advanced'" id="settings-advanced" class="settings-section">
       <SettingsGroup title="页面界面">
-        <SettingsRow label="全文翻译悬浮球" description="在屏幕边缘显示悬浮球，一键翻译整个网页。">
-          <el-switch v-model="floatingBallEnabled" aria-label="全文翻译悬浮球" />
+        <SettingsRow label="悬浮球" description="显示在屏幕边缘，点击即可翻译整页">
+          <el-switch v-model="floatingBallEnabled" aria-label="悬浮球" />
         </SettingsRow>
-        <SettingsRow label="显示翻译进度面板" description="全文翻译时在右下角显示任务进度，结束后自动隐藏。">
-          <el-switch v-model="config.translationProgressPanelEnabled" aria-label="显示翻译进度面板" @change="handleTranslationProgressPanelChange" />
+        <SettingsRow label="翻译进度面板" description="翻译整页时显示在右下角，完成后自动隐藏">
+          <el-switch v-model="config.translationProgressPanelEnabled" aria-label="翻译进度面板" @change="handleTranslationProgressPanelChange" />
         </SettingsRow>
-        <SettingsRow label="动画效果" description="静态效果会关闭运动，节省 GPU 与电量。">
+        <SettingsRow label="动画效果">
           <el-select v-model="config.animationMode" aria-label="动画效果" placeholder="请选择动画效果">
             <el-option v-for="item in options.animationModes" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
@@ -236,43 +236,43 @@
       </SettingsGroup>
 
       <SettingsGroup title="翻译行为">
-        <SettingsRow label="缓存翻译结果" description="减少重复请求、加快翻译；结果可能不是最新的。">
+        <SettingsRow label="缓存翻译结果" description="相同内容不再重复请求">
           <el-switch v-model="config.useCache" aria-label="缓存翻译结果" />
         </SettingsRow>
-        <SettingsRow label="AI 智能上下文" description="参考网页标题、描述和相关正文，提升术语准确度；首次请求会额外生成一次摘要。仅对大模型服务生效。">
-          <el-switch v-model="config.enableAIContext" :disabled="!canUseAIContext" aria-label="AI 智能上下文" />
+        <SettingsRow label="AI 上下文" description="参考网页标题和正文，让术语翻译更准确，首次翻译会多一次请求。仅支持 AI 服务。">
+          <el-switch v-model="config.enableAIContext" :disabled="!canUseAIContext" aria-label="AI 上下文" />
         </SettingsRow>
-        <SettingsRow label="翻译并发数" description="同时进行的最大翻译任务数。">
-          <el-input-number v-model="config.maxConcurrentTranslations" aria-label="翻译并发数" :min="1" :step="1" controls-position="right" @change="handleConcurrentChange" />
+        <SettingsRow label="最大并发数">
+          <el-input-number v-model="config.maxConcurrentTranslations" aria-label="最大并发数" :min="1" :step="1" controls-position="right" @change="handleConcurrentChange" />
         </SettingsRow>
       </SettingsGroup>
 
       <SettingsGroup title="输入框翻译">
-        <SettingsRow label="触发方式" description="在任意文本输入框中翻译正在输入的内容。">
+        <SettingsRow label="触发方式">
           <el-select v-model="config.inputBoxTranslationTrigger" aria-label="输入框翻译触发方式" placeholder="请选择触发方式">
             <el-option v-for="item in options.inputBoxTranslationTrigger" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </SettingsRow>
-        <SettingsRow v-if="config.inputBoxTranslationTrigger !== 'disabled'" label="翻译目标语言">
+        <SettingsRow v-if="config.inputBoxTranslationTrigger !== 'disabled'" label="目标语言">
           <el-select v-model="config.inputBoxTranslationTarget" aria-label="输入框翻译目标语言" placeholder="请选择目标语言">
             <el-option v-for="item in options.inputBoxTranslationTarget" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </SettingsRow>
       </SettingsGroup>
 
-      <SettingsGroup v-if="(showAdvancedProxy || showAdvancedAI) && !showAdvancedCustom" title="默认服务请求" :description="`作用于当前默认服务：${selectedTextServiceLabel}`">
+      <SettingsGroup v-if="(showAdvancedProxy || showAdvancedAI) && !showAdvancedCustom" title="请求设置" :description="`仅对 ${selectedTextServiceLabel} 生效`">
         <template v-if="showAdvancedAI" #actions>
           <el-button text @click="resetTemplate"><Refresh class="button-icon" aria-hidden="true" />恢复默认模板</el-button>
         </template>
-        <SettingsRow v-if="showAdvancedProxy" label="代理地址" description="用于解决网络无法访问的问题；不熟悉时请留空。">
-          <el-input v-model="advancedProxy" aria-label="代理地址" placeholder="默认不使用代理" />
+        <SettingsRow v-if="showAdvancedProxy" label="代理地址" description="无法直接访问服务时填写，否则留空">
+          <el-input v-model="advancedProxy" aria-label="代理地址" placeholder="不使用代理" />
         </SettingsRow>
         <template v-if="showAdvancedAI">
-          <SettingsRow label="System 提示词" description="以 system 身份发送，常用于指定 AI 扮演的角色。" stacked>
+          <SettingsRow label="System 提示词" stacked>
             <el-input v-model="advancedSystemRole" type="textarea" aria-label="System 提示词" :autosize="{ minRows: 3, maxRows: 10 }" maxlength="8192" placeholder="system message" />
           </SettingsRow>
           <SettingsRow label="User 模板" stacked>
-            <template #description><code v-pre>{{to}}</code> 表示目标语言，<code v-pre>{{origin}}</code> 表示待翻译文本，两者不可缺少。</template>
+            <template #description><code v-pre>{{to}}</code> 为目标语言，<code v-pre>{{origin}}</code> 为原文，两者都必须保留。</template>
             <el-input v-model="advancedUserRole" type="textarea" aria-label="User 模板" :autosize="{ minRows: 3, maxRows: 10 }" maxlength="8192" placeholder="user message template" />
           </SettingsRow>
         </template>
@@ -280,7 +280,7 @@
     </section>
 
     <section v-show="props.activeSection === 'settings-data'" id="settings-data" class="settings-section">
-      <SettingsGroup title="API 凭据存储" description="选择浏览器重启后是否继续保留凭据。">
+      <SettingsGroup title="API 凭据存储">
         <div class="radio-list" role="radiogroup" aria-label="API 凭据存储方式" :aria-busy="credentialStorageBusy">
           <button
             type="button"
@@ -294,7 +294,7 @@
             <i class="radio-mark" aria-hidden="true" />
             <span class="radio-copy">
               <strong>保存在此设备<em>推荐</em></strong>
-              <small>加密保存在此设备，浏览器重启或扩展更新后仍可使用。</small>
+              <small>加密保存，重启浏览器或更新扩展后仍可使用</small>
             </span>
           </button>
           <button
@@ -308,14 +308,14 @@
           >
             <i class="radio-mark" aria-hidden="true" />
             <span class="radio-copy">
-              <strong>仅本次浏览器会话</strong>
-              <small>浏览器关闭、扩展重载或更新后需要重新填写。</small>
+              <strong>仅本次会话</strong>
+              <small>关闭浏览器或重载、更新扩展后需要重新填写</small>
             </span>
           </button>
         </div>
       </SettingsGroup>
 
-      <SettingsGroup title="配置历史" description="自动保留最近 10 次修改，可随时恢复。">
+      <SettingsGroup title="配置历史" description="保留最近 10 次修改">
         <template #actions>
           <el-button text :disabled="historyBusy || !canUndo" aria-label="撤销配置恢复" @click="runHistoryAction('undo')"><Undo2 class="button-icon" aria-hidden="true" />撤销</el-button>
           <el-button text :disabled="historyBusy || !canRedo" aria-label="重做配置恢复" @click="runHistoryAction('redo')"><Redo2 class="button-icon" aria-hidden="true" />重做</el-button>
@@ -343,10 +343,10 @@
             >恢复</el-button>
           </article>
         </div>
-        <p v-else class="settings-empty">还没有可恢复的配置版本。</p>
+        <p v-else class="settings-empty">暂无记录</p>
       </SettingsGroup>
 
-      <SettingsGroup title="定时备份" description="后台每 6 小时备份一次，保留最近 10 份。">
+      <SettingsGroup title="定时备份" description="每 6 小时备份一次，保留最近 10 份">
         <div v-if="backupEntries.length" class="version-list">
           <article v-for="entry in backupEntries" :key="entry.version" class="version-row">
             <code class="version-tag">b{{ entry.version }}</code>
@@ -362,10 +362,10 @@
             >恢复</el-button>
           </article>
         </div>
-        <p v-else class="settings-empty">后台启动后会建立第一份备份。</p>
+        <p v-else class="settings-empty">暂无备份</p>
       </SettingsGroup>
 
-      <SettingsGroup title="导入与导出" description="导出会移除专用 API Key、Secret 与令牌字段；自定义请求体、代理和端点中的内嵌凭据无法自动识别，请在分享前检查。">
+      <SettingsGroup title="导入与导出" description="导出时会去掉 API Key、Secret 等凭据，但自定义请求体、代理和接口地址里的凭据无法识别，分享前请自行检查。">
         <template #actions>
           <el-button @click="handleExport"><Download class="button-icon" aria-hidden="true" />导出配置</el-button>
           <el-button @click="handleImport"><Upload class="button-icon" aria-hidden="true" />导入配置</el-button>
@@ -374,7 +374,7 @@
           <el-input v-model="exportData" type="textarea" aria-label="导出的配置" :rows="10" readonly />
         </div>
         <div v-if="showImportBox" class="transfer-box">
-          <el-input v-model="importData" type="textarea" aria-label="要导入的配置" :rows="10" placeholder="在此粘贴 JSON 配置" />
+          <el-input v-model="importData" type="textarea" aria-label="要导入的配置" :rows="10" placeholder="粘贴 JSON 配置" />
           <div class="transfer-actions">
             <el-button type="primary" @click="saveImport"><Save class="button-icon" aria-hidden="true" />保存</el-button>
           </div>
@@ -682,7 +682,7 @@ async function removeTranslationService(id: string): Promise<void> {
   }
   try {
     await ElMessageBox.confirm(
-      `确定删除“${instance.name}”吗？该实例的请求配置和凭据也会一并删除。`,
+      `删除“${instance.name}”后，它的配置和凭据也会一并删除。`,
       '删除 AI 翻译服务',
       {
         confirmButtonText: '删除',
@@ -734,7 +734,7 @@ const currentStyleClass = computed(() =>
 // 恢复默认模板
 const resetTemplate = () => {
   ElMessageBox.confirm(
-    '确定要恢复默认的 system 和 user 模板吗？此操作将覆盖当前的自定义模板。',
+    '当前的 system 和 user 模板会被覆盖。',
     '恢复默认模板',
     {
       confirmButtonText: '确定',
@@ -745,7 +745,7 @@ const resetTemplate = () => {
     advancedSystemRole.value = defaultOption.system_role;
     advancedUserRole.value = defaultOption.user_role;
     ElMessage({
-      message: '已成功恢复默认翻译模板',
+      message: '已恢复默认模板',
       type: 'success',
       duration: 2000
     });
@@ -838,7 +838,7 @@ const handleCustomHotkeyConfirm = (hotkey: string) => {
   config.value.floatingBallHotkey = 'custom';
   
   ElMessage({
-    message: hotkey === 'none' ? '已禁用快捷键' : `快捷键已设置为: ${getCustomHotkeyDisplayName()}`,
+    message: hotkey === 'none' ? '已禁用快捷键' : `快捷键已设为 ${getCustomHotkeyDisplayName()}`,
     type: 'success',
     duration: 2000
   });
@@ -899,7 +899,7 @@ const handleCustomSelectionHotkeyConfirm = (hotkey: string) => {
   config.value.selectionTranslatorHotkey = 'custom';
 
   ElMessage({
-    message: hotkey === 'none' ? '已禁用划词翻译快捷键' : `划词翻译快捷键已设置为: ${getCustomSelectionHotkeyDisplayName()}`,
+    message: hotkey === 'none' ? '已禁用划词翻译快捷键' : `划词翻译快捷键已设为 ${getCustomSelectionHotkeyDisplayName()}`,
     type: 'success',
     duration: 2000,
   });
@@ -933,7 +933,7 @@ const handleCustomMouseHotkeyConfirm = (hotkey: string) => {
   config.value.hotkey = 'custom';
   
   ElMessage({
-    message: hotkey === 'none' ? '已禁用快捷键' : `快捷键已设置为: ${getCustomMouseHotkeyDisplayName()}`,
+    message: hotkey === 'none' ? '已禁用快捷键' : `快捷键已设为 ${getCustomMouseHotkeyDisplayName()}`,
     type: 'success',
     duration: 2000
   });
@@ -972,7 +972,7 @@ const handleConcurrentChange = (currentValue: number | undefined) => {
   // 验证并发数量的有效性
   if (currentValue === undefined || !Number.isFinite(currentValue) || currentValue < 1) {
     ElMessage({
-      message: '并发数量必须大于等于 1',
+      message: '并发数不能小于 1',
       type: 'warning',
       duration: 2000
     });
@@ -982,7 +982,7 @@ const handleConcurrentChange = (currentValue: number | undefined) => {
   }
   
   ElMessage({
-    message: `并发数量已更新为 ${currentValue}`,
+    message: `并发数已设为 ${currentValue}`,
     type: 'success',
     duration: 2000
   });
@@ -1004,10 +1004,10 @@ const setCredentialStorage = async (mode: CredentialStorageMode) => {
   if (mode === 'session') {
     try {
       await ElMessageBox.confirm(
-        '切换后会删除此设备上的凭据密文。当前会话仍可继续使用，但关闭浏览器、重载或更新扩展后需要重新填写。',
+        '此设备上保存的凭据将被删除。本次会话仍可使用，关闭浏览器或重载、更新扩展后需要重新填写。',
         '改为仅本次会话',
         {
-          confirmButtonText: '删除设备副本并切换',
+          confirmButtonText: '删除并切换',
           cancelButtonText: '取消',
           type: 'warning',
         },
@@ -1025,7 +1025,7 @@ const setCredentialStorage = async (mode: CredentialStorageMode) => {
     );
     ElMessage.success(mode === 'device'
       ? 'API 凭据已保存到此设备'
-      : '设备凭据副本已删除，当前仅保存在本次会话');
+      : '已删除设备上的凭据，仅在本次会话中保留');
   } catch (error) {
     ElMessage.error(`凭据存储设置失败：${error instanceof Error ? error.message : '请稍后重试'}`);
   } finally {
@@ -1174,14 +1174,14 @@ const saveImport = async () => {
     const parsedConfig = JSON.parse(importData.value);
     if (!isConfigImportValid(parsedConfig)) {
       ElMessage({
-        message: '配置无效或格式不正确, 请检查!',
+        message: '配置格式不正确',
         type: 'error',
       });
       return;
     }
     await persistConfig(prepareConfigForImport(parsedConfig, runtimeConfig));
     ElMessage({
-      message: '配置导入成功!',
+      message: '配置已导入',
       type: 'success',
     });
     showImportBox.value = false;
@@ -1189,7 +1189,7 @@ const saveImport = async () => {
     // Optionally, reload the extension or relevant parts
   } catch (e) {
     ElMessage({
-      message: '配置格式错误, 请检查!',
+      message: '配置格式不正确',
       type: 'error',
     });
   }

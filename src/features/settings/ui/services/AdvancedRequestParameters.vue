@@ -8,7 +8,7 @@
         type="textarea"
         :rows="3"
         :class="{ 'input-error': invalid }"
-        placeholder='可选 JSON 对象，例如 {"temperature":0}'
+        placeholder='JSON 对象，如 {"temperature":0}'
         @update:model-value="emit('update:modelValue', $event)"
       />
       <small v-if="invalid && invalidMessage" class="error-text">{{ invalidMessage }}</small>
