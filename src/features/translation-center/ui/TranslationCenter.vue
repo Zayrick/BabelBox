@@ -105,6 +105,7 @@
         </div>
 
         <textarea
+          v-autosize
           v-model="sourceText"
           maxlength="5000"
           placeholder="输入要翻译的文本"
@@ -240,6 +241,7 @@ import {
 } from '@lucide/vue'
 import {browser} from 'wxt/browser'
 import ServiceIcon from '@/src/ui/components/ServiceIcon.vue'
+import { vAutosize } from '@/src/ui/composables/autosize'
 import {
   getSelectableTranslationServices,
   isTranslationServiceAvailable,
@@ -811,7 +813,7 @@ onUnmounted(() => {
   min-height: 270px;
   flex: 1 1 auto;
   padding: 4px 2px;
-  resize: vertical;
+  resize: none;
   border: 0;
   color: var(--ink);
   background: transparent;

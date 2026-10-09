@@ -269,11 +269,11 @@
         </SettingsRow>
         <template v-if="showAdvancedAI">
           <SettingsRow label="System 提示词" stacked>
-            <el-input v-model="advancedSystemRole" type="textarea" aria-label="System 提示词" :autosize="{ minRows: 3, maxRows: 10 }" maxlength="8192" placeholder="system message" />
+            <el-input v-model="advancedSystemRole" type="textarea" aria-label="System 提示词" :autosize="{ minRows: 3 }" maxlength="8192" placeholder="system message" />
           </SettingsRow>
           <SettingsRow label="User 模板" stacked>
             <template #description><code v-pre>{{to}}</code> 为目标语言，<code v-pre>{{origin}}</code> 为原文，两者都必须保留。</template>
-            <el-input v-model="advancedUserRole" type="textarea" aria-label="User 模板" :autosize="{ minRows: 3, maxRows: 10 }" maxlength="8192" placeholder="user message template" />
+            <el-input v-model="advancedUserRole" type="textarea" aria-label="User 模板" :autosize="{ minRows: 3 }" maxlength="8192" placeholder="user message template" />
           </SettingsRow>
         </template>
       </SettingsGroup>
@@ -371,10 +371,10 @@
           <el-button @click="handleImport"><Upload class="button-icon" aria-hidden="true" />导入配置</el-button>
         </template>
         <div v-if="showExportBox" class="transfer-box">
-          <el-input v-model="exportData" type="textarea" aria-label="导出的配置" :rows="10" readonly />
+          <el-input v-model="exportData" type="textarea" aria-label="导出的配置" :autosize="{ minRows: 6, maxRows: 20 }" readonly />
         </div>
         <div v-if="showImportBox" class="transfer-box">
-          <el-input v-model="importData" type="textarea" aria-label="要导入的配置" :rows="10" placeholder="粘贴 JSON 配置" />
+          <el-input v-model="importData" type="textarea" aria-label="要导入的配置" :autosize="{ minRows: 6, maxRows: 20 }" placeholder="粘贴 JSON 配置" />
           <div class="transfer-actions">
             <el-button type="primary" @click="saveImport"><Save class="button-icon" aria-hidden="true" />保存</el-button>
           </div>

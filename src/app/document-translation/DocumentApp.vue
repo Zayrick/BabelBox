@@ -237,6 +237,7 @@
                 <article v-for="row in pdfRowsForPage(pdfPage.pageNumber)" :key="row.index" class="pdf-proofreading-row">
                   <p class="document-source">{{ row.source }}</p>
                   <textarea
+                    v-autosize
                     class="pdf-proofreading-translation document-translation"
                     :value="row.translation"
                     :aria-label="`PDF 第 ${pdfPage.pageNumber} 页第 ${row.index + 1} 个文本块译文`"
@@ -283,6 +284,7 @@
             <article v-for="row in currentRichRows" :key="row.index" class="native-proofreading-row">
               <p class="document-source">{{ readerText(row.source) }}</p>
               <textarea
+                v-autosize
                 class="document-translation"
                 :value="row.translation"
                 :placeholder="translating ? '等待翻译…' : '开始翻译后显示译文'"
@@ -323,6 +325,7 @@
               >
                 <p v-if="outputMode === 'bilingual'" class="docx-source document-source">{{ row.source }}</p>
                 <textarea
+                  v-autosize
                   class="docx-translation document-translation"
                   :value="row.translation"
                   :placeholder="translating ? '等待翻译…' : '开始翻译后显示译文'"
@@ -353,6 +356,7 @@
                   <td><p class="subtitle-source document-source">{{ readerText(row.source) }}</p></td>
                   <td>
                     <textarea
+                      v-autosize
                       class="subtitle-translation document-translation"
                       :value="row.translation"
                       :placeholder="translating ? '等待翻译…' : '开始翻译后显示译文'"
@@ -379,6 +383,7 @@
             <code>{{ row.pathLabel || '$' }}</code>
             <p class="json-source document-source">{{ row.source }}</p>
             <textarea
+              v-autosize
               class="json-translation document-translation"
               :value="row.translation"
               :placeholder="translating ? '等待翻译…' : '开始翻译后显示译文'"
@@ -396,6 +401,7 @@
               {{ readerText(row.source) }}
             </div>
             <textarea
+              v-autosize
               class="reader-translation document-translation"
               :value="row.translation"
               :placeholder="translating ? '等待翻译…' : '开始翻译后显示译文'"
@@ -427,6 +433,7 @@ import {computed, onMounted, onUnmounted, reactive, ref, watch} from 'vue';
 import {ArrowRight, CircleCheck, ExternalLink} from '@lucide/vue';
 import {browser} from 'wxt/browser';
 import ServiceIcon from '@/src/ui/components/ServiceIcon.vue';
+import {vAutosize} from '@/src/ui/composables/autosize';
 import {useDocumentTheme} from '@/src/ui/composables/useDocumentTheme';
 import {
   Config,

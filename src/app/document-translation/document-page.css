@@ -183,7 +183,7 @@ h1, h2, p { margin-top: 0; }
 .pdf-proofreading summary span { margin-left: 7px; color: var(--muted); font-size: var(--font-caption); font-weight: var(--weight-medium); }
 .pdf-proofreading-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; padding: 14px 18px; border-top: 1px solid var(--line); }
 .pdf-proofreading-row p { margin: 0; color: var(--muted); font-size: var(--font-body); line-height: var(--line-height-body); }
-.pdf-proofreading-row textarea { min-height: 68px; padding: 9px 10px; resize: vertical; border: 1px solid var(--line); border-radius: var(--radius-control); color: var(--ink); background: var(--surface-soft); font-size: var(--font-body); line-height: var(--line-height-body); }
+.pdf-proofreading-row textarea { min-height: 68px; padding: 9px 10px; resize: none; border: 1px solid var(--line); border-radius: var(--radius-control); color: var(--ink); background: var(--surface-soft); font-size: var(--font-body); line-height: var(--line-height-body); }
 .rich-document-reader, .docx-document-reader, .subtitle-document-reader, .json-document-reader { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-overlay); background: var(--surface); box-shadow: var(--el-box-shadow-light); }
 .reader-native-toolbar { display: flex; align-items: center; gap: 8px; min-height: 54px; padding: 9px 14px; overflow-x: auto; border-bottom: 1px solid var(--line); background: var(--surface); scrollbar-width: thin; }
 .reader-native-toolbar button { display: inline-flex; min-height: var(--control-height-small); align-items: center; gap: 7px; flex: none; padding: 0 12px; border: 1px solid var(--line); border-radius: var(--radius-control); color: var(--muted); background: var(--surface-soft); font-size: var(--font-small); font-weight: var(--weight-semibold); cursor: pointer; }
@@ -195,13 +195,13 @@ h1, h2, p { margin-top: 0; }
 .native-proofreading summary span { margin-left: 7px; color: var(--muted); font-size: var(--font-caption); font-weight: var(--weight-medium); }
 .native-proofreading-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; padding: 14px 18px; border-top: 1px solid var(--line); }
 .native-proofreading-row p { margin: 0; color: var(--muted); font-size: var(--font-body); line-height: var(--line-height-body); white-space: pre-wrap; }
-.native-proofreading-row textarea { min-height: 68px; padding: 9px 10px; resize: vertical; border: 1px solid var(--line); border-radius: var(--radius-control); color: var(--ink); background: var(--surface-soft); font-size: var(--font-body); line-height: var(--line-height-body); }
+.native-proofreading-row textarea { min-height: 68px; padding: 9px 10px; resize: none; border: 1px solid var(--line); border-radius: var(--radius-control); color: var(--ink); background: var(--surface-soft); font-size: var(--font-body); line-height: var(--line-height-body); }
 .docx-page-stage { padding: 34px 24px 48px; overflow: auto; background: var(--canvas); }
 .docx-page { position: relative; width: min(794px, 100%); min-height: 980px; margin: 0 auto; padding: 78px 82px 92px; color: #20242d; background: #fff; box-shadow: 0 9px 28px rgba(28, 38, 61, .18); }
 .docx-page-label { position: absolute; top: 28px; right: 34px; padding: 4px 8px; border-radius: 999px; color: #7b8393; background: #f2f4f8; font-size: var(--font-caption); font-weight: var(--weight-bold); }
 .docx-paragraph { margin: 0 0 15px; }
 .docx-source { margin: 0 0 5px; font-family: Calibri, "PingFang SC", sans-serif; font-size: var(--font-subtitle); line-height: var(--line-height-body); white-space: pre-wrap; }
-.docx-translation { display: block; width: 100%; min-height: 28px; padding: 0; resize: vertical; border: 0; color: #20242d; background: transparent; font-family: Calibri, "PingFang SC", sans-serif; font-size: var(--font-subtitle); font-weight: var(--weight-medium); line-height: var(--line-height-body); outline: 0; }
+.docx-translation { display: block; width: 100%; min-height: 28px; padding: 0; resize: none; border: 0; color: #20242d; background: transparent; font-family: Calibri, "PingFang SC", sans-serif; font-size: var(--font-subtitle); font-weight: var(--weight-medium); line-height: var(--line-height-body); outline: 0; }
 .docx-translation:not(:disabled):focus { padding: 7px 9px; border-radius: 8px; background: #fff0f4; }
 .docx-translation::placeholder { color: #b0b6c2; font-size: var(--font-body); font-weight: var(--weight-medium); }
 .docx-role-title { margin-top: 10px; margin-bottom: 20px; }
@@ -223,7 +223,7 @@ h1, h2, p { margin-top: 0; }
 .subtitle-index { color: var(--muted); font-size: var(--font-caption); font-weight: var(--weight-bold); text-align: center; }
 .subtitle-document-reader time { display: inline-block; padding: 4px 6px; border-radius: 7px; color: #765080; background: rgba(155, 117, 171, .12); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--font-caption); white-space: nowrap; }
 .subtitle-source { margin: 0; color: var(--ink); font-size: var(--font-body); line-height: var(--line-height-body); white-space: pre-wrap; }
-.subtitle-translation { display: block; width: 100%; min-height: 58px; padding: 8px 9px; resize: vertical; border: 1px solid var(--line); border-radius: var(--radius-control); color: var(--ink); background: var(--surface-soft); font-size: var(--font-body); line-height: var(--line-height-body); }
+.subtitle-translation { display: block; width: 100%; min-height: 58px; padding: 8px 9px; resize: none; border: 1px solid var(--line); border-radius: var(--radius-control); color: var(--ink); background: var(--surface-soft); font-size: var(--font-body); line-height: var(--line-height-body); }
 .json-table-header, .json-table-row { display: grid; grid-template-columns: minmax(150px, .8fr) minmax(220px, 1fr) minmax(220px, 1fr); gap: 0; }
 .json-table-header { color: var(--muted); background: var(--surface-soft); font-size: var(--font-caption); font-weight: var(--weight-bold); }
 .json-table-header span { padding: 13px 15px; }
@@ -232,14 +232,14 @@ h1, h2, p { margin-top: 0; }
 .json-table-row > *:first-child { border-left: 0; }
 .json-table-row code { color: var(--success); background: transparent; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--font-small); line-height: var(--line-height-body); overflow-wrap: anywhere; }
 .json-source { color: var(--ink); font-size: var(--font-body); line-height: var(--line-height-body); white-space: pre-wrap; overflow-wrap: anywhere; }
-.json-translation { min-height: 64px; resize: vertical; color: var(--ink); background: var(--surface-soft); font-size: var(--font-body); line-height: var(--line-height-body); }
+.json-translation { min-height: 64px; resize: none; color: var(--ink); background: var(--surface-soft); font-size: var(--font-body); line-height: var(--line-height-body); }
 .document-reader { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-overlay); background: var(--surface); box-shadow: var(--el-box-shadow-light); }
 .reader-block { padding: 22px 34px 23px; border-top: 1px solid var(--line); }
 .reader-block:first-child { border-top: 0; }
 .reader-context { display: inline-flex; margin-bottom: 9px; padding: 4px 8px; border-radius: 999px; color: var(--brand-strong); background: var(--brand-soft); font-size: var(--font-caption); font-weight: var(--weight-bold); }
 .reader-source { color: var(--ink); font-size: var(--font-reading); font-weight: var(--weight-medium); line-height: 1.75; white-space: pre-wrap; overflow-wrap: anywhere; }
 .reader-source.reader-heading { margin-top: 3px; font-size: var(--font-title); font-weight: var(--weight-bold); letter-spacing: -.03em; line-height: var(--line-height-tight); }
-.reader-translation { display: block; width: 100%; min-height: 34px; margin-top: 7px; padding: 0; resize: vertical; border: 0; color: var(--ink); background: transparent; font-size: var(--font-reading); font-weight: var(--weight-semibold); line-height: 1.75; outline: none; white-space: pre-wrap; overflow-wrap: anywhere; }
+.reader-translation { display: block; width: 100%; min-height: 34px; margin-top: 7px; padding: 0; resize: none; border: 0; color: var(--ink); background: transparent; font-size: var(--font-reading); font-weight: var(--weight-semibold); line-height: 1.75; outline: none; white-space: pre-wrap; overflow-wrap: anywhere; }
 .reader-translation:not(:disabled):focus { padding: 7px 10px; border-radius: 9px; background: var(--brand-soft); }
 .reader-translation::placeholder { color: var(--el-text-color-placeholder); font-size: var(--font-body); font-weight: var(--weight-medium); }
 .reader-translated .reader-source { display: none; }

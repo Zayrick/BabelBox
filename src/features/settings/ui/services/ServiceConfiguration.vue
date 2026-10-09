@@ -237,7 +237,7 @@
           <span class="popup-text popup-vertical-left">system</span>
         </el-col>
         <el-col :span="16" class="settings-control-field">
-          <el-input v-model="systemRole" type="textarea" maxlength="8192" placeholder="system message" />
+          <el-input v-model="systemRole" type="textarea" :autosize="{ minRows: 3 }" maxlength="8192" placeholder="system message" />
         </el-col>
       </el-row>
 
@@ -246,7 +246,7 @@
           <SettingsHelpLabel content="{{to}} 为目标语言，{{origin}} 为原文" :show-after="300">user</SettingsHelpLabel>
         </el-col>
         <el-col :span="16" class="settings-control-field">
-          <el-input v-model="userRole" type="textarea" maxlength="8192" placeholder="user message template" />
+          <el-input v-model="userRole" type="textarea" :autosize="{ minRows: 3 }" maxlength="8192" placeholder="user message template" />
         </el-col>
       </el-row>
     </template>

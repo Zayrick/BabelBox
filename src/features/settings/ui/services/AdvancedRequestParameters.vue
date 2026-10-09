@@ -6,7 +6,7 @@
       <el-input
         :model-value="modelValue"
         type="textarea"
-        :rows="3"
+        :autosize="{ minRows: 3 }"
         :class="{ 'input-error': invalid }"
         placeholder='JSON 对象，如 {"temperature":0}'
         @update:model-value="emit('update:modelValue', $event)"

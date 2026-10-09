@@ -203,7 +203,7 @@ button:focus-visible, a:focus-visible, input[type="checkbox"]:focus-visible {
 }
 .settings-app .el-select__wrapper,
 .settings-app .el-input__wrapper { padding: 0 12px; }
-.settings-app .el-textarea__inner { padding: 10px 12px; font-family: var(--font-mono); font-size: var(--font-small); line-height: var(--line-height-body); }
+.settings-app .el-textarea__inner { padding: 10px 12px; resize: none; font-family: var(--font-mono); font-size: var(--font-small); line-height: var(--line-height-body); }
 .settings-app .el-select__wrapper:hover,
 .settings-app .el-input__wrapper:hover,
 .settings-app .el-textarea__inner:hover { background: color-mix(in srgb, var(--line) 55%, var(--surface-soft)); box-shadow: none; }
