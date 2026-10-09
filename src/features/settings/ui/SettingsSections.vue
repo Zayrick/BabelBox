@@ -312,7 +312,7 @@
         <p v-else class="settings-empty">暂无备份</p>
       </SettingsGroup>
 
-      <SettingsGroup title="导入与导出" description="导出时会去掉 API Key、Secret 等凭据，但自定义请求体、代理和接口地址里的凭据无法识别，分享前请自行检查。">
+      <SettingsGroup title="导入与导出" description="导出的配置包含 API Key 等凭据，分享前请先删除；导入会整体替换当前配置。">
         <template #actions>
           <el-button @click="handleExport"><Download class="button-icon" aria-hidden="true" />导出配置</el-button>
           <el-button @click="handleImport"><Upload class="button-icon" aria-hidden="true" />导入配置</el-button>
@@ -326,6 +326,12 @@
             <el-button type="primary" @click="saveImport"><Save class="button-icon" aria-hidden="true" />保存</el-button>
           </div>
         </div>
+      </SettingsGroup>
+
+      <SettingsGroup title="重置配置" description="删除所有设置、翻译服务和 API Key，恢复为新安装时的默认配置。">
+        <template #actions>
+          <el-button type="danger" plain :disabled="resetBusy" @click="resetAllConfig"><RotateCcw class="button-icon" aria-hidden="true" />重置所有配置</el-button>
+        </template>
       </SettingsGroup>
     </section>
   </div>
@@ -377,6 +383,7 @@ import {
   Download,
   Pencil as Edit,
   Redo2,
+  RotateCcw,
   Save,
   Undo2,
   Upload,
@@ -977,6 +984,34 @@ const handleExport = async () => {
 const handleImport = () => {
   showImportBox.value = !showImportBox.value;
   showExportBox.value = false;
+};
+
+const resetBusy = ref(false);
+
+const resetAllConfig = async () => {
+  try {
+    await ElMessageBox.confirm(
+      '所有设置、翻译服务和 API Key 都会被删除并恢复为默认配置。设置项可在配置历史中恢复，API Key 无法恢复。',
+      '重置所有配置',
+      {
+        confirmButtonText: '重置',
+        confirmButtonType: 'danger',
+        cancelButtonText: '取消',
+        type: 'warning',
+      },
+    );
+  } catch {
+    return;
+  }
+  resetBusy.value = true;
+  try {
+    await persistConfig(new Config());
+    configurationService.value = null;
+  } catch (error) {
+    notifyConfigSaveFailed(error);
+  } finally {
+    resetBusy.value = false;
+  }
 };
 
 const saveImport = async () => {

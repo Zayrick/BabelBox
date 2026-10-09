@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { reactive } from 'vue';
 import {services} from '@/src/core/config/catalog';
-import {normalizeConfig, type TranslationServiceCredential} from '@/src/core/config/model';
+import {Config, normalizeConfig, type TranslationServiceCredential} from '@/src/core/config/model';
 import {
     createDefaultTranslationServices,
     createExternalTranslationService,
@@ -90,6 +90,20 @@ describe('统一配置存储', () => {
         await reloaded.configReady;
         expect(aiService(reloaded.config)?.name).toBe('My OpenAI');
         expect(reloaded.config.serviceCredentials[AI_ID].apiKey).toBe('sk-synthetic');
+    });
+
+    it('重置为默认配置时删除自定义服务和 API Key，后台保留翻译计数', async () => {
+        const store = await loadConfigModule({...configWithAiService('Service', 'sk-reset'), theme: 'dark', count: 7});
+        await store.configReady;
+        const sendMessage = vi.fn().mockResolvedValue({success: true});
+
+        await store.requestConfigSave(new Config(), sendMessage);
+
+        const patch = sendMessage.mock.calls[0][0].patch;
+        expect(patch.serviceCredentials).toEqual({});
+        expect(aiService(patch)).toBeUndefined();
+        expect(patch.theme).not.toBe('dark');
+        expect(store.config.serviceCredentials).toEqual({});
     });
 
     it('打开页面只读取配置，不回写存储', async () => {
