@@ -69,6 +69,4 @@ BabelBox 使用 GPL-3.0 许可证发布。欢迎通过 GitHub 提交问题、改
 
 BabelBox 基于上游 [FluentRead](https://github.com/FluentRead/FluentRead) 继续开发，感谢原项目及所有贡献者。
 
-如希望支持公益，可前往 [UNICEF](https://www.unicef.org/) 为联合国儿童基金会作贡献。
-
 </div>

@@ -45,7 +45,6 @@ An experimental userscript target for Via, Tampermonkey, and Violentmonkey can b
 
 - [Documentation](./docs/index.md) — features, setup, services, shortcuts, and FAQ.
 - [GitHub Issues](https://github.com/Zayrick/BabelBox/issues) — report a problem or suggest an improvement.
-- [UNICEF](https://www.unicef.org/) — support the United Nations Children's Fund.
 
 ## Development
 

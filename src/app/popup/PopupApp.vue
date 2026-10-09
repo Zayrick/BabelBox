@@ -18,47 +18,41 @@
         </div>
       </div>
       <div class="header-actions">
-        <button class="donation-button" type="button" title="支持联合国儿童基金会" aria-label="打开 UNICEF 公益支持页" @click="openDonation()">
-          <Coffee aria-hidden="true" />
-          <span>公益</span>
-        </button>
-        <button class="settings-button" type="button" title="完整设置" aria-label="打开完整设置" @click="openOptions()">
-          <Settings aria-hidden="true" />
-          <span>设置</span>
-        </button>
+        <el-tooltip :content="cacheActionLabel" placement="bottom">
+          <button
+            class="header-icon-button cache-clear-button"
+            :class="actionFeedbacks.cache?.tone"
+            type="button"
+            :disabled="clearingCache"
+            :aria-busy="clearingCache"
+            :aria-label="cacheActionLabel"
+            @click="clearCache"
+          >
+            <BrushCleaning aria-hidden="true" />
+          </button>
+        </el-tooltip>
+        <el-tooltip content="GitHub 开源项目" placement="bottom">
+          <a
+            class="header-icon-button"
+            href="https://github.com/Zayrick/BabelBox"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="在 GitHub 查看翻译机开源项目"
+          >
+            <svg class="github-mark" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 .3a12 12 0 0 0-3.79 23.39c.6.11.82-.26.82-.58v-2.26c-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.75.08-.74.08-.74 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.5.99.11-.77.42-1.3.76-1.6-2.67-.3-5.47-1.34-5.47-5.95 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.17 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.29-1.55 3.3-1.23 3.3-1.23.66 1.65.24 2.87.12 3.17.77.84 1.24 1.91 1.24 3.22 0 4.62-2.81 5.65-5.49 5.95.43.37.81 1.1.81 2.22v3.29c0 .32.22.69.83.57A12 12 0 0 0 12 .3" />
+            </svg>
+          </a>
+        </el-tooltip>
+        <el-tooltip content="完整设置" placement="bottom">
+          <button class="header-icon-button" type="button" aria-label="打开完整设置" @click="openOptions()">
+            <Settings aria-hidden="true" />
+          </button>
+        </el-tooltip>
       </div>
     </header>
 
-    <Transition name="donation-fade">
-      <div
-        v-if="donationVisible"
-        class="donation-overlay"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="donation-title"
-        @click.self="closeDonation"
-      >
-        <section class="donation-card">
-          <button class="donation-close" type="button" aria-label="关闭公益支持页" @click="closeDonation">
-            <X aria-hidden="true" />
-          </button>
-          <h2 id="donation-title">支持联合国儿童基金会</h2>
-          <p class="donation-description">前往 UNICEF，为每一位儿童作贡献。</p>
-          <a class="donation-link" href="https://www.unicef.org/" target="_blank" rel="noreferrer">
-            <span class="donation-image-frame">
-              <img src="/misc/unicef-support.svg" alt="访问 UNICEF 官网并支持联合国儿童基金会" />
-            </span>
-            <span class="donation-visit">前往 UNICEF 官网 <ExternalLink aria-hidden="true" /></span>
-          </a>
-        </section>
-      </div>
-    </Transition>
-
     <section class="hero-card">
-      <div class="hero-heading">
-        <h1>网页翻译</h1>
-      </div>
-
       <div class="language-pair">
         <label>
           <span>源语言</span>
@@ -160,22 +154,13 @@
         </button>
       </div>
 
-      <div class="site-rule-row">
+      <div v-if="currentSiteSupported" class="site-rule-row">
         <div class="site-rule-copy">
           <span>当前网站</span>
           <strong :title="currentSiteLabel">{{ currentSiteLabel }}</strong>
         </div>
         <div class="site-rule-actions">
-          <div
-            v-if="!currentSiteSupported"
-            class="site-rule-unavailable"
-            role="status"
-            aria-disabled="true"
-          >
-            当前页面不支持网页翻译与网站规则
-          </div>
           <button
-            v-else
             class="site-rule-button"
             :class="{
               enabled: currentSiteAlwaysTranslated,
@@ -199,7 +184,6 @@
             <i aria-hidden="true" />
           </button>
           <button
-            v-if="currentSiteSupported"
             class="site-rule-button site-disable-rule-button"
             :class="{
               enabled: currentSiteExtensionDisabled,
@@ -222,7 +206,6 @@
             <i aria-hidden="true" />
           </button>
           <button
-            v-if="currentSiteSupported"
             class="site-filter-rule-button"
             type="button"
             :aria-label="`配置 ${currentSiteDomain} 的内容过滤规则`"
@@ -307,34 +290,6 @@
         </button>
       </div>
     </section>
-
-    <footer>
-      <a
-        class="opensource-link"
-        href="https://github.com/Zayrick/BabelBox"
-        target="_blank"
-        rel="noreferrer"
-        aria-label="在 GitHub 查看翻译机开源项目"
-      >
-        <svg class="github-mark" viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M12 .3a12 12 0 0 0-3.79 23.39c.6.11.82-.26.82-.58v-2.26c-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.75.08-.74.08-.74 1.2.08 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.5.99.11-.77.42-1.3.76-1.6-2.67-.3-5.47-1.34-5.47-5.95 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.17 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.29-1.55 3.3-1.23 3.3-1.23.66 1.65.24 2.87.12 3.17.77.84 1.24 1.91 1.24 3.22 0 4.62-2.81 5.65-5.49 5.95.43.37.81 1.1.81 2.22v3.29c0 .32.22.69.83.57A12 12 0 0 0 12 .3" />
-        </svg>
-        <span>开源项目</span>
-        <ExternalLink class="external-mark" aria-hidden="true" />
-      </a>
-      <button
-        class="cache-clear-button"
-        :class="actionFeedbacks.cache?.tone"
-        type="button"
-        :disabled="clearingCache"
-        :aria-busy="clearingCache"
-        @click="clearCache"
-      >
-        <Transition name="action-copy" mode="out-in">
-          <span :key="cacheActionLabel" aria-live="polite">{{ cacheActionLabel }}</span>
-        </Transition>
-      </button>
-    </footer>
 
     <el-drawer
       v-model="drawerVisible"
@@ -560,11 +515,11 @@ import {
 } from '@/src/services/config/store';
 import {
   ArrowRight,
+  BrushCleaning,
   Captions,
   Check,
   ChevronDown,
   ChevronRight,
-  Coffee,
   ExternalLink,
   FileText,
   Image as ImageIcon,
@@ -626,7 +581,6 @@ const currentTabId = ref<number | null>(null);
 const currentSiteDomain = ref('');
 const currentSiteLabel = ref('无法读取当前页面');
 const clearingCache = ref(false);
-const donationVisible = ref(false);
 const notice = ref('');
 const noticeType = ref<'success' | 'error'>('success');
 const showCustomMouseHotkeyDialog = ref(false);
@@ -810,11 +764,6 @@ function closeServicePicker(event?: Event) {
   if (event && servicePicker.value?.contains(event.target as Node)) return;
   servicePickerOpen.value = false;
 }
-function openDonation() { donationVisible.value = true; }
-function closeDonation() { donationVisible.value = false; }
-function handleDonationKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape' && donationVisible.value) closeDonation();
-}
 function handleServicePickerKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') closeServicePicker();
 }
@@ -832,7 +781,6 @@ function toggleAIContext() {
 onMounted(() => {
   document.addEventListener('pointerdown', closeServicePicker);
   document.addEventListener('keydown', handleServicePickerKeydown);
-  document.addEventListener('keydown', handleDonationKeydown);
 });
 onUnmounted(() => {
   persistOnPageExit();
@@ -840,7 +788,6 @@ onUnmounted(() => {
   unsubscribeConfig();
   document.removeEventListener('pointerdown', closeServicePicker);
   document.removeEventListener('keydown', handleServicePickerKeydown);
-  document.removeEventListener('keydown', handleDonationKeydown);
   if (noticeTimer) clearTimeout(noticeTimer);
   if (pagePendingTimer) clearTimeout(pagePendingTimer);
   disposeActionFeedback();
