@@ -96,14 +96,7 @@
       </div>
 
       <div class="translation-center-layout">
-      <section class="translation-input-panel" aria-labelledby="translation-input-title">
-        <div class="translation-panel-heading">
-          <div>
-            <h3 id="translation-input-title">待翻译文本</h3>
-          </div>
-          <span class="language-pair-label">{{ languageLabel(sourceLanguage) }} → {{ languageLabel(targetLanguage) }}</span>
-        </div>
-
+      <section class="translation-input-panel" aria-label="待翻译文本">
         <textarea
           v-autosize
           v-model="sourceText"
@@ -131,10 +124,9 @@
       <section class="translation-results-panel" aria-labelledby="translation-results-title">
         <div class="translation-panel-heading results-heading">
           <div>
-            <h3 id="translation-results-title">{{ cards.length }} 个翻译服务</h3>
+            <span id="translation-results-title" class="results-order-hint"><GripVertical aria-hidden="true" />拖动卡片可排序</span>
           </div>
           <div class="results-heading-actions">
-            <span class="results-order-hint"><GripVertical aria-hidden="true" />拖动卡片可排序</span>
             <button
               class="copy-all-button"
               type="button"
@@ -351,11 +343,6 @@ function serviceDescription(service: string): string {
   const option = enabledServiceOptionById.value.get(service)
   if (option?.description) return option.description.split('；')[0]
   return ''
-}
-
-function languageLabel(value: string): string {
-  if (value === 'auto') return '自动检测'
-  return targetLanguageOptions.value.find(item => item.value === value)?.label || value
 }
 
 function getValidServiceOrder(value: unknown): string[] {
@@ -805,7 +792,6 @@ onUnmounted(() => {
 .translation-results-panel { display: flex; min-height: 360px; flex-direction: column; padding: 20px 0 0 32px; }
 .translation-panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
 .translation-panel-heading h3 { margin: 0; color: var(--muted); font-size: var(--font-caption); font-weight: var(--weight-medium); letter-spacing: .02em; }
-.language-pair-label { padding: 0; color: var(--muted); background: transparent; font-family: var(--font-mono); font-size: 11px; white-space: nowrap; }
 
 .translation-input-panel textarea {
   display: block;
@@ -905,6 +891,5 @@ onUnmounted(() => {
 @media (max-width: 480px) {
   .translation-input-panel textarea { min-height: 220px; font-size: var(--font-subtitle); }
   .translation-result-card-actions .result-state { display: none; }
-  .results-order-hint { display: none; }
 }
 </style>
