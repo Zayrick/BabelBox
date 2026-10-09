@@ -263,7 +263,7 @@ type TranslationCard = {
   run: number
 }
 
-const DEFAULT_MACHINE_COMPARISON_SERVICES = ['freeTranslation', 'google', 'deeplx']
+const DEFAULT_MACHINE_COMPARISON_SERVICES = ['microsoft', 'google', 'deeplx']
 const MAX_TEXT_LENGTH = 5000
 
 const sourceText = ref('')

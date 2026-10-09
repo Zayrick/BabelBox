@@ -47,7 +47,6 @@ describe('translation service brand icons', () => {
 
   it('shares the DeepL brand icon with DeepLX and uses semantic fallbacks for unbranded services', () => {
     expect(resolveServiceBrandIcon(services.deeplx)).toBe(resolveServiceBrandIcon(services.deepL))
-    expect(resolveServiceFallbackIconKey(services.freeTranslation)).toBe('languages')
     expect(resolveServiceFallbackIconKey(services.xiaoniu)).toBe('languages')
     expect(resolveServiceFallbackIconKey(services.youdao)).toBe('languages')
     expect(resolveServiceFallbackIconKey(services.custom)).toBe('custom')

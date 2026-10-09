@@ -12,7 +12,7 @@ import {
 } from '@/src/app/background/configAutoBackupRuntime';
 
 const baseConfig = {
-    service: 'freeTranslation',
+    service: 'microsoft',
     display: 1,
     from: 'auto',
     to: 'zh-Hans',
@@ -23,7 +23,7 @@ describe('配置定时备份', () => {
         let state = createBaselineConfigAutoBackups({
             ...baseConfig,
             count: 9,
-            token: {freeTranslation: 'secret'},
+            token: {microsoft: 'secret'},
         }, 'baseline');
         const baseline = state.entries[0].config as Record<string, unknown>;
         expect(['count', 'token'].some((field) => field in baseline)).toBe(false);

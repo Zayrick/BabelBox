@@ -14,7 +14,7 @@
     "tier": "required",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "github-babelbox-repository": {
     "url": "https://github.com/Zayrick/BabelBox",
@@ -29,7 +29,7 @@
     "tier": "required",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "github-microsoft-repositories": {
     "url": "https://github.com/orgs/microsoft/repositories?q=TypeScript&type=all&language=&sort=",
@@ -44,7 +44,7 @@
     "tier": "required",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "github-immersive-pulls": {
     "url": "https://github.com/immersive-translate/immersive-translate/pulls",
@@ -59,7 +59,7 @@
     "tier": "required",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "github-immersive-pr-4038": {
     "url": "https://github.com/immersive-translate/immersive-translate/pull/4038",
@@ -125,7 +125,7 @@
     "tier": "required",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "hacker-news-8863": {
     "url": "https://news.ycombinator.com/item?id=8863",
@@ -142,7 +142,7 @@
     "quarantineReason": "Hacker News 在当前隔离自动化网络中稳定只返回 Sorry.，无法取得评论正文。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "darklyrics-gris": {
     "url": "https://www.darklyrics.com/lyrics/gris/iltaitunefort.html#2",
@@ -158,7 +158,7 @@
     "quarantineReason": "该站点在当前验证网络中持续 ERR_CONNECTION_CLOSED；保留为联网环境观察样本。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "learnopengl-coordinate-systems": {
     "url": "https://learnopengl.com/Getting-started/Coordinate-Systems",
@@ -178,7 +178,7 @@
     "tier": "required",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "qt-qobject-threads": {
     "url": "https://doc.qt.io/qt-5/threads-qobject.html",
@@ -194,7 +194,7 @@
     "tier": "required",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "wikipedia-united-states": {
     "url": "https://en.wikipedia.org/wiki/United_States",
@@ -210,7 +210,7 @@
     "tier": "required",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "mkdocs-material-home": {
     "url": "https://squidfunk.github.io/mkdocs-material/",
@@ -228,7 +228,7 @@
     "tier": "required",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "brown-pl-introduction": {
     "url": "https://cs.brown.edu/courses/cs173/2012/book/Introduction.html",
@@ -245,7 +245,7 @@
     "tier": "required",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "roadmap-frontend": {
     "url": "https://roadmap.sh/frontend",
@@ -262,7 +262,7 @@
     "tier": "required",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "steam-changelog": {
     "url": "https://steamcommunity.com/sharedfiles/filedetails/changelog/3241130652",
@@ -277,7 +277,7 @@
     "tier": "required",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "reddit-chatgpt-thread": {
     "url": "https://www.reddit.com/r/ChatGPT/comments/1m0fr3u",
@@ -298,7 +298,7 @@
     "quarantineReason": "Reddit 在当前隔离自动化环境中返回 blocked by network security，保留为动态 Web Component 联网观察样本。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "cachyos-features": {
     "url": "https://cachyos.org/",
@@ -315,7 +315,7 @@
     "tier": "required",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "rfc-4251": {
     "url": "https://www.rfc-editor.org/rfc/rfc4251.html",
@@ -331,7 +331,7 @@
     "quarantineReason": "格式化 PRE 需要按双换行做专用语义分段；通用核心安全策略仍默认保护 PRE。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "ubuntu-apt-manpage": {
     "url": "https://manpages.ubuntu.com/manpages/noble/en/man8/apt.8.html",
@@ -347,7 +347,7 @@
     "quarantineReason": "manpage 的 PRE 同时混合自然语言、命令与列布局，需要专用分段能力。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "ar5iv-2106-03753": {
     "url": "https://ar5iv.labs.arxiv.org/html/2106.03753",
@@ -364,7 +364,7 @@
     "tier": "required",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "dart-language": {
     "url": "https://dart.dev/language",
@@ -380,7 +380,7 @@
     "tier": "required",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "pubdev-provider": {
     "url": "https://pub.dev/packages/provider",
@@ -396,7 +396,7 @@
     "quarantineReason": "当前隔离 Edge 在 pub.dev 客户端渲染阶段发生进程级无输出退出；保留为浏览器稳定性观察样本。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "mdn-javascript-guide": {
     "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Grammar_and_types",
@@ -413,7 +413,7 @@
     "tier": "required",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "example-com": {
     "url": "https://example.com",
@@ -429,7 +429,7 @@
     "tier": "required",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "talkclassical-shostakovich": {
     "url": "https://www.talkclassical.com/threads/shostakovich-string-quartets.60000/",
@@ -445,7 +445,7 @@
     "quarantineReason": "超长论坛线程在当前隔离 Edge 环境中发生进程级无输出退出；保留为大页面压力观察样本。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "gnu-bash-manual": {
     "url": "https://www.gnu.org/software/bash/manual/html_node/What-is-Bash_003f.html",
@@ -460,7 +460,7 @@
     "tier": "required",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "python-tutorial-introduction": {
     "url": "https://docs.python.org/3/tutorial/introduction.html",
@@ -478,7 +478,7 @@
     "tier": "required",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "go-tutorial-getting-started": {
     "url": "https://go.dev/doc/tutorial/getting-started",
@@ -495,7 +495,7 @@
     "tier": "required",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "rust-book-getting-started": {
     "url": "https://doc.rust-lang.org/book/ch01-00-getting-started.html",
@@ -512,7 +512,7 @@
     "tier": "required",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "steam-workshop-discussion-3246316298": {
     "url": "https://steamcommunity.com/workshop/filedetails/discussion/3246316298/4334231305373971730/",
@@ -529,7 +529,7 @@
     "quarantineReason": "该 Steam 讨论页已删除，站点只返回 item does not exist。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "swift-basic-operators": {
     "url": "https://docs.swift.org/swift-book/documentation/the-swift-programming-language/basicoperators/",
@@ -547,7 +547,7 @@
     "tier": "required",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "w3c-accessibility-introduction": {
     "url": "https://www.w3.org/WAI/fundamentals/accessibility-intro/",
@@ -565,7 +565,7 @@
     "quarantineReason": "W3C 当前对隔离自动化浏览器返回 Cloudflare security interstitial，无法稳定取得正文。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "postgresql-tutorial": {
     "url": "https://www.postgresql.org/docs/current/tutorial-sql-intro.html",
@@ -581,7 +581,7 @@
     "tier": "required",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "nginx-beginners-guide": {
     "url": "https://nginx.org/en/docs/beginners_guide.html",
@@ -598,7 +598,7 @@
     "tier": "required",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "curl-http-scripting": {
     "url": "https://curl.se/docs/httpscripting.html",
@@ -615,7 +615,7 @@
     "tier": "required",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "sqlite-select-language": {
     "url": "https://www.sqlite.org/lang_select.html",
@@ -632,7 +632,7 @@
     "tier": "required",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "git-book-version-control": {
     "url": "https://git-scm.com/book/en/v2/Getting-Started-About-Version-Control",
@@ -650,7 +650,7 @@
     "tier": "required",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "appinn-home-layout": {
     "url": "https://www.appinn.com/",
@@ -666,7 +666,7 @@
     "quarantineReason": "该页是中文目标语言下的布局不变性场景，当前 runner 只验证会生成译文的页面。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "science-direct-article": {
     "url": "https://www.sciencedirect.com/science/article/pii/S1569843225001013",
@@ -682,7 +682,7 @@
     "quarantineReason": "站点可能返回机构登录墙、人机验证或区域化内容。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   },
   "kaggle-booleans": {
     "url": "https://www.kaggle.com/code/colinmorris/booleans-and-conditionals",
@@ -698,6 +698,6 @@
     "quarantineReason": "Notebook 内容依赖客户端渲染，并可能要求登录或触发机器人验证。",
     "hoverHotkey": "Control",
     "fullPageHotkey": "Alt+T",
-    "service": "freeTranslation"
+    "service": "microsoft"
   }
 }

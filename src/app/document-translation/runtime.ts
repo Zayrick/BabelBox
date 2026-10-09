@@ -13,10 +13,7 @@ import type {
     ParsedDocument,
 } from '@/src/features/document-translation/core/document';
 
-const BATCH_DOCUMENT_SERVICES = new Set<string>([
-    services.microsoft,
-    services.freeTranslation,
-]);
+const BATCH_DOCUMENT_SERVICES = new Set<string>([services.microsoft]);
 
 /** WXT 组合根：把运行时配置和翻译 API 注入纯文档业务服务。 */
 export const translateDocumentSegments = createDocumentSegmentTranslator({

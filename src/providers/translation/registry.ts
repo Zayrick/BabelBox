@@ -1,7 +1,6 @@
 import {services} from "@/src/core/config/catalog";
 import {AI_SDK_SERVICE_IDS} from './ai-sdk/endpoints';
 import microsoft from "./microsoft";
-import freeTranslation from "./free-translation";
 import deepl from "./deepl";
 import deeplx from "./deeplx";
 import {translateWithOpenAICompatibleAiSdk} from './ai-sdk/openai-compatible';
@@ -25,7 +24,6 @@ export type TranslationProviderRegistry = Record<string, TranslationProvider>;
 const directProviders: TranslationProviderRegistry = {
     // 机器翻译
     [services.microsoft]: microsoft,
-    [services.freeTranslation]: freeTranslation,
     [services.deepL]: deepl,
     [services.deeplx]: deeplx,
     [services.google]: google,

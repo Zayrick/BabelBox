@@ -4,7 +4,6 @@ import {animationModeOptions} from './animation';
 export const services = {
     // 机器翻译
     microsoft: "microsoft",
-    freeTranslation: "freeTranslation",
     deepL: "deepL",
     deeplx: "deeplx",
     google: "google",
@@ -44,7 +43,7 @@ export const services = {
 
 export const servicesType = {
     // 阵营划分
-    machine: new Set([services.microsoft, services.freeTranslation, services.deepL, services.deeplx, services.google, services.xiaoniu, services.youdao, services.tencent, services.chromeTranslator,]),
+    machine: new Set([services.microsoft, services.deepL, services.deeplx, services.google, services.xiaoniu, services.youdao, services.tencent, services.chromeTranslator,]),
     AI: new Set([
         services.openai,
         services.azureOpenai,
@@ -417,11 +416,6 @@ export const options = {
     services: [
         // 机器翻译
         {value: "machine", label: "机器翻译", disabled: true},
-        {
-            value: services.freeTranslation,
-            label: "免费翻译服务",
-            description: "依次尝试微软翻译、DeepLX 和谷歌翻译；不保证稳定可用。",
-        },
         {value: services.microsoft, label: "微软翻译"},
         {value: services.google, label: "谷歌翻译"},
         {value: services.deepL, label: "DeepL"},
@@ -563,7 +557,7 @@ export const defaultOption = {
     style: 1,
     display: 0,
     hotkey: "Control",
-    service: services.freeTranslation,
+    service: services.microsoft,
     custom: "http://localhost:11434/v1/chat/completions",
     deeplx: DEFAULT_DEEPLX_ENDPOINT,
     system_role: "You are a professional machine translation engine. Translate only the requested source text into the target language, preserving its meaning, tone, and formatting. Return only the translation.",

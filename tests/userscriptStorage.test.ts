@@ -14,9 +14,9 @@ describe('userscript GM storage adapter', () => {
         globalThis.GM_setValue = (key, value) => { values.set(key, value); };
         globalThis.GM_deleteValue = (key) => { values.delete(key); };
 
-        await setStoredValue('local:config', {service: 'freeTranslation', to: 'en'});
-        expect(values.get('local:config')).toBe('{"service":"freeTranslation","to":"en"}');
-        await expect(getStoredValue('local:config')).resolves.toEqual({service: 'freeTranslation', to: 'en'});
+        await setStoredValue('local:config', {service: 'microsoft', to: 'en'});
+        expect(values.get('local:config')).toBe('{"service":"microsoft","to":"en"}');
+        await expect(getStoredValue('local:config')).resolves.toEqual({service: 'microsoft', to: 'en'});
 
         await removeStoredValue('local:config');
         await expect(getStoredValue('local:config')).resolves.toBeNull();

@@ -128,7 +128,7 @@ describe('translation service instances', () => {
     const enabled = normalized.filter((item) => item.enabled)
 
     expect(enabled.map((item) => item.id)).toEqual([defaultOption.service])
-    expect(normalized.find((item) => item.id === services.microsoft)?.enabled).toBe(false)
+    expect(normalized.find((item) => item.id === services.google)?.enabled).toBe(false)
     expect(normalized.find((item) => item.id === 'service:deepseek:disabled')?.enabled).toBe(false)
   })
 

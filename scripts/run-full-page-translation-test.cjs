@@ -16,9 +16,9 @@ function parseArgs(argv) {
     browserPath: '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
     background: true,
     timeout: 120000,
-    // 当前 main 的默认服务是“免费翻译服务”，内部按微软、DeepLX、谷歌顺序回退；
+    // 默认服务是微软翻译，本地 fixture 用确定性响应替代其请求；
     // --service 只用于断言已预置的隔离 profile 配置，不会偷偷修改服务选择。
-    service: 'freeTranslation',
+    service: 'microsoft',
     // 仅在本次临时 profile 中写入服务，便于把“回退服务慢”和“全文机制问题”分开。
     // 不传此参数时，脚本不会修改任何配置。
     configureService: null,
@@ -42,8 +42,8 @@ function parseArgs(argv) {
   if (!Number.isFinite(args.timeout) || args.timeout <= 0) throw new Error('--timeout 必须为正数');
   if (!args.extensionDir) throw new Error('必须传入 --extension-dir');
   if (!args.playwrightRoot) throw new Error('必须传入 --playwright-root');
-  if (args.service !== 'freeTranslation' || (args.configureService && args.configureService !== 'freeTranslation')) {
-    throw new Error('全文本地 fixture 只允许 freeTranslation；真实 provider 必须使用显式 network matrix');
+  if (args.service !== 'microsoft' || (args.configureService && args.configureService !== 'microsoft')) {
+    throw new Error('全文本地 fixture 只允许 microsoft；真实 provider 必须使用显式 network matrix');
   }
   if (args.url) {
     const url = new URL(args.url);

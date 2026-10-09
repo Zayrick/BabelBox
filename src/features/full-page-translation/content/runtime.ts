@@ -278,7 +278,7 @@ function isTranslationArtifact(node: Node): boolean {
 
 function isBatchFriendlyService(): boolean {
     const provider = getTranslationServiceProvider(config, config.service);
-    return provider === services.microsoft || provider === services.freeTranslation;
+    return provider === services.microsoft;
 }
 
 function createAbortError(): Error {
@@ -340,7 +340,7 @@ async function translateTextSlots(
 
 /**
  * 对机器翻译的 HTML 克隆逐个替换文本节点。标签、链接、图标和原文 DOM
- * 都不直接交给服务端，避免响应把网页结构打碎；微软/免费翻译的数组接口
+ * 都不直接交给服务端，避免响应把网页结构打碎；微软翻译的数组接口
  * 还可以把同一段中的多个文本节点合并成一次请求。
  */
 async function translateElementHTML(

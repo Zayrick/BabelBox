@@ -12,7 +12,7 @@ const mocks = {
 const translateDocumentSegments = createDocumentSegmentTranslator({
     waitUntilReady: mocks.waitUntilReady,
     getDefaultService: () => mocks.defaultService,
-    supportsBatch: (service) => service === 'microsoft' || service === 'freeTranslation',
+    supportsBatch: (service) => service === 'microsoft',
     translateText: mocks.translateText,
     translateTextBatch: mocks.translateTextBatch,
 });

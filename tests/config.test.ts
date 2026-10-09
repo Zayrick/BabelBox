@@ -179,12 +179,29 @@ describe('统一配置存储', () => {
         expect(configStore.config.model.openai).toBe('web-model');
     });
 
-    it('文档翻译遇到未知服务时回退到免费翻译服务', async () => {
+    it('文档翻译遇到未知服务时回退到微软翻译', async () => {
         const configStore = await loadConfigModule({...storedConfig, documentService: 'unknown-service'});
 
         await configStore.configReady;
 
-        expect(configStore.config.documentService).toBe('freeTranslation');
+        expect(configStore.config.documentService).toBe('microsoft');
+    });
+
+    it('已移除的免费翻译服务迁移到微软翻译', () => {
+        const config = normalizeConfig({
+            service: 'freeTranslation',
+            documentService: 'freeTranslation',
+            translationServices: [
+                {id: 'freeTranslation', provider: 'freeTranslation', kind: 'machine'},
+                ...createDefaultTranslationServices(),
+            ],
+            translationCenterServices: ['freeTranslation', 'google'],
+        });
+
+        expect(config.translationServices.some(item => item.id === 'freeTranslation')).toBe(false);
+        expect(config.service).toBe('microsoft');
+        expect(config.documentService).toBe('microsoft');
+        expect(config.translationCenterServices).toEqual(['google']);
     });
 
     it('保留用户选择的视频 AI 服务，并将未知服务回退到微软翻译', async () => {

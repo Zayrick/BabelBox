@@ -20,7 +20,7 @@ import {
 } from '@/src/services/config/schema';
 
 const baseConfig = {
-    service: 'freeTranslation',
+    service: 'microsoft',
     from: 'auto',
     to: 'zh-Hans',
 };

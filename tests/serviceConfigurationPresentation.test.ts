@@ -25,7 +25,6 @@ describe('service configuration presentation', () => {
       .map((service) => service.value)
 
     expect(readyServices).toEqual([
-      services.freeTranslation,
       services.microsoft,
       services.google,
       services.chromeTranslator,

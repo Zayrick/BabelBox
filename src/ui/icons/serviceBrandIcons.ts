@@ -98,7 +98,6 @@ export type ServiceFallbackIconKey = 'languages' | 'server' | 'custom' | 'unknow
 
 /** TheSVG 3.3.1 中没有准确品牌资源的服务使用语义图标。 */
 export const serviceFallbackIconKeys: Readonly<Record<string, ServiceFallbackIconKey>> = Object.freeze({
-  freeTranslation: 'languages',
   xiaoniu: 'languages',
   youdao: 'languages',
   custom: 'custom',
