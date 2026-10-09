@@ -1,22 +1,14 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 
-const {mockConfig} = vi.hoisted(() => ({
-    mockConfig: {
-        from: "auto",
-        to: "zh-Hans",
-        service: "deeplx",
-        deeplx: "",
-        proxy: {} as Record<string, string>,
-        token: {} as Record<string, string>,
-    },
-}));
-
-vi.mock("@/src/services/config/store", () => ({config: mockConfig}));
-
 import deeplx, {
     getDeepLXRequestLanguages,
 } from "@/src/providers/translation/deeplx";
 import {DEFAULT_DEEPLX_ENDPOINT, getDeepLXEndpoints} from '@/src/core/config/deeplx';
+import {providerRequest, resolvedService} from './fixtures/translationService';
+
+function translate(endpoint = "", apiKey = "") {
+    return deeplx(providerRequest(resolvedService("deeplx", {endpoint}, {apiKey}), {origin: "Hello"}));
+}
 
 const TOKEN_ENDPOINT = 'https://freeapi.fanyimao.cn/translate?token={{apiKey}}';
 
@@ -34,11 +26,6 @@ function mockResponse(body: unknown, overrides: Partial<Response> = {}): Respons
 
 beforeEach(() => {
     fetchMock.mockReset();
-    mockConfig.from = "auto";
-    mockConfig.to = "zh-Hans";
-    mockConfig.deeplx = "";
-    mockConfig.proxy = {};
-    mockConfig.token = {};
     vi.stubGlobal("fetch", fetchMock);
 });
 
@@ -49,20 +36,18 @@ afterEach(() => {
 
 describe("DeepLX endpoint configuration", () => {
     it("uses the verified public endpoint when no URL is configured", () => {
-        expect(getDeepLXEndpoints("", "")).toEqual([DEFAULT_DEEPLX_ENDPOINT]);
+        expect(getDeepLXEndpoints("")).toEqual([DEFAULT_DEEPLX_ENDPOINT]);
     });
 
-    it("parses comma- and newline-separated URLs and gives proxy URLs priority", () => {
-        expect(getDeepLXEndpoints("https://one.example/translate,\nhttps://two.example/translate", ""))
+    it("parses comma- and newline-separated URLs", () => {
+        expect(getDeepLXEndpoints("https://one.example/translate,\nhttps://two.example/translate"))
             .toEqual(["https://one.example/translate", "https://two.example/translate"]);
-        expect(getDeepLXEndpoints("https://configured.example/translate", "https://proxy.example/translate"))
-            .toEqual(["https://proxy.example/translate"]);
     });
 
     it("resolves token placeholders without returning a secret in the configured URL", () => {
-        expect(getDeepLXEndpoints(TOKEN_ENDPOINT, "", "site-token"))
+        expect(getDeepLXEndpoints(TOKEN_ENDPOINT, "site-token"))
             .toEqual(["https://freeapi.fanyimao.cn/translate?token=site-token"]);
-        expect(getDeepLXEndpoints('https://api.deeplx.org/{{apiKey}}/translate', "", ""))
+        expect(getDeepLXEndpoints('https://api.deeplx.org/{{apiKey}}/translate', ""))
             .toEqual([DEFAULT_DEEPLX_ENDPOINT]);
     });
 });
@@ -71,7 +56,7 @@ describe("DeepLX adapter", () => {
     it("sends the expected request and parses a successful response", async () => {
         fetchMock.mockResolvedValue(mockResponse({code: 200, data: "你好"}));
 
-        await expect(deeplx({origin: "Hello"})).resolves.toBe("你好");
+        await expect(translate()).resolves.toBe("你好");
 
         expect(fetchMock).toHaveBeenCalledOnce();
         const [url, init] = fetchMock.mock.calls[0]!;
@@ -86,7 +71,6 @@ describe("DeepLX adapter", () => {
     });
 
     it("falls back to the next configured URL after an HTTP failure", async () => {
-        mockConfig.deeplx = "https://primary.example/translate,\nhttps://backup.example/translate";
         fetchMock
             .mockResolvedValueOnce(mockResponse({message: "busy"}, {
                 ok: false,
@@ -96,26 +80,24 @@ describe("DeepLX adapter", () => {
             }))
             .mockResolvedValueOnce(mockResponse({code: 200, data: "备用译文"}));
 
-        await expect(deeplx({origin: "Hello"})).resolves.toBe("备用译文");
+        await expect(translate("https://primary.example/translate,\nhttps://backup.example/translate")).resolves.toBe("备用译文");
         expect(fetchMock).toHaveBeenCalledTimes(2);
         expect(fetchMock.mock.calls[1]?.[0]).toBe("https://backup.example/translate");
     });
 
     it("falls back after an invalid DeepLX response", async () => {
-        mockConfig.deeplx = "https://invalid.example/translate,https://valid.example/translate";
         fetchMock
             .mockResolvedValueOnce(mockResponse({code: 200, data: ""}))
             .mockResolvedValueOnce(mockResponse({code: 200, data: "有效译文"}));
 
-        await expect(deeplx({origin: "Hello"})).resolves.toBe("有效译文");
+        await expect(translate("https://invalid.example/translate,https://valid.example/translate")).resolves.toBe("有效译文");
         expect(fetchMock).toHaveBeenCalledTimes(2);
     });
 
     it("adds an optional bearer token without exposing it in the URL", async () => {
-        mockConfig.token = {deeplx: "test-token"};
         fetchMock.mockResolvedValue(mockResponse({code: 200, data: "你好"}));
 
-        await deeplx({origin: "Hello"});
+        await translate("", "test-token");
 
         expect(fetchMock.mock.calls[0]?.[1]?.headers).toEqual({
             "Content-Type": "application/json",
@@ -124,11 +106,9 @@ describe("DeepLX adapter", () => {
     });
 
     it("supports a token placeholder in a preset endpoint", async () => {
-        mockConfig.deeplx = TOKEN_ENDPOINT;
-        mockConfig.token = {deeplx: "site-token"};
         fetchMock.mockResolvedValue(mockResponse({code: 200, data: "你好"}));
 
-        await expect(deeplx({origin: "Hello"})).resolves.toBe("你好");
+        await expect(translate(TOKEN_ENDPOINT, "site-token")).resolves.toBe("你好");
 
         expect(fetchMock.mock.calls[0]?.[0]).toBe("https://freeapi.fanyimao.cn/translate?token=site-token");
     });

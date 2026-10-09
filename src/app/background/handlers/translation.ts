@@ -18,7 +18,6 @@ const STRING_FIELDS = [
     'context',
     'pageContext',
     'serviceOverride',
-    'modelOverride',
     'sourceLanguage',
     'targetLanguage',
 ] as const satisfies readonly (keyof TranslationRequestMessageBase)[];

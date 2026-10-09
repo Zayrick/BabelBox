@@ -1,21 +1,15 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
-const {mockConfig} = vi.hoisted(() => ({
-    mockConfig: {
-        service: 'gemini',
-        to: 'zh-Hans',
-        token: {gemini: 'google-secret-key'} as Record<string, string>,
-        model: {gemini: 'gemini-2.5-flash'} as Record<string, string>,
-        customModel: {} as Record<string, string>,
-        customBody: {} as Record<string, string>,
-        proxy: {} as Record<string, string>,
-        user_role: {gemini: 'Translate to {{to}}: {{origin}}'} as Record<string, string>,
-    },
-}));
-
-vi.mock('@/src/services/config/store', () => ({config: mockConfig}));
-
 import gemini from '@/src/providers/translation/gemini';
+import {providerRequest, resolvedService} from './fixtures/translationService';
+
+function translate(endpoint = '') {
+    return gemini(providerRequest(resolvedService('gemini', {
+        modelId: 'gemini-2.5-flash',
+        endpoint,
+        userRole: 'Translate to {{to}}: {{origin}}',
+    }, {apiKey: 'google-secret-key'}), {origin: 'source'}));
+}
 
 const fetchMock = vi.fn<typeof fetch>();
 
@@ -32,10 +26,6 @@ function mockResponse(body: unknown, overrides: Partial<Response> = {}): Respons
 
 beforeEach(() => {
     fetchMock.mockReset();
-    mockConfig.token.gemini = 'google-secret-key';
-    mockConfig.model.gemini = 'gemini-2.5-flash';
-    mockConfig.customModel = {};
-    mockConfig.proxy = {};
     vi.stubGlobal('fetch', fetchMock);
 });
 
@@ -49,7 +39,7 @@ describe('Gemini adapter credential transport', () => {
             candidates: [{content: {parts: [{text: '译文'}]}}],
         }));
 
-        await expect(gemini({origin: 'source', serviceOverride: 'gemini'})).resolves.toBe('译文');
+        await expect(translate()).resolves.toBe('译文');
 
         const [requestUrl, init] = fetchMock.mock.calls[0]!;
         expect(requestUrl).toBe(
@@ -62,12 +52,11 @@ describe('Gemini adapter credential transport', () => {
     });
 
     it('does not forward the Google API key to a custom proxy', async () => {
-        mockConfig.proxy.gemini = 'https://proxy.example/v1/generate';
         fetchMock.mockResolvedValue(mockResponse({
             candidates: [{content: {parts: [{text: '代理译文'}]}}],
         }));
 
-        await expect(gemini({origin: 'source', serviceOverride: 'gemini'})).resolves.toBe('代理译文');
+        await expect(translate('https://proxy.example/v1/generate')).resolves.toBe('代理译文');
 
         const [requestUrl, init] = fetchMock.mock.calls[0]!;
         expect(requestUrl).toBe('https://proxy.example/v1/generate');
@@ -85,7 +74,7 @@ describe('Gemini adapter credential transport', () => {
             text: responseBody,
         }));
 
-        const error = await gemini({origin: 'source', serviceOverride: 'gemini'}).catch(cause => cause);
+        const error = await translate().catch(cause => cause);
 
         expect(error).toBeInstanceOf(Error);
         expect((error as Error).message).toBe('翻译失败: 403');
@@ -100,7 +89,7 @@ describe('Gemini adapter credential transport', () => {
             ),
         }));
 
-        const error = await gemini({origin: 'source', serviceOverride: 'gemini'}).catch(cause => cause);
+        const error = await translate().catch(cause => cause);
 
         expect(error).toBeInstanceOf(Error);
         expect((error as Error).message).toBe('Gemini 返回的不是有效 JSON');

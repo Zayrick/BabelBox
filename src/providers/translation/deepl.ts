@@ -1,45 +1,35 @@
 import {method, urls} from "@/src/core/config/constants";
 import {services} from "@/src/core/config/catalog";
-import {config} from "@/src/services/config/store";
-import {getTranslationLanguages} from '@/src/services/translation/languages';
+import type {TranslationProviderRequest} from '@/src/services/translation/types';
 import {createHttpStatusError, readJsonResponse} from '@/src/platform/http/errors';
 import {runtimeFetch} from '@/src/platform/http/runtime';
-import {getTranslationProviderConfig} from '@/src/services/translation/requestSnapshot';
 import {appendOptionalHeader} from './auth';
+import {requireSingleOrigin} from './request';
 
-async function deepl(message: any) {
-    const current = getTranslationProviderConfig(message, config);
-    const service = message.serviceOverride || current.service;
+async function deepl(request: TranslationProviderRequest) {
+    const {service} = request;
     // deepl 不支持 zh-Hans，需要转换为 zh
-    const {targetLanguage} = getTranslationLanguages(message);
-    let targetLang = targetLanguage === 'zh-Hans' ? 'zh' : targetLanguage;
-
-    // 判断是否使用代理
-    let url: string = current.proxy[service] ? current.proxy[service] : urls[services.deepL]
+    const targetLang = request.targetLanguage === 'zh-Hans' ? 'zh' : request.targetLanguage;
+    const apiKey = service.credential.apiKey.trim();
 
     const headers = new Headers({'Content-Type': 'application/json'});
-    appendOptionalHeader(headers, 'Authorization', current.token[service]
-        ? `DeepL-Auth-Key ${current.token[service]}`
-        : undefined);
+    appendOptionalHeader(headers, 'Authorization', apiKey ? `DeepL-Auth-Key ${apiKey}` : undefined);
 
-    const resp = await runtimeFetch(url, {
+    const resp = await runtimeFetch(service.endpoint || urls[services.deepL], {
         method: method.POST,
         headers,
         body: JSON.stringify({
-            text: [message.origin],
+            text: [requireSingleOrigin(request)],
             target_lang: targetLang,
             tag_handling: 'html',
-            context: message.context,  // 添加上下文辅助信息
-            preserve_formatting: true
-        })
+            context: request.context,
+            preserve_formatting: true,
+        }),
     });
+    if (!resp.ok) throw createHttpStatusError(resp, '翻译失败');
 
-    if (resp.ok) {
-        const result = await readJsonResponse<any>(resp, 'DeepL 返回的不是有效 JSON');
-        return result.translations[0].text
-    } else {
-        throw createHttpStatusError(resp, '翻译失败');
-    }
+    const result = await readJsonResponse<any>(resp, 'DeepL 返回的不是有效 JSON');
+    return result.translations[0].text;
 }
 
 export default deepl;

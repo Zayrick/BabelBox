@@ -4,15 +4,12 @@ import {config} from '@/src/services/config/store';
 import {
     hasDynamicTranslationModelCatalog,
 } from '@/src/services/translation/modelCatalog';
-import {
-    createTranslationProviderConfigSnapshot,
-    resolveTranslationServiceConfig,
-    type ResolvedTranslationServiceConfig,
-} from '@/src/services/translation/requestSnapshot';
-import type {TranslationConfigSource} from '@/src/services/translation/types';
+import {resolveTranslationService} from '@/src/services/translation/requestSnapshot';
+import type {ResolvedTranslationService} from '@/src/services/translation/types';
+import type {TranslationServiceConfigLike} from '@/src/core/config/translationServices';
 import {runtimeFetch} from '@/src/platform/http/runtime';
 import {appendOptionalBearer, appendOptionalHeader} from './auth';
-import {resolveOpenAICompatibleEndpoint} from './ai-sdk/endpoints';
+import {getAiSdkEndpointRoute, resolveOpenAICompatibleEndpoint} from './ai-sdk/endpoints';
 
 const MODEL_CATALOG_TIMEOUT_MS = 15_000;
 const MAX_MODEL_COUNT = 2_000;
@@ -42,45 +39,24 @@ function modelListUrlFromEndpoint(rawEndpoint: string): URL {
     return url;
 }
 
-function configuredChatEndpoint(resolved: ResolvedTranslationServiceConfig): string {
-    const {provider, config: scoped} = resolved;
-    if ([
-        services.openai,
-        services.yiyan,
-        services.infini,
-        services.minimax,
-        services.mimo,
-        services.moonshot,
-        services.jieyue,
-        services.groq,
-        services.huanYuan,
-        services.doubao,
-        services.siliconCloud,
-        services.openrouter,
-        services.grok,
-        services.custom,
-        services.newapi,
-    ].includes(provider)) {
-        return resolveOpenAICompatibleEndpoint(provider, scoped).endpoint;
-    }
-
-    return scoped.proxy[provider] || urls[provider];
+function configuredChatEndpoint(service: ResolvedTranslationService): string {
+    return getAiSdkEndpointRoute(service.provider)
+        ? resolveOpenAICompatibleEndpoint(service).endpoint
+        : service.endpoint || urls[service.provider];
 }
 
-export function createTranslationModelCatalogRequest(
-    resolved: ResolvedTranslationServiceConfig,
-): ModelCatalogRequest {
-    const {provider, config: scoped} = resolved;
+export function createTranslationModelCatalogRequest(service: ResolvedTranslationService): ModelCatalogRequest {
+    const {provider} = service;
     if (!hasDynamicTranslationModelCatalog(provider)) {
         throw new Error('该供应商没有可用的模型列表接口');
     }
 
-    const apiKey = scoped.token[provider] || '';
+    const apiKey = service.credential.apiKey;
     const headers = new Headers({Accept: 'application/json'});
     let url: URL;
 
     if (provider === services.gemini) {
-        const proxy = scoped.proxy[provider]?.trim();
+        const proxy = service.endpoint.trim();
         if (proxy) {
             const generateContentPath = /\/models\/[^/]+:generateContent\/?$/u;
             const proxyUrl = new URL(proxy);
@@ -97,13 +73,13 @@ export function createTranslationModelCatalogRequest(
         }
         appendOptionalHeader(headers, 'x-goog-api-key', apiKey);
     } else if (provider === services.claude) {
-        url = modelListUrlFromEndpoint(scoped.proxy[provider] || urls[provider]);
+        url = modelListUrlFromEndpoint(service.endpoint || urls[provider]);
         url.searchParams.set('limit', '1000');
         appendOptionalHeader(headers, 'x-api-key', apiKey);
         headers.set('anthropic-version', '2023-06-01');
         headers.set('anthropic-dangerous-direct-browser-access', 'true');
     } else {
-        url = modelListUrlFromEndpoint(configuredChatEndpoint(resolved));
+        url = modelListUrlFromEndpoint(configuredChatEndpoint(service));
         appendOptionalBearer(headers, apiKey);
         if (provider === services.siliconCloud) {
             url.searchParams.set('type', 'text');
@@ -202,13 +178,12 @@ async function createModelCatalogHttpError(response: Response, apiKey: string): 
 }
 
 export async function listTranslationServiceModels(
-    instanceId: string,
-    source: TranslationConfigSource = config,
+    serviceId: string,
+    source: TranslationServiceConfigLike = config,
 ): Promise<string[]> {
-    const snapshot = createTranslationProviderConfigSnapshot(source);
-    const resolved = resolveTranslationServiceConfig(snapshot, instanceId, {allowDisabled: true});
-    const request = createTranslationModelCatalogRequest(resolved);
-    const apiKey = resolved.config.token[resolved.provider] || '';
+    const service = resolveTranslationService(source, serviceId, {allowDisabled: true});
+    const request = createTranslationModelCatalogRequest(service);
+    const apiKey = service.credential.apiKey;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), MODEL_CATALOG_TIMEOUT_MS);
 

@@ -5,8 +5,8 @@ import {services} from '@/src/core/config/catalog';
 import {normalizeConfig, type TranslationServiceCredential} from '@/src/core/config/model';
 import {sanitizeConfigCredentials} from '@/src/core/config/credentials';
 import {
-    createAITranslationService,
     createDefaultTranslationServices,
+    createExternalTranslationService,
     type TranslationServiceInstance,
 } from '@/src/core/config/translationServices';
 
@@ -20,7 +20,7 @@ const storageMock = vi.hoisted(() => ({
 vi.mock('@wxt-dev/storage', () => ({ storage: storageMock }));
 
 const storedConfig = {
-    service: 'openai',
+    service: 'microsoft',
     from: 'auto',
     to: 'zh-Hans',
 };
@@ -36,6 +36,19 @@ function serviceCredential(secret: string): TranslationServiceCredential {
         secretId: secret,
         secretKey: secret,
     };
+}
+
+const AI_ID = 'service:openai:test';
+
+function aiInstance(overrides: Partial<TranslationServiceInstance> = {}): TranslationServiceInstance {
+    return {...createExternalTranslationService(services.openai), id: AI_ID, ...overrides};
+}
+
+function withCredential(secret: string, overrides: Partial<TranslationServiceInstance> = {}) {
+    return normalizeConfig({
+        ...configWithServiceInstance(aiInstance(overrides)),
+        serviceCredentials: {[AI_ID]: serviceCredential(secret)},
+    });
 }
 
 function configWithServiceInstance(instance: TranslationServiceInstance) {
@@ -160,25 +173,6 @@ describe('统一配置存储', () => {
         expect(configStore.config.fullPageTranslationMode).toBe('viewport');
     });
 
-    it('为文档翻译补齐独立服务和模型，并保留网页模型选择', async () => {
-        const configStore = await loadConfigModule({
-            ...storedConfig,
-            service: 'openai',
-            model: {openai: 'web-model'},
-            documentService: 'openai',
-            documentModel: {openai: 'document-model'},
-        });
-
-        await configStore.configReady;
-
-        expect(configStore.config.documentService).toBe('service:openai:document');
-        expect(configStore.config.translationServices.find(
-            item => item.id === configStore.config.documentService,
-        )).toMatchObject({provider: 'openai', modelId: 'document-model'});
-        expect(configStore.config.documentModel.openai).toBe('document-model');
-        expect(configStore.config.model.openai).toBe('web-model');
-    });
-
     it('文档翻译遇到未知服务时回退到微软翻译', async () => {
         const configStore = await loadConfigModule({...storedConfig, documentService: 'unknown-service'});
 
@@ -205,30 +199,22 @@ describe('统一配置存储', () => {
     });
 
     it('保留用户选择的视频 AI 服务，并将未知服务回退到微软翻译', async () => {
-        const aiConfigStore = await loadConfigModule({ ...storedConfig, videoService: 'openai' });
+        const instance = aiInstance();
+        const aiConfigStore = await loadConfigModule({
+            ...storedConfig,
+            translationServices: [...createDefaultTranslationServices(), instance],
+            videoService: instance.id,
+        });
 
         await aiConfigStore.configReady;
 
-        expect(aiConfigStore.config.videoService).toBe('openai');
+        expect(aiConfigStore.config.videoService).toBe(instance.id);
 
         const invalidConfigStore = await loadConfigModule({ ...storedConfig, videoService: 'not-a-service' });
 
         await invalidConfigStore.configReady;
 
         expect(invalidConfigStore.config.videoService).toBe('microsoft');
-    });
-
-    it('把早期 Beta 写入的 DeepLX 默认值一次迁移为微软翻译', async () => {
-        const configStore = await loadConfigModule({ ...storedConfig, videoService: 'deeplx' });
-
-        await configStore.configReady;
-
-        expect(configStore.config.videoService).toBe('microsoft');
-        expect(configStore.config.videoServiceDefaultMigrated).toBe(true);
-        expect(storageMock.setItem).toHaveBeenCalledWith(
-            'local:config',
-            expect.objectContaining({ videoService: 'microsoft', videoServiceDefaultMigrated: true }),
-        );
     });
 
     it('非法的视频字幕显示配置回退到双语和显示状态', async () => {
@@ -329,17 +315,19 @@ describe('统一配置存储', () => {
         const configStore = await loadConfigModule(storedConfig);
         await configStore.configReady;
         const sendMessage = vi.fn().mockResolvedValue({ success: true });
+        const instance = aiInstance({modelId: 'gpt-4o-mini'});
         const reactiveConfig = reactive({
             ...configStore.config,
             to: 'ja',
-            model: reactive({ openai: 'gpt-4o-mini' }),
+            translationServices: reactive([...configStore.config.translationServices, reactive(instance)]),
         });
 
         await configStore.requestConfigSave(reactiveConfig, sendMessage);
 
         const sentConfig = sendMessage.mock.calls[0][0].config;
         expect(() => structuredClone(sentConfig)).not.toThrow();
-        expect(sentConfig).toMatchObject({ to: 'ja', model: { openai: 'gpt-4o-mini' } });
+        expect(sentConfig.to).toBe('ja');
+        expect(sentConfig.translationServices.at(-1)).toMatchObject({id: instance.id, modelId: 'gpt-4o-mini'});
     });
 
     it('后台不可用时失败关闭，不在短生命周期上下文降级落盘', async () => {
@@ -356,97 +344,61 @@ describe('统一配置存储', () => {
     it('content 保存公开字段时保留后台运行时凭据', async () => {
         const configStore = await loadConfigModule(storedConfig);
         await configStore.configReady;
-        const current = normalizeConfig({
-            ...configStore.config,
-            token: {openai: 'background-session-secret'},
-            extra: {zhipu: {jwt: 'derived-secret'}},
-        });
-        const contentSnapshot = normalizeConfig({...current, to: 'ja', token: {}, extra: {}});
+        const current = withCredential('background-session-secret');
+        const contentSnapshot = normalizeConfig({...sanitizeConfigCredentials(current), to: 'ja'});
 
         const prepared = configStore.prepareConfigSaveRequest(contentSnapshot, current, false);
         const extensionPrepared = configStore.prepareConfigSaveRequest(contentSnapshot, current, true);
 
-        expect(prepared).toMatchObject({
-            to: 'ja',
-            token: {openai: 'background-session-secret'},
-            extra: {zhipu: {jwt: 'derived-secret'}},
-        });
-        expect(extensionPrepared.token).toEqual({});
-        expect(extensionPrepared.extra).toEqual({});
+        expect(prepared.to).toBe('ja');
+        expect(prepared.serviceCredentials[AI_ID]?.apiKey).toBe('background-session-secret');
+        expect(extensionPrepared.serviceCredentials).toEqual({});
     });
 
-    it('content 公共快照只有在 AI 实例目标未变时才继承后台凭据', async () => {
+    it('content 公共快照只有在服务实例目标未变时才继承后台凭据', async () => {
         const configStore = await loadConfigModule(storedConfig);
         await configStore.configReady;
-        const serviceId = 'service:openai:content-destination';
         const secret = 'content-instance-destination-secret';
-        const sourceInstance = createAITranslationService(services.openai, {
-            id: serviceId,
-            modelId: 'gpt-5-mini',
-            endpoint: 'https://safe.example.test/v1',
-        });
-        const current = normalizeConfig({
-            ...configWithServiceInstance(sourceInstance),
-            serviceCredentials: {[serviceId]: serviceCredential(secret)},
-        });
+        const current = withCredential(secret, {endpoint: 'https://safe.example.test/v1'});
 
-        const matchingSnapshot = configWithServiceInstance(sourceInstance);
+        const matchingSnapshot = configWithServiceInstance(aiInstance({endpoint: 'https://safe.example.test/v1'}));
         expect(configStore.prepareConfigSaveRequest(matchingSnapshot, current, false)
-            .serviceCredentials[serviceId]?.apiKey).toBe(secret);
+            .serviceCredentials[AI_ID]?.apiKey).toBe(secret);
 
-        const changedEndpoint = configWithServiceInstance({
-            ...sourceInstance,
-            endpoint: 'https://different.example.test/v1',
-        });
+        const changedEndpoint = configWithServiceInstance(aiInstance({endpoint: 'https://different.example.test/v1'}));
         expect(configStore.prepareConfigSaveRequest(changedEndpoint, current, false)
-            .serviceCredentials[serviceId]).toBeUndefined();
-
-        const changedProvider = configWithServiceInstance(createAITranslationService(services.deepseek, {
-            id: serviceId,
-            modelId: 'deepseek-v3.2',
-            endpoint: sourceInstance.endpoint,
-        }));
-        expect(configStore.prepareConfigSaveRequest(changedProvider, current, false)
-            .serviceCredentials[serviceId]).toBeUndefined();
+            .serviceCredentials[AI_ID]).toBeUndefined();
     });
 
-    it('content 修改有道或腾讯目标时不继承对应的旧全局凭据', async () => {
+    it('content 修改有道或腾讯服务的请求地址时不继承对应凭据', async () => {
         const configStore = await loadConfigModule(storedConfig);
         await configStore.configReady;
-        const sourceServices = createDefaultTranslationServices().map((instance) => ({
-            ...instance,
-            proxy: instance.provider === services.youdao || instance.provider === services.tencent
-                ? `https://${instance.provider}.safe.example.test`
-                : instance.proxy,
-        }));
+        const youdao = {...createExternalTranslationService(services.youdao), endpoint: 'https://youdao.safe.example.test'};
+        const tencent = {...createExternalTranslationService(services.tencent), endpoint: 'https://tencent.safe.example.test'};
         const current = normalizeConfig({
             ...storedConfig,
-            translationServices: sourceServices,
-            youdaoAppKey: 'youdao-key',
-            youdaoAppSecret: 'youdao-secret',
-            tencentSecretId: 'tencent-id',
-            tencentSecretKey: 'tencent-key',
+            translationServices: [...createDefaultTranslationServices(), youdao, tencent],
+            serviceCredentials: {
+                [youdao.id]: serviceCredential('youdao-secret'),
+                [tencent.id]: serviceCredential('tencent-secret'),
+            },
         });
-        const changedServices = sourceServices.map((instance) => ({
-            ...instance,
-            proxy: instance.provider === services.youdao || instance.provider === services.tencent
-                ? `https://${instance.provider}.different.example.test`
-                : instance.proxy,
-        }));
         const contentSnapshot = normalizeConfig({
             ...sanitizeConfigCredentials(current),
-            translationServices: changedServices,
+            translationServices: [
+                ...createDefaultTranslationServices(),
+                {...youdao, endpoint: 'https://youdao.different.example.test'},
+                tencent,
+            ],
         });
 
         const prepared = configStore.prepareConfigSaveRequest(contentSnapshot, current, false);
 
-        expect(prepared.youdaoAppKey).toBe('');
-        expect(prepared.youdaoAppSecret).toBe('');
-        expect(prepared.tencentSecretId).toBe('');
-        expect(prepared.tencentSecretKey).toBe('');
+        expect(prepared.serviceCredentials[youdao.id]).toBeUndefined();
+        expect(prepared.serviceCredentials[tencent.id]?.secretKey).toBe('tencent-secret');
     });
 
-    it('把旧凭据迁入设备保险库，并清理明文载体', async () => {
+    it('丢弃旧版本的明文凭据载体，且不把它们写回存储', async () => {
         const secret = 'legacy-secret-sentinel';
         const legacyConfig = {
             ...storedConfig,
@@ -454,48 +406,22 @@ describe('统一配置存储', () => {
             ak: `${secret}-ak`,
             extra: {jwt: `${secret}-jwt`},
         };
-        const legacyHistory = {
-            schemaVersion: 1,
-            entries: [{version: 1, savedAt: new Date(0).toISOString(), config: legacyConfig}],
-            cursor: 0,
-            nextVersion: 2,
-        };
-        const configStore = await loadConfigModule(legacyConfig, {history: legacyHistory});
+        const configStore = await loadConfigModule(legacyConfig, {
+            localCredentials: {schemaVersion: 1, token: {openai: secret}},
+        });
 
         await configStore.configReady;
 
-        expect(storageState.get('session:credentials')).toMatchObject({token: {openai: secret}});
-        expect(storageState.get('local:credentialStorageState')).toMatchObject({
-            mode: 'device',
-            encryptedCredentials: expect.objectContaining({ciphertext: expect.any(String)}),
-        });
-        expect(JSON.stringify(storageState.get('local:config'))).not.toContain(secret);
-        expect(JSON.stringify(storageState.get('local:configHistory'))).not.toContain(secret);
+        expect(JSON.stringify(configStore.config)).not.toContain(secret);
+        expect(JSON.stringify([...storageState.values()])).not.toContain(secret);
         expect(storageState.has('local:credentials')).toBe(false);
     });
 
     it('浏览器重启清空 session 后仍从设备密文恢复实例凭据', async () => {
-        const secret = 'legacy-document-instance-secret';
-        const legacyConfig = {
-            ...storedConfig,
-            service: services.openai,
-            documentService: services.openai,
-            model: {[services.openai]: 'web-model'},
-            documentModel: {[services.openai]: 'document-model'},
-            token: {[services.openai]: secret},
-        };
-        const firstLoad = await loadConfigModule(legacyConfig);
-
+        const secret = 'device-instance-secret';
+        const firstLoad = await loadConfigModule(storedConfig);
         await firstLoad.configReady;
-
-        const documentServiceId = firstLoad.config.documentService;
-        expect(documentServiceId).toBe('service:openai:document');
-        expect(firstLoad.config.serviceCredentials[documentServiceId]?.apiKey).toBe(secret);
-        expect(storageState.get('session:credentials')).toMatchObject({
-            serviceCredentials: {
-                [documentServiceId]: expect.objectContaining({apiKey: secret}),
-            },
-        });
+        await firstLoad.saveConfig(withCredential(secret));
 
         const persistedConfig = structuredClone(storageState.get('local:config'));
         const persistedCredentialState = structuredClone(storageState.get('local:credentialStorageState'));
@@ -505,21 +431,19 @@ describe('统一配置存储', () => {
 
         await reloaded.configReady;
 
-        expect(reloaded.config.documentService).toBe(documentServiceId);
-        expect(reloaded.config.serviceCredentials[documentServiceId]?.apiKey).toBe(secret);
+        expect(reloaded.config.translationServices.some((item) => item.id === AI_ID)).toBe(true);
+        expect(reloaded.config.serviceCredentials[AI_ID]?.apiKey).toBe(secret);
     });
 
     it('损坏的旧历史字符串可能包含凭据时直接丢弃，不能把敏感片段原样写回', async () => {
         const secret = 'malformed-history-secret-sentinel';
-        const legacyConfig = {...storedConfig, token: {openai: secret}};
         const malformedHistory = `{"entries":[{"config":{"token":{"openai":"${secret}"}}}`;
-        const configStore = await loadConfigModule(legacyConfig, {history: malformedHistory});
+        const configStore = await loadConfigModule(storedConfig, {history: malformedHistory});
 
         await configStore.configReady;
 
         expect(storageState.has('local:configHistory')).toBe(false);
-        expect(JSON.stringify([...storageState.values()])).not.toContain(malformedHistory);
-        expect(storageState.get('session:credentials')).toMatchObject({token: {openai: secret}});
+        expect(JSON.stringify([...storageState.values()])).not.toContain(secret);
     });
 
     it('默认把新凭据保存为设备密文，local config 与历史不含敏感 sentinel', async () => {
@@ -527,13 +451,11 @@ describe('统一配置存储', () => {
         await Promise.all([configStore.configReady, configStore.configHistoryReady]);
         const secret = 'device-vault-secret-sentinel';
 
-        await configStore.saveConfig({
-            ...configStore.config,
-            token: {openai: secret},
-            to: 'en',
-        }, {recordHistory: true, immediateHistory: true});
+        await configStore.saveConfig({...withCredential(secret), to: 'en'}, {recordHistory: true, immediateHistory: true});
 
-        expect(storageState.get('session:credentials')).toMatchObject({token: {openai: secret}});
+        expect(storageState.get('session:credentials')).toMatchObject({
+            serviceCredentials: {[AI_ID]: expect.objectContaining({apiKey: secret})},
+        });
         expect(storageState.has('local:credentials')).toBe(false);
         expect(storageState.get('local:credentialStorageState')).toMatchObject({
             mode: 'device',
@@ -542,26 +464,22 @@ describe('统一配置存储', () => {
         expect(JSON.stringify(storageState.get('local:credentialStorageState'))).not.toContain(secret);
         expect(JSON.stringify(storageState.get('local:config'))).not.toContain(secret);
         expect(JSON.stringify(storageState.get('local:configHistory'))).not.toContain(secret);
-        const persistedConfig = storageState.get('local:config') as Record<string, unknown>;
-        expect(persistedConfig.token).toBeUndefined();
-        expect(persistedConfig.extra).toBeUndefined();
+        expect(storageState.get('local:config')).not.toHaveProperty('serviceCredentials');
 
-        await configStore.saveConfig({...configStore.config, token: {}, to: 'ja'});
-        expect(storageState.get('session:credentials')).toMatchObject({token: {}});
+        await configStore.saveConfig({...configStore.config, serviceCredentials: {}, to: 'ja'});
+        expect(storageState.get('session:credentials')).toMatchObject({serviceCredentials: {}});
     });
 
-    it('保留旧版仅会话选择，并在两种存储方式间切换', async () => {
+    it('在设备密文与仅会话两种存储方式间切换', async () => {
         const secret = 'credential-mode-secret-sentinel';
-        const configStore = await loadConfigModule({
-            ...storedConfig,
-            persistCredentials: false,
-        }, {
-            sessionCredentials: {token: {openai: secret}},
+        const configStore = await loadConfigModule(withCredential(secret), {
+            credentialState: {schemaVersion: 1, mode: 'session'},
+            sessionCredentials: {schemaVersion: 2, serviceCredentials: {[AI_ID]: serviceCredential(secret)}},
         });
 
         await configStore.configReady;
         expect(configStore.getCredentialStorageMode()).toBe('session');
-        expect(storageState.get('local:credentialStorageState')).toEqual({schemaVersion: 1, mode: 'session'});
+        expect(configStore.config.serviceCredentials[AI_ID]?.apiKey).toBe(secret);
 
         await configStore.setCredentialStorageMode('device');
         expect(storageState.get('local:credentialStorageState')).toMatchObject({
@@ -571,7 +489,9 @@ describe('统一配置存储', () => {
 
         await configStore.setCredentialStorageMode('session');
         expect(storageState.get('local:credentialStorageState')).toEqual({schemaVersion: 1, mode: 'session'});
-        expect(storageState.get('session:credentials')).toMatchObject({token: {openai: secret}});
+        expect(storageState.get('session:credentials')).toMatchObject({
+            serviceCredentials: {[AI_ID]: expect.objectContaining({apiKey: secret})},
+        });
 
         const sessionPublicConfig = structuredClone(storageState.get('local:config'));
         const sessionState = structuredClone(storageState.get('local:credentialStorageState'));
@@ -580,11 +500,11 @@ describe('统一配置存储', () => {
         });
         await afterSessionEnded.configReady;
         expect(afterSessionEnded.getCredentialStorageMode()).toBe('session');
-        expect(afterSessionEnded.config.token.openai).toBeUndefined();
+        expect(afterSessionEnded.config.serviceCredentials[AI_ID]).toBeUndefined();
     });
 
     it('恢复历史只恢复公开字段，并保留当前凭据', async () => {
-        const configStore = await loadConfigModule(storedConfig);
+        const configStore = await loadConfigModule(configWithServiceInstance(aiInstance()));
         await Promise.all([configStore.configReady, configStore.configHistoryReady]);
         await configStore.saveConfig({...configStore.config, to: 'en'}, {recordHistory: true, immediateHistory: true});
         const baselineVersion = configStore.getConfigHistorySnapshot().entries[0].version;
@@ -592,7 +512,7 @@ describe('统一配置存储', () => {
         await configStore.saveConfig({
             ...configStore.config,
             count: 37,
-            token: {openai: secret},
+            serviceCredentials: {[AI_ID]: serviceCredential(secret)},
             to: 'ja',
         }, {recordHistory: true, immediateHistory: true});
 
@@ -600,7 +520,7 @@ describe('统一配置存储', () => {
 
         expect(configStore.config.to).toBe('zh-Hans');
         expect(configStore.config.count).toBe(37);
-        expect(configStore.config.token.openai).toBe(secret);
+        expect(configStore.config.serviceCredentials[AI_ID]?.apiKey).toBe(secret);
         expect(JSON.stringify(configStore.getConfigHistorySnapshot())).not.toContain(secret);
     });
 
@@ -608,26 +528,16 @@ describe('统一配置存储', () => {
         {action: 'undo' as const, cursor: 1, currentEntry: 1, version: undefined},
         {action: 'redo' as const, cursor: 0, currentEntry: 0, version: undefined},
         {action: 'restore' as const, cursor: 1, currentEntry: 1, version: 1},
-    ])('历史 $action 切换实例 endpoint/provider 时不把当前凭据带到目标', async ({
+    ])('历史 $action 切换实例请求地址时不把当前凭据带到目标', async ({
         action,
         cursor,
         currentEntry,
         version,
     }) => {
-        const serviceId = 'service:shared:history-destination';
         const secret = `history-${action}-destination-secret`;
-        const openAIInstance = createAITranslationService(services.openai, {
-            id: serviceId,
-            modelId: 'gpt-5-mini',
-            endpoint: 'https://openai.safe.example.test/v1',
-        });
-        const deepSeekInstance = createAITranslationService(services.deepseek, {
-            id: serviceId,
-            modelId: 'deepseek-v3.2',
-            endpoint: 'https://deepseek.safe.example.test/v1',
-        });
-        const publicConfigs = [openAIInstance, deepSeekInstance]
-            .map((instance) => sanitizeConfigCredentials(configWithServiceInstance(instance)));
+        const endpoints = ['https://first.safe.example.test/v1', 'https://second.safe.example.test/v1'];
+        const publicConfigs = endpoints
+            .map((endpoint) => sanitizeConfigCredentials(configWithServiceInstance(aiInstance({endpoint}))));
         const configStore = await loadConfigModule(publicConfigs[currentEntry], {
             history: {
                 schemaVersion: 1,
@@ -640,45 +550,49 @@ describe('统一配置存储', () => {
                 nextVersion: 3,
             },
             sessionCredentials: {
-                serviceCredentials: {[serviceId]: serviceCredential(secret)},
+                schemaVersion: 2,
+                serviceCredentials: {[AI_ID]: serviceCredential(secret)},
             },
         });
         await Promise.all([configStore.configReady, configStore.configHistoryReady]);
-        expect(configStore.config.serviceCredentials[serviceId]?.apiKey).toBe(secret);
+        expect(configStore.config.serviceCredentials[AI_ID]?.apiKey).toBe(secret);
 
         await configStore.applyConfigHistoryAction(action, version);
 
-        expect(configStore.config.serviceCredentials[serviceId]).toBeUndefined();
-        const expectedProvider = action === 'redo' ? services.deepseek : services.openai;
-        expect(configStore.config.translationServices.find((item) => item.id === serviceId)?.provider)
-            .toBe(expectedProvider);
+        expect(configStore.config.serviceCredentials[AI_ID]).toBeUndefined();
+        expect(configStore.config.translationServices.find((item) => item.id === AI_ID)?.endpoint)
+            .toBe(endpoints[action === 'redo' ? 1 : 0]);
     });
 
-    it('session 写入失败时保留旧凭据', async () => {
+    it('session 写入失败时不改写存储，避免丢失设备凭据', async () => {
         const secret = 'must-not-delete-secret';
-        const legacyConfig = {...storedConfig, token: {openai: secret}};
-        const configStore = await loadConfigModule(legacyConfig, {failSessionWrite: true});
+        const seed = await loadConfigModule(storedConfig);
+        await seed.configReady;
+        await seed.saveConfig(withCredential(secret));
+        const persistedConfig = structuredClone(storageState.get('local:config'));
+        const persistedCredentialState = structuredClone(storageState.get('local:credentialStorageState'));
 
+        const configStore = await loadConfigModule(persistedConfig, {
+            credentialState: persistedCredentialState,
+            failSessionWrite: true,
+        });
         await expect(configStore.configReady).resolves.toBeUndefined();
 
-        expect(configStore.config.token.openai).toBe(secret);
+        expect(configStore.config.serviceCredentials[AI_ID]?.apiKey).toBe(secret);
         expect(storageMock.removeItem).not.toHaveBeenCalled();
         expect(storageMock.setItem).not.toHaveBeenCalledWith('local:config', expect.anything());
-        expect(storageState.get('local:config')).toEqual(legacyConfig);
+        expect(storageState.get('local:credentialStorageState')).toEqual(persistedCredentialState);
     });
 
-    it('网页/content 上下文不访问 session，也不执行危险迁移', async () => {
-        const secret = 'content-context-secret';
-        const legacyConfig = {...storedConfig, token: {openai: secret}};
-        const configStore = await loadConfigModule(legacyConfig, {trusted: false});
+    it('网页/content 上下文不访问 session，也不改写存储', async () => {
+        const configStore = await loadConfigModule(configWithServiceInstance(aiInstance()), {trusted: false});
 
         await configStore.configReady;
 
-        expect(configStore.config.token).toEqual({});
+        expect(configStore.config.serviceCredentials).toEqual({});
         expect(storageOperations.some((operation) => operation.includes('session:credentials'))).toBe(false);
         expect(storageMock.setItem).not.toHaveBeenCalled();
         expect(storageMock.removeItem).not.toHaveBeenCalled();
-        expect(storageState.get('local:config')).toEqual(legacyConfig);
     });
 
     it('连续请求按页面顺序发送，避免旧快照覆盖最新快照', async () => {

@@ -9,7 +9,6 @@ export interface DocumentTranslationOptions {
     fileName: string;
     pageContext?: string;
     serviceOverride?: string;
-    modelOverride?: string;
     sourceLanguage?: string;
     targetLanguage?: string;
     signal?: AbortSignal;
@@ -20,7 +19,6 @@ export interface DocumentTranslationRequestOptions {
     signal?: AbortSignal;
     pageContext: string;
     serviceOverride?: string;
-    modelOverride?: string;
     sourceLanguage?: string;
     targetLanguage?: string;
 }
@@ -125,7 +123,6 @@ export function createDocumentSegmentTranslator(
                             signal: options.signal,
                             pageContext,
                             serviceOverride: options.serviceOverride,
-                            modelOverride: options.modelOverride,
                             sourceLanguage,
                             targetLanguage,
                         },
@@ -151,7 +148,6 @@ export function createDocumentSegmentTranslator(
                     signal: options.signal,
                     pageContext,
                     serviceOverride: options.serviceOverride,
-                    modelOverride: options.modelOverride,
                     sourceLanguage,
                     targetLanguage,
                 });

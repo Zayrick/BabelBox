@@ -11,17 +11,10 @@ import {
     normalizeConfig,
 } from '@/src/core/config/model';
 import {getMimoEndpoint, MIMO_ENDPOINTS, MINIMAX_ENDPOINTS, tongyiTokenPlanUrl, urls} from '@/src/core/config/constants';
-import {customModelString, defaultModelIds, defaultModels, defaultOption, models, options, resolveConfiguredModel, services, servicesType} from '@/src/core/config/catalog';
+import {defaultOption, options, services, servicesType} from '@/src/core/config/catalog';
 
-const legacyDefaultAiPrompt = {
-    systemRole: 'You are a professional, authentic machine translation engine.',
-    userRole: `Translate the following text into {{to}}, If translation is unnecessary (e.g. proper nouns, codes, etc.), return the original text. NO explanations. NO notes:
-
-{{origin}}`,
-};
-
-describe('AI 模型编号列表', () => {
-    it('AI 智能上下文默认关闭，并能从旧配置平滑补齐', () => {
+describe('服务目录', () => {
+    it('AI 智能上下文默认关闭，且只对使用提示词的 AI 服务生效', () => {
         expect(new Config().enableAIContext).toBe(false);
         expect(normalizeConfig({}).enableAIContext).toBe(false);
         expect(normalizeConfig({enableAIContext: true}).enableAIContext).toBe(true);
@@ -29,103 +22,13 @@ describe('AI 模型编号列表', () => {
         expect(servicesType.isUseAIContext(services.microsoft)).toBe(false);
         expect(servicesType.isUseAIContext(services.huanYuanTranslation)).toBe(false);
         expect(servicesType.isUseAIContext(services.tongyi, 'qwen-mt-plus')).toBe(false);
-        expect(servicesType.isUseAIContext(services.tongyi, resolveConfiguredModel(customModelString, 'qwen-mt-plus'))).toBe(false);
-        expect(resolveConfiguredModel(customModelString, 'custom-model')).toBe('custom-model');
     });
 
-    it('升级历史默认 AI 提示词并让服务实例继续继承默认值', () => {
-        const normalized = normalizeConfig({
-            system_role: {
-                [services.openai]: legacyDefaultAiPrompt.systemRole,
-            },
-            user_role: {
-                [services.openai]: legacyDefaultAiPrompt.userRole,
-            },
-            translationServices: [{
-                id: 'service:openai:legacy-prompts',
-                provider: services.openai,
-                kind: 'ai',
-                systemRole: legacyDefaultAiPrompt.systemRole,
-                userRole: legacyDefaultAiPrompt.userRole,
-            }],
-        });
-
-        expect(normalized.system_role[services.openai]).toBe(defaultOption.system_role);
-        expect(normalized.user_role[services.openai]).toBe(defaultOption.user_role);
-        expect(normalized.translationServices.find((item) => item.id === 'service:openai:legacy-prompts'))
-            .toMatchObject({systemRole: '', userRole: ''});
-    });
-
-    it('展示当前主流模型，并移除已退役或错误的预设编号', () => {
-        expect(models.get(services.openai)?.at(0)).toBe('gpt-5.6-luna');
-        expect(models.get(services.openai)).toContain('gpt-5.6-sol');
-        expect(models.get(services.openai)).not.toContain('gpt5');
-        expect(models.get(services.gemini)).toContain('gemini-3.6-flash');
-        expect(models.get(services.claude)).toContain('claude-fable-5');
-        expect(models.get(services.claude)).toContain('claude-sonnet-5');
-        expect(models.get(services.claude)?.at(-1)).toBe(customModelString);
-        expect(models.get(services.tongyi)?.at(0)).toBe('qwen3.6-flash');
-        expect(models.get(services.tongyi)).toContain('qwen3.7-max');
-        expect(models.get(services.tongyi)).not.toContain('qwen3.7-flash');
-        expect(models.get(services.zhipu)?.at(0)).toBe('glm-4.5-flash');
-        expect(models.get(services.zhipu)).toContain('glm-5.2');
-        expect(models.get(services.infini)).toContain('glm-5.2');
-        expect(models.get(services.infini)).not.toContain('glm-5.3');
-        expect(models.get(services.moonshot)).toContain('kimi-k2.7-code');
-        expect(models.get(services.yiyan)).toContain('ernie-5.1');
-        expect(models.get(services.minimax)).toContain('MiniMax-M2.7');
-        expect(models.get(services.mimo)).toContain('mimo-v2.5-pro');
-        expect(models.get(services.jieyue)).toContain('step-3.5-flash');
-        expect(models.get(services.huanYuan)).toContain('hy3');
-        expect(models.get(services.grok)).toContain('grok-4.5');
-        expect(models.get(services.groq)).not.toContain('whisper-large-v3');
-        expect(models.get(services.openrouter)?.at(-1)).toBe(customModelString);
+    it('使用用户可读的供应商名称，并默认选择微软翻译', () => {
         expect(options.services.find(option => option.value === services.zhipu)?.label).toBe('智谱');
         expect(options.services.find(option => option.value === services.mimo)?.label).toBe('小米 MiMo');
         expect(options.services.every(option => !/[🌟⭐★]/u.test(option.label))).toBe(true);
         expect(defaultOption.service).toBe(services.microsoft);
-    });
-
-    it('所有需要模型的 AI 服务默认使用推荐模型档位', () => {
-        for (const [service, defaultModel] of Object.entries(defaultModelIds)) {
-            expect(defaultModels.get(service), `${service} 默认模型`).toBe(defaultModel);
-            expect(models.get(service)?.at(0), `${service} 模型列表首项`).toBe(defaultModel);
-        }
-    });
-
-    it('保留自定义接口的地址、模型和其他按服务配置', () => {
-        const normalized = normalizeConfig({
-            service: services.custom,
-            custom: 'http://127.0.0.1:11434/v1/chat/completions',
-            model: {[services.custom]: customModelString},
-            customModel: {[services.custom]: 'local/translation-model'},
-            token: {[services.custom]: 'local-token'},
-            proxy: {[services.custom]: 'http://127.0.0.1:8080'},
-            system_role: {[services.custom]: 'Translate safely.'},
-            user_role: {[services.custom]: 'Translate {{origin}} into {{to}}.'},
-            customBody: {[services.custom]: '{"stream":false}'},
-        });
-
-        expect(normalized).toMatchObject({
-            service: services.custom,
-            custom: 'http://127.0.0.1:11434/v1/chat/completions',
-            model: {[services.custom]: customModelString},
-            customModel: {[services.custom]: 'local/translation-model'},
-            token: {[services.custom]: 'local-token'},
-            proxy: {[services.custom]: 'http://127.0.0.1:8080'},
-            system_role: {[services.custom]: 'Translate safely.'},
-            user_role: {[services.custom]: 'Translate {{origin}} into {{to}}.'},
-            customBody: {[services.custom]: '{"stream":false}'},
-        });
-    });
-
-    it('不会把下拉列表中仍可选择的模型当成退役编号改写', () => {
-        for (const [service, selectableModels] of models) {
-            for (const selectedModel of selectableModels) {
-                const normalized = normalizeConfig({model: {[service]: selectedModel}});
-                expect(normalized.model[service], `${service}: ${selectedModel}`).toBe(selectedModel);
-            }
-        }
     });
 });
 
@@ -141,11 +44,11 @@ describe('翻译中心配置', () => {
     it('默认使用服务列表，保存后保留去重后的服务顺序和语言选择', () => {
         expect(new Config().translationCenterServices).toEqual([]);
         expect(normalizeConfig({
-            translationCenterServices: ['google', 'openai', 'google', ' ', 12],
+            translationCenterServices: ['google', 'microsoft', 'google', ' ', 12],
             translationCenterSourceLanguage: ' en ',
             translationCenterTargetLanguage: ' ja ',
         })).toMatchObject({
-            translationCenterServices: ['google', 'openai'],
+            translationCenterServices: ['google', 'microsoft'],
             translationCenterSourceLanguage: 'en',
             translationCenterTargetLanguage: 'ja',
         });
@@ -282,135 +185,6 @@ describe('划词翻译显示延迟配置', () => {
     });
 });
 
-describe('旧模型编号兼容迁移', () => {
-    it('迁移官方服务中已退役或错误的模型编号', () => {
-        const normalized = normalizeConfig({
-            model: {
-                [services.openai]: 'gpt5',
-                [services.zhipu]: 'GLM-4-Flash',
-                [services.moonshot]: 'kimi-k2-0711-preview',
-                [services.claude]: 'claude-sonnet-4-0',
-                [services.grok]: 'grok-4-0709',
-            },
-        });
-
-        expect(normalized.model).toMatchObject({
-            [services.openai]: 'gpt-5.6-luna',
-            [services.zhipu]: 'glm-4.5-flash',
-            [services.moonshot]: 'kimi-k3',
-            [services.claude]: 'claude-sonnet-5',
-            [services.grok]: 'grok-4.5',
-        });
-    });
-
-    it.each(['glm-4.5', 'glm-4-plus', 'glm-4', 'glm-4v'])(
-        '将智谱普通旧模型 %s 直接迁移到当前默认模型',
-        legacyModel => {
-            const normalized = normalizeConfig({model: {[services.zhipu]: legacyModel}});
-            expect(normalized.model[services.zhipu]).toBe('glm-5.3');
-        },
-    );
-
-    it.each([
-        'kimi-k2-0711-preview',
-        'kimi-k2-turbo-preview',
-        'moonshot-v1-auto',
-        'moonshot-v1-8k',
-        'moonshot-v1-32k',
-    ])('将 Kimi 通用旧模型 %s 直接迁移到当前默认模型', legacyModel => {
-        const normalized = normalizeConfig({model: {[services.moonshot]: legacyModel}});
-        expect(normalized.model[services.moonshot]).toBe('kimi-k3');
-    });
-
-    it.each([
-        ['claude-3-5-sonnet', 'claude-sonnet-5'],
-        ['claude-3-5-sonnet-20241022', 'claude-sonnet-5'],
-        ['claude-3-opus', 'claude-opus-5'],
-        ['claude-3-opus-20240229', 'claude-opus-5'],
-        ['claude-3-5-haiku', 'claude-haiku-4-5'],
-        ['claude-3-5-haiku-20241022', 'claude-haiku-4-5'],
-    ])('将 Claude 旧模型 %s 迁移到当前同系列模型', (legacyModel, currentModel) => {
-        const normalized = normalizeConfig({model: {[services.claude]: legacyModel}});
-        expect(normalized.model[services.claude]).toBe(currentModel);
-    });
-
-    it.each(['claude-sonnet-4-6', 'claude-opus-4-8'])(
-        '保留列表中仍可主动选择的 Claude 旧模型 %s',
-        supportedModel => {
-            const normalized = normalizeConfig({model: {[services.claude]: supportedModel}});
-            expect(normalized.model[services.claude]).toBe(supportedModel);
-        },
-    );
-
-    it.each([
-        ['llama-3.3-70b-versatile', 'openai/gpt-oss-120b'],
-        ['llama-3.1-8b-instant', 'openai/gpt-oss-20b'],
-        ['llama3-8b-8192', 'openai/gpt-oss-20b'],
-    ])('迁移已退役的 Groq 模型 %s', (legacyModel, currentModel) => {
-        const normalized = normalizeConfig({
-            model: {
-                [services.groq]: legacyModel,
-            },
-        });
-
-        expect(normalized.model[services.groq]).toBe(currentModel);
-    });
-
-    it('迁移已切换协议或退役的国内服务模型编号', () => {
-        const normalized = normalizeConfig({
-            model: {
-                [services.yiyan]: 'ERNIE-Bot 4.0',
-                [services.minimax]: 'chatcompletion_v2',
-                [services.jieyue]: 'step-1-8k',
-                [services.huanYuan]: 'hunyuan-turbos-latest',
-                [services.infini]: 'glm-4-9b-chat',
-            },
-        });
-
-        expect(normalized.model).toMatchObject({
-            [services.yiyan]: 'ernie-5.1',
-            [services.minimax]: 'MiniMax-M2.7',
-            [services.jieyue]: 'step-3.5-flash',
-            [services.huanYuan]: 'hy3',
-            [services.infini]: 'glm-5.2',
-        });
-    });
-
-    it('不改写 Azure、自定义接口或 New API 的部署别名', () => {
-        const normalized = normalizeConfig({
-            model: {
-                [services.azureOpenai]: 'gpt5',
-                [services.custom]: 'gpt5',
-                [services.newapi]: 'gpt5',
-            },
-        });
-
-        expect(normalized.model).toMatchObject({
-            [services.azureOpenai]: 'gpt5',
-            [services.custom]: 'gpt5',
-            [services.newapi]: 'gpt5',
-        });
-    });
-
-    it('不改写未知的 OpenAI 直连模型编号', () => {
-        const normalized = normalizeConfig({
-            model: {[services.openai]: 'gpt-private-deployment'},
-        });
-
-        expect(normalized.model[services.openai]).toBe('gpt-private-deployment');
-    });
-
-    it('保留 DeepSeek 旧编号迁移及思考模式兼容行为', () => {
-        const chat = normalizeConfig({model: {[services.deepseek]: 'deepseek-chat'}});
-        const reasoner = normalizeConfig({model: {[services.deepseek]: 'deepseek-reasoner'}});
-
-        expect(chat.model[services.deepseek]).toBe('deepseek-v4-flash');
-        expect(chat.deepseekThinkingMode).toBe('disabled');
-        expect(reasoner.model[services.deepseek]).toBe('deepseek-v4-flash');
-        expect(reasoner.deepseekThinkingMode).toBe('enabled');
-    });
-});
-
 describe('划词翻译配置兼容', () => {
     it('为旧配置补齐可发现的触发方式，并清理非法值', () => {
         expect(normalizeConfig({selectionTranslatorMode: 'bilingual'})).toMatchObject({
@@ -502,31 +276,6 @@ describe('OpenAI 兼容服务端点', () => {
         expect(urls[services.infini]).toBe('https://cloud.infini-ai.com/maas/v1/chat/completions');
         expect(urls[services.huanYuan]).toBe('https://api.tokenhub.tencent.com/v1/chat/completions');
         expect(tongyiTokenPlanUrl).toBe('https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions');
-    });
-
-    it('MiniMax 区域配置只接受全球版或中国版', () => {
-        expect(new Config().minimaxRegion).toBe('cn');
-        expect(normalizeConfig({minimaxRegion: 'cn'}).minimaxRegion).toBe('cn');
-        expect(normalizeConfig({minimaxRegion: 'unknown'}).minimaxRegion).toBe('cn');
-    });
-
-    it('MiniMax 计费方式只接受按量付费或 Token Plan', () => {
-        expect(new Config().minimaxBillingPlan).toBe('payg');
-        expect(normalizeConfig({minimaxBillingPlan: 'token-plan'}).minimaxBillingPlan).toBe('token-plan');
-        expect(normalizeConfig({minimaxBillingPlan: 'unknown'}).minimaxBillingPlan).toBe('payg');
-    });
-
-    it('MiMo 配置独立处理 Token Plan 集群并清理非法值', () => {
-        expect(new Config().mimoBillingPlan).toBe('payg');
-        expect(new Config().mimoRegion).toBe('cn');
-        expect(normalizeConfig({mimoBillingPlan: 'token-plan', mimoRegion: 'sgp'})).toMatchObject({
-            mimoBillingPlan: 'token-plan',
-            mimoRegion: 'sgp',
-        });
-        expect(normalizeConfig({mimoBillingPlan: 'unknown', mimoRegion: 'unknown'})).toMatchObject({
-            mimoBillingPlan: 'payg',
-            mimoRegion: 'cn',
-        });
     });
 
     it('MiMo 按量付费与三套 Token Plan 集群使用不同端点', () => {

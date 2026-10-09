@@ -1,9 +1,8 @@
 import { method } from "@/src/core/config/constants";
-import { config } from "@/src/services/config/store";
-import {getTranslationLanguages} from '@/src/services/translation/languages';
 import {createHttpStatusError, createProviderCodeError, readJsonResponse} from '@/src/platform/http/errors';
 import {runtimeFetch} from '@/src/platform/http/runtime';
-import {getTranslationProviderConfig} from '@/src/services/translation/requestSnapshot';
+import type {TranslationProviderRequest} from '@/src/services/translation/types';
+import {requireSingleOrigin} from './request';
 
 // 腾讯云机器翻译语言代码映射
 const languageMap: Record<string, string> = {
@@ -89,12 +88,10 @@ async function createTencentSignature(requestPayload: string, timestamp: number,
     return authorization;
 }
 
-async function tencent(message: any) {
+async function tencent(request: TranslationProviderRequest) {
     try {
-        const current = getTranslationProviderConfig(message, config);
-        // 从配置中获取 SecretId 和 SecretKey
-        const secretId = current.tencentSecretId?.trim();
-        const secretKey = current.tencentSecretKey?.trim();
+        const secretId = request.service.credential.secretId.trim();
+        const secretKey = request.service.credential.secretKey.trim();
         
         if (!secretId || !secretKey) {
             throw new Error('腾讯云机器翻译密钥未配置，请在设置中配置SecretId和SecretKey');
@@ -106,7 +103,7 @@ async function tencent(message: any) {
         }
         
         // 转换语言代码
-        const {sourceLanguage, targetLanguage} = getTranslationLanguages(message);
+        const {sourceLanguage, targetLanguage} = request;
         const sourceLang = languageMap[sourceLanguage] || sourceLanguage;
         const targetLang = languageMap[targetLanguage] || targetLanguage;
         
@@ -116,7 +113,7 @@ async function tencent(message: any) {
         
         // 构建JSON请求体
         const requestBody = JSON.stringify({
-            SourceText: message.origin,
+            SourceText: requireSingleOrigin(request),
             Source: sourceLang,
             Target: targetLang,
             ProjectId: 0
@@ -127,9 +124,7 @@ async function tencent(message: any) {
         // 生成签名和Authorization头
         const authorization = await createTencentSignature(requestBody, timestamp, secretId, secretKey);
         
-        // 判断是否使用代理
-        const service = message.serviceOverride || current.service;
-        const url = current.proxy[service] || 'https://tmt.tencentcloudapi.com/';
+        const url = request.service.endpoint || 'https://tmt.tencentcloudapi.com/';
         
         const response = await runtimeFetch(url, {
             method: method.POST,

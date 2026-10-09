@@ -1,42 +1,31 @@
 import {method} from "@/src/core/config/constants";
-import {geminiMsgTemplate} from '@/src/services/translation/templates';
-import {customModelString} from "@/src/core/config/catalog";
-import {config} from "@/src/services/config/store";
+import {geminiBody, requestModel} from '@/src/services/translation/templates';
+import type {TranslationProviderRequest} from '@/src/services/translation/types';
 import {appendOptionalHeader} from './auth';
 import {createHttpStatusError, readJsonResponse} from '@/src/platform/http/errors';
 import {runtimeFetch} from '@/src/platform/http/runtime';
-import {getTranslationProviderConfig} from '@/src/services/translation/requestSnapshot';
+import {requireSingleOrigin} from './request';
 
-
-async function gemini(message: any) {
-    const current = getTranslationProviderConfig(message, config);
-    const service = message.serviceOverride || current.service;
-
-    const model = message.modelOverride
-        || (current.model[service] === customModelString ? current.customModel[service] : current.model[service]);
-    const proxyUrl = current.proxy[service]?.trim();
-    const usesOfficialEndpoint = !proxyUrl;
+async function gemini(request: TranslationProviderRequest) {
+    const {service} = request;
+    const proxyUrl = service.endpoint.trim();
     const url = proxyUrl
-        || `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+        || `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(requestModel(request))}:generateContent`;
 
     const headers = new Headers({'Content-Type': 'application/json'});
     // Google documents x-goog-api-key for direct Gemini REST requests. Never
     // forward the Google credential to a user-configured proxy.
-    if (usesOfficialEndpoint) {
-        appendOptionalHeader(headers, 'x-goog-api-key', current.token[service]);
-    }
+    if (!proxyUrl) appendOptionalHeader(headers, 'x-goog-api-key', service.credential.apiKey);
 
     const resp = await runtimeFetch(url, {
         method: method.POST,
         headers,
-        body: geminiMsgTemplate(message.origin, message.pageContext, message.summaryPrompt, message.summarySystemPrompt, service, message.targetLanguage, current),
+        body: geminiBody(request, requireSingleOrigin(request)),
     });
-    if (resp.ok) {
-        const result = await readJsonResponse<any>(resp, 'Gemini 返回的不是有效 JSON');
-        return result.candidates[0].content.parts[0].text;
-    } else {
-        throw createHttpStatusError(resp, '翻译失败');
-    }
+    if (!resp.ok) throw createHttpStatusError(resp, '翻译失败');
+
+    const result = await readJsonResponse<any>(resp, 'Gemini 返回的不是有效 JSON');
+    return result.candidates[0].content.parts[0].text;
 }
 
 export default gemini;

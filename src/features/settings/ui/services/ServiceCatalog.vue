@@ -26,11 +26,7 @@
           </div>
 
           <div v-if="filteredGroups.length" class="service-groups">
-            <section v-for="group in filteredGroups" :key="group.id" class="service-group">
-              <div class="group-heading">
-                <strong>{{ group.label }}</strong>
-                <span>{{ group.items.length }} 项</span>
-              </div>
+            <section v-for="group in filteredGroups" :key="group.id" class="service-group" :aria-label="group.label">
               <div
                 v-for="item in group.items"
                 :key="item.value"
@@ -188,7 +184,7 @@ function serviceModelId(item: TranslationServiceOption): string {
 }
 
 function serviceRemovable(item: TranslationServiceOption): boolean {
-  return item.kind === 'ai'
+  return !item.builtin
 }
 
 function updateServiceEnabled(item: TranslationServiceOption, value: boolean | string | number): void {
@@ -210,10 +206,8 @@ function updateServiceEnabled(item: TranslationServiceOption, value: boolean | s
 .catalog-add-button { display: grid; width: var(--control-height); height: var(--control-height); padding: 0; place-items: center; border: 0; border-radius: var(--radius-control); color: var(--muted); background: var(--surface-soft); cursor: pointer; }
 .catalog-add-button:hover { color: var(--ink); background: var(--line); }
 .catalog-add-button:focus-visible, .service-select:focus-visible, .service-remove-button:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
-.service-groups { display: grid; gap: 18px; margin-top: 16px; }
-.group-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; padding: 0 8px; color: var(--muted); background: transparent; }
-.group-heading strong { color: var(--muted); font-size: var(--font-caption); font-weight: var(--weight-medium); letter-spacing: .02em; }
-.group-heading span { font-family: var(--font-mono); font-size: 11px; }
+.service-groups { display: grid; gap: 14px; margin-top: 16px; }
+.service-group + .service-group { padding-top: 14px; border-top: 1px solid var(--line); }
 .service-group { min-width: 0; }
 .service-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px; width: 100%; padding: 0 8px 0 0; border-radius: var(--radius-control); color: var(--ink); background: transparent; transition: background 150ms ease; }
 .service-item:hover { background: var(--surface-soft); }
@@ -256,6 +250,7 @@ function updateServiceEnabled(item: TranslationServiceOption, value: boolean | s
   .catalog-layout { display: block; flex: 0 0 auto; }
   .service-rail { border-right: 0; border-bottom: 1px solid var(--line); }
   .service-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .service-group + .service-group { padding: 0 0 0 14px; border-top: 0; border-left: 1px solid var(--line); }
   .service-detail { padding: 16px; }
   .service-detail { min-height: 520px; margin: 0; padding: 18px; border: 0; border-radius: 0; overflow: visible; }
   .detail-hero { flex-wrap: wrap; }

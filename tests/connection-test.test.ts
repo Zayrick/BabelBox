@@ -18,9 +18,31 @@ import {
     formatConnectionTestError,
     runTranslationServiceConnectionTest,
 } from '@/src/providers/translation/connectionTest';
-import {TRANSLATION_PROVIDER_CONFIG} from '@/src/services/translation/requestSnapshot';
 import {formatServiceError, getServiceErrorMessage} from '@/src/services/translation/serviceErrors';
 import {services} from '@/src/core/config/catalog';
+
+function demoInstance(overrides: Record<string, unknown> = {}) {
+    return {
+        id: 'demo',
+        provider: 'demo',
+        name: 'Demo',
+        enabled: true,
+        kind: 'ai',
+        modelId: 'demo-model',
+        endpoint: '',
+        customBody: '',
+        systemRole: '',
+        userRole: '',
+        robotId: '',
+        deepseekApiType: 'auto',
+        deepseekThinkingMode: 'disabled',
+        minimaxBillingPlan: 'payg',
+        minimaxRegion: 'cn',
+        mimoBillingPlan: 'payg',
+        mimoRegion: 'cn',
+        ...overrides,
+    };
+}
 
 describe('翻译服务连接测试', () => {
     beforeEach(() => {
@@ -29,34 +51,8 @@ describe('翻译服务连接测试', () => {
             service: 'demo',
             from: 'auto',
             to: 'zh-CN',
-            useCache: true,
-            enableAIContext: false,
-            model: {demo: 'legacy-model'},
-            customModel: {},
-            proxy: {},
-            custom: '',
-            deeplx: '',
-            newApiUrl: '',
-            minimaxBillingPlan: 'payg',
-            minimaxRegion: 'cn',
-            mimoBillingPlan: 'payg',
-            mimoRegion: 'cn',
-            azureOpenaiEndpoint: '',
-            robot_id: {},
-            customBody: {},
-            system_role: {},
-            user_role: {},
-            deepseekApiType: 'auto',
-            deepseekThinkingMode: 'disabled',
-            token: {demo: 'legacy-key'},
-            requireApiKey: {},
-            youdaoAppKey: '',
-            youdaoAppSecret: '',
-            tencentSecretId: '',
-            tencentSecretKey: '',
+            translationServices: [demoInstance()],
             serviceCredentials: {},
-            // Without an explicit inventory, service is already a provider registry key.
-            translationServices: [],
         });
         adapter.mockReset();
     });
@@ -65,51 +61,17 @@ describe('翻译服务连接测试', () => {
         vi.restoreAllMocks();
     });
 
-    it('调用真实适配器并禁用翻译缓存', async () => {
-        adapter.mockResolvedValue('测试译文');
-
-        await expect(runTranslationServiceConnectionTest('demo')).resolves.toEqual(expect.objectContaining({
-            durationMs: expect.any(Number),
-        }));
-        expect(adapter).toHaveBeenCalledWith(expect.objectContaining({
-            origin: CONNECTION_TEST_ORIGIN,
-            serviceOverride: 'demo',
-            modelOverride: 'legacy-model',
-            useCache: false,
-        }));
-    });
-
-    it('按实例解析供应商，并把实例模型、凭据和端点固定到请求快照', async () => {
+    it('调用真实适配器并携带实例配置与凭据，禁用的服务也可以测试', async () => {
         Object.assign(mockConfig, {
-            translationServices: [{
+            translationServices: [demoInstance({
                 id: 'service:demo:first',
-                provider: 'demo',
-                name: 'Demo v2',
                 enabled: false,
-                kind: 'ai',
                 modelId: 'demo-v2',
                 endpoint: 'https://example.test/v2',
-                proxy: '',
                 customBody: '{"temperature":0}',
-                systemRole: 'system prompt',
-                userRole: 'user prompt',
-                robotId: '',
-                requireApiKey: true,
-                deepseekApiType: 'auto',
-                deepseekThinkingMode: 'disabled',
-                minimaxBillingPlan: 'payg',
-                minimaxRegion: 'cn',
-                mimoBillingPlan: 'payg',
-                mimoRegion: 'cn',
-            }],
+            })],
             serviceCredentials: {
-                'service:demo:first': {
-                    apiKey: 'instance-key',
-                    appKey: '',
-                    appSecret: '',
-                    secretId: '',
-                    secretKey: '',
-                },
+                'service:demo:first': {apiKey: 'instance-key', appKey: '', appSecret: '', secretId: '', secretKey: ''},
             },
         });
         adapter.mockResolvedValue('测试译文');
@@ -117,22 +79,17 @@ describe('翻译服务连接测试', () => {
         await expect(runTranslationServiceConnectionTest('service:demo:first')).resolves.toEqual(
             expect.objectContaining({durationMs: expect.any(Number)}),
         );
-
-        const request = adapter.mock.calls[0]?.[0] as Record<PropertyKey, unknown>;
-        expect(request).toEqual(expect.objectContaining({
-            serviceOverride: 'demo',
-            modelOverride: 'demo-v2',
+        expect(adapter).toHaveBeenCalledWith(expect.objectContaining({
+            origin: CONNECTION_TEST_ORIGIN,
+            targetLanguage: 'zh-CN',
+            service: expect.objectContaining({
+                id: 'service:demo:first',
+                modelId: 'demo-v2',
+                endpoint: 'https://example.test/v2',
+                customBody: '{"temperature":0}',
+                credential: expect.objectContaining({apiKey: 'instance-key'}),
+            }),
         }));
-        const snapshot = request[TRANSLATION_PROVIDER_CONFIG] as {
-            model: Record<string, string>;
-            token: Record<string, string>;
-            proxy: Record<string, string>;
-            customBody: Record<string, string>;
-        };
-        expect(snapshot.model.demo).toBe('demo-v2');
-        expect(snapshot.token.demo).toBe('instance-key');
-        expect(snapshot.proxy.demo).toBe('https://example.test/v2');
-        expect(snapshot.customBody.demo).toBe('{"temperature":0}');
     });
 
     it('拒绝空响应，避免把仅 HTTP 成功误报为连接正常', async () => {
@@ -141,10 +98,12 @@ describe('翻译服务连接测试', () => {
         await expect(runTranslationServiceConnectionTest('demo')).rejects.toThrow('没有返回有效译文');
     });
 
-    it('拒绝非字符串响应与未知适配器', async () => {
+    it('拒绝非字符串响应、已删除服务与未知适配器', async () => {
         adapter.mockResolvedValue(['unexpected batch']);
 
         await expect(runTranslationServiceConnectionTest('demo')).rejects.toThrow('没有返回有效译文');
+        await expect(runTranslationServiceConnectionTest('deleted')).rejects.toThrow('翻译服务不存在');
+        (mockConfig.translationServices as unknown[]).push(demoInstance({id: 'missing', provider: 'missing'}));
         await expect(runTranslationServiceConnectionTest('missing')).rejects.toThrow('未找到翻译服务适配器: missing');
     });
 

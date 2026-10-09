@@ -1,12 +1,11 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {
     createTranslationBroker,
+    type ResolvedTranslationService,
     type TranslationBroker,
+    type TranslationProviderRequest,
 } from '@/src/services/translation/broker';
-import {
-    createTranslationProviderConfigSnapshot,
-    getTranslationProviderConfig,
-} from '@/src/services/translation/requestSnapshot';
+import type {TranslationServiceInstance} from '@/src/core/config/translationServices';
 
 type CacheIdentity = {
     [key: string]: unknown;
@@ -18,45 +17,44 @@ type CacheIdentity = {
     provider?: string;
     model?: string;
     endpoint?: string;
-    transportProfile?: string;
     context?: string;
     pageContext?: string;
 };
 
+type ProviderCall = TranslationProviderRequest & {origin: string | string[]};
+
+function instance(id: string, overrides: Partial<TranslationServiceInstance> = {}): TranslationServiceInstance {
+    return {
+        id,
+        provider: id,
+        name: id,
+        enabled: true,
+        kind: 'ai',
+        modelId: '',
+        endpoint: '',
+        customBody: '',
+        systemRole: '',
+        userRole: '',
+        robotId: '',
+        deepseekApiType: 'auto',
+        deepseekThinkingMode: 'disabled',
+        minimaxBillingPlan: 'payg',
+        minimaxRegion: 'cn',
+        mimoBillingPlan: 'payg',
+        mimoRegion: 'cn',
+        ...overrides,
+    };
+}
+
 const mocks = vi.hoisted(() => {
     const cacheStore = new Map<string, string>();
-    const machineServices = new Set([
-        'mock',
-        'custom',
-        'deeplx',
-        'newapi',
-        'minimax',
-        'mimo',
-        'cozecom',
-        'cozecn',
-        'azureOpenai',
-    ]);
-    const aiServices = new Set(['ai', 'aiSdk']);
-    const aiSdkServices = new Set(['aiSdk']);
     const service = vi.fn();
-    const minimaxEndpoints = {
-        payg: {cn: 'https://minimax.payg.cn', global: 'https://minimax.payg.global'},
-        'token-plan': {cn: 'https://minimax.token.cn', global: 'https://minimax.token.global'},
-    } as Record<string, Record<string, string>>;
     const providers = {
-        '': service,
         ai: service,
         aiSdk: service,
-        azureOpenai: service,
-        custom: service,
         cozecom: service,
-        cozecn: service,
-        deeplx: service,
         deepL: service,
-        minimax: service,
-        mimo: service,
         mock: service,
-        newapi: service,
     };
     const buildTranslationCacheKey = vi.fn((identity: unknown) => JSON.stringify(identity));
     const config = {
@@ -65,47 +63,18 @@ const mocks = vi.hoisted(() => {
         to: 'zh-Hans',
         useCache: true,
         enableAIContext: false,
-        model: {
-            mock: 'mock-model',
-            ai: 'ai-model',
-            aiSdk: 'ai-sdk-model',
-            custom: 'custom-model',
-            deeplx: 'deeplx-model',
-            newapi: 'newapi-model',
-            minimax: 'minimax-model',
-            mimo: 'mimo-model',
-        } as Record<string, string>,
-        customModel: {} as Record<string, string>,
-        proxy: {} as Record<string, string>,
-        custom: '',
-        deeplx: '',
-        newApiUrl: '',
-        minimaxBillingPlan: 'payg',
-        minimaxRegion: 'cn',
-        mimoBillingPlan: 'payg',
-        mimoRegion: 'cn',
-        azureOpenaiEndpoint: '',
-        robot_id: {} as Record<string, string>,
-        customBody: {} as Record<string, string>,
-        system_role: {} as Record<string, string>,
-        user_role: {} as Record<string, string>,
-        deepseekApiType: 'auto',
-        deepseekThinkingMode: 'disabled',
+        translationServices: [] as TranslationServiceInstance[],
+        serviceCredentials: {} as Record<string, {apiKey: string; appKey: string; appSecret: string; secretId: string; secretKey: string}>,
     };
 
     return {
-        aiSdkServices,
-        aiServices,
         buildTranslationCacheKey,
         cacheStore,
         config,
         providers,
-        endpointResolver: vi.fn((serviceName: string, _current?: unknown) => ({
-            endpoint: `https://${serviceName}.endpoint.test`,
-        })),
+        describeEndpoint: vi.fn((resolved: ResolvedTranslationService) =>
+            resolved.endpoint || `https://${resolved.provider}.endpoint.test`),
         getMissingCredentialMessage: vi.fn(() => null as string | null),
-        machineServices,
-        minimaxEndpoints,
         service,
         cacheGet: vi.fn(async (key: string) => cacheStore.get(key) ?? null),
         cacheSet: vi.fn(async (key: string, value: string) => {
@@ -118,6 +87,13 @@ const mocks = vi.hoisted(() => {
         cacheCleanup: vi.fn(async () => undefined),
     };
 });
+
+/** The mutable configured instance; edits model what the settings page does. */
+function configured(id: string): TranslationServiceInstance {
+    const found = mocks.config.translationServices.find((item) => item.id === id);
+    if (!found) throw new Error(`missing test service ${id}`);
+    return found;
+}
 
 let translateWithCache: TranslationBroker['translateWithCache'];
 let clearTranslationCache: TranslationBroker['clearTranslationCache'];
@@ -134,19 +110,8 @@ function installBroker(now?: () => number): void {
             clear: mocks.cacheClear,
             cleanup: mocks.cacheCleanup,
         },
-        serviceIds: {minimax: 'minimax', mimo: 'mimo'},
-        serviceTypes: {
-            machine: mocks.machineServices,
-            isAI: (service: string) => mocks.aiServices.has(service),
-            isAiSdk: (service: string) => mocks.aiSdkServices.has(service),
-            isUseAIContext: (service: string) => service === 'ai' || service === 'aiSdk',
-        },
-        endpointResolver: {
-            resolveOpenAICompatibleEndpoint: mocks.endpointResolver,
-            getMimoEndpoint: (plan: string, region: string) => `https://mimo.${plan}.${region}.test`,
-            minimaxEndpoints: mocks.minimaxEndpoints,
-            aiSdkTransportProfile: 'ai-sdk-profile',
-        },
+        describeEndpoint: mocks.describeEndpoint,
+        isUseAIContext: (provider: string) => provider === 'ai' || provider === 'aiSdk',
         promptBuilder: {
             buildPageSummaryPrompt: (pageContext: string) => `summarize:${pageContext}`,
             buildPageSummarySystemPrompt: () => 'summary-system',
@@ -156,17 +121,12 @@ function installBroker(now?: () => number): void {
             sourceLanguage: override?.sourceLanguage || mocks.config.from,
             targetLanguage: override?.targetLanguage || mocks.config.to,
         }),
-        resolveConfiguredModel: (selected?: string, custom?: string) => custom || selected || '',
         buildTranslationCacheKey: mocks.buildTranslationCacheKey,
         now,
     });
     translateWithCache = broker.translateWithCache;
     clearTranslationCache = broker.clearTranslationCache;
     cleanupTranslationCache = broker.cleanupTranslationCache;
-}
-
-function cacheKey(identity: CacheIdentity): string {
-    return JSON.stringify(identity);
 }
 
 function cacheIdentityAt(index: number): CacheIdentity {
@@ -199,63 +159,24 @@ describe('translation broker', () => {
     beforeEach(async () => {
         vi.clearAllMocks();
         mocks.cacheStore.clear();
-        mocks.aiSdkServices.clear();
-        mocks.aiSdkServices.add('aiSdk');
-        mocks.aiServices.clear();
-        mocks.aiServices.add('ai');
-        mocks.aiServices.add('aiSdk');
-        mocks.machineServices.clear();
-        ['mock', 'custom', 'deeplx', 'newapi', 'minimax', 'mimo', 'cozecom', 'cozecn', 'azureOpenai'].forEach(service => mocks.machineServices.add(service));
         Object.assign(mocks.config, {
             service: 'mock',
             from: 'auto',
             to: 'zh-Hans',
             useCache: true,
             enableAIContext: false,
-            proxy: {},
-            custom: '',
-            deeplx: '',
-            newApiUrl: '',
-            minimaxBillingPlan: 'payg',
-            minimaxRegion: 'cn',
-            mimoBillingPlan: 'payg',
-            mimoRegion: 'cn',
-            azureOpenaiEndpoint: '',
-            robot_id: {},
-            customBody: {},
-            system_role: {},
-            user_role: {},
-            deepseekApiType: 'auto',
-            deepseekThinkingMode: 'disabled',
+            translationServices: [
+                instance('mock', {kind: 'machine', modelId: 'mock-model'}),
+                instance('ai', {modelId: 'ai-model'}),
+                instance('aiSdk', {modelId: 'ai-sdk-model'}),
+                instance('cozecom'),
+                instance('deepL', {kind: 'machine'}),
+            ],
+            serviceCredentials: {},
         });
-        mocks.config.model = {
-            mock: 'mock-model',
-            ai: 'ai-model',
-            aiSdk: 'ai-sdk-model',
-            azureOpenai: 'azure-openai-model',
-            custom: 'custom-model',
-            cozecom: 'coze-model',
-            cozecn: 'coze-cn-model',
-            deeplx: 'deeplx-model',
-            newapi: 'newapi-model',
-            minimax: 'minimax-model',
-            mimo: 'mimo-model',
-        };
-        mocks.config.customModel = {};
-        delete (mocks.config as Record<string, unknown>).translationServices;
-        delete (mocks.config as Record<string, unknown>).serviceCredentials;
-        delete (mocks.config as Record<string, unknown>).token;
-        delete (mocks.config as Record<string, unknown>).requireApiKey;
         mocks.service.mockReset();
         mocks.service.mockResolvedValue('默认译文');
         mocks.getMissingCredentialMessage.mockReturnValue(null);
-        mocks.endpointResolver.mockImplementation((serviceName: string, _current?: unknown) => ({
-            endpoint: `https://${serviceName}.endpoint.test`,
-        }));
-        Object.assign(mocks.minimaxEndpoints, {
-            payg: {cn: 'https://minimax.payg.cn', global: 'https://minimax.payg.global'},
-            'token-plan': {cn: 'https://minimax.token.cn', global: 'https://minimax.token.global'},
-        });
         installBroker();
     });
 
@@ -430,101 +351,38 @@ describe('translation broker', () => {
         await expect(second).resolves.toEqual(['P-译文', 'Q-译文']);
     });
 
-    it('builds provider cache identities for proxy, custom endpoints, Minimax, Mimo, and AI SDK services', async () => {
-        mocks.config.proxy.mock = 'https://proxy.example';
+    it('builds cache identities from the instance request fields', async () => {
+        configured('mock').endpoint = 'https://proxy.example';
         await translateWithCache({origin: 'Proxy'});
-        expect(translationCacheIdentities().at(-1)).toMatchObject({endpoint: 'https://proxy.example'});
-
-        mocks.config.service = 'custom';
-        mocks.config.custom = 'https://custom.example';
-        await translateWithCache({origin: 'Custom'});
-        expect(translationCacheIdentities().at(-1)).toMatchObject({service: 'custom', endpoint: 'https://custom.example'});
-
-        mocks.config.service = 'deeplx';
-        mocks.config.deeplx = 'https://deeplx.example';
-        await translateWithCache({origin: 'DeepLX'});
-        expect(translationCacheIdentities().at(-1)).toMatchObject({service: 'deeplx', endpoint: 'https://deeplx.example'});
-
-        mocks.config.service = 'newapi';
-        mocks.config.newApiUrl = 'https://newapi.example';
-        await translateWithCache({origin: 'New API'});
-        expect(translationCacheIdentities().at(-1)).toMatchObject({service: 'newapi', endpoint: 'https://newapi.example'});
-
-        mocks.config.service = 'minimax';
-        mocks.config.minimaxBillingPlan = 'token-plan';
-        mocks.config.minimaxRegion = 'global';
-        await translateWithCache({origin: 'Minimax'});
-        expect(translationCacheIdentities().at(-1)).toMatchObject({service: 'minimax', endpoint: 'https://minimax.token.global'});
-
-        mocks.config.service = 'mimo';
-        mocks.config.mimoBillingPlan = 'subscription';
-        mocks.config.mimoRegion = 'global';
-        await translateWithCache({origin: 'Mimo'});
-        expect(translationCacheIdentities().at(-1)).toMatchObject({service: 'mimo', endpoint: 'https://mimo.subscription.global.test'});
+        expect(translationCacheIdentities().at(-1)).toMatchObject({
+            service: 'mock',
+            provider: 'mock',
+            model: 'mock-model',
+            endpoint: 'https://proxy.example',
+        });
 
         mocks.config.service = 'aiSdk';
         await translateWithCache({origin: 'AI SDK'});
-        expect(mocks.endpointResolver).toHaveBeenCalledWith('aiSdk', expect.any(Object));
-        expect(translationCacheIdentities().at(-1)).toMatchObject({
-            endpoint: 'https://aiSdk.endpoint.test',
-            transportProfile: 'ai-sdk-profile',
-        });
+        expect(mocks.describeEndpoint).toHaveBeenLastCalledWith(expect.objectContaining({id: 'aiSdk'}));
+        expect(translationCacheIdentities().at(-1)).toMatchObject({endpoint: 'https://aiSdk.endpoint.test'});
 
         mocks.config.service = 'cozecom';
-        mocks.config.robot_id.cozecom = 'robot-1';
+        configured('cozecom').robotId = 'robot-1';
         await translateWithCache({origin: 'Coze'});
-        expect(translationCacheIdentities().at(-1)).toMatchObject({
-            robotId: 'robot-1',
-            service: 'cozecom',
-        });
-
-        mocks.config.service = 'cozecn';
-        await translateWithCache({origin: 'Coze CN'});
-        expect(translationCacheIdentities().at(-1)).toMatchObject({
-            robotId: '',
-            service: 'cozecn',
-        });
-
-        mocks.config.service = 'azureOpenai';
-        mocks.config.azureOpenaiEndpoint = 'https://azure-openai.example';
-        await translateWithCache({origin: 'Azure OpenAI'});
-        expect(translationCacheIdentities().at(-1)).toMatchObject({
-            azureOpenaiEndpoint: 'https://azure-openai.example',
-            service: 'azureOpenai',
-        });
+        expect(translationCacheIdentities().at(-1)).toMatchObject({robotId: 'robot-1', service: 'cozecom'});
     });
 
-    it('passes modelOverride through credential checks, cache identity, and provider calls', async () => {
-        mocks.service.mockResolvedValue('覆盖模型译文');
-
-        await expect(translateWithCache({
-            origin: 'Model override',
-            modelOverride: 'manual-model',
-            serviceOverride: 'ai',
-        })).resolves.toBe('覆盖模型译文');
-
-        expect(mocks.getMissingCredentialMessage).toHaveBeenCalledWith('ai', expect.objectContaining({
-            model: expect.objectContaining({ai: 'manual-model'}),
-            customModel: expect.objectContaining({ai: 'manual-model'}),
-        }));
-        expect(translationCacheIdentities().at(-1)).toMatchObject({service: 'ai', model: 'manual-model'});
-        expect(mocks.service).toHaveBeenCalledWith(expect.objectContaining({
-            modelOverride: 'manual-model',
-            serviceOverride: 'ai',
-        }));
-    });
-
-    it('reports credential, unsupported override, and missing adapter failures before provider calls', async () => {
+    it('reports credential, deleted service, and missing adapter failures before provider calls', async () => {
         mocks.getMissingCredentialMessage.mockReturnValueOnce('缺少凭据');
         await expect(translateWithCache({origin: 'Credential'})).rejects.toThrow('缺少凭据');
 
         await expect(translateWithCache({
-            origin: 'Unsupported',
-            serviceOverride: 'unsupported',
-        })).rejects.toThrow('独立翻译服务不可用');
+            origin: 'Deleted',
+            serviceOverride: 'service:ai:deleted',
+        })).rejects.toThrow('翻译服务不存在或已被删除');
 
+        mocks.config.translationServices.push(instance('missing'));
         mocks.config.service = 'missing';
-        mocks.machineServices.add('missing');
         await expect(translateWithCache({origin: 'Missing adapter'})).rejects.toThrow('未找到翻译服务适配器: missing');
 
         expect(mocks.service).not.toHaveBeenCalled();
@@ -533,53 +391,21 @@ describe('translation broker', () => {
     it('keeps sibling instances of one provider isolated in requests and cache identity', async () => {
         const firstId = 'service:ai:first';
         const secondId = 'service:ai:second';
-        const instance = (id: string, modelId: string, endpoint: string) => ({
-            id,
-            provider: 'ai',
-            name: modelId,
-            enabled: true,
-            kind: 'ai',
-            modelId,
-            endpoint,
-            proxy: '',
-            customBody: '',
-            systemRole: '',
-            userRole: '',
-            robotId: '',
-            requireApiKey: true,
-            deepseekApiType: 'auto',
-            deepseekThinkingMode: 'disabled',
-            minimaxBillingPlan: 'payg',
-            minimaxRegion: 'cn',
-            mimoBillingPlan: 'payg',
-            mimoRegion: 'cn',
-        });
         Object.assign(mocks.config, {
             service: firstId,
             translationServices: [
-                instance(firstId, 'first-model', 'https://first.example.test/v1'),
-                instance(secondId, 'second-model', 'https://second.example.test/v1'),
+                instance(firstId, {provider: 'ai', modelId: 'first-model', endpoint: 'https://first.example.test/v1'}),
+                instance(secondId, {provider: 'ai', modelId: 'second-model', endpoint: 'https://second.example.test/v1'}),
             ],
             serviceCredentials: {
                 [firstId]: {apiKey: 'first-secret', appKey: '', appSecret: '', secretId: '', secretKey: ''},
                 [secondId]: {apiKey: 'second-secret', appKey: '', appSecret: '', secretId: '', secretKey: ''},
             },
-            token: {ai: 'legacy-secret'},
-            requireApiKey: {},
         });
-        mocks.service.mockImplementation(async (message: Record<string, unknown>) => {
-            const current = getTranslationProviderConfig(
-                message,
-                createTranslationProviderConfigSnapshot(mocks.config),
-            );
-            return `${current.model.ai}|${current.proxy.ai}|${current.token.ai}`;
-        });
+        mocks.service.mockImplementation(async ({service}: ProviderCall) =>
+            `${service.modelId}|${service.endpoint}|${service.credential.apiKey}`);
 
-        await expect(translateWithCache({
-            origin: 'same',
-            serviceOverride: firstId,
-            modelOverride: 'stale-content-model',
-        }))
+        await expect(translateWithCache({origin: 'same', serviceOverride: firstId}))
             .resolves.toBe('first-model|https://first.example.test/v1|first-secret');
         await expect(translateWithCache({origin: 'same', serviceOverride: secondId}))
             .resolves.toBe('second-model|https://second.example.test/v1|second-secret');
@@ -594,31 +420,8 @@ describe('translation broker', () => {
     });
 
     it('rejects a disabled instance before credentials, cache, or provider work', async () => {
-        const instanceId = 'service:ai:disabled';
-        Object.assign(mocks.config, {
-            service: instanceId,
-            translationServices: [{
-                id: instanceId,
-                provider: 'ai',
-                name: 'Disabled AI',
-                enabled: false,
-                kind: 'ai',
-                modelId: 'disabled-model',
-                endpoint: '',
-                proxy: '',
-                customBody: '',
-                systemRole: '',
-                userRole: '',
-                robotId: '',
-                requireApiKey: true,
-                deepseekApiType: 'auto',
-                deepseekThinkingMode: 'disabled',
-                minimaxBillingPlan: 'payg',
-                minimaxRegion: 'cn',
-                mimoBillingPlan: 'payg',
-                mimoRegion: 'cn',
-            }],
-        });
+        configured('ai').enabled = false;
+        mocks.config.service = 'ai';
 
         await expect(translateWithCache({origin: 'blocked'})).rejects.toThrow('已禁用');
         expect(mocks.getMissingCredentialMessage).not.toHaveBeenCalled();
@@ -627,9 +430,7 @@ describe('translation broker', () => {
     });
 
     it('adds DeepL context and AI page context only when the target service consumes them', async () => {
-        mocks.machineServices.add('deepL');
         mocks.config.service = 'deepL';
-        mocks.config.model.deepL = 'deepl-model';
         await translateWithCache({origin: 'DeepL text', context: 'Title'});
         expect(translationCacheIdentities().at(-1)).toMatchObject({service: 'deepL', context: 'Title'});
 
@@ -645,16 +446,19 @@ describe('translation broker', () => {
         mocks.config.service = 'ai';
         mocks.config.enableAIContext = true;
 
-        const persistedSummaryKey = cacheKey({
+        const persistedSummaryKey = JSON.stringify({
             requestMode: 'page-summary',
-            sourceLanguage: 'auto',
-            targetLanguage: '',
             sourceText: 'Persisted context',
             service: 'ai',
             provider: 'ai',
             model: 'ai-model',
-            endpoint: '',
+            endpoint: 'https://ai.endpoint.test',
+            robotId: '',
             customBody: '',
+            systemRole: '',
+            userRole: '',
+            deepseekApiType: 'auto',
+            deepseekThinkingMode: 'disabled',
         });
         mocks.cacheStore.set(persistedSummaryKey, 'Persisted summary');
         await translateWithCache({origin: 'Persisted', pageContext: 'Persisted context'});
@@ -976,12 +780,13 @@ describe('translation broker', () => {
     it('records every cache identity input expected by the broker contract', async () => {
         mocks.config.service = 'aiSdk';
         mocks.config.enableAIContext = true;
-        mocks.config.customBody.aiSdk = '{"temperature":0}';
-        mocks.config.system_role.aiSdk = 'system';
-        mocks.config.user_role.aiSdk = 'user';
-        mocks.config.robot_id.aiSdk = 'ignored';
-        mocks.config.deepseekApiType = 'reasoner';
-        mocks.config.deepseekThinkingMode = 'enabled';
+        Object.assign(configured('aiSdk'), {
+            customBody: '{"temperature":0}',
+            systemRole: 'system',
+            userRole: 'user',
+            deepseekApiType: 'responses',
+            deepseekThinkingMode: 'enabled',
+        });
 
         await translateWithCache({
             origin: 'Identity',
@@ -998,12 +803,11 @@ describe('translation broker', () => {
                 endpoint: 'https://aiSdk.endpoint.test',
                 model: 'ai-sdk-model',
                 sourceText: 'Identity context',
-                transportProfile: 'ai-sdk-profile',
             }),
             expect.objectContaining({
                 requestMode: 'single',
                 customBody: '{"temperature":0}',
-                deepseekApiType: 'reasoner',
+                deepseekApiType: 'responses',
                 deepseekThinkingMode: 'enabled',
                 endpoint: 'https://aiSdk.endpoint.test',
                 model: 'ai-sdk-model',
@@ -1012,7 +816,6 @@ describe('translation broker', () => {
                 sourceText: 'Identity',
                 systemRole: 'system',
                 targetLanguage: 'fr',
-                transportProfile: 'ai-sdk-profile',
                 userRole: 'user',
             }),
         ]));
@@ -1047,88 +850,53 @@ describe('translation broker', () => {
 
     it('cache.get 等待期间配置变化时，单条 provider 与缓存身份仍共用同一不可变快照', async () => {
         mocks.config.service = 'aiSdk';
-        mocks.config.model.aiSdk = 'model-a';
-        mocks.config.proxy.aiSdk = 'https://proxy-a.example/v1';
-        mocks.config.customBody.aiSdk = '{"temperature":0.1}';
-        mocks.config.system_role.aiSdk = 'system-a';
-        mocks.config.user_role.aiSdk = 'user-a';
-        mocks.endpointResolver.mockImplementation((serviceName: string, current?: unknown) => ({
-            endpoint: (current as {proxy: Record<string, string>}).proxy[serviceName],
-        }));
+        const aiSdk = configured('aiSdk');
+        Object.assign(aiSdk, {
+            modelId: 'model-a',
+            endpoint: 'https://proxy-a.example/v1',
+            customBody: '{"temperature":0.1}',
+            systemRole: 'system-a',
+        });
 
         const firstCacheRead = deferred<string | null>();
         mocks.cacheGet
             .mockImplementationOnce(() => firstCacheRead.promise)
             .mockImplementation(async (key: string) => mocks.cacheStore.get(key) ?? null);
-        const providerSnapshots: ReturnType<typeof createTranslationProviderConfigSnapshot>[] = [];
-        mocks.service.mockImplementation(async (message: Record<string, unknown>) => {
-            const current = getTranslationProviderConfig(
-                message,
-                createTranslationProviderConfigSnapshot(mocks.config),
-            );
-            providerSnapshots.push(current);
-            return [
-                current.model.aiSdk,
-                current.proxy.aiSdk,
-                current.customBody.aiSdk,
-                current.system_role.aiSdk,
-                current.user_role.aiSdk,
-            ].join('|');
+        const providerServices: ResolvedTranslationService[] = [];
+        mocks.service.mockImplementation(async ({service}: ProviderCall) => {
+            providerServices.push(service);
+            return [service.modelId, service.endpoint, service.customBody, service.systemRole].join('|');
         });
 
         const oldRequest = translateWithCache({origin: 'snapshot-race'});
         await vi.waitFor(() => expect(mocks.cacheGet).toHaveBeenCalledOnce());
 
-        mocks.config.model.aiSdk = 'model-b';
-        mocks.config.proxy.aiSdk = 'https://proxy-b.example/v1';
-        mocks.config.customBody.aiSdk = '{"temperature":0.9}';
-        mocks.config.system_role.aiSdk = 'system-b';
-        mocks.config.user_role.aiSdk = 'user-b';
+        Object.assign(aiSdk, {
+            modelId: 'model-b',
+            endpoint: 'https://proxy-b.example/v1',
+            customBody: '{"temperature":0.9}',
+            systemRole: 'system-b',
+        });
         firstCacheRead.resolve(null);
 
-        await expect(oldRequest).resolves.toBe(
-            'model-a|https://proxy-a.example/v1|{"temperature":0.1}|system-a|user-a',
-        );
-        expect(providerSnapshots).toHaveLength(1);
-        expect(Object.isFrozen(providerSnapshots[0])).toBe(true);
-        expect(Object.isFrozen(providerSnapshots[0].proxy)).toBe(true);
+        await expect(oldRequest).resolves.toBe('model-a|https://proxy-a.example/v1|{"temperature":0.1}|system-a');
+        expect(Object.isFrozen(providerServices[0])).toBe(true);
         expect(JSON.parse(mocks.cacheSet.mock.calls[0][0])).toMatchObject({
             model: 'model-a',
             endpoint: 'https://proxy-a.example/v1',
             customBody: '{"temperature":0.1}',
             systemRole: 'system-a',
-            userRole: 'user-a',
         });
 
-        await expect(translateWithCache({origin: 'snapshot-race'})).resolves.toBe(
-            'model-b|https://proxy-b.example/v1|{"temperature":0.9}|system-b|user-b',
-        );
+        await expect(translateWithCache({origin: 'snapshot-race'}))
+            .resolves.toBe('model-b|https://proxy-b.example/v1|{"temperature":0.9}|system-b');
         expect(mocks.service).toHaveBeenCalledTimes(2);
-        expect(mocks.cacheSet.mock.calls.map(([key, value]) => ({
-            identity: JSON.parse(key),
-            value,
-        }))).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                identity: expect.objectContaining({model: 'model-a', endpoint: 'https://proxy-a.example/v1'}),
-                value: expect.stringContaining('model-a|https://proxy-a.example/v1'),
-            }),
-            expect.objectContaining({
-                identity: expect.objectContaining({model: 'model-b', endpoint: 'https://proxy-b.example/v1'}),
-                value: expect.stringContaining('model-b|https://proxy-b.example/v1'),
-            }),
-        ]));
     });
 
     it('批量冷缓存读取期间配置变化时，所有读写 key 与 provider 都固定在请求快照', async () => {
         mocks.config.service = 'aiSdk';
-        mocks.config.model.aiSdk = 'batch-model-a';
-        mocks.config.proxy.aiSdk = 'https://batch-a.example/v1';
-        mocks.config.customBody.aiSdk = '{"batch":"a"}';
-        mocks.config.system_role.aiSdk = 'batch-system-a';
-        mocks.config.user_role.aiSdk = 'batch-user-a';
-        mocks.endpointResolver.mockImplementation((serviceName: string, current?: unknown) => ({
-            endpoint: (current as {proxy: Record<string, string>}).proxy[serviceName],
-        }));
+        const aiSdk = configured('aiSdk');
+        Object.assign(aiSdk, {modelId: 'batch-model-a', endpoint: 'https://batch-a.example/v1'});
 
         const firstRead = deferred<string | null>();
         const secondRead = deferred<string | null>();
@@ -1136,42 +904,18 @@ describe('translation broker', () => {
             .mockImplementationOnce(() => firstRead.promise)
             .mockImplementationOnce(() => secondRead.promise)
             .mockImplementation(async (key: string) => mocks.cacheStore.get(key) ?? null);
-        const providerSnapshots: ReturnType<typeof createTranslationProviderConfigSnapshot>[] = [];
-        mocks.service.mockImplementation(async (message: {origin: string[]} & Record<string, unknown>) => {
-            const current = getTranslationProviderConfig(
-                message,
-                createTranslationProviderConfigSnapshot(mocks.config),
-            );
-            providerSnapshots.push(current);
-            return message.origin.map((origin) => `${origin}:${current.model.aiSdk}:${current.proxy.aiSdk}`);
-        });
+        mocks.service.mockImplementation(async ({service, origin}: ProviderCall) =>
+            (origin as string[]).map((text) => `${text}:${service.modelId}:${service.endpoint}`));
 
         const oldRequest = translateWithCache({origin: ['batch-one', 'batch-two']});
         await vi.waitFor(() => expect(mocks.cacheGet).toHaveBeenCalledTimes(2));
         const oldReadIdentities = mocks.cacheGet.mock.calls.slice(0, 2).map(([key]) => JSON.parse(key));
         expect(oldReadIdentities).toEqual([
-            expect.objectContaining({
-                requestMode: 'batch',
-                sourceText: 'batch-one',
-                model: 'batch-model-a',
-                endpoint: 'https://batch-a.example/v1',
-                customBody: '{"batch":"a"}',
-                systemRole: 'batch-system-a',
-                userRole: 'batch-user-a',
-            }),
-            expect.objectContaining({
-                requestMode: 'batch',
-                sourceText: 'batch-two',
-                model: 'batch-model-a',
-                endpoint: 'https://batch-a.example/v1',
-            }),
+            expect.objectContaining({requestMode: 'batch', sourceText: 'batch-one', model: 'batch-model-a'}),
+            expect.objectContaining({requestMode: 'batch', sourceText: 'batch-two', model: 'batch-model-a'}),
         ]);
 
-        mocks.config.model.aiSdk = 'batch-model-b';
-        mocks.config.proxy.aiSdk = 'https://batch-b.example/v1';
-        mocks.config.customBody.aiSdk = '{"batch":"b"}';
-        mocks.config.system_role.aiSdk = 'batch-system-b';
-        mocks.config.user_role.aiSdk = 'batch-user-b';
+        Object.assign(aiSdk, {modelId: 'batch-model-b', endpoint: 'https://batch-b.example/v1'});
         firstRead.resolve(null);
         secondRead.resolve(null);
 
@@ -1179,119 +923,42 @@ describe('translation broker', () => {
             'batch-one:batch-model-a:https://batch-a.example/v1',
             'batch-two:batch-model-a:https://batch-a.example/v1',
         ]);
-        expect(providerSnapshots).toHaveLength(1);
-        expect(providerSnapshots[0].model.aiSdk).toBe('batch-model-a');
-        const oldWriteIdentities = mocks.cacheSet.mock.calls.slice(0, 2).map(([key]) => JSON.parse(key));
-        expect(oldWriteIdentities).toEqual(oldReadIdentities);
+        expect(mocks.cacheSet.mock.calls.slice(0, 2).map(([key]) => JSON.parse(key))).toEqual(oldReadIdentities);
 
         await expect(translateWithCache({origin: ['batch-one', 'batch-two']})).resolves.toEqual([
             'batch-one:batch-model-b:https://batch-b.example/v1',
             'batch-two:batch-model-b:https://batch-b.example/v1',
-        ]);
-        expect(mocks.service).toHaveBeenCalledTimes(2);
-        expect(providerSnapshots[1].model.aiSdk).toBe('batch-model-b');
-        expect(mocks.cacheGet.mock.calls.slice(2).map(([key]) => JSON.parse(key))).toEqual([
-            expect.objectContaining({sourceText: 'batch-one', model: 'batch-model-b'}),
-            expect.objectContaining({sourceText: 'batch-two', model: 'batch-model-b'}),
-        ]);
-        expect(mocks.cacheSet.mock.calls.slice(2).map(([key]) => JSON.parse(key))).toEqual([
-            expect.objectContaining({sourceText: 'batch-one', model: 'batch-model-b'}),
-            expect.objectContaining({sourceText: 'batch-two', model: 'batch-model-b'}),
         ]);
     });
 
     it('AI 摘要等待缓存时沿用请求快照，后续配置不会交叉污染摘要与正文缓存', async () => {
         mocks.config.service = 'aiSdk';
         mocks.config.enableAIContext = true;
-        mocks.config.model.aiSdk = 'summary-model-a';
-        mocks.config.proxy.aiSdk = 'https://summary-a.example/v1';
-        mocks.config.customBody.aiSdk = '{"seed":"a"}';
-        mocks.config.system_role.aiSdk = 'summary-system-a';
-        mocks.config.user_role.aiSdk = 'summary-user-a';
-        mocks.endpointResolver.mockImplementation((serviceName: string, current?: unknown) => ({
-            endpoint: (current as {proxy: Record<string, string>}).proxy[serviceName],
-        }));
+        const aiSdk = configured('aiSdk');
+        aiSdk.modelId = 'summary-model-a';
 
         const summaryCacheRead = deferred<string | null>();
         mocks.cacheGet
             .mockImplementationOnce(() => summaryCacheRead.promise)
             .mockImplementation(async (key: string) => mocks.cacheStore.get(key) ?? null);
-        const providerCalls: Array<{summary: boolean; snapshot: ReturnType<typeof createTranslationProviderConfigSnapshot>}> = [];
-        mocks.service.mockImplementation(async (message: Record<string, unknown>) => {
-            const current = getTranslationProviderConfig(
-                message,
-                createTranslationProviderConfigSnapshot(mocks.config),
-            );
-            const summary = typeof message.summaryPrompt === 'string';
-            providerCalls.push({summary, snapshot: current});
-            return summary
-                ? `summary:${current.model.aiSdk}:${current.system_role.aiSdk}`
-                : `translation:${current.model.aiSdk}:${current.proxy.aiSdk}:${current.user_role.aiSdk}`;
-        });
+        mocks.service.mockImplementation(async ({service, summaryPrompt}: ProviderCall) =>
+            `${summaryPrompt ? 'summary' : 'translation'}:${service.modelId}`);
 
         const oldRequest = translateWithCache({origin: 'summary-race', pageContext: 'shared article'});
         await vi.waitFor(() => expect(mocks.cacheGet).toHaveBeenCalledOnce());
-
-        mocks.config.model.aiSdk = 'summary-model-b';
-        mocks.config.proxy.aiSdk = 'https://summary-b.example/v1';
-        mocks.config.customBody.aiSdk = '{"seed":"b"}';
-        mocks.config.system_role.aiSdk = 'summary-system-b';
-        mocks.config.user_role.aiSdk = 'summary-user-b';
+        aiSdk.modelId = 'summary-model-b';
         summaryCacheRead.resolve(null);
 
-        await expect(oldRequest).resolves.toBe(
-            'translation:summary-model-a:https://summary-a.example/v1:summary-user-a',
-        );
-        expect(providerCalls).toHaveLength(2);
-        expect(providerCalls.map(({summary, snapshot}) => ({
-            summary,
-            model: snapshot.model.aiSdk,
-            endpoint: snapshot.proxy.aiSdk,
-            systemRole: snapshot.system_role.aiSdk,
-            userRole: snapshot.user_role.aiSdk,
-        }))).toEqual([
-            {
-                summary: true,
-                model: 'summary-model-a',
-                endpoint: 'https://summary-a.example/v1',
-                systemRole: 'summary-system-a',
-                userRole: 'summary-user-a',
-            },
-            {
-                summary: false,
-                model: 'summary-model-a',
-                endpoint: 'https://summary-a.example/v1',
-                systemRole: 'summary-system-a',
-                userRole: 'summary-user-a',
-            },
-        ]);
-
-        const oldWrites = mocks.cacheSet.mock.calls.map(([key]) => JSON.parse(key) as CacheIdentity);
-        expect(oldWrites).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                requestMode: 'page-summary',
-                model: 'summary-model-a',
-                endpoint: 'https://summary-a.example/v1',
-                customBody: '{"seed":"a"}',
-            }),
-            expect.objectContaining({
-                requestMode: 'single',
-                model: 'summary-model-a',
-                endpoint: 'https://summary-a.example/v1',
-                systemRole: 'summary-system-a',
-                userRole: 'summary-user-a',
-            }),
+        await expect(oldRequest).resolves.toBe('translation:summary-model-a');
+        expect(mocks.service.mock.calls.map(([call]) => (call as ProviderCall).service.modelId))
+            .toEqual(['summary-model-a', 'summary-model-a']);
+        expect(mocks.cacheSet.mock.calls.map(([key]) => JSON.parse(key) as CacheIdentity)).toEqual(expect.arrayContaining([
+            expect.objectContaining({requestMode: 'page-summary', model: 'summary-model-a'}),
+            expect.objectContaining({requestMode: 'single', model: 'summary-model-a'}),
         ]));
 
-        await expect(translateWithCache({origin: 'summary-race', pageContext: 'shared article'})).resolves.toBe(
-            'translation:summary-model-b:https://summary-b.example/v1:summary-user-b',
-        );
-        expect(providerCalls).toHaveLength(4);
-        expect(providerCalls.slice(2).every(({snapshot}) => snapshot.model.aiSdk === 'summary-model-b')).toBe(true);
-        const allWrites = mocks.cacheSet.mock.calls.map(([key]) => JSON.parse(key) as CacheIdentity);
-        expect(allWrites).toEqual(expect.arrayContaining([
-            expect.objectContaining({requestMode: 'page-summary', model: 'summary-model-b'}),
-            expect.objectContaining({requestMode: 'single', model: 'summary-model-b'}),
-        ]));
+        await expect(translateWithCache({origin: 'summary-race', pageContext: 'shared article'}))
+            .resolves.toBe('translation:summary-model-b');
     });
+
 });

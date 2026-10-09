@@ -68,7 +68,7 @@
             </label>
             <el-scrollbar class="service-picker-groups" aria-label="可添加的翻译服务">
               <div class="service-picker-groups-content">
-                <section v-for="group in filteredServiceGroups" :key="group.key" class="service-picker-group">
+                <section v-for="group in filteredServiceGroups" :key="group.id" class="service-picker-group">
                   <div class="service-picker-group-heading">
                     <strong>{{ group.label }}</strong>
                   </div>
@@ -233,6 +233,7 @@ import {
 } from '@lucide/vue'
 import {browser} from 'wxt/browser'
 import ServiceIcon from '@/src/ui/components/ServiceIcon.vue'
+import { buildServiceGroups, filterServiceGroups } from '@/src/ui/view-model/serviceCatalog'
 import { vAutosize } from '@/src/ui/composables/autosize'
 import {
   getSelectableTranslationServices,
@@ -241,7 +242,6 @@ import {
 import { options } from '@/src/core/config/catalog'
 import {
   getTranslationServiceOptions,
-  type TranslationServiceOption,
 } from '@/src/core/config/translationServices'
 import { config, configReady, requestConfigSave, subscribeConfig } from '@/src/services/config/store'
 import { translateText } from '@/src/services/translation/client'
@@ -307,25 +307,10 @@ const sourceLanguageOptions = computed(() => [
   ...options.to,
 ])
 const targetLanguageOptions = computed(() => options.to)
-const filteredServiceGroups = computed(() => {
-  const keyword = serviceSearchQuery.value.toLocaleLowerCase()
-  const filterItems = (items: TranslationServiceOption[]) => items.filter(item => {
-    if (!keyword) return true
-    return `${item.label}${item.description || ''}`.toLocaleLowerCase().includes(keyword)
-  })
-  return [
-    {
-      key: 'machine',
-      label: '机器翻译',
-      items: filterItems(availableServiceOptions.value.filter(item => item.kind === 'machine')),
-    },
-    {
-      key: 'ai',
-      label: 'AI 翻译',
-      items: filterItems(availableServiceOptions.value.filter(item => item.kind === 'ai')),
-    },
-  ].filter(group => group.items.length > 0)
-})
+const filteredServiceGroups = computed(() => filterServiceGroups(
+  buildServiceGroups(availableServiceOptions.value),
+  serviceSearchQuery.value,
+))
 
 function createCard(service: string): TranslationCard {
   return { service, status: 'idle', result: '', error: '', duration: 0, run: 0 }
@@ -773,7 +758,7 @@ onUnmounted(() => {
 .service-picker-search input::placeholder { color: var(--el-text-color-placeholder); }
 .service-picker-groups { height: auto; min-height: 0; flex: 1 1 auto; }
 .service-picker-groups-content { padding: 0 7px 8px; }
-.service-picker-group + .service-picker-group { margin-top: 8px; }
+.service-picker-group + .service-picker-group { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
 .service-picker-group-heading { padding: 7px 7px 5px; }
 .service-picker-group-heading strong { color: var(--ink); font-size: var(--font-caption); }
 .service-picker-option { display: flex; align-items: center; width: 100%; min-height: var(--control-height-large); gap: 9px; padding: 6px; border: 0; border-radius: var(--radius-control); color: var(--ink); background: transparent; cursor: pointer; text-align: left; }

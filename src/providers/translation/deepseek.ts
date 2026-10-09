@@ -1,51 +1,32 @@
 import { method, urls } from "@/src/core/config/constants";
-import {deepseekMsgTemplate, deepseekResponsesMsgTemplate} from '@/src/services/translation/templates';
-import { config } from "@/src/services/config/store";
+import {deepseekChatBody, deepseekResponsesBody} from '@/src/services/translation/templates';
 import {stripTranslationReasoning as contentPostHandler} from '@/src/core/translation/prompts';
 import { appendOptionalBearer } from './auth';
 import {createHttpStatusError, readJsonResponse} from '@/src/platform/http/errors';
 import {runtimeFetch} from '@/src/platform/http/runtime';
-import {getTranslationProviderConfig} from '@/src/services/translation/requestSnapshot';
-import type {TranslationProviderConfigSnapshot} from '@/src/services/translation/types';
+import type {TranslationProviderRequest} from '@/src/services/translation/types';
+import {requireSingleOrigin} from './request';
 
-// 当前官方 V4 文档以 Chat Completion 为主；Responses API 仅在用户明确选择时启用，
-// 便于兼容已经支持该协议的代理或网关。
-function useResponsesApi(current: TranslationProviderConfigSnapshot) {
-    const apiType = current.deepseekApiType;
-    if (apiType === 'responses') return true;
-    return false;
-}
+async function deepseek(request: TranslationProviderRequest) {
+    const {service} = request;
+    const origin = requireSingleOrigin(request);
+    const headers = new Headers({'Content-Type': 'application/json'});
+    appendOptionalBearer(headers, service.credential.apiKey);
 
-async function deepseek(message: any) {
-    try {
-        const current = getTranslationProviderConfig(message, config);
-        const service = message.serviceOverride || current.service;
-        const headers = new Headers({'Content-Type': 'application/json'});
-        appendOptionalBearer(headers, current.token[service]);
+    // 当前官方 V4 文档以 Chat Completion 为主；Responses API 仅在用户明确选择时启用，
+    // 便于兼容已经支持该协议的代理或网关。
+    const isResponses = service.deepseekApiType === 'responses';
+    const url = buildDeepSeekEndpoint(service.endpoint || urls[service.provider], isResponses);
 
-        const endpoint = current.proxy[service] || urls[service];
-        const isResponses = useResponsesApi(current);
-        const url = buildDeepSeekEndpoint(endpoint, isResponses);
+    const resp = await runtimeFetch(url, {
+        method: method.POST,
+        headers,
+        body: isResponses ? deepseekResponsesBody(request, origin) : deepseekChatBody(request, origin),
+    });
+    if (!resp.ok) throw createHttpStatusError(resp, '翻译失败');
 
-        const resp = await runtimeFetch(url, {
-            method: method.POST,
-            headers,
-            body: isResponses
-                ? deepseekResponsesMsgTemplate(message.origin, message.pageContext, message.summaryPrompt, message.summarySystemPrompt, service, message.targetLanguage, message.modelOverride, current)
-                : deepseekMsgTemplate(message.origin, message.pageContext, message.summaryPrompt, message.summarySystemPrompt, service, message.targetLanguage, message.modelOverride, current)
-        });
-
-        if (!resp.ok) {
-            throw createHttpStatusError(resp, '翻译失败');
-        }
-
-        const result = await readJsonResponse<any>(resp, 'DeepSeek 返回的不是有效 JSON');
-        return isResponses
-            ? extractResponsesContent(result)
-            : extractChatContent(result);
-    } catch (error) {
-        throw error;
-    }
+    const result = await readJsonResponse<any>(resp, 'DeepSeek 返回的不是有效 JSON');
+    return isResponses ? extractResponsesContent(result) : extractChatContent(result);
 }
 
 function extractChatContent(result: any): string {

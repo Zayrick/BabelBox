@@ -1,11 +1,10 @@
 import { method } from "@/src/core/config/constants";
-import { config } from "@/src/services/config/store";
 import { detectlang } from "@/src/core/language/detect";
 import { mergeCustomBody } from "@/src/core/config/customBody";
-import { services } from "@/src/core/config/catalog";
-import {getTranslationLanguages} from '@/src/services/translation/languages';
 import {createHttpStatusError, createProviderCodeError, readJsonResponse} from '@/src/platform/http/errors';
-import {getTranslationProviderConfig} from '@/src/services/translation/requestSnapshot';
+import type {TranslationProviderRequest} from '@/src/services/translation/types';
+import {requestModel} from '@/src/services/translation/templates';
+import {requireSingleOrigin} from './request';
 
 // 混元翻译大模型支持的语言代码映射
 const languageMap: Record<string, string> = {
@@ -108,14 +107,11 @@ export function buildHunyuanTranslationRequestBody(
     }, customBody);
 }
 
-async function hunyuanTranslation(message: any) {
+async function hunyuanTranslation(request: TranslationProviderRequest) {
     try {
-        const current = getTranslationProviderConfig(message, config);
-        const service = message.serviceOverride || services.huanYuanTranslation;
-        
-        // 从配置中获取 SecretId 和 SecretKey
-        const secretId = current.tencentSecretId?.trim();
-        const secretKey = current.tencentSecretKey?.trim();
+        const origin = requireSingleOrigin(request);
+        const secretId = request.service.credential.secretId.trim();
+        const secretKey = request.service.credential.secretKey.trim();
         
         if (!secretId || !secretKey) {
             throw new Error('腾讯混元翻译密钥未配置，请在设置中配置SecretId和SecretKey');
@@ -128,10 +124,10 @@ async function hunyuanTranslation(message: any) {
         
         // 转换语言代码
         // 对于自动检测，使用BabelBox内置的语言检测
-        const {sourceLanguage, targetLanguage} = getTranslationLanguages(message);
+        const {sourceLanguage, targetLanguage} = request;
         let sourceLang: string;
         if (sourceLanguage === 'auto') {
-            const detectedLang = detectlang(message.origin.replace(/[\s\u3000]/g, ''));
+            const detectedLang = detectlang(origin.replace(/[\s\u3000]/g, ''));
             sourceLang = languageMap[detectedLang] || detectedLang;
         } else {
             sourceLang = languageMap[sourceLanguage] || sourceLanguage;
@@ -141,7 +137,7 @@ async function hunyuanTranslation(message: any) {
         
         // 如果源语言和目标语言相同，直接返回原文
         if (sourceLang === mappedTargetLang) {
-            return message.origin;
+            return origin;
         }
         
         if (!mappedTargetLang) {
@@ -149,14 +145,14 @@ async function hunyuanTranslation(message: any) {
         }
         
         // 获取模型配置，默认使用 hunyuan-translation
-        const model = message.modelOverride || current.model[service] || 'hunyuan-translation';
+        const model = requestModel(request) || 'hunyuan-translation';
         
         // 自定义字段必须在序列化和签名前合并，否则签名内容会与实际请求体不一致。
         const requestBody = buildHunyuanTranslationRequestBody(
-            message.origin,
+            origin,
             mappedTargetLang,
             model,
-            current.customBody?.[service],
+            request.service.customBody,
         );
         
         // 如果有配置领域信息，可以添加 Field 参数
@@ -176,7 +172,7 @@ async function hunyuanTranslation(message: any) {
         const authorization = await createHunyuanSignature(requestBodyStr, timestamp, secretId, secretKey);
         
         // 判断是否使用代理
-        const url = current.proxy[service] || 'https://hunyuan.tencentcloudapi.com/';
+        const url = request.service.endpoint || 'https://hunyuan.tencentcloudapi.com/';
         
         const response = await fetch(url, {
             method: method.POST,

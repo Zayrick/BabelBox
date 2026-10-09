@@ -1,43 +1,33 @@
-import {currentModelIds, services} from "@/src/core/config/catalog";
+import {services} from "@/src/core/config/catalog";
 import {method, tongyiTokenPlanUrl, urls} from "@/src/core/config/constants";
-import {tongyiMsgTemplate} from '@/src/services/translation/templates';
-import {config} from "@/src/services/config/store";
+import {requestModel, tongyiBody} from '@/src/services/translation/templates';
+import type {TranslationProviderRequest} from '@/src/services/translation/types';
 import {appendOptionalBearer} from './auth';
 import {createHttpStatusError, readJsonResponse} from '@/src/platform/http/errors';
 import {runtimeFetch} from '@/src/platform/http/runtime';
-import {getTranslationProviderConfig} from '@/src/services/translation/requestSnapshot';
+import {requireSingleOrigin} from './request';
+
+/** Token Plan 模型只在专用网关上提供。 */
+const TONGYI_TOKEN_PLAN_MODEL = 'qwen3.8-max-preview';
 
 // 文档：https://help.aliyun.com/zh/dashscope/developer-reference/tongyi-thousand-questions-metering-and-billing
-async function tongyi(message: any) {
-    const current = getTranslationProviderConfig(message, config);
-    const service = message.serviceOverride || services.tongyi;
-    // 构建请求头
-    let headers = new Headers();
-    headers.append('Content-Type', 'application/json');
-    appendOptionalBearer(headers, current.token[service]);
+async function tongyi(request: TranslationProviderRequest) {
+    const {service} = request;
+    const headers = new Headers({'Content-Type': 'application/json'});
+    appendOptionalBearer(headers, service.credential.apiKey);
 
-    // 判断是否使用代理
-    const selectedModel = message.modelOverride || current.model[service];
-    const officialUrl = selectedModel === currentModelIds.tongyiTokenPlan
+    const officialUrl = requestModel(request) === TONGYI_TOKEN_PLAN_MODEL
         ? tongyiTokenPlanUrl
         : urls[services.tongyi];
-    const url: string = current.proxy[service] || officialUrl;
-
-    const resp = await runtimeFetch(url, {
+    const resp = await runtimeFetch(service.endpoint || officialUrl, {
         method: method.POST,
-        headers: headers,
-        body: tongyiMsgTemplate(message.origin, message.pageContext, message.summaryPrompt, message.summarySystemPrompt, service, message.targetLanguage, message.modelOverride, current)
+        headers,
+        body: tongyiBody(request, requireSingleOrigin(request)),
     });
+    if (!resp.ok) throw createHttpStatusError(resp, '翻译失败');
 
-    if (resp.ok) {
-        const result = await readJsonResponse<any>(resp, '通义千问返回的不是有效 JSON');
-        return result.choices[0].message.content;
-    } else {
-        throw createHttpStatusError(resp, '翻译失败');
-    }
+    const result = await readJsonResponse<any>(resp, '通义千问返回的不是有效 JSON');
+    return result.choices[0].message.content;
 }
 
 export default tongyi;
-
-
-//

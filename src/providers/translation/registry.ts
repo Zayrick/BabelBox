@@ -18,8 +18,7 @@ import azureOpenai from "./azure-openai";
 import chromeTranslator from "./chrome-translator";
 import hunyuanTranslation from "./hunyuan-translation";
 
-export type TranslationProvider = (message: any) => Promise<any>;
-export type TranslationProviderRegistry = Record<string, TranslationProvider>;
+import type {TranslationProviderRegistry} from '@/src/services/translation/types';
 
 const directProviders: TranslationProviderRegistry = {
     // 机器翻译

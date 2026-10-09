@@ -1,47 +1,20 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
-const {mockConfig} = vi.hoisted(() => ({
-  mockConfig: {
-    service: 'custom',
-    from: 'auto',
-    to: 'zh-Hans',
-    useCache: true,
-    enableAIContext: false,
-    token: {} as Record<string, string>,
-    model: {} as Record<string, string>,
-    customModel: {} as Record<string, string>,
-    customBody: {} as Record<string, string>,
-    system_role: {} as Record<string, string>,
-    user_role: {} as Record<string, string>,
-    robot_id: {} as Record<string, string>,
-    requireApiKey: {} as Record<string, boolean>,
-    proxy: {} as Record<string, string>,
-    custom: 'http://127.0.0.1:11434/v1/chat/completions',
-    deeplx: '',
-    newApiUrl: '',
-    azureOpenaiEndpoint: '',
-    minimaxBillingPlan: 'payg',
-    minimaxRegion: 'cn',
-    mimoBillingPlan: 'payg',
-    mimoRegion: 'cn',
-    deepseekApiType: 'auto',
-    deepseekThinkingMode: 'disabled',
-    youdaoAppKey: '',
-    youdaoAppSecret: '',
-    tencentSecretId: '',
-    tencentSecretKey: '',
-  },
-}));
-
-vi.mock('@/src/services/config/store', () => ({config: mockConfig}));
-
 import {services} from '@/src/core/config/catalog';
 import {translateWithOpenAICompatibleAiSdk} from '@/src/providers/translation/ai-sdk/openai-compatible';
 import {normalizeAiSdkError} from '@/src/providers/translation/ai-sdk/errors';
-import {
-  attachTranslationProviderConfig,
-  createTranslationProviderConfigSnapshot,
-} from '@/src/services/translation/requestSnapshot';
+import type {ResolvedTranslationService, TranslationProviderRequest} from '@/src/services/translation/types';
+import {providerRequest, resolvedService} from './fixtures/translationService';
+
+type MutableService = {-readonly [K in keyof ResolvedTranslationService]: ResolvedTranslationService[K]} & {
+  credential: {apiKey: string; appKey: string; appSecret: string; secretId: string; secretKey: string};
+};
+
+let svc: MutableService;
+
+function translate(overrides: Partial<Omit<TranslationProviderRequest, 'service'>> = {}) {
+  return translateWithOpenAICompatibleAiSdk(providerRequest(svc, {origin: 'hello', ...overrides}));
+}
 
 function successResponse(text = '译文') {
   return new Response(JSON.stringify({
@@ -68,18 +41,12 @@ function errorResponse(status: number, message: string, headers: Record<string, 
 describe('Vercel AI SDK OpenAI-compatible transport', () => {
   beforeEach(() => {
     vi.useRealTimers();
-    mockConfig.service = services.custom;
-    mockConfig.to = 'zh-Hans';
-    mockConfig.token = {[services.custom]: 'sk-local-secret-value'};
-    mockConfig.model = {[services.custom]: 'base-model'};
-    mockConfig.customModel = {};
-    mockConfig.customBody = {};
-    mockConfig.system_role = {[services.custom]: 'You are a translator.'};
-    mockConfig.user_role = {[services.custom]: 'Translate {{origin}} into {{to}}.'};
-    mockConfig.proxy = {};
-    mockConfig.custom = 'http://127.0.0.1:11434/v1/chat/completions';
-    mockConfig.newApiUrl = '';
-    mockConfig.azureOpenaiEndpoint = '';
+    svc = resolvedService(services.custom, {
+      modelId: 'base-model',
+      endpoint: 'http://127.0.0.1:11434/v1/chat/completions',
+      systemRole: 'You are a translator.',
+      userRole: 'Translate {{origin}} into {{to}}.',
+    }, {apiKey: 'sk-local-secret-value'}) as MutableService;
   });
 
   afterEach(() => {
@@ -88,8 +55,8 @@ describe('Vercel AI SDK OpenAI-compatible transport', () => {
   });
 
   it('preserves custom top-level fields while keeping the SDK-owned stream mode', async () => {
-    mockConfig.custom = 'http://127.0.0.1:11434/non-standard-generate';
-    mockConfig.customBody[services.custom] = JSON.stringify({
+    svc.endpoint = 'http://127.0.0.1:11434/non-standard-generate';
+    svc.customBody = JSON.stringify({
       vendor_flag: 'kept',
       model: 'custom-model',
       stream: true,
@@ -97,9 +64,8 @@ describe('Vercel AI SDK OpenAI-compatible transport', () => {
     const fetchMock = vi.fn().mockResolvedValue(successResponse());
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(translateWithOpenAICompatibleAiSdk({
+    await expect(translate({
       origin: 'hello',
-      serviceOverride: services.custom,
       requestTimeoutMs: 5_000,
     })).resolves.toBe('译文');
 
@@ -113,29 +79,17 @@ describe('Vercel AI SDK OpenAI-compatible transport', () => {
     });
   });
 
-  it('uses the broker-attached endpoint, credential, prompt, and custom body snapshot', async () => {
-    mockConfig.custom = 'https://snapshot-a.example/v1/chat/completions';
-    mockConfig.token[services.custom] = 'snapshot-token-a';
-    mockConfig.model[services.custom] = 'snapshot-model-a';
-    mockConfig.customBody[services.custom] = '{"temperature":0.2,"snapshot":"a"}';
-    mockConfig.system_role[services.custom] = 'snapshot-system-a';
-    mockConfig.user_role[services.custom] = 'snapshot-user-a {{origin}} to {{to}}';
-    const snapshot = createTranslationProviderConfigSnapshot(mockConfig);
-
-    mockConfig.custom = 'https://snapshot-b.example/v1/chat/completions';
-    mockConfig.token[services.custom] = 'snapshot-token-b';
-    mockConfig.model[services.custom] = 'snapshot-model-b';
-    mockConfig.customBody[services.custom] = '{"temperature":0.9,"snapshot":"b"}';
-    mockConfig.system_role[services.custom] = 'snapshot-system-b';
-    mockConfig.user_role[services.custom] = 'snapshot-user-b {{origin}} to {{to}}';
+  it('sends the request service endpoint, credential, prompts and custom body', async () => {
+    svc.endpoint = 'https://snapshot-a.example/v1/chat/completions';
+    svc.credential.apiKey = 'snapshot-token-a';
+    svc.modelId = 'snapshot-model-a';
+    svc.customBody = '{"temperature":0.2,"snapshot":"a"}';
+    svc.systemRole = 'snapshot-system-a';
+    svc.userRole = 'snapshot-user-a {{origin}} to {{to}}';
 
     const fetchMock = vi.fn().mockResolvedValue(successResponse());
     vi.stubGlobal('fetch', fetchMock);
-    await expect(translateWithOpenAICompatibleAiSdk(attachTranslationProviderConfig({
-      origin: 'hello',
-      serviceOverride: services.custom,
-      targetLanguage: 'fr',
-    }, snapshot))).resolves.toBe('译文');
+    await expect(translate({targetLanguage: 'fr'})).resolves.toBe('译文');
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe('https://snapshot-a.example/v1/chat/completions');
@@ -152,13 +106,12 @@ describe('Vercel AI SDK OpenAI-compatible transport', () => {
   });
 
   it('classifies a missing custom endpoint as a permanent configuration error', async () => {
-    mockConfig.custom = '';
+    svc.endpoint = '';
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
 
-    const error = await translateWithOpenAICompatibleAiSdk({
+    const error = await translate({
       origin: 'hello',
-      serviceOverride: services.custom,
     }).catch((reason) => reason);
 
     expect(error).toMatchObject({kind: 'bad-request', retryable: false});
@@ -171,13 +124,12 @@ describe('Vercel AI SDK OpenAI-compatible transport', () => {
       {role: 'developer', content: 'Return only a translation.'},
       {role: 'user', content: [{type: 'text', text: 'hello'}, {type: 'image_url', image_url: {url: 'data:image/png;base64,AA=='}}]},
     ];
-    mockConfig.customBody[services.custom] = JSON.stringify({messages: customMessages});
+    svc.customBody = JSON.stringify({messages: customMessages});
     const fetchMock = vi.fn().mockResolvedValue(successResponse());
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(translateWithOpenAICompatibleAiSdk({
+    await expect(translate({
       origin: 'hello',
-      serviceOverride: services.custom,
     })).resolves.toBe('译文');
 
     expect(JSON.parse(String(fetchMock.mock.calls[0][1].body)).messages).toEqual(customMessages);
@@ -195,9 +147,8 @@ describe('Vercel AI SDK OpenAI-compatible transport', () => {
     }));
     vi.stubGlobal('fetch', fetchMock);
 
-    await expect(translateWithOpenAICompatibleAiSdk({
+    await expect(translate({
       origin: 'hello',
-      serviceOverride: services.custom,
     })).resolves.toBe('兼容旧 Custom 的译文');
   });
 
@@ -209,9 +160,8 @@ describe('Vercel AI SDK OpenAI-compatible transport', () => {
     ));
     vi.stubGlobal('fetch', fetchMock);
 
-    const error = await translateWithOpenAICompatibleAiSdk({
+    const error = await translate({
       origin: 'hello',
-      serviceOverride: services.custom,
     }).catch((reason) => reason);
 
     expect(error).toMatchObject({
@@ -232,14 +182,12 @@ describe('Vercel AI SDK OpenAI-compatible transport', () => {
     [services.minimax, 'invalid api key (code 2049)', 'Token Plan Key'],
     [services.mimo, 'invalid api key', '集群不匹配'],
   ])('retains specialized credential diagnostics for %s', async (service, providerMessage, expectedDetail) => {
-    mockConfig.token[service] = 'sk-provider-test';
-    mockConfig.model[service] = 'provider-model';
+    svc = resolvedService(service, {modelId: 'provider-model'}, {apiKey: 'sk-provider-test'}) as MutableService;
     const fetchMock = vi.fn().mockResolvedValue(errorResponse(401, providerMessage));
     vi.stubGlobal('fetch', fetchMock);
 
-    const error = await translateWithOpenAICompatibleAiSdk({
+    const error = await translate({
       origin: 'hello',
-      serviceOverride: service,
     }).catch((reason) => reason);
 
     expect(error).toMatchObject({kind: 'authentication', retryable: false, statusCode: 401});
@@ -256,9 +204,8 @@ describe('Vercel AI SDK OpenAI-compatible transport', () => {
     )));
     vi.stubGlobal('fetch', fetchMock);
 
-    const request = translateWithOpenAICompatibleAiSdk({
+    const request = translate({
       origin: 'hello',
-      serviceOverride: services.custom,
       requestTimeoutMs: 30_000,
     });
     const outcome = request.catch((reason) => reason);
@@ -280,9 +227,8 @@ describe('Vercel AI SDK OpenAI-compatible transport', () => {
     const fetchMock = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
     vi.stubGlobal('fetch', fetchMock);
 
-    const error = await translateWithOpenAICompatibleAiSdk({
+    const error = await translate({
       origin: 'hello',
-      serviceOverride: services.custom,
     }).catch((reason) => reason);
 
     expect(error).toMatchObject({
@@ -316,9 +262,8 @@ describe('Vercel AI SDK OpenAI-compatible transport', () => {
     ));
     vi.stubGlobal('fetch', fetchMock);
 
-    const outcome = translateWithOpenAICompatibleAiSdk({
+    const outcome = translate({
       origin: 'hello',
-      serviceOverride: services.custom,
       requestTimeoutMs: 1_000,
     }).catch((reason) => reason);
     await vi.advanceTimersByTimeAsync(1_000);
@@ -345,9 +290,8 @@ describe('Vercel AI SDK OpenAI-compatible transport', () => {
     }));
     vi.stubGlobal('fetch', fetchMock);
 
-    const outcome = translateWithOpenAICompatibleAiSdk({
+    const outcome = translate({
       origin: ['first', 'second'],
-      serviceOverride: services.custom,
       requestTimeoutMs: 1_000,
     }).catch((reason) => reason);
     await vi.advanceTimersByTimeAsync(1_000);

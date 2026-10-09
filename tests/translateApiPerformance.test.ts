@@ -8,8 +8,10 @@ const mocks = vi.hoisted(() => ({
   config: {
     count: 0,
     maxConcurrentTranslations: 6,
-    model: {mock: 'mock-model', 'mock-ai': 'mock-ai-model'} as Record<string, string>,
-    customModel: {mock: '', 'mock-ai': ''} as Record<string, string>,
+    translationServices: [
+      {id: 'mock', provider: 'mock', modelId: 'mock-model'},
+      {id: 'mock-ai', provider: 'mock-ai', modelId: 'mock-ai-model'},
+    ],
     service: 'mock',
     from: 'en',
     to: 'zh-CN',
@@ -32,7 +34,6 @@ vi.mock('@/src/core/config/catalog', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/src/core/config/catalog')>();
   return {
     ...actual,
-    resolveConfiguredModel: (model: string) => model,
     servicesType: {
       ...actual.servicesType,
       isUseAIContext: (service: string) => service === 'mock-ai',
@@ -73,8 +74,6 @@ describe('translation API request lifecycle performance', () => {
     mocks.config.from = 'en';
     mocks.config.to = 'zh-CN';
     mocks.config.useCache = true;
-    mocks.config.model.mock = 'mock-model';
-    mocks.config.model['mock-ai'] = 'mock-ai-model';
     Object.defineProperty(globalThis, 'document', {
       value: {title: 'Fixture video title'},
       configurable: true,
@@ -146,12 +145,11 @@ describe('translation API request lifecycle performance', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
-  it('发送独立入口的服务、语言和模型覆盖，不修改网页默认配置', async () => {
+  it('发送独立入口的服务和语言覆盖，不修改网页默认配置', async () => {
     mocks.sendMessage.mockResolvedValue('文档译文');
 
     await expect(translateText('Document source', 'Document context', {
       serviceOverride: 'mock-ai',
-      modelOverride: 'document-model',
       sourceLanguage: 'en',
       targetLanguage: 'ja',
       useCache: false,
@@ -162,16 +160,14 @@ describe('translation API request lifecycle performance', () => {
     expect(mocks.sendMessage).toHaveBeenCalledWith(expect.objectContaining({
       origin: 'Document source',
       serviceOverride: 'mock-ai',
-      modelOverride: 'document-model',
       sourceLanguage: 'en',
       targetLanguage: 'ja',
       useCache: false,
       requestTimeoutMs: 44_000,
     }));
-    expect(mocks.config.model['mock-ai']).toBe('mock-ai-model');
   });
 
-  it('普通单条和批量请求在排队前冻结默认服务、模型与语言', async () => {
+  it('普通单条和批量请求在排队前冻结默认服务与语言', async () => {
     mocks.config.maxConcurrentTranslations = 1;
     const blocker = deferred<string>();
     mocks.sendMessage.mockImplementation(({origin}: {origin: string | string[]}) => {
@@ -185,7 +181,6 @@ describe('translation API request lifecycle performance', () => {
     const queuedBatch = translateTextBatch(['Queued batch source'], 'Context');
 
     mocks.config.service = 'mock-ai';
-    mocks.config.model['mock-ai'] = 'changed-model';
     mocks.config.from = 'ja';
     mocks.config.to = 'fr';
     blocker.resolve('阻塞请求译文');
@@ -198,21 +193,19 @@ describe('translation API request lifecycle performance', () => {
       expect.objectContaining({
         origin: 'Queued source',
         serviceOverride: 'mock',
-        modelOverride: 'mock-model',
         sourceLanguage: 'en',
         targetLanguage: 'zh-CN',
       }),
       expect.objectContaining({
         origin: ['Queued batch source'],
         serviceOverride: 'mock',
-        modelOverride: 'mock-model',
         sourceLanguage: 'en',
         targetLanguage: 'zh-CN',
       }),
     ]);
   });
 
-  it('视频请求在排队前冻结视频服务、模型与语言', async () => {
+  it('视频请求在排队前冻结视频服务与语言', async () => {
     mocks.config.maxConcurrentTranslations = 1;
     const blocker = deferred<string>();
     mocks.sendMessage
@@ -222,14 +215,12 @@ describe('translation API request lifecycle performance', () => {
     const first = translateText('Blocking source', 'Context');
     await vi.waitFor(() => expect(mocks.sendMessage).toHaveBeenCalledTimes(1));
     mocks.config.videoService = 'mock-ai';
-    mocks.config.model['mock-ai'] = 'video-model';
     mocks.config.from = 'en';
     mocks.config.to = 'ja';
     const video = translateVideoText('Queued subtitle');
     await Promise.resolve();
 
     mocks.config.videoService = 'mock';
-    mocks.config.model['mock-ai'] = 'changed-video-model';
     mocks.config.from = 'de';
     mocks.config.to = 'fr';
     mocks.config.useCache = false;
@@ -240,7 +231,6 @@ describe('translation API request lifecycle performance', () => {
     expect(mocks.sendMessage).toHaveBeenLastCalledWith(expect.objectContaining({
       origin: 'Queued subtitle',
       serviceOverride: 'mock-ai',
-      modelOverride: 'video-model',
       sourceLanguage: 'en',
       targetLanguage: 'ja',
       useCache: true,
@@ -347,7 +337,6 @@ describe('translation API request lifecycle performance', () => {
       origin: 'A subtitle source',
       useCache: true,
       serviceOverride: 'mock-ai',
-      modelOverride: 'mock-ai-model',
       sourceLanguage: 'en',
       targetLanguage: 'zh-CN',
       requestTimeoutMs: 19_000,

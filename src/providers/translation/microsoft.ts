@@ -1,5 +1,4 @@
-import {getTranslationLanguages} from '@/src/services/translation/languages';
-import type {TranslationLanguageOverride} from '@/src/services/translation/languages';
+import type {TranslationProviderRequest} from '@/src/services/translation/types';
 import {createHttpStatusError, readJsonResponse} from '@/src/platform/http/errors';
 import {runtimeFetch} from '@/src/platform/http/runtime';
 
@@ -67,12 +66,11 @@ export async function translateMicrosoftTexts(
     });
 }
 
-async function microsoft(message: TranslationLanguageOverride & {origin: string | string[]}) {
-    const origin = message.origin;
+async function microsoft(request: TranslationProviderRequest) {
+    const origin = request.origin;
     const isSingleText = typeof origin === 'string';
-    const texts: string[] = typeof origin === 'string' ? [origin] : origin;
-    const {sourceLanguage, targetLanguage} = getTranslationLanguages(message);
-    const translations = await translateMicrosoftTexts(texts, sourceLanguage, targetLanguage);
+    const texts: string[] = typeof origin === 'string' ? [origin] : [...origin];
+    const translations = await translateMicrosoftTexts(texts, request.sourceLanguage, request.targetLanguage);
     if (!isSingleText) return translations;
 
     const translatedText = translations[0];

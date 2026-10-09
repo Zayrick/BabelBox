@@ -1,44 +1,45 @@
 <template>
   <el-dialog
     v-model="open"
-    title="添加 AI 翻译服务"
+    title="添加翻译服务"
     width="min(720px, calc(100vw - 32px))"
     class="add-translation-service-dialog"
     destroy-on-close
     append-to-body
     @closed="providerQuery = ''"
   >
-    <p class="dialog-intro">添加后可在服务详情中配置模型和密钥。</p>
+    <p class="dialog-intro">选择要接入的外部翻译服务，添加后在服务详情中配置密钥、地址或模型。</p>
 
     <label class="provider-search">
       <Search :size="16" aria-hidden="true" />
-      <input v-model.trim="providerQuery" type="search" placeholder="搜索供应商" />
+      <input v-model.trim="providerQuery" type="search" placeholder="搜索翻译服务" />
     </label>
 
     <el-scrollbar
-      v-if="filteredProviders.length"
+      v-if="filteredSections.length"
       class="provider-list"
       max-height="min(520px, 60vh)"
-      aria-label="可添加的 AI 翻译供应商"
+      aria-label="可添加的翻译服务"
     >
-      <div class="provider-grid">
-        <button
-          v-for="provider in filteredProviders"
-          :key="provider.value"
-          type="button"
-          class="provider-card"
-          @click="addProvider(provider.value)"
-        >
-          <ServiceIcon :service="provider.value" :label="provider.label" size="large" />
-          <span class="provider-copy">
-            <strong>{{ provider.label }}</strong>
-            <small v-if="providerDescription(provider.value)">{{ providerDescription(provider.value) }}</small>
-          </span>
-          <Plus :size="17" aria-hidden="true" />
-        </button>
-      </div>
+      <section v-for="section in filteredSections" :key="section.id" class="provider-section">
+        <h5 class="provider-section-title">{{ section.label }}</h5>
+        <div class="provider-grid">
+          <button
+            v-for="provider in section.providers"
+            :key="provider.value"
+            type="button"
+            class="provider-tile"
+            :title="providerDescription(provider.value) || provider.label"
+            :aria-label="`添加${provider.label}`"
+            @click="addProvider(provider.value)"
+          >
+            <ServiceIcon :service="provider.value" :label="provider.label" size="large" />
+            <span class="provider-name">{{ provider.label }}</span>
+          </button>
+        </div>
+      </section>
     </el-scrollbar>
-    <div v-else class="provider-empty">没有匹配的供应商</div>
+    <div v-else class="provider-empty">没有可添加的翻译服务</div>
 
     <template #footer>
       <el-button @click="open = false">关闭</el-button>
@@ -49,12 +50,12 @@
 <script setup lang="ts">
 import {computed, ref} from 'vue'
 import {ElScrollbar} from 'element-plus'
-import {Plus, Search} from '@lucide/vue'
+import {Search} from '@lucide/vue'
 import ServiceIcon from '@/src/ui/components/ServiceIcon.vue'
 import {options, servicesType} from '@/src/core/config/catalog'
 import {
-  createAITranslationService,
-  createTranslationServiceId,
+  createExternalTranslationService,
+  externalMachineTranslationProviders,
   getTranslationProviderDescription,
   type TranslationServiceInstance,
 } from '@/src/core/config/translationServices'
@@ -76,11 +77,29 @@ const open = computed({
 })
 
 const providerQuery = ref('')
-const providerOptions = options.services.filter((item) => !item.disabled && servicesType.isAI(item.value))
-const filteredProviders = computed(() => {
+const providerOptions = options.services.filter((item) => !item.disabled)
+const machineProviderOptions = providerOptions
+  .filter((item) => externalMachineTranslationProviders.includes(item.value))
+const aiProviderOptions = providerOptions.filter((item) => servicesType.isAI(item.value))
+
+const filteredSections = computed(() => {
   const query = providerQuery.value.toLocaleLowerCase()
-  return providerOptions.filter((provider) => !query
-    || `${provider.label}${provider.value}`.toLocaleLowerCase().includes(query))
+  const matches = (provider: {value: string, label: string}) => !query
+    || `${provider.label}${provider.value}${providerDescription(provider.value)}`.toLocaleLowerCase().includes(query)
+  // 机器翻译每个供应商只有一个实例，已添加的不再出现。
+  const installed = new Set(props.existingServices.map((item) => item.provider))
+  return [
+    {
+      id: 'machine',
+      label: '机器翻译',
+      providers: machineProviderOptions.filter((item) => !installed.has(item.value) && matches(item)),
+    },
+    {
+      id: 'ai',
+      label: 'AI 翻译',
+      providers: aiProviderOptions.filter(matches),
+    },
+  ].filter((section) => section.providers.length > 0)
 })
 
 function providerDescription(provider: string): string {
@@ -88,11 +107,7 @@ function providerDescription(provider: string): string {
 }
 
 function addProvider(provider: string): void {
-  const instance = createAITranslationService(provider, {
-    id: createTranslationServiceId(provider, props.existingServices),
-    modelId: '',
-  })
-  emit('add', {instance})
+  emit('add', {instance: createExternalTranslationService(provider, props.existingServices)})
   open.value = false
 }
 </script>
@@ -104,17 +119,12 @@ function addProvider(provider: string): void {
 .provider-search svg { color: var(--muted); }
 .provider-search input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; font-size: var(--font-body); }
 .provider-list { height: auto; margin-top: 14px; }
-.provider-grid { display: grid; padding-right: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px 16px; }
-.provider-card { display: grid; min-width: 0; grid-template-columns: 40px minmax(0, 1fr) 16px; align-items: center; gap: 12px; padding: 10px 8px; border: 0; border-radius: var(--radius-control); color: var(--ink); background: transparent; text-align: left; cursor: pointer; transition: background 120ms ease; }
-.provider-card:hover { background: var(--surface-soft); }
-.provider-card > svg { width: 16px; height: 16px; color: var(--muted); opacity: 0; transition: opacity 120ms ease; }
-.provider-card:hover > svg, .provider-card:focus-visible > svg { opacity: 1; }
-.provider-copy { display: flex; min-width: 0; flex-direction: column; }
-.provider-copy strong, .provider-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.provider-copy strong { font-size: var(--font-body); font-weight: var(--weight-medium); }
-.provider-copy small { margin-top: 1px; color: var(--muted); font-size: var(--font-caption); }
+.provider-section + .provider-section { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+.provider-section-title { margin: 0 0 6px; padding: 0 8px; color: var(--muted); font-size: var(--font-caption); font-weight: var(--weight-medium); letter-spacing: .02em; }
+.provider-grid { display: grid; padding-right: 8px; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 4px; }
+.provider-tile { display: flex; min-width: 0; align-items: center; gap: 8px; padding: 12px 6px 10px; border: 0; border-radius: var(--radius-control); color: var(--ink); background: transparent; flex-direction: column; text-align: center; cursor: pointer; transition: background 120ms ease; }
+.provider-tile:hover { background: var(--surface-soft); }
+.provider-tile:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+.provider-name { display: -webkit-box; width: 100%; overflow: hidden; font-size: var(--font-small); font-weight: var(--weight-medium); line-height: var(--line-height-tight); -webkit-box-orient: vertical; -webkit-line-clamp: 2; word-break: break-word; }
 .provider-empty { display: grid; min-height: 180px; color: var(--muted); place-items: center; font-size: var(--font-small); }
-@media (max-width: 620px) {
-  .provider-grid { grid-template-columns: 1fr; }
-}
 </style>

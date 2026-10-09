@@ -2,18 +2,15 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {parseHTML} from 'linkedom';
 
 const mocks = vi.hoisted(() => ({
-  config: {animationMode: 'default', service: 'deepseek'},
+  config: {
+    animationMode: 'default',
+    service: 'deepseek',
+    translationServices: [{id: 'deepseek', provider: 'deepseek', name: 'DeepSeek'}],
+  },
   sendErrorMessage: vi.fn(),
 }));
 
 vi.mock('@/src/services/config/store', () => ({config: mocks.config}));
-vi.mock('@/src/core/config/catalog', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/src/core/config/catalog')>();
-  return {
-    ...actual,
-    options: {...actual.options, services: [{value: 'deepseek', label: 'DeepSeek'}]},
-  };
-});
 vi.mock('@/src/features/page-notice/public', () => ({sendErrorMessage: mocks.sendErrorMessage}));
 
 import {

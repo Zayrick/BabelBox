@@ -88,21 +88,19 @@ describe('document translation API', () => {
         expect(mocks.translateTextBatch).not.toHaveBeenCalled();
     });
 
-    it('传递文档入口独立的服务和模型，不复用网页当前模型', async () => {
+    it('传递文档入口独立的服务和语言', async () => {
         mocks.defaultService = 'microsoft';
         mocks.translateText.mockImplementation(async (origin: string) => `T:${origin}`);
 
         await translateDocumentSegments([{id: 0, source: 'Document source'}], {
             fileName: 'sample.md',
             serviceOverride: 'openai',
-            modelOverride: 'gpt-document-model',
             sourceLanguage: 'en',
             targetLanguage: 'fr',
         });
 
         expect(mocks.translateText).toHaveBeenCalledWith('Document source', 'sample.md', expect.objectContaining({
             serviceOverride: 'openai',
-            modelOverride: 'gpt-document-model',
             sourceLanguage: 'en',
             targetLanguage: 'fr',
         }));

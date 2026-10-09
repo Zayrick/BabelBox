@@ -28,14 +28,14 @@
           <legend>翻译服务</legend>
           <div class="service-heading">
             <span>已添加服务</span>
-            <button type="button" class="add-service" aria-label="添加 AI 翻译服务" @click="showAddService = !showAddService">{{ showAddService ? '×' : '+' }}</button>
+            <button type="button" class="add-service" aria-label="添加翻译服务" @click="showAddService = !showAddService">{{ showAddService ? '×' : '+' }}</button>
           </div>
           <div class="service-inventory">
             <div v-for="item in managedServices" :key="item.id" class="service-row" :class="{ selected: managedServiceId === item.id, disabled: !item.enabled }">
               <ServiceIcon :service="item.provider" :label="providerLabel(item.provider)" size="small" />
               <button type="button" class="service-row-main" @click="selectManagedService(item.id)"><strong>{{ item.name }}</strong><small>{{ providerLabel(item.provider) }}<template v-if="item.modelId"> · {{ item.modelId }}</template></small></button>
               <div class="service-row-actions">
-                <button v-if="item.kind === 'ai'" type="button" class="delete-service" :aria-label="`删除 ${item.name}`" @click.stop="removeAIService(item)">删除</button>
+                <button v-if="!isBuiltinTranslationService(item)" type="button" class="delete-service" :aria-label="`删除 ${item.name}`" @click.stop="removeService(item)">删除</button>
                 <el-switch class="babelbox-userscript-switch" size="small" :aria-label="`${item.name} 启用状态`" :model-value="item.enabled" @click.stop @change="setServiceEnabled(item, Boolean($event))" />
               </div>
             </div>
@@ -43,24 +43,27 @@
 
           <div v-if="showAddService" class="add-service-panel">
             <div class="add-service-title">
-              <strong>添加 AI 翻译服务</strong>
+              <strong>添加翻译服务</strong>
             </div>
-            <p class="hint">选择供应商后直接添加；模型、凭据和请求地址在下方服务详情中配置。</p>
-            <div class="add-provider-grid" aria-label="可添加的 AI 翻译供应商">
-              <button v-for="item in aiProviderOptions" :key="item.value" type="button" @click="addAIService(item.value)">
-                <ServiceIcon :service="item.value" :label="item.label" size="small" />
-                <span>{{ item.label }}</span>
-                <small>添加</small>
-              </button>
-            </div>
+            <p class="hint">选择后直接添加；凭据、请求地址和模型在下方服务详情中配置。</p>
+            <template v-for="section in addableSections" :key="section.label">
+              <p class="hint">{{ section.label }}</p>
+              <div class="add-provider-grid" :aria-label="`可添加的${section.label}`">
+                <button v-for="item in section.providers" :key="item.value" type="button" @click="addService(item.value)">
+                  <ServiceIcon :service="item.value" :label="item.label" size="small" />
+                  <span>{{ item.label }}</span>
+                  <small>添加</small>
+                </button>
+              </div>
+            </template>
             <div class="add-service-actions"><button type="button" class="secondary" @click="showAddService = false">关闭</button></div>
           </div>
 
           <label><span>当前使用</span><el-select v-model="draft.service" class="babelbox-userscript-select" aria-label="翻译服务" :teleported="false" :popper-options="selectPopperOptions" @change="managedServiceId = draft.service"><el-option v-for="item in serviceOptions" :key="item.value" :label="item.label" :value="item.value" /></el-select></label>
           <p v-if="serviceDescription" class="hint">{{ serviceDescription }}</p>
           <template v-if="selectedInstance">
-            <label v-if="selectedInstance.kind === 'ai'"><span>服务名称</span><input v-model.trim="selectedInstance.name" autocomplete="off" /></label>
-            <label v-if="selectedInstance.kind === 'ai' && servicesType.isUseModel(selectedProvider)">
+            <label v-if="!isBuiltinTranslationService(selectedInstance)"><span>服务名称</span><input v-model.trim="selectedInstance.name" autocomplete="off" /></label>
+            <label v-if="servicesType.isUseModel(selectedProvider)">
               <span>模型 ID</span>
               <el-select
                 v-if="modelCatalogSupported"
@@ -83,11 +86,8 @@
               </el-select>
               <input v-else v-model.trim="selectedInstance.modelId" autocomplete="off" />
             </label>
-            <label v-if="selectedInstance.kind === 'ai' && usesToken" class="toggle"><span>当前模型需要 API Key</span><el-switch v-model="selectedInstance.requireApiKey" class="babelbox-userscript-switch" aria-label="当前模型需要 API Key" /></label>
             <label v-if="usesToken"><span>API Key / Token</span><input v-model.trim="serviceApiKey" type="password" autocomplete="off" @change="refreshModelCatalogIfSupported" /></label>
-            <label v-if="selectedInstance.kind === 'ai'"><span>请求地址（可选）</span><input v-model.trim="serviceEndpoint" inputmode="url" placeholder="留空使用供应商默认接口" @change="refreshModelCatalogIfSupported" /></label>
-            <label v-if="selectedProvider === services.deeplx"><span>DeepLX 地址</span><input v-model.trim="draft.deeplx" inputmode="url" /></label>
-            <label v-if="selectedInstance.kind === 'machine' && servicesType.isUseProxy(selectedProvider)"><span>代理地址（可选）</span><input v-model.trim="selectedInstance.proxy" inputmode="url" placeholder="留空使用默认接口" /></label>
+            <label v-if="servicesType.isCustomEndpoint(selectedProvider)"><span>{{ servicesType.isEndpointRequired(selectedProvider) ? '请求地址' : '请求地址（可选）' }}</span><input v-model.trim="selectedInstance.endpoint" inputmode="url" :placeholder="servicesType.isEndpointRequired(selectedProvider) ? '必填' : '留空使用默认接口'" @change="refreshModelCatalogIfSupported" /></label>
           </template>
           <template v-if="selectedProvider === services.youdao">
             <label><span>有道 App Key</span><input v-model.trim="serviceAppKey" autocomplete="off" /></label>
@@ -167,19 +167,21 @@ import 'element-plus/es/components/switch/style/css';
 import '@/src/ui/styles/tokens.css';
 import {browser} from 'wxt/browser';
 import ServiceIcon from '@/src/ui/components/ServiceIcon.vue';
-import {Config, type TranslationServiceCredential} from '@/src/core/config/model';
+import {Config} from '@/src/core/config/model';
 import {config as runtimeConfig, configReady, saveConfig} from '@/src/services/config/store';
 import {options, services, servicesType} from '@/src/core/config/catalog';
 import {getMissingCredentialMessage} from '@/src/core/config/validation';
 import {clearTranslationServiceCredentials} from '@/src/core/config/credentials';
 import {
   aiTranslationProviders,
-  clearTranslationServiceConfiguration,
-  createAITranslationService,
-  createTranslationServiceId,
+  createExternalTranslationService,
+  externalMachineTranslationProviders,
   getTranslationProviderDescription,
   getTranslationProviderLabel,
+  getTranslationServiceCredential,
   getTranslationServiceInstance,
+  isBuiltinTranslationService,
+  type TranslationServiceCredential,
   type TranslationServiceInstance,
 } from '@/src/core/config/translationServices';
 import {getSelectableTranslationServices} from '@/src/services/translation/capabilities';
@@ -217,9 +219,20 @@ const serviceOptions = computed(() => getSelectableTranslationServices(draft.val
   .filter(item => isUserscriptServiceSupported(item.provider)));
 const managedServices = computed(() => draft.value.translationServices
   .filter(item => isUserscriptServiceSupported(item.provider)));
-const aiProviderOptions = options.services.filter(item => (
-  !item.disabled && aiTranslationProviders.includes(item.value) && isUserscriptServiceSupported(item.value)
+const addableProviderOptions = (providers: readonly string[]) => options.services.filter(item => (
+  !item.disabled && providers.includes(item.value) && isUserscriptServiceSupported(item.value)
 ));
+const addableSections = computed(() => {
+  const installedProviders = new Set(draft.value.translationServices.map(item => item.provider));
+  return [
+    {
+      label: '机器翻译',
+      providers: addableProviderOptions(externalMachineTranslationProviders)
+        .filter(item => !installedProviders.has(item.value)),
+    },
+    {label: 'AI 翻译', providers: addableProviderOptions(aiTranslationProviders)},
+  ].filter(section => section.providers.length > 0);
+});
 const styleOptions = options.styles.filter(item => !item.disabled && typeof item.value === 'number');
 const hoverOptions = options.keys.filter(item => !item.disabled);
 const currentSiteDomain = getSiteBaseDomain(globalThis.location?.href ?? '') ?? '';
@@ -242,7 +255,7 @@ const canUseAIContext = computed(() => servicesType.isUseAIContext(
 const credentialWarning = computed(() => selectedInstance.value
   ? getMissingCredentialMessage(selectedInstance.value.id, draft.value) || ''
   : '');
-const modelCatalogSupported = computed(() => selectedInstance.value?.kind === 'ai'
+const modelCatalogSupported = computed(() => Boolean(selectedInstance.value)
   && hasDynamicTranslationModelCatalog(selectedProvider.value));
 const MODEL_CATALOG_FAILURE_VALUE = '__babelbox_model_catalog_failure__';
 const modelCatalogModels = ref<string[]>([]);
@@ -254,42 +267,18 @@ let modelCatalogMounted = true;
 
 type CredentialKey = keyof TranslationServiceCredential;
 
-function selectedCredentialValue(key: CredentialKey): string {
-  const instance = selectedInstance.value;
-  if (!instance) return '';
-  const credential = draft.value.serviceCredentials[instance.id];
-  if (credential) return credential[key] || '';
-  if (instance.id !== instance.provider) return '';
-  if (key === 'apiKey') return draft.value.token[instance.provider] || '';
-  if (key === 'appKey') return draft.value.youdaoAppKey || '';
-  if (key === 'appSecret') return draft.value.youdaoAppSecret || '';
-  if (key === 'secretId') return draft.value.tencentSecretId || '';
-  return draft.value.tencentSecretKey || '';
-}
-
-function ensureSelectedCredential(): TranslationServiceCredential | null {
-  const instance = selectedInstance.value;
-  if (!instance) return null;
-  const existing = draft.value.serviceCredentials[instance.id];
-  if (existing) return existing;
-  const usesProviderId = instance.id === instance.provider;
-  const credential: TranslationServiceCredential = {
-    apiKey: usesProviderId ? draft.value.token[instance.provider] || '' : '',
-    appKey: usesProviderId ? draft.value.youdaoAppKey || '' : '',
-    appSecret: usesProviderId ? draft.value.youdaoAppSecret || '' : '',
-    secretId: usesProviderId ? draft.value.tencentSecretId || '' : '',
-    secretKey: usesProviderId ? draft.value.tencentSecretKey || '' : '',
-  };
-  draft.value.serviceCredentials[instance.id] = credential;
-  return credential;
-}
-
 function credentialBinding(key: CredentialKey) {
   return computed({
-    get: () => selectedCredentialValue(key),
+    get: () => selectedInstance.value
+      ? getTranslationServiceCredential(draft.value, selectedInstance.value.id)[key]
+      : '',
     set: (value: string) => {
-      const credential = ensureSelectedCredential();
-      if (credential) credential[key] = value;
+      const instance = selectedInstance.value;
+      if (!instance) return;
+      draft.value.serviceCredentials[instance.id] = {
+        ...getTranslationServiceCredential(draft.value, instance.id),
+        [key]: value,
+      };
     },
   });
 }
@@ -299,15 +288,6 @@ const serviceAppKey = credentialBinding('appKey');
 const serviceAppSecret = credentialBinding('appSecret');
 const serviceSecretId = credentialBinding('secretId');
 const serviceSecretKey = credentialBinding('secretKey');
-const serviceEndpoint = computed({
-  get: () => selectedInstance.value?.proxy || selectedInstance.value?.endpoint || '',
-  set: (value: string) => {
-    const instance = selectedInstance.value;
-    if (!instance) return;
-    instance.endpoint = value;
-    instance.proxy = '';
-  },
-});
 const floatingBallEnabled = computed({
   get: () => !draft.value.disableFloatingBall,
   set: (enabled: boolean) => { draft.value.disableFloatingBall = !enabled; },
@@ -405,8 +385,8 @@ function setServiceEnabled(instance: TranslationServiceInstance, enabled: boolea
   status.value = enabled ? `已启用「${instance.name}」。` : `已禁用「${instance.name}」。`;
 }
 
-function removeAIService(instance: TranslationServiceInstance): void {
-  if (instance.kind !== 'ai') return;
+function removeService(instance: TranslationServiceInstance): void {
+  if (isBuiltinTranslationService(instance)) return;
   const remainingEnabled = getEnabledUserscriptServices(draft.value)
     .filter(item => item.id !== instance.id);
   if (instance.enabled && !remainingEnabled.length) {
@@ -418,7 +398,6 @@ function removeAIService(instance: TranslationServiceInstance): void {
 
   draft.value.translationServices = draft.value.translationServices
     .filter(item => item.id !== instance.id);
-  clearTranslationServiceConfiguration(draft.value, instance);
   clearTranslationServiceCredentials(draft.value, instance.id);
   draft.value.translationCenterServices = draft.value.translationCenterServices
     .filter(serviceId => serviceId !== instance.id);
@@ -431,17 +410,14 @@ function removeAIService(instance: TranslationServiceInstance): void {
   status.value = `已删除「${instance.name}」，保存设置后生效。`;
 }
 
-function addAIService(provider: string): void {
-  if (!isUserscriptServiceSupported(provider) || !servicesType.isAI(provider)) {
+function addService(provider: string): void {
+  if (!isUserscriptServiceSupported(provider)) {
     statusIsError.value = true;
-    status.value = '请选择 userscript 支持的 AI 供应商。';
+    status.value = '请选择 userscript 支持的翻译服务。';
     return;
   }
 
-  const instance = createAITranslationService(provider, {
-    id: createTranslationServiceId(provider, draft.value.translationServices),
-    modelId: '',
-  });
+  const instance = createExternalTranslationService(provider, draft.value.translationServices);
   draft.value.translationServices.push(instance);
   draft.value.service = instance.id;
   managedServiceId.value = instance.id;

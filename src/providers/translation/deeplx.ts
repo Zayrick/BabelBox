@@ -1,12 +1,6 @@
-import {services} from "@/src/core/config/catalog";
-import {config} from "@/src/services/config/store";
 import {getDeepLXEndpoints} from "@/src/core/config/deeplx";
-import {getTranslationLanguages, type TranslationLanguageOverride} from '@/src/services/translation/languages';
 import {createHttpStatusError, createProviderCodeError} from '@/src/platform/http/errors';
-import {
-    getTranslationProviderConfig,
-    type TranslationProviderRequestContext,
-} from '@/src/services/translation/requestSnapshot';
+import type {TranslationProviderRequest} from '@/src/services/translation/types';
 
 const DEEPLX_TOTAL_TIMEOUT_MS = 20_000;
 const DEEPLX_ATTEMPT_TIMEOUT_MS = 8_000;
@@ -104,20 +98,13 @@ export function getDeepLXRequestLanguages(from: string, to: string): {sourceLang
     };
 }
 
-export async function translateDeepLXText(
-    text: string,
-    serviceKey: string = services.deeplx,
-    languageOverride?: TranslationLanguageOverride & TranslationProviderRequestContext,
-): Promise<string> {
-    const current = getTranslationProviderConfig(languageOverride, config);
-    const token = current.token[serviceKey]?.trim() || "";
-    const endpoints = getDeepLXEndpoints(
-        current.deeplx,
-        current.proxy[serviceKey],
-        token,
-    );
-    const {sourceLanguage, targetLanguage} = getTranslationLanguages(languageOverride);
-    const {sourceLang, targetLang} = getDeepLXRequestLanguages(sourceLanguage, targetLanguage);
+async function deeplx(request: TranslationProviderRequest): Promise<string> {
+    if (typeof request.origin !== "string") {
+        throw new Error("DeepLX 翻译仅支持单条文本");
+    }
+    const token = request.service.credential.apiKey.trim();
+    const endpoints = getDeepLXEndpoints(request.service.endpoint, token);
+    const {sourceLang, targetLang} = getDeepLXRequestLanguages(request.sourceLanguage, request.targetLanguage);
     const deadline = Date.now() + DEEPLX_TOTAL_TIMEOUT_MS;
     const failures: string[] = [];
 
@@ -130,7 +117,7 @@ export async function translateDeepLXText(
         try {
             return await translateFromDeepLX(
                 endpoint,
-                text,
+                request.origin,
                 sourceLang,
                 targetLang,
                 token,
@@ -143,14 +130,6 @@ export async function translateDeepLXText(
 
     const failureSummary = failures.length > 0 ? failures.join("；") : "总请求时间已耗尽";
     throw new Error(`DeepLX 所有备用站点均失败：${failureSummary}`);
-}
-
-async function deeplx(message: {origin: string; sourceLanguage?: string; targetLanguage?: string}) {
-    if (typeof message.origin !== "string") {
-        throw new Error("DeepLX 翻译仅支持单条文本");
-    }
-
-    return translateDeepLXText(message.origin, services.deeplx, message);
 }
 
 export default deeplx;

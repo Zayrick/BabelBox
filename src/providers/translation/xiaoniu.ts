@@ -1,33 +1,29 @@
 import {method, urls} from "@/src/core/config/constants";
 import {services} from "@/src/core/config/catalog";
-import {config} from "@/src/services/config/store";
-import {getTranslationLanguages} from '@/src/services/translation/languages';
+import type {TranslationProviderRequest} from '@/src/services/translation/types';
 import {createHttpStatusError, readJsonResponse} from '@/src/platform/http/errors';
 import {runtimeFetch} from '@/src/platform/http/runtime';
-import {getTranslationProviderConfig} from '@/src/services/translation/requestSnapshot';
+import {requireSingleOrigin} from './request';
 
-async function xiaoniu(message: any) {
-    const current = getTranslationProviderConfig(message, config);
-    const service = message.serviceOverride || current.service;
-    // 根据需要调整目标语言
-    const {targetLanguage} = getTranslationLanguages(message);
-    let targetLang = targetLanguage === 'zh-Hans' ? 'zh' : targetLanguage;
-
-    // 判断是否使用代理
-    let url: string = current.proxy[service] ? current.proxy[service] : urls[services.xiaoniu]
-
-    const resp = await runtimeFetch(url, {
-        method: method.POST,
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: `from=auto&to=${targetLang}&apikey=${current.token[service]}&src_text=${encodeURIComponent(message.origin)}`
+async function xiaoniu(request: TranslationProviderRequest) {
+    const {service} = request;
+    const targetLang = request.targetLanguage === 'zh-Hans' ? 'zh' : request.targetLanguage;
+    const body = new URLSearchParams({
+        from: 'auto',
+        to: targetLang,
+        apikey: service.credential.apiKey,
+        src_text: requireSingleOrigin(request),
     });
 
-    if (resp.ok) {
-        const result = await readJsonResponse<any>(resp, '小牛翻译返回的不是有效 JSON');
-        return result.tgt_text
-    } else {
-        throw createHttpStatusError(resp, '翻译失败');
-    }
+    const resp = await runtimeFetch(service.endpoint || urls[services.xiaoniu], {
+        method: method.POST,
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: body.toString(),
+    });
+    if (!resp.ok) throw createHttpStatusError(resp, '翻译失败');
+
+    const result = await readJsonResponse<any>(resp, '小牛翻译返回的不是有效 JSON');
+    return result.tgt_text;
 }
 
 export default xiaoniu;

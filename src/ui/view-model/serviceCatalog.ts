@@ -7,14 +7,18 @@ export interface ServiceGroup {
 }
 
 export function buildServiceGroups(options: TranslationServiceOption[]): ServiceGroup[] {
+  const external = options.filter((option) => !option.builtin)
   return [
-    {id: 'machine', label: '机器翻译', kind: 'machine' as const},
-    {id: 'ai', label: 'AI 翻译', kind: 'ai' as const},
-  ].map(({id, label, kind}) => ({
-    id,
-    label,
-    items: options.filter((option) => option.kind === kind),
-  })).filter((group) => group.items.length > 0)
+    {id: 'builtin', label: '内置翻译', items: options.filter((option) => option.builtin)},
+    {
+      id: 'external',
+      label: '外部翻译',
+      items: [
+        ...external.filter((option) => option.kind === 'machine'),
+        ...external.filter((option) => option.kind === 'ai'),
+      ],
+    },
+  ].filter((group) => group.items.length > 0)
 }
 
 export function filterServiceGroups(groups: ServiceGroup[], query: string) {

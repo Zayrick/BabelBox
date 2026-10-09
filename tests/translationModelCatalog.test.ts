@@ -4,10 +4,7 @@ vi.mock('@/src/services/config/store', () => ({config: {}}));
 
 import {Config, type TranslationServiceCredential} from '@/src/core/config/model';
 import {services} from '@/src/core/config/catalog';
-import {
-    createAITranslationService,
-    createTranslationServiceId,
-} from '@/src/core/config/translationServices';
+import {createExternalTranslationService} from '@/src/core/config/translationServices';
 import {setRuntimeFetch} from '@/src/platform/http/runtime';
 import {
     extractTranslationModelIds,
@@ -24,11 +21,10 @@ function configWithAIService(
     options: {apiKey?: string; endpoint?: string} = {},
 ): {config: Config; instanceId: string} {
     const source = new Config();
-    const instance = createAITranslationService(provider, {
-        id: createTranslationServiceId(provider, source.translationServices),
-        modelId: '',
+    const instance = {
+        ...createExternalTranslationService(provider, source.translationServices),
         endpoint: options.endpoint || '',
-    });
+    };
     source.translationServices.push(instance);
     if (options.apiKey !== undefined) {
         source.serviceCredentials[instance.id] = credential(options.apiKey);

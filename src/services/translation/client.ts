@@ -134,7 +134,6 @@ function scheduleVideoCountSave(): void {
  */
 export async function translateText(origin: string, context: string = document.title, options: TranslateOptions = {}): Promise<string> {
   const selectedService = options.serviceOverride || config.service;
-  const selectedModel = options.modelOverride || getTranslationServiceModel(config, selectedService);
   const selectedLanguages = getTranslationLanguages(options);
   const {
     timeout = 45000,
@@ -147,12 +146,12 @@ export async function translateText(origin: string, context: string = document.t
   const cleanedOrigin = origin.replace(/[\s\u3000]/g, '');
   if (!cleanedOrigin) return origin;
 
-  assertTranslationCredentials(selectedService, selectedModel);
+  assertTranslationCredentials(selectedService);
   if (!skipLanguageDetection && detectlang(origin.replace(/[\s\u3000]/g, '')) === selectedLanguages.targetLanguage) {
     return origin;
   }
 
-  const pageContext = await resolvePageContext(options.pageContext, selectedService, selectedModel);
+  const pageContext = await resolvePageContext(options.pageContext, selectedService);
   throwIfAborted(signal);
 
   // 同一富文本回退可能产生多个短请求；合并持久化写入，避免每个 slot
@@ -171,7 +170,6 @@ export async function translateText(origin: string, context: string = document.t
         serviceOverride: selectedService,
         sourceLanguage: selectedLanguages.sourceLanguage,
         targetLanguage: selectedLanguages.targetLanguage,
-        modelOverride: selectedModel,
         requestTimeoutMs: Math.max(1_000, timeout - 1_000),
       }),
       timeout,
@@ -194,7 +192,6 @@ export async function translateTextBatch(
   if (origins.length === 0) return [];
 
   const selectedService = options.serviceOverride || config.service;
-  const selectedModel = options.modelOverride || getTranslationServiceModel(config, selectedService);
   const selectedLanguages = getTranslationLanguages(options);
   const {
     timeout = 45000,
@@ -202,9 +199,9 @@ export async function translateTextBatch(
     signal,
     queueSession,
   } = options;
-  assertTranslationCredentials(selectedService, selectedModel);
+  assertTranslationCredentials(selectedService);
   throwIfAborted(signal);
-  const pageContext = await resolvePageContext(options.pageContext, selectedService, selectedModel);
+  const pageContext = await resolvePageContext(options.pageContext, selectedService);
   throwIfAborted(signal);
 
   scheduleTranslationCountSave();
@@ -221,7 +218,6 @@ export async function translateTextBatch(
         serviceOverride: selectedService,
         sourceLanguage: selectedLanguages.sourceLanguage,
         targetLanguage: selectedLanguages.targetLanguage,
-        modelOverride: selectedModel,
         requestTimeoutMs: Math.max(1_000, timeout - 1_000),
       }),
       timeout,
@@ -248,10 +244,9 @@ export async function translateVideoText(origin: string): Promise<string> {
   if (!cleanedOrigin) return origin;
 
   const service = config.videoService;
-  const model = getTranslationServiceModel(config, service);
   const languages = getTranslationLanguages();
   const useCache = config.useCache;
-  const pageContext = await resolvePageContext(undefined, service, model);
+  const pageContext = await resolvePageContext(undefined, service);
 
   // 视频字幕是高频、短文本请求。计数保留在内存中，并合并为低频写入。
   scheduleVideoCountSave();
@@ -263,7 +258,6 @@ export async function translateVideoText(origin: string): Promise<string> {
       origin,
       useCache,
       serviceOverride: service,
-      modelOverride: model,
       sourceLanguage: languages.sourceLanguage,
       targetLanguage: languages.targetLanguage,
       requestTimeoutMs: 19_000,
@@ -299,11 +293,9 @@ export interface TranslateOptions {
   signal?: AbortSignal;
   /** Queue scope used to reject work that has not started when one DOM attempt is cancelled. */
   queueSession?: TranslationQueueSession;
-  /** 为文档等独立入口覆盖当前请求的实际模型，不改写网页翻译配置。 */
-  modelOverride?: string;
 }
 
-function assertTranslationCredentials(service = config.service, modelOverride?: string): void {
+function assertTranslationCredentials(service = config.service): void {
   // Content scripts intentionally receive only the public configuration and
   // therefore cannot inspect API credentials. The background request boundary
   // performs the authoritative check after it has loaded session credentials.
@@ -311,21 +303,13 @@ function assertTranslationCredentials(service = config.service, modelOverride?: 
   // are available by design.
   if (!isTrustedCredentialStorageContext()) return;
 
-  const credentialConfig = modelOverride
-    ? {
-      ...config,
-      model: {...config.model, [service]: modelOverride},
-      customModel: {...config.customModel, [service]: modelOverride},
-    }
-    : config;
-  const message = getMissingCredentialMessage(service, credentialConfig);
+  const message = getMissingCredentialMessage(service, config);
   if (message) throw new Error(message);
 }
 
-async function resolvePageContext(suppliedContext?: string, serviceOverride = config.service, modelOverride?: string): Promise<string | undefined> {
-  const service = serviceOverride || config.service;
+async function resolvePageContext(suppliedContext: string | undefined, service: string): Promise<string | undefined> {
   const provider = getTranslationServiceProvider(config, service);
-  const selectedModel = modelOverride || getTranslationServiceModel(config, service);
-  if (!config.enableAIContext || !servicesType.isUseAIContext(provider, selectedModel)) return undefined;
+  const model = getTranslationServiceModel(config, service);
+  if (!config.enableAIContext || !servicesType.isUseAIContext(provider, model)) return undefined;
   return suppliedContext?.trim().slice(0, 4000) || await getPageTranslationContext() || undefined;
 }

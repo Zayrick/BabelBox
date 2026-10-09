@@ -1,7 +1,6 @@
 import type {
+    TranslationServiceConfigLike,
     TranslationServiceCredential,
-} from '@/src/core/config/model';
-import type {
     TranslationServiceInstance,
 } from '@/src/core/config/translationServices';
 
@@ -9,10 +8,8 @@ export interface TranslationRequestMessageBase {
     context?: string;
     pageContext?: string;
     useCache?: boolean;
-    /** 视频字幕、文档等独立入口使用的翻译服务；普通网页请求不设置。 */
+    /** 视频字幕、文档、翻译中心等独立入口使用的服务实例；普通网页请求不设置。 */
     serviceOverride?: string;
-    /** 文档、翻译中心等独立入口指定的实际模型；普通网页请求不设置。 */
-    modelOverride?: string;
     /** 翻译中心仅对当前请求使用的语言，不改变全局设置。 */
     sourceLanguage?: string;
     targetLanguage?: string;
@@ -24,7 +21,27 @@ export type TranslationSingleRequestMessage = TranslationRequestMessageBase & {o
 export type TranslationBatchRequestMessage = TranslationRequestMessageBase & {origin: string[]};
 export type TranslationRequestMessage = TranslationSingleRequestMessage | TranslationBatchRequestMessage;
 
-export type TranslationProvider = (message: Record<string, unknown>) => Promise<unknown>;
+/** One service instance with its credential, frozen for the lifetime of a request. */
+export interface ResolvedTranslationService extends Readonly<TranslationServiceInstance> {
+    readonly credential: Readonly<TranslationServiceCredential>;
+}
+
+/** Everything a provider adapter needs; adapters never read the global config. */
+export interface TranslationProviderRequest {
+    readonly service: ResolvedTranslationService;
+    readonly origin: string | readonly string[];
+    readonly context: string;
+    readonly pageContext: string;
+    readonly sourceLanguage: string;
+    readonly targetLanguage: string;
+    /** Set only for the page-summary request; replaces the instance prompts. */
+    readonly summaryPrompt?: string;
+    readonly summarySystemPrompt?: string;
+    readonly requestTimeoutMs?: number;
+    readonly abortSignal?: AbortSignal;
+}
+
+export type TranslationProvider = (request: TranslationProviderRequest) => Promise<unknown>;
 export type TranslationProviderRegistry = Record<string, TranslationProvider>;
 
 export interface TranslationLanguageOverride {
@@ -44,68 +61,12 @@ export interface TranslationCachePort {
     cleanup: () => Promise<void>;
 }
 
-export interface TranslationConfigSnapshot {
+export interface TranslationBrokerConfig extends TranslationServiceConfigLike {
     service: string;
     from: string;
     to: string;
     useCache: boolean;
     enableAIContext: boolean;
-    model: Record<string, string>;
-    customModel: Record<string, string>;
-    proxy: Record<string, string>;
-    custom: string;
-    deeplx: string;
-    newApiUrl: string;
-    minimaxBillingPlan: string;
-    minimaxRegion: string;
-    mimoBillingPlan: string;
-    mimoRegion: string;
-    azureOpenaiEndpoint: string;
-    robot_id: Record<string, string>;
-    customBody: Record<string, string>;
-    system_role: Record<string, string>;
-    user_role: Record<string, string>;
-    deepseekApiType: string;
-    deepseekThinkingMode: string;
-    translationServices?: readonly TranslationServiceInstance[];
-}
-
-export interface TranslationProviderConfigFields {
-    token: Record<string, string>;
-    requireApiKey: Record<string, boolean>;
-    youdaoAppKey: string;
-    youdaoAppSecret: string;
-    tencentSecretId: string;
-    tencentSecretKey: string;
-    serviceCredentials?: Record<string, TranslationServiceCredential>;
-}
-
-/** 一次 provider 调用使用的完整、不可变配置视图。 */
-export type TranslationProviderConfigSnapshot = Readonly<TranslationConfigSnapshot & TranslationProviderConfigFields>;
-
-/** 配置源可以省略凭据字段，snapshot factory 会补默认值。 */
-export type TranslationConfigSource = TranslationConfigSnapshot & Partial<TranslationProviderConfigFields>;
-
-export interface TranslationServiceIds {
-    minimax: string;
-    mimo: string;
-}
-
-export interface TranslationServiceTypes {
-    machine: {has: (service: string) => boolean};
-    isAI: (service: string) => boolean;
-    isAiSdk: (service: string) => boolean;
-    isUseAIContext: (service: string, model?: string) => boolean;
-}
-
-export interface TranslationEndpointResolver {
-    resolveOpenAICompatibleEndpoint: (
-        service: string,
-        config?: TranslationProviderConfigSnapshot,
-    ) => {endpoint: string};
-    getMimoEndpoint: (plan: string, region: string) => string;
-    minimaxEndpoints: Record<string, Record<string, string>>;
-    aiSdkTransportProfile: string;
 }
 
 export interface TranslationPromptBuilder {
@@ -115,16 +76,15 @@ export interface TranslationPromptBuilder {
 
 export interface TranslationBrokerDependencies {
     ready: Promise<unknown>;
-    getConfig: () => TranslationConfigSource;
+    getConfig: () => TranslationBrokerConfig;
     providers: TranslationProviderRegistry;
     cache: TranslationCachePort;
-    serviceIds: TranslationServiceIds;
-    serviceTypes: TranslationServiceTypes;
-    endpointResolver: TranslationEndpointResolver;
+    /** Request destination that participates in the cache identity. */
+    describeEndpoint: (service: ResolvedTranslationService) => string;
+    isUseAIContext: (provider: string, model: string) => boolean;
     promptBuilder: TranslationPromptBuilder;
-    getMissingCredentialMessage: (service: string, config: TranslationConfigSnapshot) => string | null;
+    getMissingCredentialMessage: (serviceId: string, config: TranslationServiceConfigLike) => string | null;
     getTranslationLanguages: (override?: TranslationLanguageOverride) => TranslationLanguages;
-    resolveConfiguredModel: (selected?: string, custom?: string) => string;
     buildTranslationCacheKey: (identity: Record<string, unknown>) => string;
     now?: () => number;
 }

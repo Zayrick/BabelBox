@@ -1,11 +1,17 @@
-import type { Config, TranslationServiceCredential } from './model';
-import {services} from './catalog';
+import type {Config} from './model';
+import type {TranslationServiceCredential, TranslationServiceInstance} from './translationServices';
 
 export const SESSION_CREDENTIALS_STORAGE_KEY = 'session:credentials' as const;
 export const LOCAL_CREDENTIALS_STORAGE_KEY = 'local:credentials' as const;
-export const CREDENTIALS_SCHEMA_VERSION = 1 as const;
+export const CREDENTIALS_SCHEMA_VERSION = 2 as const;
 
-export const CONFIG_CREDENTIAL_FIELDS = [
+export const CONFIG_CREDENTIAL_FIELDS = ['serviceCredentials'] as const;
+
+/**
+ * Plaintext secret fields written by earlier versions. They are never read, but
+ * every public snapshot (storage, history, export) strips them.
+ */
+const RETIRED_CREDENTIAL_FIELDS = [
     'token',
     'ak',
     'sk',
@@ -16,7 +22,6 @@ export const CONFIG_CREDENTIAL_FIELDS = [
     'tencentSecretId',
     'tencentSecretKey',
     'extra',
-    'serviceCredentials',
 ] as const;
 
 export type ConfigCredentialField = typeof CONFIG_CREDENTIAL_FIELDS[number];
@@ -24,33 +29,11 @@ export type PublicConfig = Omit<Config, ConfigCredentialField>;
 
 export interface ConfigCredentials {
     schemaVersion: typeof CREDENTIALS_SCHEMA_VERSION;
-    token: Record<string, string>;
-    ak: string;
-    sk: string;
-    appid: string;
-    key: string;
-    youdaoAppKey: string;
-    youdaoAppSecret: string;
-    tencentSecretId: string;
-    tencentSecretKey: string;
-    extra: Record<string, unknown>;
-    serviceCredentials?: Record<string, TranslationServiceCredential>;
-}
-
-interface CredentialDestinationInstance {
-    id: string;
-    provider: string;
-    endpoint?: string;
-    proxy?: string;
+    serviceCredentials: Record<string, TranslationServiceCredential>;
 }
 
 interface CredentialDestinationConfig {
-    translationServices?: readonly CredentialDestinationInstance[];
-    proxy?: Record<string, string | undefined>;
-    custom?: string;
-    newApiUrl?: string;
-    azureOpenaiEndpoint?: string;
-    deeplx?: string;
+    translationServices?: readonly Pick<TranslationServiceInstance, 'id' | 'provider' | 'endpoint'>[];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -68,17 +51,6 @@ function cloneValue(value: unknown): unknown {
 
 function stringValue(value: unknown): string {
     return typeof value === 'string' ? value : '';
-}
-
-function stringMapping(value: unknown): Record<string, string> {
-    if (!isRecord(value)) return {};
-    return Object.fromEntries(
-        Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === 'string'),
-    );
-}
-
-function extraMapping(value: unknown): Record<string, unknown> {
-    return isRecord(value) ? cloneValue(value) as Record<string, unknown> : {};
 }
 
 function serviceCredentialMapping(value: unknown): Record<string, TranslationServiceCredential> {
@@ -101,134 +73,66 @@ export function extractConfigCredentials(value: unknown): ConfigCredentials {
     const source = isRecord(value) ? value : {};
     return {
         schemaVersion: CREDENTIALS_SCHEMA_VERSION,
-        token: stringMapping(source.token),
-        ak: stringValue(source.ak),
-        sk: stringValue(source.sk),
-        appid: stringValue(source.appid),
-        key: stringValue(source.key),
-        youdaoAppKey: stringValue(source.youdaoAppKey),
-        youdaoAppSecret: stringValue(source.youdaoAppSecret),
-        tencentSecretId: stringValue(source.tencentSecretId),
-        tencentSecretKey: stringValue(source.tencentSecretKey),
-        extra: extraMapping(source.extra),
         serviceCredentials: serviceCredentialMapping(source.serviceCredentials),
     };
 }
 
 export function parseStoredCredentials(value: unknown): ConfigCredentials | null {
-    if (!isRecord(value)) return null;
-    if (!CONFIG_CREDENTIAL_FIELDS.some((field) => field in value)) return null;
+    if (!isRecord(value) || value.schemaVersion !== CREDENTIALS_SCHEMA_VERSION) return null;
     return extractConfigCredentials(value);
 }
 
-export function hasCredentialFields(value: unknown): boolean {
-    return isRecord(value) && CONFIG_CREDENTIAL_FIELDS.some((field) => field in value);
-}
-
 export function hasCredentialData(value: ConfigCredentials): boolean {
-    return Object.keys(value.token).length > 0
-        || Boolean(value.ak || value.sk || value.appid || value.key)
-        || Boolean(value.youdaoAppKey || value.youdaoAppSecret)
-        || Boolean(value.tencentSecretId || value.tencentSecretKey)
-        || Object.keys(value.extra).length > 0
-        || Object.values(value.serviceCredentials || {}).some((credential) =>
-            Boolean(credential.apiKey || credential.appKey || credential.appSecret
-                || credential.secretId || credential.secretKey));
+    return Object.values(value.serviceCredentials).some((credential) =>
+        Object.values(credential).some(Boolean));
 }
 
 export function credentialsEqual(left: ConfigCredentials, right: ConfigCredentials): boolean {
     return JSON.stringify(left) === JSON.stringify(right);
 }
 
-function credentialDestinationSignature(
-    config: CredentialDestinationConfig,
-    instance: CredentialDestinationInstance,
-): string {
-    const provider = instance.provider;
-    const endpoint = instance.proxy
-        || instance.endpoint
-        || config.proxy?.[instance.id]
-        || (instance.id === provider ? config.proxy?.[provider] : '')
-        || (provider === services.custom ? config.custom : '')
-        || (provider === services.newapi ? config.newApiUrl : '')
-        || (provider === services.azureOpenai ? config.azureOpenaiEndpoint : '')
-        || (provider === services.deeplx ? config.deeplx : '')
-        || '';
-    return `${provider}\u0000${endpoint}`;
-}
-
-function hasSameCredentialDestination(
-    current: CredentialDestinationConfig,
-    target: CredentialDestinationConfig,
-    serviceId: string,
-): boolean {
-    const currentInstance = current.translationServices?.find((item) => item.id === serviceId);
-    const targetInstance = target.translationServices?.find((item) => item.id === serviceId);
-    return Boolean(currentInstance && targetInstance
-        && credentialDestinationSignature(current, currentInstance)
-            === credentialDestinationSignature(target, targetInstance));
-}
-
-function globalCredentialConsumersAreSafe(
-    current: CredentialDestinationConfig,
-    target: CredentialDestinationConfig,
-    providers: readonly string[],
-): boolean {
-    const providerSet = new Set(providers);
-    return (target.translationServices || [])
-        .filter((item) => item.id === item.provider && providerSet.has(item.provider))
-        .every((item) => hasSameCredentialDestination(current, target, item.id));
+function credentialDestination(config: CredentialDestinationConfig, serviceId: string): string | null {
+    const instance = config.translationServices?.find((item) => item.id === serviceId);
+    return instance ? `${instance.provider}\u0000${instance.endpoint}` : null;
 }
 
 /**
  * Carries credentials across a public/history/imported config snapshot only
- * when the same instance ID still resolves to the same provider destination.
+ * when the same instance ID still sends requests to the same destination.
  */
 export function filterConfigCredentialsForDestination(
     credentials: ConfigCredentials,
     current: CredentialDestinationConfig,
     target: CredentialDestinationConfig,
 ): ConfigCredentials {
-    const filtered: ConfigCredentials = {
-        ...credentials,
-        token: Object.fromEntries(Object.entries(credentials.token)
-            .filter(([serviceId]) => hasSameCredentialDestination(current, target, serviceId))),
-        extra: extraMapping(credentials.extra),
-        serviceCredentials: Object.fromEntries(Object.entries(credentials.serviceCredentials || {})
-            .filter(([serviceId]) => hasSameCredentialDestination(current, target, serviceId))
+    return {
+        schemaVersion: CREDENTIALS_SCHEMA_VERSION,
+        serviceCredentials: Object.fromEntries(Object.entries(credentials.serviceCredentials)
+            .filter(([serviceId]) => {
+                const destination = credentialDestination(current, serviceId);
+                return destination !== null && destination === credentialDestination(target, serviceId);
+            })
             .map(([serviceId, credential]) => [serviceId, {...credential}])),
     };
-    if (!globalCredentialConsumersAreSafe(current, target, [services.youdao])) {
-        filtered.youdaoAppKey = '';
-        filtered.youdaoAppSecret = '';
-    }
-    if (!globalCredentialConsumersAreSafe(current, target, [services.tencent, services.huanYuanTranslation])) {
-        filtered.tencentSecretId = '';
-        filtered.tencentSecretKey = '';
-    }
-    return filtered;
 }
 
-/** Remove both instance-scoped credentials and the provider-keyed legacy token. */
 export function clearTranslationServiceCredentials(
-    config: Pick<Config, 'serviceCredentials' | 'token'>,
+    config: Pick<Config, 'serviceCredentials'>,
     serviceId: string,
 ): void {
     delete config.serviceCredentials[serviceId];
-    delete config.token[serviceId];
 }
 
 export function sanitizeConfigCredentials(value: unknown): Record<string, unknown> {
     const sanitized = isRecord(value) ? cloneValue(value) as Record<string, unknown> : {};
-    for (const field of CONFIG_CREDENTIAL_FIELDS) delete sanitized[field];
+    for (const field of [...CONFIG_CREDENTIAL_FIELDS, ...RETIRED_CREDENTIAL_FIELDS]) delete sanitized[field];
     return sanitized;
 }
 
 export function mergeConfigCredentials(value: unknown, credentials: ConfigCredentials): Record<string, unknown> {
-    const {schemaVersion: _schemaVersion, ...credentialFields} = credentials;
     return {
         ...sanitizeConfigCredentials(value),
-        ...cloneValue(credentialFields) as Omit<ConfigCredentials, 'schemaVersion'>,
+        serviceCredentials: cloneValue(credentials.serviceCredentials),
     };
 }
 
@@ -238,7 +142,7 @@ export function sanitizeConfigHistoryCredentials(value: unknown): unknown {
         try {
             parsed = JSON.parse(parsed);
         } catch {
-            // 损坏的旧历史无法可靠判断哪些片段属于凭据；继续保留原字符串会让
+            // 损坏的历史无法可靠判断哪些片段属于凭据；继续保留原字符串会让
             // 已知敏感信息永久滞留在 local storage，因此按不可恢复历史丢弃。
             return null;
         }

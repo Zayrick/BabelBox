@@ -1,4 +1,3 @@
-import {DEFAULT_DEEPLX_ENDPOINT} from "./deeplx";
 import {animationModeOptions} from './animation';
 
 export const services = {
@@ -71,28 +70,6 @@ export const servicesType = {
         services.grok,
         services.newapi,
     ]),
-    // 首批由 Vercel AI SDK 的 OpenAI-compatible provider 承接。其他 AI
-    // 服务保留专用协议适配器，避免把 Claude/Gemini/Coze 等误当成兼容端点。
-    aiSdk: new Set([
-        services.openai,
-        services.azureOpenai,
-        services.yiyan,
-        services.moonshot,
-        services.custom,
-        services.infini,
-        services.baichuan,
-        services.lingyi,
-        services.minimax,
-        services.mimo,
-        services.jieyue,
-        services.groq,
-        services.huanYuan,
-        services.doubao,
-        services.siliconCloud,
-        services.openrouter,
-        services.grok,
-        services.newapi,
-    ]),
     // 需要 token
     useToken: new Set([
         services.openai,
@@ -151,13 +128,12 @@ export const servicesType = {
         services.grok,
         services.newapi,
     ]),
-    // 支持代理
-    useProxy: new Set([
+    // 可在服务详情中覆盖请求地址
+    customEndpoint: new Set([
         services.openai,
         services.azureOpenai,
         services.gemini,
         services.claude,
-        services.google,
         services.deepL,
         services.deeplx,
         services.moonshot,
@@ -179,37 +155,32 @@ export const servicesType = {
         services.siliconCloud,
         services.openrouter,
         services.grok,
-    ]),
-    // 支持自定义 URL 的服务
-    useCustomUrl: new Set([
         services.custom,
-        services.deeplx,
+        services.newapi,
+    ]),
+    // 没有默认地址，必须填写请求地址
+    requiredEndpoint: new Set([
+        services.custom,
         services.newapi,
         services.azureOpenai,
     ]),
 
     isMachine: (service: string) => servicesType.machine.has(service),
     isAI: (service: string) => servicesType.AI.has(service),
-    isAiSdk: (service: string) => servicesType.aiSdk.has(service),
     isUseAIContext: (service: string, model = '') =>
         servicesType.AI.has(service)
         && service !== services.huanYuanTranslation
         && !(service === services.tongyi && model.startsWith('qwen-mt')),
     isUseToken: (service: string) => servicesType.useToken.has(service),
-    isUseProxy: (service: string) => servicesType.useProxy.has(service),
+    isCustomEndpoint: (service: string) => servicesType.customEndpoint.has(service),
+    isEndpointRequired: (service: string) => servicesType.requiredEndpoint.has(service),
     isUseModel: (service: string) => servicesType.useModel.has(service),
     // 所有 AI 服务的请求体都支持附加顶层字段，包括不使用模型选择器的 Coze。
     isUseCustomBody: (service: string) => servicesType.AI.has(service),
-    isCustom: (service: string) => service === services.custom,
-    isNewApi: (service: string) => service === services.newapi,
     isCoze: (service: string) => service === services.cozecom || service === services.cozecn,
     isYoudao: (service: string) => service === services.youdao,
     isTencent: (service: string) => service === services.tencent || service === services.huanYuanTranslation,
-    isAzureOpenai: (service: string) => service === services.azureOpenai,
-    isUseCustomUrl: (service: string) => servicesType.useCustomUrl.has(service),
 };
-
-export const customModelString = "自定义模型";
 
 export const minimaxBillingPlans = [
     {value: "payg", label: "按量付费（API）"},
@@ -239,107 +210,6 @@ export const mimoRegions = [
 ] as const;
 
 export type MiMoRegion = typeof mimoRegions[number]["value"];
-
-/** Resolve the model that is actually sent to a provider. */
-export function resolveConfiguredModel(selectedModel?: string, customModel?: string): string {
-    return selectedModel === customModelString ? customModel || '' : selectedModel || '';
-}
-
-// 官方模型编号供列表与配置迁移使用。
-export const currentModelIds = {
-    openai: "gpt-5.6-luna",
-    zhipu: "glm-5.3",
-    zhipuFlash: "glm-4.5-flash",
-    tongyiTokenPlan: "qwen3.8-max-preview",
-    moonshot: "kimi-k3",
-    moonshotCompatible: "kimi-k2.6",
-    claude: "claude-fable-5",
-    claudeSonnet: "claude-sonnet-5",
-    claudeOpus: "claude-opus-5",
-    claudeHaiku: "claude-haiku-4-5",
-    deepseek: "deepseek-v4-flash",
-    minimax: "MiniMax-M2.7",
-    mimo: "mimo-v2.5-pro",
-    jieyue: "step-3.5-flash",
-    huanYuan: "hy3",
-    grok: "grok-4.5",
-    groqLarge: "openai/gpt-oss-120b",
-    groqSmall: "openai/gpt-oss-20b",
-    yiyan: "ernie-5.1",
-    yiyanFast: "ernie-speed-128k",
-    infiniZhipu: "glm-5.2",
-    infiniGeneral: "qwen3.6-27b",
-} as const;
-
-// 默认模型优先选择低延迟或低成本档位；完整列表仍提供其他模型。
-export const defaultModelIds = {
-    [services.openai]: currentModelIds.openai,
-    [services.azureOpenai]: currentModelIds.openai,
-    [services.gemini]: "gemini-3.6-flash",
-    [services.yiyan]: currentModelIds.yiyanFast,
-    [services.tongyi]: "qwen3.6-flash",
-    [services.zhipu]: currentModelIds.zhipuFlash,
-    [services.moonshot]: currentModelIds.moonshotCompatible,
-    [services.claude]: currentModelIds.claudeHaiku,
-    [services.custom]: currentModelIds.openai,
-    [services.infini]: currentModelIds.deepseek,
-    [services.baichuan]: "Baichuan-M3",
-    [services.lingyi]: "yi-lightning",
-    [services.deepseek]: currentModelIds.deepseek,
-    [services.minimax]: "MiniMax-M2.7-highspeed",
-    [services.mimo]: "mimo-v2.5",
-    [services.jieyue]: currentModelIds.jieyue,
-    [services.huanYuan]: currentModelIds.huanYuan,
-    [services.huanYuanTranslation]: "hunyuan-translation-lite",
-    [services.newapi]: currentModelIds.openai,
-    [services.grok]: "grok-4.3",
-    [services.doubao]: "doubao-seed-1-6-250615",
-    [services.siliconCloud]: "deepseek-ai/DeepSeek-V4-Flash",
-    [services.groq]: currentModelIds.groqSmall,
-    [services.openrouter]: "google/gemini-3.6-flash",
-} as const;
-
-export const models = new Map<string, Array<string>>([
-    [services.openai, [currentModelIds.openai, "gpt-5.4-mini", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.5", "gpt-5.4-nano", "gpt-5-mini", "gpt-5-nano", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano", customModelString]],
-    [services.azureOpenai, [currentModelIds.openai, "gpt-5.4-mini", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.5", "gpt-5.4-nano", "gpt-5-mini", "gpt-5-nano", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano", customModelString]],
-    [services.gemini, [defaultModelIds[services.gemini], "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.1-pro-preview", "gemini-3.1-flash-lite", "gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro", customModelString]],
-    [services.yiyan, [defaultModelIds[services.yiyan], currentModelIds.yiyan, "ernie-5.0-thinking-preview", "ernie-x1.1-preview", "ernie-4.5-turbo-128k", "ernie-4.5-21b-a3b", customModelString]],
-    [services.tongyi, [defaultModelIds[services.tongyi], currentModelIds.tongyiTokenPlan, "qwen3.7-max", "qwen3.7-plus", "qwen-mt-plus", "qwen-mt-turbo", "qwen-mt-flash", "qwen-mt-lite", "qwen-long-latest", customModelString]],
-    [services.zhipu, [defaultModelIds[services.zhipu], currentModelIds.zhipu, "glm-5.2", "glm-5.1", "glm-5-turbo", "glm-5", "glm-4.7", customModelString]],
-    [services.moonshot, [defaultModelIds[services.moonshot], currentModelIds.moonshot, "kimi-k2.7-code-highspeed", "kimi-k2.7-code", "kimi-k2.5", customModelString]],
-    [services.claude, [defaultModelIds[services.claude], currentModelIds.claude, currentModelIds.claudeOpus, currentModelIds.claudeSonnet, "claude-opus-4-8", "claude-sonnet-4-6", customModelString]],
-    [services.custom, [currentModelIds.openai, "gpt-5.4-mini", "gpt-5.6-sol", "gemini-3.6-flash", currentModelIds.claude, currentModelIds.deepseek, "gemma:7b", "llama2:7b", "mistral:7b", customModelString]],
-    [services.infini, [defaultModelIds[services.infini], "deepseek-v4-pro", currentModelIds.infiniZhipu, "kimi-k2.7-code", currentModelIds.infiniGeneral, "qwen3.6-35b-a3b", customModelString]],
-    [services.baichuan, [defaultModelIds[services.baichuan], "Baichuan-M3-Plus", "Baichuan4-Air", "Baichuan4-Turbo", "Baichuan4", customModelString]],
-    [services.lingyi, [defaultModelIds[services.lingyi], customModelString]],
-    [services.deepseek, [currentModelIds.deepseek, "deepseek-v4-pro", customModelString]],
-    [services.minimax, [defaultModelIds[services.minimax], currentModelIds.minimax, "MiniMax-M2.5", "MiniMax-M2.5-highspeed", customModelString]],
-    [services.mimo, [defaultModelIds[services.mimo], currentModelIds.mimo, customModelString]],
-    [services.jieyue, [currentModelIds.jieyue, "step-3", "step-2", customModelString]],
-    [services.huanYuan, [currentModelIds.huanYuan, "hy3-preview", customModelString]],
-    [services.huanYuanTranslation, [defaultModelIds[services.huanYuanTranslation], "hunyuan-translation", customModelString]],
-    [services.newapi, [currentModelIds.openai, "gpt-5.4-mini", "gpt-5.6-sol", "gemini-3.6-flash", "gemini-3.5-flash-lite", currentModelIds.claude, currentModelIds.deepseek, "kimi-k2.7-code", customModelString]],
-    [services.grok, [defaultModelIds[services.grok], currentModelIds.grok, customModelString]],
-    [services.doubao, ["doubao-seed-1-6-250615", customModelString]],
-
-    // mix model
-    [services.siliconCloud, [defaultModelIds[services.siliconCloud], "deepseek-ai/DeepSeek-V4-Pro", "zai-org/GLM-5.2", "Qwen/Qwen3.6-27B", "Qwen/Qwen3.6-35B-A3B", "deepseek-ai/DeepSeek-V3.2", "deepseek-ai/DeepSeek-R1", customModelString]],
-
-    [services.groq, [defaultModelIds[services.groq], currentModelIds.groqLarge, "qwen/qwen3.6-27b", customModelString]],
-    [services.openrouter, [defaultModelIds[services.openrouter], "openrouter/auto", "openai/gpt-5.6-luna", "openai/gpt-5.6-sol", "anthropic/claude-fable-5", "anthropic/claude-opus-5", "x-ai/grok-4.5", "deepseek/deepseek-v4-pro", "moonshotai/kimi-k3", "z-ai/glm-5.2", customModelString]]
-]);
-
-// 每个需要模型选择的 AI 服务都把列表第一项作为开箱即用的默认模型。
-// 统一从模型列表生成，避免设置页、配置初始化和请求模板各自维护一份默认值。
-export function firstConfiguredModel(modelOptions: readonly string[]): string {
-    return modelOptions[0] || '';
-}
-
-export const defaultModels = new Map<string, string>(
-    Array.from(models.entries())
-        .map(([service, modelOptions]) => [service, firstConfiguredModel(modelOptions)] as [string, string])
-        .filter(([, model]) => Boolean(model)),
-);
 
 export const options = {
     minimaxBillingPlan: minimaxBillingPlans,
@@ -558,8 +428,6 @@ export const defaultOption = {
     display: 0,
     hotkey: "Control",
     service: services.microsoft,
-    custom: "http://localhost:11434/v1/chat/completions",
-    deeplx: DEFAULT_DEEPLX_ENDPOINT,
     system_role: "You are a professional machine translation engine. Translate only the requested source text into the target language, preserving its meaning, tone, and formatting. Return only the translation.",
     user_role: `Translate the text inside <source_text> into {{to}}. If it does not need translation (for example, a proper noun or code), return it unchanged. Output only the translated text, without the surrounding tags.
 

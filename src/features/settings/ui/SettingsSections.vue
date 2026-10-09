@@ -82,12 +82,11 @@
       >
         <template #configuration>
           <ServiceConfiguration
+            v-if="selectedConfigurationInstance"
             :config="config"
-            :service="selectedConfigurationProvider"
             :instance="selectedConfigurationInstance"
             :presentation="configurationPresentation"
             :options="options"
-            :is-valid-azure-endpoint="isValidAzureEndpoint"
           />
         </template>
       </ServiceCatalog>
@@ -260,23 +259,6 @@
         </SettingsRow>
       </SettingsGroup>
 
-      <SettingsGroup v-if="(showAdvancedProxy || showAdvancedAI) && !showAdvancedCustom" title="请求设置" :description="`仅对 ${selectedTextServiceLabel} 生效`">
-        <template v-if="showAdvancedAI" #actions>
-          <el-button text @click="resetTemplate"><Refresh class="button-icon" aria-hidden="true" />恢复默认模板</el-button>
-        </template>
-        <SettingsRow v-if="showAdvancedProxy" label="代理地址" description="无法直接访问服务时填写，否则留空">
-          <el-input v-model="advancedProxy" aria-label="代理地址" placeholder="不使用代理" />
-        </SettingsRow>
-        <template v-if="showAdvancedAI">
-          <SettingsRow label="System 提示词" stacked>
-            <el-input v-model="advancedSystemRole" type="textarea" aria-label="System 提示词" :autosize="{ minRows: 3 }" maxlength="8192" placeholder="system message" />
-          </SettingsRow>
-          <SettingsRow label="User 模板" stacked>
-            <template #description><code v-pre>{{to}}</code> 为目标语言，<code v-pre>{{origin}}</code> 为原文，两者都必须保留。</template>
-            <el-input v-model="advancedUserRole" type="textarea" aria-label="User 模板" :autosize="{ minRows: 3 }" maxlength="8192" placeholder="user message template" />
-          </SettingsRow>
-        </template>
-      </SettingsGroup>
     </section>
 
     <section v-show="props.activeSection === 'settings-data'" id="settings-data" class="settings-section">
@@ -412,7 +394,7 @@
 
 // Main 处理配置信息
 import { computed, ref, watch, onUnmounted } from 'vue'
-import { options, servicesType, defaultOption } from '@/src/core/config/catalog';
+import { options, servicesType } from '@/src/core/config/catalog';
 import {
   Config,
   MOUSE_HOVER_TRANSLATION_DELAY_MAX,
@@ -430,7 +412,6 @@ import {
   Download,
   Pencil as Edit,
   Redo2,
-  RotateCcw as Refresh,
   Save,
   Undo2,
   Upload,
@@ -483,12 +464,12 @@ import {
   getTranslationServiceUnavailableMessage,
 } from '@/src/services/translation/capabilities';
 import {
-  clearTranslationServiceConfiguration,
   getTranslationServiceInstance,
   getTranslationServiceLabel,
   getTranslationServiceModel,
   getTranslationServiceOptions,
   getTranslationServiceProvider,
+  isBuiltinTranslationService,
   reconcileTranslationServiceReferences,
 } from '@/src/core/config/translationServices';
 
@@ -568,7 +549,6 @@ const setConfigurationService = (value: string) => {
 };
 
 const actualService = computed(() => getTranslationServiceProvider(config.value, config.value.service));
-const selectedDefaultInstance = computed(() => getTranslationServiceInstance(config.value, config.value.service));
 const aiContextModel = computed(() => getTranslationServiceModel(config.value, config.value.service));
 const canUseAIContext = computed(() => servicesType.isUseAIContext(actualService.value, aiContextModel.value));
 const availableServiceOptions = computed(() => getSelectableTranslationServices(config.value));
@@ -606,45 +586,14 @@ const configurationServiceUnavailableMessage = computed(
 const configurationPresentation = computed(() => createServiceConfigurationPresentation(
   selectedConfigurationProvider.value,
   {
-    selectedModel: selectedConfigurationInstance.value?.modelId,
-    deepseekApiType: selectedConfigurationInstance.value?.deepseekApiType
-      || config.value.deepseekApiType,
+    builtin: Boolean(selectedConfigurationInstance.value
+      && isBuiltinTranslationService(selectedConfigurationInstance.value)),
+    deepseekApiType: selectedConfigurationInstance.value?.deepseekApiType,
     available: Boolean(configurationServiceOption.value)
       && !configurationServiceUnavailableMessage.value,
     unavailableMessage: configurationServiceUnavailableMessage.value || undefined,
   },
 ));
-
-// 高级设置只跟随实际默认服务；服务目录的展示状态由上面的 presentation 独立管理。
-const showAdvancedAI = computed(() => servicesType.isAI(actualService.value));
-const showAdvancedProxy = computed(() => servicesType.isUseProxy(actualService.value));
-const showAdvancedCustom = computed(() => servicesType.isCustom(actualService.value));
-function providerDefaultMappingValue(mapping: Record<string, string>): string {
-  const selected = selectedDefaultInstance.value;
-  if (selected && selected.id !== selected.provider) return '';
-  return mapping[actualService.value] || '';
-}
-const advancedProxy = computed({
-  get: () => selectedDefaultInstance.value?.proxy || providerDefaultMappingValue(config.value.proxy),
-  set: (value: string) => {
-    if (selectedDefaultInstance.value) selectedDefaultInstance.value.proxy = value.trim();
-    else config.value.proxy[actualService.value] = value;
-  },
-});
-const advancedSystemRole = computed({
-  get: () => selectedDefaultInstance.value?.systemRole || providerDefaultMappingValue(config.value.system_role),
-  set: (value: string) => {
-    if (selectedDefaultInstance.value) selectedDefaultInstance.value.systemRole = value;
-    else config.value.system_role[actualService.value] = value;
-  },
-});
-const advancedUserRole = computed({
-  get: () => selectedDefaultInstance.value?.userRole || providerDefaultMappingValue(config.value.user_role),
-  set: (value: string) => {
-    if (selectedDefaultInstance.value) selectedDefaultInstance.value.userRole = value;
-    else config.value.user_role[actualService.value] = value;
-  },
-});
 
 const showAddTranslationServiceDialog = ref(false);
 
@@ -675,7 +624,7 @@ function addTranslationService(payload: AddTranslationServicePayload): void {
 
 async function removeTranslationService(id: string): Promise<void> {
   const instance = getTranslationServiceInstance(config.value, id);
-  if (!instance || instance.kind !== 'ai') return;
+  if (!instance || isBuiltinTranslationService(instance)) return;
   if (instance.enabled && !getSelectableTranslationServices(config.value).some((item) => item.value !== id)) {
     ElMessage.warning('至少需要保留一个可用的翻译服务');
     return;
@@ -683,7 +632,7 @@ async function removeTranslationService(id: string): Promise<void> {
   try {
     await ElMessageBox.confirm(
       `删除“${instance.name}”后，它的配置和凭据也会一并删除。`,
-      '删除 AI 翻译服务',
+      '删除翻译服务',
       {
         confirmButtonText: '删除',
         confirmButtonType: 'danger',
@@ -696,7 +645,6 @@ async function removeTranslationService(id: string): Promise<void> {
   }
 
   config.value.translationServices = config.value.translationServices.filter((item) => item.id !== id);
-  clearTranslationServiceConfiguration(config.value, instance);
   clearTranslationServiceCredentials(config.value, id);
   config.value.translationCenterServices = config.value.translationCenterServices.filter((item) => item !== id);
   reconcileTranslationServiceReferences(config.value);
@@ -731,29 +679,6 @@ const styleGroups = computed(() => {
 const currentStyleClass = computed(() =>
   options.styles.find(item => item.value === config.value.style && !item.disabled)?.class || 'babelbox-display-default'
 );
-
-// 恢复默认模板
-const resetTemplate = () => {
-  ElMessageBox.confirm(
-    '当前的 system 和 user 模板会被覆盖。',
-    '恢复默认模板',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning',
-    }
-  ).then(() => {
-    advancedSystemRole.value = defaultOption.system_role;
-    advancedUserRole.value = defaultOption.user_role;
-    ElMessage({
-      message: '已恢复默认模板',
-      type: 'success',
-      duration: 2000
-    });
-  }).catch(() => {
-    // 用户取消操作，不做任何处理
-  });
-};
 
 // 悬浮球开关的计算属性
 const floatingBallEnabled = computed({
@@ -1132,20 +1057,6 @@ const restoreBackup = async (version: number) => {
   } finally {
     backupBusy.value = false;
   }
-};
-
-// Azure OpenAI 端点地址验证函数
-const isValidAzureEndpoint = (endpoint: string) => {
-  if (!endpoint || endpoint.trim() === '') {
-    return false;
-  }
-
-  // 检查是否包含必要的组件
-  const hasAzureDomain = endpoint.includes('openai.azure.com');
-  const hasChatCompletions = endpoint.includes('/chat/completions');
-  const hasHttps = endpoint.startsWith('https://');
-
-  return hasHttps && hasAzureDomain && hasChatCompletions;
 };
 
 const handleExport = async () => {

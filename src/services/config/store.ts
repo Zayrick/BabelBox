@@ -16,7 +16,6 @@ import {
     extractConfigCredentials,
     filterConfigCredentialsForDestination,
     hasCredentialData,
-    hasCredentialFields,
     mergeConfigCredentials,
     parseStoredCredentials,
     sanitizeConfigCredentials,
@@ -420,9 +419,6 @@ async function initializeConfig(): Promise<void> {
             return;
         }
 
-        const legacyCredentials = parsed && hasCredentialFields(parsed)
-            ? extractConfigCredentials(parsed)
-            : null;
         const localCredentialsValue = await storage.getItem<unknown>(LOCAL_CREDENTIALS_STORAGE_KEY);
         const localCredentials = parseStoredCredentials(localCredentialsValue);
 
@@ -432,14 +428,7 @@ async function initializeConfig(): Promise<void> {
             storedCredentialState = parseCredentialStorageState(
                 await storage.getItem<unknown>(CREDENTIAL_STORAGE_STATE_KEY),
             );
-            // 升级时保留用户已选择的仅会话模式；新安装仍使用新默认值。
-            setCredentialStorageModeState(
-                storedCredentialState?.mode
-                    || (parsed?.persistCredentials === false
-                        ? 'session'
-                        : DEFAULT_CREDENTIAL_STORAGE_MODE),
-                false,
-            );
+            setCredentialStorageModeState(storedCredentialState?.mode || DEFAULT_CREDENTIAL_STORAGE_MODE, false);
             if (storedCredentialState?.mode === 'device' && storedCredentialState.encryptedCredentials) {
                 try {
                     deviceCredentials = await decryptCredentials(storedCredentialState.encryptedCredentials);
@@ -470,14 +459,12 @@ async function initializeConfig(): Promise<void> {
         const activeCredentials = sessionCredentials
             || deviceCredentials
             || localCredentials
-            || legacyCredentials
             || extractConfigCredentials({});
         const normalized = parsed
             ? normalizeConfig(mergeConfigCredentials(parsed, activeCredentials))
             : normalizeConfig(mergeConfigCredentials(new Config(), activeCredentials));
-        // normalizeConfig may materialize instance-scoped credentials while
-        // splitting legacy webpage/document models into separate instances.
-        // Every checkpoint must persist that migrated result, not its input.
+        // normalizeConfig drops credentials of services that no longer exist;
+        // checkpoints persist that result, not its input.
         const checkpointCredentials = extractConfigCredentials(normalized);
         const serialized = serializeConfig(normalized);
 
@@ -485,11 +472,10 @@ async function initializeConfig(): Promise<void> {
         applyConfig(normalized);
         credentialStorageModeListeners.forEach((listener) => listener(credentialStorageMode));
 
-        const hasLegacyCredentialStorage = Boolean(
-            legacyCredentials
-            || localCredentials
-            || historyNeedsSanitizing,
-        );
+        // local:credentials is a retired plaintext store; remove it even when its schema is outdated.
+        const hasLegacyCredentialStorage = localCredentialsValue !== null
+            && localCredentialsValue !== undefined
+            || historyNeedsSanitizing;
         legacyCredentialCleanupRequired = hasLegacyCredentialStorage;
         const mustCheckpointCredentials = hasCredentialData(checkpointCredentials)
             || hasLegacyCredentialStorage
@@ -679,14 +665,12 @@ export function prepareConfigSaveRequest(
         return normalizeConfig({
             ...incomingConfig,
             count: currentConfig.count,
-            videoServiceDefaultMigrated: currentConfig.videoServiceDefaultMigrated,
         });
     }
 
     const targetConfig = normalizeConfig({
         ...sanitizeConfigCredentials(incomingConfig),
         count: currentConfig.count,
-        videoServiceDefaultMigrated: currentConfig.videoServiceDefaultMigrated,
     });
     const credentials = filterConfigCredentialsForDestination(
         extractConfigCredentials(currentConfig),

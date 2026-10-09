@@ -851,7 +851,6 @@ async function startTranslation(): Promise<void> {
     const result = await translateDocumentSegments(document.segments, {
       fileName: document.fileName,
       serviceOverride: config.documentService,
-      modelOverride: documentUsesModel.value ? documentModelValue.value : undefined,
       sourceLanguage: config.from,
       targetLanguage: config.to,
       signal: controller.signal,

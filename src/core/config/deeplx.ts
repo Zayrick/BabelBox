@@ -26,15 +26,10 @@ function resolveDeepLXEndpoint(endpoint: string, token: string): string | null {
   return endpoint.replace(DEEPLX_TOKEN_PLACEHOLDER, encodeURIComponent(token))
 }
 
-export function getDeepLXEndpoints(configuredURL: unknown, proxyURL: unknown, token = ""): string[] {
-  const proxyEndpoints = parseDeepLXEndpoints(proxyURL)
-  if (proxyEndpoints.length > 0) {
-    const resolvedProxyEndpoints = proxyEndpoints.map((endpoint) => resolveDeepLXEndpoint(endpoint, token)).filter((endpoint): endpoint is string => endpoint !== null)
-    return resolvedProxyEndpoints.length > 0 ? resolvedProxyEndpoints : [DEFAULT_DEEPLX_ENDPOINT]
-  }
-
-  const configuredEndpoints = parseDeepLXEndpoints(configuredURL)
-  const endpoints = configuredEndpoints.length > 0 ? configuredEndpoints : [DEFAULT_DEEPLX_ENDPOINT]
-  const resolvedEndpoints = endpoints.map((endpoint) => resolveDeepLXEndpoint(endpoint, token)).filter((endpoint): endpoint is string => endpoint !== null)
+/** Configured endpoints in fallback order; the public deployment is used when none is usable. */
+export function getDeepLXEndpoints(configuredURL: unknown, token = ""): string[] {
+  const resolvedEndpoints = parseDeepLXEndpoints(configuredURL)
+    .map((endpoint) => resolveDeepLXEndpoint(endpoint, token))
+    .filter((endpoint): endpoint is string => endpoint !== null)
   return resolvedEndpoints.length > 0 ? resolvedEndpoints : [DEFAULT_DEEPLX_ENDPOINT]
 }

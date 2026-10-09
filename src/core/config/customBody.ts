@@ -32,19 +32,3 @@ export function mergeCustomBody<T extends Record<string, unknown>>(payload: T, r
 
     return {...payload, ...customBody};
 }
-
-export function isCustomBodyMapping(value: unknown): value is Record<string, string> {
-    return value !== null
-        && typeof value === 'object'
-        && !Array.isArray(value)
-        && Object.values(value).every(item => typeof item === 'string');
-}
-
-// 存储映射只保留字符串配置项。
-export function normalizeCustomBodyMapping(value: unknown): Record<string, string> {
-    if (value === null || typeof value !== 'object' || Array.isArray(value)) return {};
-
-    return Object.fromEntries(
-        Object.entries(value).filter(([, item]) => typeof item === 'string')
-    ) as Record<string, string>;
-}

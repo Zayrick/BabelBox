@@ -1,22 +1,21 @@
 import {method, urls} from "@/src/core/config/constants";
 import {services} from "@/src/core/config/catalog";
-import {commonMsgTemplate} from '@/src/services/translation/templates';
-import {config} from "@/src/services/config/store";
+import {chatCompletionsBody} from '@/src/services/translation/templates';
+import type {TranslationProviderRequest} from '@/src/services/translation/types';
 import {createHttpStatusError, readJsonResponse} from '@/src/platform/http/errors';
 import {runtimeFetch} from '@/src/platform/http/runtime';
-import {getTranslationProviderConfig} from '@/src/services/translation/requestSnapshot';
 import {hmacSha256Base64} from '@/src/core/crypto/sha256';
+import {requireSingleOrigin} from './request';
 
 
 const JWT_CACHE_DURATION_MS = 60 * 60 * 1000;
 const jwtCache = new Map<string, {apiKey: string; secret: string; expiration: number}>();
 
 // 文档参考：https://docs.bigmodel.cn/cn/guide/develop/http/introduction
-async function zhipu(message: any) {
-    const current = getTranslationProviderConfig(message, config);
-    const service = message.serviceOverride || services.zhipu;
+async function zhipu(request: TranslationProviderRequest) {
+    const service = request.service.id;
     // 智谱根据 token 获取 secret（签名密钥） 和 expiration
-    const token = current.token[service];
+    const token = request.service.credential.apiKey;
     const cached = jwtCache.get(service);
     let secret = cached?.apiKey === token && cached.expiration > Date.now()
         ? cached.secret
@@ -40,7 +39,7 @@ async function zhipu(message: any) {
     const resp = await runtimeFetch(urls[services.zhipu], {
         method: method.POST,
         headers: headers,
-            body: commonMsgTemplate(message.origin, message.pageContext, message.summaryPrompt, message.summarySystemPrompt, service, message.targetLanguage, message.modelOverride, current)
+        body: chatCompletionsBody(request, requireSingleOrigin(request)),
     });
 
     if (resp.ok) {

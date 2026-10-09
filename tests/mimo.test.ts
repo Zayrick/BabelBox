@@ -1,26 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { fetchMock, mockConfig } = vi.hoisted(() => ({
-    fetchMock: vi.fn(),
-    mockConfig: {
-        service: 'mimo',
-        to: 'zh-Hans',
-        token: { mimo: '' } as Record<string, string>,
-        model: { mimo: 'mimo-v2.5-pro' } as Record<string, string>,
-        customModel: {} as Record<string, string>,
-        customBody: {} as Record<string, string>,
-        proxy: {} as Record<string, string>,
-        system_role: { mimo: 'You are a translator.' } as Record<string, string>,
-        user_role: { mimo: 'Translate to {{to}}: {{origin}}' } as Record<string, string>,
-        mimoBillingPlan: 'payg',
-        mimoRegion: 'cn',
-    },
-}));
-
-vi.mock('@/src/services/config/store', () => ({ config: mockConfig }));
+const fetchMock = vi.fn();
 
 import {translateWithOpenAICompatibleAiSdk} from '@/src/providers/translation/ai-sdk/openai-compatible';
 import {services} from '@/src/core/config/catalog';
+import type {MiMoBillingPlan, MiMoRegion} from '@/src/core/config/catalog';
+import {providerRequest, resolvedService} from './fixtures/translationService';
+
+function translate(apiKey: string, mimoBillingPlan: MiMoBillingPlan = 'payg', mimoRegion: MiMoRegion = 'cn') {
+    return translateWithOpenAICompatibleAiSdk(providerRequest(resolvedService(services.mimo, {
+        modelId: 'mimo-v2.5-pro',
+        mimoBillingPlan,
+        mimoRegion,
+    }, {apiKey}), {origin: 'hello'}));
+}
 
 function successResponse() {
     return new Response(JSON.stringify({
@@ -41,16 +34,10 @@ describe('小米 MiMo OpenAI 兼容服务', () => {
         vi.clearAllMocks();
         vi.stubGlobal('fetch', fetchMock);
         fetchMock.mockResolvedValue(successResponse());
-        mockConfig.service = services.mimo;
-        mockConfig.token.mimo = '';
-        mockConfig.mimoBillingPlan = 'payg';
-        mockConfig.mimoRegion = 'cn';
     });
 
     it('按量付费使用统一 API 地址并发送 sk Key', async () => {
-        mockConfig.token.mimo = 'sk-test';
-
-        await expect(translateWithOpenAICompatibleAiSdk({ origin: 'hello', serviceOverride: services.mimo })).resolves.toBe('译文');
+        await expect(translate('sk-test')).resolves.toBe('译文');
 
         expect(fetchMock).toHaveBeenCalledWith(
             'https://api.xiaomimimo.com/v1/chat/completions',
@@ -61,11 +48,7 @@ describe('小米 MiMo OpenAI 兼容服务', () => {
     });
 
     it('Token Plan 使用所选集群地址并发送 tp Key', async () => {
-        mockConfig.token.mimo = 'tp-test';
-        mockConfig.mimoBillingPlan = 'token-plan';
-        mockConfig.mimoRegion = 'ams';
-
-        await expect(translateWithOpenAICompatibleAiSdk({ origin: 'hello', serviceOverride: services.mimo })).resolves.toBe('译文');
+        await expect(translate('tp-test', 'token-plan', 'ams')).resolves.toBe('译文');
 
         expect(fetchMock).toHaveBeenCalledWith(
             'https://token-plan-ams.xiaomimimo.com/v1/chat/completions',

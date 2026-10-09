@@ -1,9 +1,7 @@
 import { method } from "@/src/core/config/constants";
-import { config } from "@/src/services/config/store";
-import {getTranslationLanguages} from '@/src/services/translation/languages';
 import {createHttpStatusError, readJsonResponse} from '@/src/platform/http/errors';
 import {runtimeFetch} from '@/src/platform/http/runtime';
-import {getTranslationProviderConfig} from '@/src/services/translation/requestSnapshot';
+import type {TranslationProviderRequest} from '@/src/services/translation/types';
 import {sha256Hex} from '@/src/core/crypto/sha256';
 
 interface YoudaoResponse {
@@ -14,16 +12,13 @@ interface YoudaoResponse {
   };
 }
 
-async function youdao(message: any): Promise<string> {
-  const current = getTranslationProviderConfig(message, config);
-  // 检查必需的配置
-  if (!current.youdaoAppKey || !current.youdaoAppSecret) {
+async function youdao(request: TranslationProviderRequest): Promise<string> {
+  const {appKey, appSecret} = request.service.credential;
+  if (!appKey || !appSecret) {
     throw new Error('请先配置有道翻译的 App Key 和 App Secret');
   }
-
-  const appKey = current.youdaoAppKey;
-  const appSecret = current.youdaoAppSecret;
-  const query = message.origin;
+  if (typeof request.origin !== 'string') throw new Error('该翻译服务仅支持单条文本');
+  const query = request.origin;
   const salt = Date.now().toString();
   const curtime = Math.round(Date.now() / 1000).toString();
 
@@ -101,7 +96,7 @@ async function youdao(message: any): Promise<string> {
     'yue': 'yue'
   };
 
-  const {sourceLanguage, targetLanguage} = getTranslationLanguages(message);
+  const {sourceLanguage, targetLanguage} = request;
   const fromLang = langMap[sourceLanguage] || 'auto';
   const toLang = langMap[targetLanguage] || 'zh-CHS';
 
@@ -120,7 +115,7 @@ async function youdao(message: any): Promise<string> {
   });
 
   try {
-    const response = await runtimeFetch('https://openapi.youdao.com/api', {
+    const response = await runtimeFetch(request.service.endpoint || 'https://openapi.youdao.com/api', {
       method: method.POST,
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'

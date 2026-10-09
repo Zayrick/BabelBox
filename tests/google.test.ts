@@ -1,19 +1,13 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
-const {mockConfig} = vi.hoisted(() => ({
-    mockConfig: {
-        from: 'auto',
-        to: 'zh-Hans',
-    },
-}));
-
-vi.mock('@/src/services/config/store', () => ({config: mockConfig}));
-
 import google, {
     parseGoogleBatchResponse,
     parseGoogleLegacyResponse,
     translateGoogleText,
 } from '@/src/providers/translation/google';
+import {providerRequest, resolvedService} from './fixtures/translationService';
+
+const googleService = resolvedService('google');
 
 const fetchMock = vi.fn<typeof fetch>();
 
@@ -69,7 +63,7 @@ describe('谷歌翻译适配器', () => {
     it('优先通过无需 API Key 的主网页 RPC 返回译文', async () => {
         fetchMock.mockResolvedValue(mockResponse(createBatchResponse(['此域名仅用于文档中的示例。'])));
 
-        await expect(google({origin: 'This domain is for use in documents.'}))
+        await expect(google(providerRequest(googleService, {origin: 'This domain is for use in documents.'})))
             .resolves.toBe('此域名仅用于文档中的示例。');
 
         expect(fetchMock).toHaveBeenCalledOnce();
@@ -243,7 +237,7 @@ describe('谷歌翻译适配器', () => {
     });
 
     it('拒绝批量文本输入', async () => {
-        await expect(google({origin: ['hello']} as unknown as {origin: string}))
+        await expect(google(providerRequest(googleService, {origin: ['hello']})))
             .rejects.toThrow('谷歌翻译仅支持单条文本');
         expect(fetchMock).not.toHaveBeenCalled();
     });

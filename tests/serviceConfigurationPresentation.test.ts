@@ -1,61 +1,47 @@
 import {describe, expect, it} from 'vitest'
-import {options, services} from '@/src/core/config/catalog'
+import {services} from '@/src/core/config/catalog'
+import {builtinTranslationProviders} from '@/src/core/config/translationServices'
 import {createServiceConfigurationPresentation} from '@/src/features/settings/model/serviceConfiguration'
 
 describe('service configuration presentation', () => {
+  it('shows built-in services as ready to use without editable fields', () => {
+    for (const provider of builtinTranslationProviders) {
+      const presentation = createServiceConfigurationPresentation(provider, {builtin: true})
+      expect(presentation.mode).toBe('ready')
+      expect(presentation.showConnectionConfiguration).toBe(false)
+      expect(presentation.showConnectionTest).toBe(true)
+      expect(Object.values(presentation.fields).some(Boolean)).toBe(false)
+    }
+  })
+
   it.each([
-    [services.deepL, 'token'],
-    [services.deeplx, 'deepLxEndpoint'],
-    [services.cozecom, 'robotId'],
-    [services.cozecn, 'robotId'],
-  ] as const)('shows %s parameters without a misleading ready state', (service, field) => {
-    const presentation = createServiceConfigurationPresentation(service)
+    [services.deepL, ['name', 'endpoint', 'token']],
+    [services.deeplx, ['name', 'endpoint', 'token']],
+    [services.youdao, ['name', 'endpoint', 'youdaoCredentials']],
+    [services.cozecom, ['name', 'endpoint', 'token', 'robotId', 'prompts', 'customBody']],
+    [services.openai, ['name', 'model', 'endpoint', 'token', 'prompts', 'customBody']],
+    [services.huanYuanTranslation, ['name', 'model', 'endpoint', 'tencentCredentials', 'customBody']],
+    [services.minimax, ['name', 'model', 'token', 'minimaxRegion', 'prompts', 'customBody']],
+  ] as const)('shows exactly the fields %s reads', (provider, visible) => {
+    const presentation = createServiceConfigurationPresentation(provider)
+    const shown = Object.entries(presentation.fields).filter(([, value]) => value).map(([key]) => key)
 
-    expect(presentation.mode).toBe('connection-only')
-    expect(presentation.showModelConfiguration).toBe(false)
-    expect(presentation.showConnectionConfiguration).toBe(true)
-    expect(presentation.showReadyState).toBe(false)
-    expect(presentation.fields[field]).toBe(true)
+    expect(presentation.mode).toBe('configurable')
+    expect(shown.sort()).toEqual([...visible].sort())
   })
 
-  it('uses the ready state only for services without editable settings', () => {
-    const readyServices = options.services
-      .filter((service) => !service.disabled)
-      .filter((service) => createServiceConfigurationPresentation(service.value).showReadyState)
-      .map((service) => service.value)
-
-    expect(readyServices).toEqual([
-      services.microsoft,
-      services.google,
-      services.chromeTranslator,
-    ])
-
-    const microsoft = createServiceConfigurationPresentation(services.microsoft)
-    expect(microsoft.mode).toBe('ready')
-    expect(microsoft.showConnectionConfiguration).toBe(false)
-    expect(microsoft.showConnectionTest).toBe(true)
-    expect(microsoft.readyState.title).toBe('无需额外配置')
+  it('hides the DeepSeek thinking mode for the Responses API', () => {
+    expect(createServiceConfigurationPresentation(services.deepseek).fields.deepseekThinkingMode).toBe(true)
+    expect(createServiceConfigurationPresentation(services.deepseek, {deepseekApiType: 'responses'})
+      .fields.deepseekThinkingMode).toBe(false)
   })
 
-  it('keeps model selection and provider parameters visible together', () => {
-    const openai = createServiceConfigurationPresentation(services.openai)
-    const hunyuanTranslation = createServiceConfigurationPresentation(services.huanYuanTranslation)
-
-    expect(openai.mode).toBe('model-and-connection')
-    expect(openai.showModelConfiguration).toBe(true)
-    expect(openai.fields.token).toBe(true)
-    expect(hunyuanTranslation.mode).toBe('model-and-connection')
-    expect(hunyuanTranslation.fields.tencentCredentials).toBe(true)
-  })
-
-  it('does not present an unavailable browser service as ready to use', () => {
-    const unavailable = createServiceConfigurationPresentation(
-      services.chromeTranslator,
-      {
-        available: false,
-        unavailableMessage: '当前浏览器不支持此服务。',
-      },
-    )
+  it('does not present an unavailable or unknown service as ready to use', () => {
+    const unavailable = createServiceConfigurationPresentation(services.chromeTranslator, {
+      builtin: true,
+      available: false,
+      unavailableMessage: '当前浏览器不支持此服务。',
+    })
 
     expect(unavailable.mode).toBe('unavailable')
     expect(unavailable.showReadyState).toBe(false)
@@ -63,8 +49,6 @@ describe('service configuration presentation', () => {
     expect(unavailable.showConnectionTest).toBe(false)
     expect(unavailable.unavailableState.description).toBe('当前浏览器不支持此服务。')
 
-    const retiredService = createServiceConfigurationPresentation('retired-service')
-    expect(retiredService.mode).toBe('unavailable')
-    expect(retiredService.showConnectionTest).toBe(false)
+    expect(createServiceConfigurationPresentation('retired-service').mode).toBe('unavailable')
   })
 })

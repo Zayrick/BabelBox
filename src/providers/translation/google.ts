@@ -1,5 +1,4 @@
-import {getTranslationLanguages} from '@/src/services/translation/languages';
-import type {TranslationLanguageOverride} from '@/src/services/translation/languages';
+import type {TranslationProviderRequest} from '@/src/services/translation/types';
 import {createHttpStatusError} from '@/src/platform/http/errors';
 
 const GOOGLE_TRANSLATE_RPC_ID = 'MkEWBc';
@@ -254,12 +253,11 @@ export async function translateGoogleText(
     throw new Error(`谷歌翻译所有匿名接口均失败：${failureSummary}`);
 }
 
-async function google(message: TranslationLanguageOverride & {origin: string}) {
-    if (typeof message.origin !== 'string') {
+async function google(request: TranslationProviderRequest) {
+    if (typeof request.origin !== 'string') {
         throw new Error('谷歌翻译仅支持单条文本');
     }
-    const {sourceLanguage, targetLanguage} = getTranslationLanguages(message);
-    return translateGoogleText(message.origin, sourceLanguage, targetLanguage);
+    return translateGoogleText(request.origin, request.sourceLanguage, request.targetLanguage);
 }
 
 export default google;

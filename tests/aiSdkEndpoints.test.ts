@@ -1,6 +1,4 @@
-import {describe, expect, it, vi} from 'vitest';
-
-vi.mock('@/src/services/config/store', () => ({config: {}}));
+import {describe, expect, it} from 'vitest';
 
 import {
     AI_SDK_COMMON_SERVICE_IDS,
@@ -15,12 +13,16 @@ import {
 import {services} from '@/src/core/config/catalog';
 import {urls} from '@/src/core/config/constants';
 
-function endpointConfig(overrides: Partial<AiSdkEndpointConfig> = {}): AiSdkEndpointConfig {
+const REQUIRED_ENDPOINTS: Record<string, string> = {
+    [services.custom]: 'http://localhost:11434/v1/chat/completions',
+    [services.newapi]: 'http://localhost:3000',
+    [services.azureOpenai]: 'https://reader.openai.azure.com/openai/deployments/translation/chat/completions?api-version=2024-02-15-preview',
+};
+
+function endpointConfig(provider: string, overrides: Partial<AiSdkEndpointConfig> = {}): AiSdkEndpointConfig {
     return {
-        proxy: {},
-        custom: 'http://localhost:11434/v1/chat/completions',
-        newApiUrl: 'http://localhost:3000',
-        azureOpenaiEndpoint: 'https://reader.openai.azure.com/openai/deployments/translation/chat/completions?api-version=2024-02-15-preview',
+        provider,
+        endpoint: REQUIRED_ENDPOINTS[provider] || '',
         minimaxBillingPlan: 'payg',
         minimaxRegion: 'cn',
         mimoBillingPlan: 'payg',
@@ -79,7 +81,7 @@ describe('AI SDK 首批服务路由', () => {
         [services.newapi, 'http://localhost:3000/v1/chat/completions', 'http://localhost:3000/v1'],
         [services.azureOpenai, 'https://reader.openai.azure.com/openai/deployments/translation/chat/completions?api-version=2024-02-15-preview', 'https://reader.openai.azure.com/openai/deployments/translation'],
     ])('%s 解析为当前请求 URL 和 SDK baseURL', (service, endpoint, baseURL) => {
-        const result = resolveOpenAICompatibleEndpoint(service, endpointConfig());
+        const result = resolveOpenAICompatibleEndpoint(endpointConfig(service));
 
         expect(result.endpoint).toBe(endpoint);
         expect(result.baseURL).toBe(baseURL);
@@ -91,41 +93,16 @@ describe('AI SDK 首批服务路由', () => {
 });
 
 describe('AI SDK endpoint 选择规则', () => {
-    it('未显式注入配置时使用运行时配置默认值', () => {
-        expect(resolveOpenAICompatibleEndpoint(services.openai).endpoint).toBe(urls[services.openai]);
-    });
+    it('common 服务的实例请求地址覆盖默认端点', () => {
+        const endpoint = 'https://gateway.example.com/openai/v1/chat/completions';
+        const result = resolveOpenAICompatibleEndpoint(endpointConfig(services.openai, {endpoint}));
 
-    it('common 服务优先使用当前服务的代理地址', () => {
-        const proxy = 'https://gateway.example.com/openai/v1/chat/completions';
-        const result = resolveOpenAICompatibleEndpoint(services.openai, endpointConfig({
-            proxy: {[services.openai]: proxy},
-        }));
-
-        expect(result.endpoint).toBe(proxy);
+        expect(result.endpoint).toBe(endpoint);
         expect(result.baseURL).toBe('https://gateway.example.com/openai/v1');
     });
 
-    it('Custom 代理地址优先于自定义接口', () => {
-        const proxy = 'http://127.0.0.1:8080/v1/chat/completions';
-        const result = resolveOpenAICompatibleEndpoint(services.custom, endpointConfig({
-            proxy: {[services.custom]: proxy},
-            custom: 'http://127.0.0.1:11434/v1/chat/completions',
-        }));
-
-        expect(result.endpoint).toBe(proxy);
-        expect(result.baseURL).toBe('http://127.0.0.1:8080/v1');
-    });
-
-    it('Custom 在没有 proxy 对象时直接使用自定义接口', () => {
-        const result = resolveOpenAICompatibleEndpoint(services.custom, {
-            custom: 'http://127.0.0.1:11434/v1/chat/completions',
-        });
-
-        expect(result.endpoint).toBe('http://127.0.0.1:11434/v1/chat/completions');
-    });
-
     it('MiniMax 保留计费方案和区域选择', () => {
-        const result = resolveOpenAICompatibleEndpoint(services.minimax, endpointConfig({
+        const result = resolveOpenAICompatibleEndpoint(endpointConfig(services.minimax, {
             minimaxBillingPlan: 'token-plan',
             minimaxRegion: 'global',
         }));
@@ -134,7 +111,7 @@ describe('AI SDK endpoint 选择规则', () => {
     });
 
     it('MiMo 保留 Token Plan 集群选择', () => {
-        const result = resolveOpenAICompatibleEndpoint(services.mimo, endpointConfig({
+        const result = resolveOpenAICompatibleEndpoint(endpointConfig(services.mimo, {
             mimoBillingPlan: 'token-plan',
             mimoRegion: 'ams',
         }));
@@ -142,26 +119,14 @@ describe('AI SDK endpoint 选择规则', () => {
         expect(result.endpoint).toBe('https://token-plan-ams.xiaomimimo.com/v1/chat/completions');
     });
 
-    it('MiniMax 与 MiMo 对未知计费参数回退到既有默认值', () => {
-        expect(resolveOpenAICompatibleEndpoint(services.minimax, endpointConfig({
-            minimaxBillingPlan: 'unknown',
-            minimaxRegion: 'unknown',
-        })).endpoint).toBe('https://api.minimaxi.com/v1/chat/completions');
-        expect(resolveOpenAICompatibleEndpoint(services.mimo, endpointConfig({
-            mimoBillingPlan: '',
-            mimoRegion: '',
-        })).endpoint).toBe('https://api.xiaomimimo.com/v1/chat/completions');
-    });
-
-    it('空白代理不覆盖默认端点，缺失的 common URL 会显式失败', () => {
-        expect(resolveOpenAICompatibleEndpoint(services.openai, endpointConfig({
-            proxy: {[services.openai]: '   '},
-        })).endpoint).toBe(urls[services.openai]);
+    it('空白请求地址不覆盖默认端点，缺失的 common URL 会显式失败', () => {
+        expect(resolveOpenAICompatibleEndpoint(endpointConfig(services.openai, {endpoint: '   '})).endpoint)
+            .toBe(urls[services.openai]);
 
         const original = urls[services.openai];
         try {
             delete urls[services.openai];
-            expect(() => resolveOpenAICompatibleEndpoint(services.openai, endpointConfig()))
+            expect(() => resolveOpenAICompatibleEndpoint(endpointConfig(services.openai)))
                 .toThrow(`未找到翻译服务接口: ${services.openai}`);
         } finally {
             urls[services.openai] = original;
@@ -169,19 +134,19 @@ describe('AI SDK endpoint 选择规则', () => {
     });
 
     it('Azure 从完整部署 URL 拆出 api-version', () => {
-        const result = resolveOpenAICompatibleEndpoint(services.azureOpenai, endpointConfig());
+        const result = resolveOpenAICompatibleEndpoint(endpointConfig(services.azureOpenai));
 
         expect(result.queryParams).toEqual({'api-version': '2024-02-15-preview'});
         expect(result.baseURL).toBe('https://reader.openai.azure.com/openai/deployments/translation');
     });
 
     it.each([
-        [services.deepseek, {}, '尚未纳入 AI SDK 端点解析'],
-        [services.custom, {}, '接口地址未配置'],
-        [services.newapi, {}, 'New API 地址未配置'],
-        [services.azureOpenai, {}, '接口地址未配置'],
-    ])('%s 缺少路由或必要地址时给出明确错误', (service, config, message) => {
-        expect(() => resolveOpenAICompatibleEndpoint(service, config)).toThrow(message);
+        [services.deepseek, '尚未纳入 AI SDK 端点解析'],
+        [services.custom, '接口地址未配置'],
+        [services.newapi, 'New API 地址未配置'],
+        [services.azureOpenai, '接口地址未配置'],
+    ])('%s 缺少路由或必要地址时给出明确错误', (service, message) => {
+        expect(() => resolveOpenAICompatibleEndpoint(endpointConfig(service, {endpoint: ''}))).toThrow(message);
     });
 });
 
@@ -217,8 +182,8 @@ describe('Chat Completions URL 拆分', () => {
     });
 
     it('非标准 Custom 路径返回 exactEndpoint，供后续 fetch rewrite 使用', () => {
-        const result = resolveOpenAICompatibleEndpoint(services.custom, endpointConfig({
-            custom: 'https://local.example.com/api/generate?mode=translate',
+        const result = resolveOpenAICompatibleEndpoint(endpointConfig(services.custom, {
+            endpoint: 'https://local.example.com/api/generate?mode=translate',
         }));
 
         expect(result.baseURL).toBe('https://local.example.com/api/generate');

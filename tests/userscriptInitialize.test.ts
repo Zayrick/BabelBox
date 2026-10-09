@@ -1,8 +1,7 @@
 import {afterEach, describe, expect, it} from 'vitest';
 import {Config} from '@/src/core/config/model';
-import {getApiKeyRequirementKey} from '@/src/core/config/validation';
-import {customModelString, defaultModels, services} from '@/src/core/config/catalog';
-import {createAITranslationService} from '@/src/core/config/translationServices';
+import {services} from '@/src/core/config/catalog';
+import {createExternalTranslationService} from '@/src/core/config/translationServices';
 import {
     ensureUserscriptConfig,
     getEnabledUserscriptServices,
@@ -24,110 +23,24 @@ function readStoredConfig(values: Map<string, unknown>): Config {
     return JSON.parse(String(values.get('local:config'))) as Config;
 }
 
-describe('legacy userscript migration', () => {
+describe('userscript config initialization', () => {
     afterEach(() => {
         globalThis.GM_getValue = undefined;
         globalThis.GM_setValue = undefined;
     });
 
-    it('migrates legacy identity-scoped GM settings into Config', async () => {
-        const {values} = installLegacyStorage([
-            ['model', 'openai'],
-            ['from', 'auto'],
-            ['to', 'en'],
-            ['hotkey', 'Alt'],
-            ['model_openai', 'gpt-4.1-mini'],
-            ['token_openai', 'legacy-test-token'],
-            ['openai_url', 'https://gateway.example.test/v1/chat/completions'],
-        ]);
+    it('seeds a fresh userscript config with the floating ball and extension-only features off', async () => {
+        const storage = installLegacyStorage([]);
 
         await ensureUserscriptConfig();
 
-        const stored = readStoredConfig(values);
-        expect(stored.service).toBe('openai');
-        expect(stored.to).toBe('en');
-        expect(stored.hotkey).toBe('Alt');
-        expect(stored.model.openai).toBe('gpt-4.1-mini');
-        expect(stored.token.openai).toBe('legacy-test-token');
-        expect(stored.proxy.openai).toBe('https://gateway.example.test/v1/chat/completions');
+        const stored = readStoredConfig(storage.values);
         expect(stored.disableFloatingBall).toBe(false);
-        expect(stored.disableImageTranslator).toBe(true);
-    });
-
-    it('migrates the v1.31 defaults, arbitrary Ollama model, prompts, and object credentials', async () => {
-        const yiyanCredentials = {
-            ak: 'legacy-yiyan-ak',
-            sk: 'legacy-yiyan-sk',
-            token: 'legacy-yiyan-access-token',
-            expiration: Date.now() + 60_000,
-        };
-        const {values} = installLegacyStorage([
-            ['model', 'ollama'],
-            ['model_openai', 'gpt-3.5-turbo'],
-            ['model_gemini', 'gemini-pro'],
-            ['model_yiyan', 'completions'],
-            ['model_tongyi', 'qwen-turbo'],
-            ['model_zhipu', 'glm-3-turbo'],
-            ['model_moonshot', 'moonshot-v1-8'],
-            ['model_ollama', 'private-ollama-model:latest'],
-            ['token_yiyan', yiyanCredentials],
-            ['token_zhipu', {apikey: 'legacy-zhipu-key', token: 'discard-generated-jwt'}],
-            ['ollama_url', 'http://127.0.0.1:11434/v1/chat/completions'],
-            ['systemMsg', 'Legacy system prompt'],
-            ['userMsg', 'Legacy user prompt with {{origin}} and {{to}}'],
-        ]);
-
-        await ensureUserscriptConfig();
-
-        const stored = readStoredConfig(values);
-        expect(stored.service).toBe(services.custom);
-        expect(stored.model[services.openai]).toBe(defaultModels.get(services.openai));
-        expect(stored.model[services.gemini]).toBe(defaultModels.get(services.gemini));
-        expect(stored.model[services.yiyan]).toBe(defaultModels.get(services.yiyan));
-        expect(stored.model[services.tongyi]).toBe(defaultModels.get(services.tongyi));
-        expect(stored.model[services.zhipu]).toBe(defaultModels.get(services.zhipu));
-        expect(stored.model[services.moonshot]).toBe(defaultModels.get(services.moonshot));
-        expect(stored.model[services.custom]).toBe(customModelString);
-        expect(stored.customModel[services.custom]).toBe('private-ollama-model:latest');
-        expect(stored.custom).toBe('http://127.0.0.1:11434/v1/chat/completions');
-        expect(stored.requireApiKey[getApiKeyRequirementKey(services.custom, stored)]).toBe(false);
-        expect(stored.token[services.yiyan]).toBe('legacy-yiyan-access-token');
-        expect(stored.ak).toBe('legacy-yiyan-ak');
-        expect(stored.sk).toBe('legacy-yiyan-sk');
-        expect(stored.token[services.zhipu]).toBe('legacy-zhipu-key');
-        expect(stored.system_role[services.openai]).toBe('Legacy system prompt');
-        expect(stored.system_role[services.custom]).toBe('Legacy system prompt');
-        expect(stored.user_role[services.gemini]).toBe('Legacy user prompt with {{origin}} and {{to}}');
-        expect(values.get('token_yiyan')).toEqual(yiyanCredentials);
-    });
-
-    it.each([services.chromeTranslator, 'removed-service'])('sanitizes an existing userscript config using unsupported service %s', async (service) => {
-        const existing = new Config();
-        existing.service = service;
-        existing.videoService = service;
-        existing.contextMenuEnabled = true;
-        existing.selectionAreaEnabled = true;
-        existing.disableImageTranslator = false;
-        existing.videoTranslationEnabled = true;
-        existing.maxConcurrentTranslations = 250;
-        existing.token[services.openai] = 'preserved-token';
-        existing.extra = {preserved: true};
-        const {values} = installLegacyStorage([
-            ['local:config', JSON.stringify(existing)],
-        ]);
-
-        await ensureUserscriptConfig();
-
-        const stored = readStoredConfig(values);
-        expect(stored.service).toBe(services.microsoft);
-        expect(stored.videoService).toBe(services.microsoft);
         expect(stored.contextMenuEnabled).toBe(false);
         expect(stored.selectionAreaEnabled).toBe(false);
         expect(stored.disableImageTranslator).toBe(true);
         expect(stored.videoTranslationEnabled).toBe(false);
-        expect(stored.maxConcurrentTranslations).toBe(250);
-        expect(stored.token[services.openai]).toBe('preserved-token');
-        expect(stored.extra).toEqual({preserved: true});
+        expect(stored.service).toBe(services.microsoft);
     });
 
     it('does not rewrite an already-safe config only because it has an internal revision', async () => {
@@ -144,19 +57,19 @@ describe('legacy userscript migration', () => {
 
     it('preserves multiple instances of one provider and reconciles a disabled selection', () => {
         const config = new Config();
-        const first = createAITranslationService(services.openai, {
-            id: 'service:openai:first',
+        const first = {
+            ...createExternalTranslationService(services.openai),
             modelId: 'gpt-first',
             name: 'First model',
             enabled: false,
             endpoint: 'https://first.example.test/v1',
-        });
-        const second = createAITranslationService(services.openai, {
-            id: 'service:openai:second',
+        };
+        const second = {
+            ...createExternalTranslationService(services.openai, [first]),
             modelId: 'gpt-second',
             name: 'Second model',
             endpoint: 'https://second.example.test/v1',
-        });
+        };
         config.translationServices.push(first, second);
         config.service = first.id;
         config.serviceCredentials[first.id] = {

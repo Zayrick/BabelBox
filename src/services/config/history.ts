@@ -11,10 +11,7 @@ import {isConfigRecord, parseStoredConfig, serializeConfig} from './schema';
 export const CONFIG_HISTORY_LIMIT = 10 as const;
 export const CONFIG_HISTORY_SCHEMA_VERSION = 1 as const;
 
-export const CONFIG_NON_RESTORABLE_FIELDS = [
-    'count',
-    'videoServiceDefaultMigrated',
-] as const;
+export const CONFIG_NON_RESTORABLE_FIELDS = ['count'] as const;
 
 export type ConfigNonRestorableField = typeof CONFIG_NON_RESTORABLE_FIELDS[number];
 export type RestorableConfig = Omit<PublicConfig, ConfigNonRestorableField>;
@@ -40,10 +37,7 @@ export function toPublicConfig(value: unknown): PublicConfig {
 
 /** 历史和自动备份只保存真正可恢复的用户配置。 */
 export function toRestorableConfig(value: unknown): RestorableConfig {
-    const snapshotSource = isConfigRecord(value)
-        ? {...value, videoServiceDefaultMigrated: true}
-        : value;
-    const restorable = {...toPublicConfig(snapshotSource)} as Record<string, unknown>;
+    const restorable = {...toPublicConfig(value)} as Record<string, unknown>;
     for (const field of CONFIG_NON_RESTORABLE_FIELDS) delete restorable[field];
     return restorable as RestorableConfig;
 }
@@ -54,7 +48,6 @@ export function restoreRestorableConfig(value: unknown, currentValue: unknown): 
     const target = normalizeConfig({
         ...toRestorableConfig(value),
         count: current.count,
-        videoServiceDefaultMigrated: current.videoServiceDefaultMigrated,
     });
     const credentials = filterConfigCredentialsForDestination(
         extractConfigCredentials(current),

@@ -1,21 +1,15 @@
 import {getMimoEndpoint, MINIMAX_ENDPOINTS, urls} from '@/src/core/config/constants';
-import {config as runtimeConfig} from '@/src/services/config/store';
 import {services} from '@/src/core/config/catalog';
+import type {TranslationServiceInstance} from '@/src/core/config/translationServices';
 
 export type AiSdkEndpointRoute = 'common' | 'custom' | 'newapi' | 'azure';
 
 export const AI_SDK_TRANSPORT_PROFILE = 'vercel-ai-sdk-openai-compatible-v1' as const;
 
-export interface AiSdkEndpointConfig {
-    proxy?: Record<string, string | undefined>;
-    custom?: string;
-    newApiUrl?: string;
-    azureOpenaiEndpoint?: string;
-    minimaxBillingPlan?: string;
-    minimaxRegion?: string;
-    mimoBillingPlan?: string;
-    mimoRegion?: string;
-}
+export type AiSdkEndpointConfig = Pick<
+    TranslationServiceInstance,
+    'provider' | 'endpoint' | 'minimaxBillingPlan' | 'minimaxRegion' | 'mimoBillingPlan' | 'mimoRegion'
+>;
 
 export interface OpenAICompatibleEndpointResolution {
     /** Canonical URL that the current BabelBox adapter would call. */
@@ -150,49 +144,32 @@ export function getAiSdkEndpointRoute(service: string): AiSdkEndpointRoute | nul
     return null;
 }
 
-function resolveCommonEndpoint(service: string, config: AiSdkEndpointConfig): string {
-    const proxy = config.proxy?.[service]?.trim();
-    if (proxy) return proxy;
+function resolveCommonEndpoint(config: AiSdkEndpointConfig): string {
+    const override = config.endpoint.trim();
+    if (override) return override;
 
-    if (service === services.minimax) {
-        const plan = config.minimaxBillingPlan === 'token-plan' ? 'token-plan' : 'payg';
-        const region = config.minimaxRegion === 'global' ? 'global' : 'cn';
-        return MINIMAX_ENDPOINTS[plan][region];
+    if (config.provider === services.minimax) {
+        return MINIMAX_ENDPOINTS[config.minimaxBillingPlan][config.minimaxRegion];
+    }
+    if (config.provider === services.mimo) {
+        return getMimoEndpoint(config.mimoBillingPlan, config.mimoRegion);
     }
 
-    if (service === services.mimo) {
-        return getMimoEndpoint(config.mimoBillingPlan || 'payg', config.mimoRegion || 'cn');
-    }
-
-    const endpoint = urls[service];
+    const endpoint = urls[config.provider];
     if (typeof endpoint !== 'string' || !endpoint.trim()) {
-        throw new Error(`未找到翻译服务接口: ${service}`);
+        throw new Error(`未找到翻译服务接口: ${config.provider}`);
     }
     return endpoint;
 }
 
-export function resolveOpenAICompatibleEndpoint(
-    service: string,
-    config: AiSdkEndpointConfig = runtimeConfig,
-): ResolvedOpenAICompatibleEndpoint {
-    const route = getAiSdkEndpointRoute(service);
-    if (!route) throw new Error(`翻译服务尚未纳入 AI SDK 端点解析: ${service}`);
+export function resolveOpenAICompatibleEndpoint(config: AiSdkEndpointConfig): ResolvedOpenAICompatibleEndpoint {
+    const route = getAiSdkEndpointRoute(config.provider);
+    if (!route) throw new Error(`翻译服务尚未纳入 AI SDK 端点解析: ${config.provider}`);
 
-    let endpoint: string;
-    switch (route) {
-        case 'common':
-            endpoint = resolveCommonEndpoint(service, config);
-            break;
-        case 'custom':
-            endpoint = config.proxy?.[service]?.trim() || config.custom || '';
-            break;
-        case 'newapi':
-            endpoint = normalizeNewApiEndpoint(config.newApiUrl || '');
-            break;
-        case 'azure':
-            endpoint = config.azureOpenaiEndpoint || '';
-            break;
-    }
-
-    return parseChatCompletionsEndpoint(endpoint, `${service} 接口地址`);
+    const endpoint = route === 'common'
+        ? resolveCommonEndpoint(config)
+        : route === 'newapi'
+            ? normalizeNewApiEndpoint(config.endpoint)
+            : config.endpoint;
+    return parseChatCompletionsEndpoint(endpoint, `${config.provider} 接口地址`);
 }

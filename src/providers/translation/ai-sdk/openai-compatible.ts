@@ -1,34 +1,17 @@
 import {createOpenAICompatible} from '@ai-sdk/openai-compatible';
 import {generateText} from 'ai';
-import {config} from '@/src/services/config/store';
 import {stripTranslationReasoning as contentPostHandler} from '@/src/core/translation/prompts';
-import {commonMsgTemplate} from '@/src/services/translation/templates';
+import {chatCompletionsBody} from '@/src/services/translation/templates';
 import {services} from '@/src/core/config/catalog';
 import {
   resolveOpenAICompatibleEndpoint,
   type ResolvedOpenAICompatibleEndpoint,
 } from './endpoints';
 import {LlmTransportError, normalizeAiSdkError} from './errors';
-import {
-  getTranslationProviderConfig,
-  type TranslationProviderRequestContext,
-} from '@/src/services/translation/requestSnapshot';
-import type {TranslationProviderConfigSnapshot} from '@/src/services/translation/types';
+import type {TranslationProviderRequest} from '@/src/services/translation/types';
 
 export const AI_SDK_REQUEST_TIMEOUT_MS = 40_000;
 export const AI_SDK_MAX_RETRIES = 2;
-
-export interface AiSdkTranslationRequest extends TranslationProviderRequestContext {
-  origin: string | string[];
-  pageContext?: string;
-  summaryPrompt?: string;
-  summarySystemPrompt?: string;
-  serviceOverride?: string;
-  modelOverride?: string;
-  targetLanguage?: string;
-  requestTimeoutMs?: number;
-  abortSignal?: AbortSignal;
-}
 
 interface OpenAICompatiblePayload extends Record<string, unknown> {
   model: string;
@@ -156,31 +139,22 @@ function createRequestAbortContext(timeoutMs: number, callerSignal?: AbortSignal
 }
 
 async function translateSingle(
-  request: AiSdkTranslationRequest,
-  service: string,
+  request: TranslationProviderRequest,
   origin: string,
-  current: TranslationProviderConfigSnapshot,
+  requestTimeoutMs: number,
 ): Promise<string> {
+  const {service} = request;
   let endpoint: ResolvedOpenAICompatibleEndpoint;
   try {
-    endpoint = resolveOpenAICompatibleEndpoint(service, current);
+    endpoint = resolveOpenAICompatibleEndpoint(service);
   } catch (error) {
     throw new LlmTransportError(
       error instanceof Error ? error.message : String(error),
       {kind: 'bad-request', retryable: false},
     );
   }
-  const apiKey = current.token[service]?.trim() || '';
-  const payload = parsePayload(commonMsgTemplate(
-    origin,
-    request.pageContext,
-    request.summaryPrompt,
-    request.summarySystemPrompt,
-    service,
-    request.targetLanguage,
-    request.modelOverride,
-    current,
-  ));
+  const apiKey = service.credential.apiKey.trim();
+  const payload = parsePayload(chatCompletionsBody(request, origin));
 
   // The SDK owns the protocol's stream flag. Custom bodies may still replace
   // model/messages and add arbitrary OpenAI-compatible provider fields, but
@@ -189,16 +163,13 @@ async function translateSingle(
   const provider = createOpenAICompatible({
     name: 'babelbox',
     baseURL: endpoint.baseURL,
-    apiKey: service === services.azureOpenai ? undefined : apiKey || undefined,
-    headers: providerHeaders(service, apiKey),
+    apiKey: service.provider === services.azureOpenai ? undefined : apiKey || undefined,
+    headers: providerHeaders(service.provider, apiKey),
     queryParams: endpoint.queryParams,
     fetch: compatibilityFetch(endpoint),
     transformRequestBody: () => requestBody,
   });
-  const abortContext = createRequestAbortContext(
-    normalizedTimeout(request.requestTimeoutMs),
-    request.abortSignal,
-  );
+  const abortContext = createRequestAbortContext(requestTimeoutMs, request.abortSignal);
 
   try {
     const result = await generateText({
@@ -220,21 +191,17 @@ async function translateSingle(
     return text;
   } catch (error) {
     if (error instanceof LlmTransportError) throw error;
-    throw normalizeAiSdkError(service, error, apiKey, abortContext.abortedByCaller());
+    throw normalizeAiSdkError(service.provider, error, apiKey, abortContext.abortedByCaller());
   } finally {
     abortContext.cleanup();
   }
 }
 
 export async function translateWithOpenAICompatibleAiSdk(
-  request: AiSdkTranslationRequest,
+  request: TranslationProviderRequest,
 ): Promise<string | string[]> {
-  const current = getTranslationProviderConfig(request, config);
-  const service = request.serviceOverride || current.service;
   const requestBudget = normalizedTimeout(request.requestTimeoutMs);
-  if (!Array.isArray(request.origin)) {
-    return translateSingle({...request, requestTimeoutMs: requestBudget}, service, request.origin, current);
-  }
+  if (typeof request.origin === 'string') return translateSingle(request, request.origin, requestBudget);
 
   // Batch messages are uncommon for AI services, but image translation can
   // provide them. Keep one upstream request in flight at a time so a single
@@ -249,12 +216,7 @@ export async function translateWithOpenAICompatibleAiSdk(
         retryable: true,
       });
     }
-    translations.push(await translateSingle(
-      {...request, requestTimeoutMs: remaining},
-      service,
-      origin,
-      current,
-    ));
+    translations.push(await translateSingle(request, origin, remaining));
   }
   return translations;
 }

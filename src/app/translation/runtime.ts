@@ -1,9 +1,8 @@
 import {translationProviderRegistry} from '@/src/providers/translation/registry';
-import {AI_SDK_TRANSPORT_PROFILE, resolveOpenAICompatibleEndpoint} from '@/src/providers/translation/ai-sdk/endpoints';
+import {AI_SDK_TRANSPORT_PROFILE, getAiSdkEndpointRoute, resolveOpenAICompatibleEndpoint} from '@/src/providers/translation/ai-sdk/endpoints';
 import {config, configReady} from '@/src/services/config/store';
-import {getMimoEndpoint, MINIMAX_ENDPOINTS} from '@/src/core/config/constants';
 import {getMissingCredentialMessage} from '@/src/core/config/validation';
-import {resolveConfiguredModel, services, servicesType} from '@/src/core/config/catalog';
+import {servicesType} from '@/src/core/config/catalog';
 import {buildPageSummaryPrompt, buildPageSummarySystemPrompt} from '@/src/core/translation/prompts';
 import {getTranslationLanguages} from '@/src/services/translation/languages';
 import {createTranslationBroker} from '@/src/services/translation/broker';
@@ -25,24 +24,16 @@ const broker = createTranslationBroker({
     getConfig: () => config,
     providers: translationProviderRegistry,
     cache: translationCache,
-    serviceIds: {
-        minimax: services.minimax,
-        mimo: services.mimo,
-    },
-    serviceTypes: servicesType,
-    endpointResolver: {
-        resolveOpenAICompatibleEndpoint,
-        getMimoEndpoint,
-        minimaxEndpoints: MINIMAX_ENDPOINTS,
-        aiSdkTransportProfile: AI_SDK_TRANSPORT_PROFILE,
-    },
+    describeEndpoint: (service) => getAiSdkEndpointRoute(service.provider)
+        ? `${AI_SDK_TRANSPORT_PROFILE}:${resolveOpenAICompatibleEndpoint(service).endpoint}`
+        : service.endpoint,
+    isUseAIContext: servicesType.isUseAIContext,
     promptBuilder: {
         buildPageSummaryPrompt,
         buildPageSummarySystemPrompt,
     },
     getMissingCredentialMessage,
     getTranslationLanguages,
-    resolveConfiguredModel,
     buildTranslationCacheKey,
 });
 

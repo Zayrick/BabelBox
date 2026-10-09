@@ -1,6 +1,4 @@
-import { currentModelIds, defaultModels, defaultOption, services } from "./catalog";
-import type { MiniMaxBillingPlan, MiniMaxRegion, MiMoBillingPlan, MiMoRegion } from "./catalog";
-import { normalizeCustomBodyMapping } from "./customBody";
+import { defaultOption, services } from "./catalog";
 import { normalizeSelectionTtsVoiceOrder } from "./selectionTts";
 import {
     DEFAULT_ANIMATION_MODE,
@@ -18,16 +16,13 @@ import {
 } from '@/src/core/translation/filters';
 import {
     createDefaultTranslationServices,
-    DEFAULT_NEW_API_URL,
-    getDefaultTranslationServiceName,
-    getTranslationServiceInstance,
     normalizeTranslationServices,
     reconcileTranslationServiceReferences,
+    type TranslationServiceCredential,
     type TranslationServiceInstance,
 } from './translationServices';
 
-export type DeepSeekApiType = 'auto' | 'responses' | 'chat';
-export type DeepSeekThinkingMode = 'enabled' | 'disabled';
+export type {DeepSeekApiType, DeepSeekThinkingMode, TranslationServiceCredential} from './translationServices';
 export type VideoSubtitleDisplayMode = 'bilingual' | 'translation-only' | 'original-only';
 export type FullPageTranslationMode = 'viewport' | 'all';
 export const DEFAULT_VIDEO_SUBTITLE_FONT_SIZE = 100;
@@ -71,23 +66,6 @@ export function normalizeSelectionTranslatorDelay(value: unknown): number {
     );
 }
 
-interface IMapping {
-    [key: string]: string;
-}
-
-// 内包，存储额外信息
-interface IExtra {
-    [key: string]: any
-}
-
-export interface TranslationServiceCredential {
-    apiKey: string;
-    appKey: string;
-    appSecret: string;
-    secretId: string;
-    secretKey: string;
-}
-
 export class Config {
     autoTranslate: boolean; // 是否即时翻译
     alwaysTranslateDomains: string[]; // 始终自动翻译的可注册域名（eTLD+1）
@@ -102,33 +80,11 @@ export class Config {
     translationServices: TranslationServiceInstance[]; // 已添加的翻译服务实例
     serviceCredentials: Record<string, TranslationServiceCredential>; // 按实例隔离的凭据
     documentService: string; // 文档翻译独立翻译服务
-    documentModel: IMapping; // 文档翻译按服务保存的独立模型选择
-    documentCustomModel: IMapping; // 文档翻译按服务保存的独立自定义模型
     videoTranslationEnabled: boolean; // 是否启用视频字幕翻译 Beta
     videoService: string; // 视频字幕独立翻译服务
-    videoServiceDefaultMigrated: boolean; // 是否已迁移视频字幕默认服务
     videoSubtitleVisible: boolean; // 是否显示 BabelBox 视频字幕
     videoSubtitleDisplayMode: VideoSubtitleDisplayMode; // 视频字幕显示模式
     videoSubtitleFontSize: number; // 视频字幕字号百分比
-    token: IMapping;
-    requireApiKey: Record<string, boolean>; // 按服务和模型保存 API Key 校验开关
-    minimaxBillingPlan: MiniMaxBillingPlan; // MiniMax 计费方案
-    minimaxRegion: MiniMaxRegion; // MiniMax API 区域
-    mimoBillingPlan: MiMoBillingPlan; // MiMo 计费方案
-    mimoRegion: MiMoRegion; // MiMo Token Plan API 集群
-    ak: string;
-    sk: string;
-    appid: string;
-    key: string;
-    model: IMapping;
-    customModel: IMapping;  // 自定义模型名称
-    customBody: IMapping;  // 自定义请求体（JSON 字符串，按服务存储），会合并进请求体
-    proxy: IMapping;  // 代理地址
-    custom: string; // 本地服务地址
-    extra: IExtra;  // 额外信息（内包信息）
-    robot_id: IMapping;  // 机器人 ID（兼容 coze）
-    system_role: IMapping;
-    user_role: IMapping;
     count: number;  // 翻译次数
     theme: string;  // 主题模式：'auto' | 'light' | 'dark'
     useCache: boolean; // 是否使用缓存
@@ -144,7 +100,6 @@ export class Config {
     disableSelectionTranslator: boolean; // 是否禁用划词翻译
     selectionAreaEnabled: boolean; // 是否启用圈选翻译
     disableImageTranslator: boolean; // 是否禁用图片翻译
-    deeplx: string; // DeepLX 服务地址
     selectionTranslatorMode: string; // 划词翻译显示模式: 'disabled' | 'bilingual' | 'translation-only'
     selectionTranslatorTrigger: string; // 划词翻译互斥触发方式: 'direct' | 'icon' | 'dot' | 'Control' | 'Alt' | 'Shift' | 'custom'
     selectionTranslatorHotkey: string; // 旧版快捷键字段；与 selectionTranslatorTrigger 中的快捷键选项保持镜像
@@ -152,19 +107,11 @@ export class Config {
     selectionTranslatorDelay: number; // 选区稳定后显示划词翻译入口的延迟（毫秒）
     selectionTtsVoices: string[]; // 划词朗读的 Edge TTS 音色回退顺序
     vocabularyBookEnabled: boolean; // 是否启用本地单词本 Beta
-    newApiUrl: string; // NewAPI地址
     maxConcurrentTranslations: number; // 最大并发翻译数量
-    youdaoAppKey: string; // 有道翻译 App Key
-    youdaoAppSecret: string; // 有道翻译 App Secret
-    tencentSecretId: string; // 腾讯云 Secret ID
-    tencentSecretKey: string; // 腾讯云 Secret Key
-    azureOpenaiEndpoint: string; // Azure OpenAI 端点地址
     animationMode: AnimationMode; // 动画效果模式
     translationProgressPanelEnabled: boolean; // 是否显示全文翻译进度面板
     inputBoxTranslationTrigger: string; // 输入框翻译触发方式
     inputBoxTranslationTarget: string; // 输入框翻译目标语言
-    deepseekApiType: DeepSeekApiType; // DeepSeek API 格式
-    deepseekThinkingMode: DeepSeekThinkingMode; // DeepSeek Chat Completion 思考模式
     translationCenterServices: string[]; // 翻译中心已选服务及其展示顺序
     translationCenterSourceLanguage: string; // 翻译中心源语言
     translationCenterTargetLanguage: string; // 翻译中心目标语言
@@ -183,33 +130,11 @@ export class Config {
         this.translationServices = createDefaultTranslationServices();
         this.serviceCredentials = {};
         this.documentService = defaultOption.service;
-        this.documentModel = Object.fromEntries(defaultModels);
-        this.documentCustomModel = {};
         this.videoTranslationEnabled = false; // Beta 功能默认关闭
         this.videoService = services.microsoft; // 视频字幕默认使用微软翻译
-        this.videoServiceDefaultMigrated = true;
         this.videoSubtitleVisible = true; // 默认显示视频译文
         this.videoSubtitleDisplayMode = 'bilingual'; // 默认双语显示
         this.videoSubtitleFontSize = DEFAULT_VIDEO_SUBTITLE_FONT_SIZE; // 默认字幕字号
-        this.token = {};
-        this.requireApiKey = {};
-        this.minimaxBillingPlan = 'payg';
-        this.minimaxRegion = 'cn';
-        this.mimoBillingPlan = 'payg';
-        this.mimoRegion = 'cn';
-        this.ak = '';
-        this.sk = '';
-        this.appid = '';
-        this.key = '';
-        this.model = Object.fromEntries(defaultModels);
-        this.customModel = {};
-        this.customBody = {};
-        this.proxy = {};
-        this.custom = defaultOption.custom;
-        this.extra = {};
-        this.robot_id = {};
-        this.system_role = systemRoleFactory();
-        this.user_role = userRoleFactory();
         this.count = 0;
         this.theme = 'auto';  // 默认跟随系统
         this.useCache = true; // 默认开启缓存
@@ -225,7 +150,6 @@ export class Config {
         this.disableSelectionTranslator = true; // 默认关闭划词翻译
         this.selectionAreaEnabled = false; // 圈选翻译需要用户主动开启，避免意外截图
         this.disableImageTranslator = true; // 默认关闭图片翻译，避免首次安装后扫描网页图片
-        this.deeplx = defaultOption.deeplx; // DeepLX 默认服务地址
         this.selectionTranslatorMode = 'disabled'; // 默认关闭划词翻译
         this.selectionTranslatorTrigger = 'icon'; // 默认显示可发现的操作图标
         this.selectionTranslatorHotkey = 'none'; // 默认不增加额外快捷键，保持原有划词行为
@@ -233,104 +157,33 @@ export class Config {
         this.selectionTranslatorDelay = DEFAULT_SELECTION_TRANSLATOR_DELAY;
         this.selectionTtsVoices = []; // 默认按当前语言使用内置音色回退顺序
         this.vocabularyBookEnabled = false; // Beta 默认关闭，由用户在单词本页面主动开启
-        this.newApiUrl = DEFAULT_NEW_API_URL; // NewAPI 默认地址
         this.maxConcurrentTranslations = 6; // 默认最大并发数为6
-        this.youdaoAppKey = ''; // 有道翻译 App Key
-        this.youdaoAppSecret = ''; // 有道翻译 App Secret
-        this.tencentSecretId = ''; // 腾讯云 Secret ID
-        this.tencentSecretKey = ''; // 腾讯云 Secret Key
-        this.azureOpenaiEndpoint = ''; // Azure OpenAI 端点地址
         this.animationMode = DEFAULT_ANIMATION_MODE;
         this.translationProgressPanelEnabled = false; // 默认关闭全文翻译进度面板
         this.inputBoxTranslationTrigger = 'disabled'; // 默认关闭输入框翻译
         this.inputBoxTranslationTarget = 'en'; // 默认翻译成英文
-        this.deepseekApiType = 'auto'; // DeepSeek 默认自动选择 API 格式
-        this.deepseekThinkingMode = 'disabled'; // 翻译默认关闭思考模式，降低延迟和输出噪音
         this.translationCenterServices = [];
         this.translationCenterSourceLanguage = '';
         this.translationCenterTargetLanguage = '';
     }
 }
 
-const modelMigrations: Record<string, Record<string, string>> = {
-    [services.openai]: {
-        gpt5: currentModelIds.openai,
-    },
-    [services.zhipu]: {
-        'glm-4.5': currentModelIds.zhipu,
-        'GLM-4-Flash': currentModelIds.zhipuFlash,
-        'glm-4-plus': currentModelIds.zhipu,
-        'glm-4': currentModelIds.zhipu,
-        'glm-4v': currentModelIds.zhipu,
-    },
-    [services.moonshot]: {
-        'kimi-k2-0711-preview': currentModelIds.moonshot,
-        'kimi-k2-turbo-preview': currentModelIds.moonshot,
-        'moonshot-v1-auto': currentModelIds.moonshot,
-        'moonshot-v1-8k': currentModelIds.moonshot,
-        'moonshot-v1-32k': currentModelIds.moonshot,
-    },
-    [services.claude]: {
-        'claude-sonnet-4-0': currentModelIds.claudeSonnet,
-        'claude-opus-4-1': currentModelIds.claudeOpus,
-        'claude-3-5-sonnet': currentModelIds.claudeSonnet,
-        'claude-3-5-sonnet-20241022': currentModelIds.claudeSonnet,
-        'claude-3-opus': currentModelIds.claudeOpus,
-        'claude-3-opus-20240229': currentModelIds.claudeOpus,
-        'claude-3-5-haiku': currentModelIds.claudeHaiku,
-        'claude-3-5-haiku-20241022': currentModelIds.claudeHaiku,
-        'claude-3-5-haiku-latest': currentModelIds.claudeHaiku,
-    },
-    [services.grok]: {
-        'grok-4-0709': currentModelIds.grok,
-    },
-    [services.groq]: {
-        'llama-3.3-70b-versatile': currentModelIds.groqLarge,
-        'llama-3.1-8b-instant': currentModelIds.groqSmall,
-        'llama3-8b-8192': currentModelIds.groqSmall,
-    },
-    [services.yiyan]: {
-        'ERNIE-Bot 4.0': currentModelIds.yiyan,
-        'ERNIE-Bot': currentModelIds.yiyan,
-        'ERNIE-Speed-8K': currentModelIds.yiyanFast,
-    },
-    [services.minimax]: {
-        chatcompletion_v2: currentModelIds.minimax,
-        'MiniMax-Text-01': currentModelIds.minimax,
-    },
-    [services.jieyue]: {
-        'step-1-8k': currentModelIds.jieyue,
-    },
-    [services.huanYuan]: {
-        'hunyuan-turbos-latest': currentModelIds.huanYuan,
-        'hunyuan-t1-latest': currentModelIds.huanYuan,
-        'hunyuan-a13b': currentModelIds.huanYuan,
-        'hunyuan-lite': currentModelIds.huanYuan,
-        'hunyuan-standard': currentModelIds.huanYuan,
-    },
-    [services.infini]: {
-        'llama-2-13b-chat': currentModelIds.infiniGeneral,
-        'llama-3.3-70b-instruct': currentModelIds.infiniGeneral,
-        'qwen2.5-14b-instruct': currentModelIds.infiniGeneral,
-        'gemma-2-27b-it': currentModelIds.infiniGeneral,
-        'glm-4-9b-chat': currentModelIds.infiniZhipu,
-    },
-};
-
-const LEGACY_DEFAULT_AI_SYSTEM_ROLE = "You are a professional, authentic machine translation engine.";
-const LEGACY_DEFAULT_AI_USER_ROLE = `Translate the following text into {{to}}, If translation is unnecessary (e.g. proper nouns, codes, etc.), return the original text. NO explanations. NO notes:
-
-{{origin}}`;
-
-function migrateLegacyDefaultPrompt(mapping: IMapping, legacyValue: string, currentValue: string): void {
-    for (const key of Object.keys(mapping)) {
-        if (mapping[key] === legacyValue) mapping[key] = currentValue;
-    }
-}
-
 /**
- * 将存储或导入的普通对象补齐为当前配置结构，并迁移已退役或错误的模型编号。
+ * Config fields removed by the instance-based translation service model.
+ * Stored or imported snapshots may still carry them; they are dropped on load.
  */
+export const RETIRED_CONFIG_FIELDS = [
+    'token', 'requireApiKey', 'ak', 'sk', 'appid', 'key', 'extra',
+    'model', 'customModel', 'documentModel', 'documentCustomModel',
+    'customBody', 'proxy', 'custom', 'robot_id', 'system_role', 'user_role',
+    'deeplx', 'newApiUrl', 'azureOpenaiEndpoint',
+    'youdaoAppKey', 'youdaoAppSecret', 'tencentSecretId', 'tencentSecretKey',
+    'deepseekApiType', 'deepseekThinkingMode',
+    'minimaxBillingPlan', 'minimaxRegion', 'mimoBillingPlan', 'mimoRegion',
+    'videoServiceDefaultMigrated', 'persistCredentials',
+] as const;
+
+/** 将存储或导入的普通对象补齐为当前配置结构。 */
 export function normalizeConfig(value: unknown): Config {
     const normalized = new Config();
     // Vue 的响应式对象是 Proxy。Chrome 的 runtime 通道有时会替调用方
@@ -356,115 +209,16 @@ export function normalizeConfig(value: unknown): Config {
     // 配置或历史快照，否则默认配置与同值的页面快照会因内部字段不同而无法去重。
     delete (normalized as unknown as Record<string, unknown>).__babelboxConfigRevision;
 
-    normalized.token = normalizeStringMapping(source.token);
+    for (const field of RETIRED_CONFIG_FIELDS) {
+        delete (normalized as unknown as Record<string, unknown>)[field];
+    }
+
+    normalized.translationServices = normalizeTranslationServices(source.translationServices);
     normalized.serviceCredentials = normalizeServiceCredentials(source.serviceCredentials);
-    normalized.model = normalizeStringMapping(source.model);
-    normalized.documentModel = normalizeStringMapping(source.documentModel);
-    normalized.requireApiKey = isBooleanMapping(source.requireApiKey) ? {...source.requireApiKey} : {};
-    normalized.customModel = normalizeStringMapping(source.customModel);
-    normalized.documentCustomModel = normalizeStringMapping(source.documentCustomModel);
-    normalized.proxy = normalizeStringMapping(source.proxy);
-    normalized.robot_id = normalizeStringMapping(source.robot_id);
-    normalized.system_role = {
-        ...systemRoleFactory(),
-        ...normalizeStringMapping(source.system_role),
-    };
-    normalized.user_role = {
-        ...userRoleFactory(),
-        ...normalizeStringMapping(source.user_role),
-    };
-    migrateLegacyDefaultPrompt(
-        normalized.system_role,
-        LEGACY_DEFAULT_AI_SYSTEM_ROLE,
-        defaultOption.system_role,
-    );
-    migrateLegacyDefaultPrompt(
-        normalized.user_role,
-        LEGACY_DEFAULT_AI_USER_ROLE,
-        defaultOption.user_role,
-    );
-    normalized.customBody = normalizeCustomBodyMapping(source.customBody);
-    if (typeof normalized.custom !== 'string') normalized.custom = defaultOption.custom;
-    if (typeof normalized.newApiUrl !== 'string') normalized.newApiUrl = DEFAULT_NEW_API_URL;
-
-    // 服务实例迁移会用模型值判断旧 AI 供应商是否真的配置过，因此必须先把
-    // provider-keyed 的旧模型编号收敛为当前编号，避免默认旧值被误判为新增证据。
-    migrateModelIdentifiers(normalized.model);
-    migrateModelIdentifiers(normalized.documentModel);
-    defaultModels.forEach((defaultModel, service) => {
-        if (!normalized.model[service]) normalized.model[service] = defaultModel;
-        if (!normalized.documentModel[service]) normalized.documentModel[service] = defaultModel;
-    });
-
-    const selectedModel = normalized.model[services.deepseek];
-    const configuredThinkingMode = source.deepseekThinkingMode;
-    if (selectedModel === 'deepseek-chat') {
-        normalized.model[services.deepseek] = currentModelIds.deepseek;
-        normalized.deepseekThinkingMode = 'disabled';
-    } else if (selectedModel === 'deepseek-reasoner') {
-        normalized.model[services.deepseek] = currentModelIds.deepseek;
-        normalized.deepseekThinkingMode = 'enabled';
-    } else if (configuredThinkingMode !== 'enabled' && configuredThinkingMode !== 'disabled') {
-        normalized.deepseekThinkingMode = selectedModel === 'deepseek-v4-pro' ? 'enabled' : 'disabled';
-    }
-
-    if (!['auto', 'responses', 'chat'].includes(normalized.deepseekApiType)) {
-        normalized.deepseekApiType = 'auto';
-    }
-    if (!['payg', 'token-plan'].includes(normalized.minimaxBillingPlan)) {
-        normalized.minimaxBillingPlan = 'payg';
-    }
-    if (!['global', 'cn'].includes(normalized.minimaxRegion)) {
-        normalized.minimaxRegion = 'cn';
-    }
-    if (!['payg', 'token-plan'].includes(normalized.mimoBillingPlan)) {
-        normalized.mimoBillingPlan = 'payg';
-    }
-    if (!['cn', 'sgp', 'ams'].includes(normalized.mimoRegion)) {
-        normalized.mimoRegion = 'cn';
-    }
-
-    normalized.translationServices = normalizeTranslationServices(source.translationServices, normalized);
-    for (const instance of normalized.translationServices) {
-        if (instance.kind !== 'ai') continue;
-        if (instance.systemRole === LEGACY_DEFAULT_AI_SYSTEM_ROLE) instance.systemRole = '';
-        if (instance.userRole === LEGACY_DEFAULT_AI_USER_ROLE) instance.userRole = '';
-        const legacyModelId = instance.modelId;
-        const usedDefaultName = instance.name === getDefaultTranslationServiceName(
-            instance.provider,
-            legacyModelId,
-        );
-        instance.modelId = migrateModelIdentifier(instance.provider, legacyModelId);
-        if (instance.provider === services.deepseek
-            && (legacyModelId === 'deepseek-chat' || legacyModelId === 'deepseek-reasoner')) {
-            instance.modelId = currentModelIds.deepseek;
-            instance.deepseekThinkingMode = legacyModelId === 'deepseek-reasoner' ? 'enabled' : 'disabled';
-        }
-        if (usedDefaultName) {
-            instance.name = getDefaultTranslationServiceName(instance.provider, instance.modelId);
-        }
-    }
-    const installedServiceIds = new Set(normalized.translationServices.map((item) => item.id));
-    normalized.serviceCredentials = Object.fromEntries(Object.entries(normalized.serviceCredentials)
-        .filter(([serviceId]) => installedServiceIds.has(serviceId)));
-
-    const supportsDocumentService = Boolean(getTranslationServiceInstance(normalized, normalized.documentService));
-    if (!supportsDocumentService) {
-        normalized.documentService = defaultOption.service;
-    }
 
     if (typeof normalized.videoTranslationEnabled !== 'boolean') {
         normalized.videoTranslationEnabled = false;
     }
-    // 早期 Beta 版本曾把 DeepLX 写成默认值。只对没有迁移标记的旧配置
-    // 执行一次迁移，避免覆盖用户在新版本中主动选择的 DeepLX。
-    const shouldMigrateLegacyVideoDefault = source.videoService === services.deeplx
-        && source.videoServiceDefaultMigrated !== true;
-    const supportsVideoService = Boolean(getTranslationServiceInstance(normalized, normalized.videoService));
-    if (shouldMigrateLegacyVideoDefault || !supportsVideoService) {
-        normalized.videoService = services.microsoft;
-    }
-    normalized.videoServiceDefaultMigrated = true;
     if (typeof normalized.videoSubtitleVisible !== 'boolean') {
         normalized.videoSubtitleVisible = true;
     }
@@ -547,31 +301,8 @@ function cloneConfigValue(value: unknown): unknown {
     return cloned;
 }
 
-function migrateModelIdentifiers(configuredModels: IMapping): void {
-    for (const service of Object.keys(modelMigrations)) {
-        const selectedModel = configuredModels[service];
-        if (!selectedModel) continue;
-        configuredModels[service] = migrateModelIdentifier(service, selectedModel);
-    }
-}
-
-/**
- * 将单个官方预设的旧编号映射到当前编号，供配置加载与请求模板共同兜底。
- * 自定义模型应由调用方跳过此函数，以免改写私有部署别名。
- */
-export function migrateModelIdentifier(service: string, selectedModel: string): string {
-    return modelMigrations[service]?.[selectedModel] || selectedModel;
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function normalizeStringMapping(value: unknown): IMapping {
-    if (!isRecord(value)) return {};
-    return Object.fromEntries(
-        Object.entries(value).filter(([, item]) => typeof item === 'string'),
-    ) as IMapping;
 }
 
 function normalizeServiceCredentials(value: unknown): Record<string, TranslationServiceCredential> {
@@ -601,25 +332,4 @@ function normalizeStringList(value: unknown): string[] {
 
 function normalizeConfigLanguage(value: unknown): string {
     return typeof value === 'string' ? value.trim() : '';
-}
-
-function isBooleanMapping(value: unknown): value is Record<string, boolean> {
-    return typeof value === 'object'
-        && value !== null
-        && !Array.isArray(value)
-        && Object.values(value).every((item) => typeof item === 'boolean');
-}
-
-// 构建所有服务的 system_role
-function systemRoleFactory(): IMapping {
-    let systems_role: IMapping = {};
-    Object.keys(services).forEach(key => systems_role[key] = defaultOption.system_role);
-    return systems_role;
-}
-
-// 构建所有服务的 user_role
-function userRoleFactory(): IMapping {
-    let users_role: IMapping = {};
-    Object.keys(services).forEach(key => users_role[key] = defaultOption.user_role);
-    return users_role;
 }

@@ -26,6 +26,8 @@ vi.mock('@/src/platform/storage/credentialContext', () => ({
     ENCRYPTED_CREDENTIAL_VAULT_ENABLED: false,
 }));
 
+import {createExternalTranslationService} from '@/src/core/config/translationServices';
+
 async function loadConfigStore() {
     vi.resetModules();
     const module = await import('@/src/services/config/store');
@@ -39,31 +41,27 @@ describe('userscript credential persistence regression', () => {
         userscriptStorage.writes.length = 0;
     });
 
-    it('从旧 GM 配置迁移、保存公开设置并重载后仍保留 Token', async () => {
-        userscriptStorage.values.set('local:config', {
-            service: 'openai',
-            from: 'auto',
-            to: 'zh-Hans',
-            token: {openai: 'gm-secret-token'},
-        });
-
+    it('保存公开设置并重载后仍保留实例凭据，且公开配置不含凭据', async () => {
         const first = await loadConfigStore();
-        expect(first.config.token.openai).toBe('gm-secret-token');
-        expect(userscriptStorage.values.get('session:credentials')).toEqual(
-            expect.objectContaining({token: {openai: 'gm-secret-token'}}),
-        );
-
+        const instance = createExternalTranslationService('openai');
+        first.config.translationServices.push(instance);
+        first.config.serviceCredentials[instance.id] = {
+            apiKey: 'gm-secret-token',
+            appKey: '',
+            appSecret: '',
+            secretId: '',
+            secretKey: '',
+        };
         first.config.to = 'ja';
         await first.saveConfig(first.config, {recordHistory: true, immediateHistory: true});
+
         const publicConfig = userscriptStorage.values.get('local:config') as Record<string, unknown>;
         expect(publicConfig.to).toBe('ja');
-        expect(publicConfig).not.toHaveProperty('token');
-        expect(userscriptStorage.values.get('session:credentials')).toEqual(
-            expect.objectContaining({token: {openai: 'gm-secret-token'}}),
-        );
+        expect(publicConfig).not.toHaveProperty('serviceCredentials');
+        expect(JSON.stringify(publicConfig)).not.toContain('gm-secret-token');
 
         const reloaded = await loadConfigStore();
         expect(reloaded.config.to).toBe('ja');
-        expect(reloaded.config.token.openai).toBe('gm-secret-token');
+        expect(reloaded.config.serviceCredentials[instance.id]?.apiKey).toBe('gm-secret-token');
     });
 });

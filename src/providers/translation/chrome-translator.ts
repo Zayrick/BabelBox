@@ -1,5 +1,4 @@
-import {config} from '@/src/services/config/store';
-import {getTranslationProviderConfig} from '@/src/services/translation/requestSnapshot';
+import type {TranslationProviderRequest} from '@/src/services/translation/types';
 import {
     browserCapabilities,
     type BrowserCapabilities,
@@ -8,10 +7,6 @@ import {
     chromeOffscreenClient,
     type OffscreenClient,
 } from '@/src/platform/offscreen/client';
-import {
-    buildChromeOffscreenTranslationData,
-    type ChromeTranslatorMessage,
-} from './chromeTranslatorRequest';
 
 interface ChromeTranslationOffscreenResponse {
     readonly success?: boolean;
@@ -26,8 +21,8 @@ export interface ChromeTranslatorDependencies {
 
 /** Chrome Translation provider；Offscreen 生命周期与 transport 由 platform client 所有。 */
 export function createChromeTranslator(dependencies: ChromeTranslatorDependencies) {
-    return async (message: ChromeTranslatorMessage): Promise<string> => {
-        if (typeof message.origin !== 'string' || !message.origin.trim()) {
+    return async (request: TranslationProviderRequest): Promise<string> => {
+        if (typeof request.origin !== 'string' || !request.origin.trim()) {
             throw new Error('翻译文本不能为空');
         }
         if (!dependencies.capabilities.chromeTranslation) {
@@ -35,13 +30,9 @@ export function createChromeTranslator(dependencies: ChromeTranslatorDependencie
         }
 
         try {
-            const current = getTranslationProviderConfig(message, config);
             const response = await dependencies.offscreenClient.send<ChromeTranslationOffscreenResponse>({
                 type: 'CHROME_TRANSLATE_OFFSCREEN',
-                data: buildChromeOffscreenTranslationData(message, {
-                    sourceLanguage: current.from,
-                    targetLanguage: current.to,
-                }),
+                data: {text: request.origin, from: request.sourceLanguage, to: request.targetLanguage},
             });
             if (!response?.success || typeof response.result !== 'string') {
                 throw new Error(response?.error || '无效的翻译响应');

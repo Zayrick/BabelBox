@@ -1,21 +1,13 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
-const mockConfig = vi.hoisted(() => ({
-    service: 'zhipu',
-    to: 'zh-Hans',
-    token: {zhipu: 'api-id.api-secret'},
-    model: {zhipu: 'glm-4.5-flash'},
-    customModel: {},
-    customBody: {},
-    system_role: {zhipu: 'Translate safely.'},
-    user_role: {zhipu: 'Translate {{origin}} into {{to}}.'},
-    requireApiKey: {},
-    extra: {zhipu: {secret: 'legacy-persisted-jwt', expiration: Number.MAX_SAFE_INTEGER}},
-}));
-
-vi.mock('@/src/services/config/store', () => ({config: mockConfig}));
-
 import zhipu from '@/src/providers/translation/zhipu';
+import {providerRequest, resolvedService} from './fixtures/translationService';
+
+const service = resolvedService('zhipu', {
+    modelId: 'glm-4.5-flash',
+    systemRole: 'Translate safely.',
+    userRole: 'Translate {{origin}} into {{to}}.',
+}, {apiKey: 'api-id.api-secret'});
 
 const JWT_TTL_MS = 60 * 60 * 1000;
 
@@ -55,14 +47,13 @@ describe('智谱派生 JWT 凭据', () => {
 
     it('按毫秒生成一小时 JWT，过期前复用且在边界重新签发', async () => {
         const issuedAt = Date.parse('2026-01-01T00:00:00Z');
-        const legacyExtra = structuredClone(mockConfig.extra);
-        await zhipu({origin: 'hello', targetLanguage: 'zh-Hans'});
+        await zhipu(providerRequest(service, {origin: 'hello'}));
 
         vi.setSystemTime(new Date(issuedAt + JWT_TTL_MS / 2));
-        await zhipu({origin: 'world', targetLanguage: 'zh-Hans'});
+        await zhipu(providerRequest(service, {origin: 'world'}));
 
         vi.setSystemTime(new Date('2026-01-01T01:00:00Z'));
-        await zhipu({origin: 'again', targetLanguage: 'zh-Hans'});
+        await zhipu(providerRequest(service, {origin: 'again'}));
 
         const firstToken = getBearerToken(0);
         const reusedToken = getBearerToken(1);
@@ -79,6 +70,5 @@ describe('智谱派生 JWT 凭据', () => {
             exp: issuedAt + JWT_TTL_MS * 2,
             timestamp: issuedAt + JWT_TTL_MS,
         });
-        expect(mockConfig.extra).toEqual(legacyExtra);
     });
 });

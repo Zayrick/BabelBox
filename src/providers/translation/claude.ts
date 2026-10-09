@@ -1,40 +1,28 @@
 import {services} from "@/src/core/config/catalog";
 import {method, urls} from "@/src/core/config/constants";
-import {claudeMsgTemplate} from '@/src/services/translation/templates';
-import {config} from "@/src/services/config/store";
+import {claudeBody} from '@/src/services/translation/templates';
+import type {TranslationProviderRequest} from '@/src/services/translation/types';
 import {appendOptionalHeader} from './auth';
 import {createHttpStatusError, readJsonResponse} from '@/src/platform/http/errors';
 import {runtimeFetch} from '@/src/platform/http/runtime';
-import {getTranslationProviderConfig} from '@/src/services/translation/requestSnapshot';
+import {requireSingleOrigin} from './request';
 
-async function claude(message: any) {
-    const current = getTranslationProviderConfig(message, config);
-    const service = message.serviceOverride || services.claude;
-    // 构建请求头
-    let headers = new Headers();
-    headers.append('Content-Type', 'application/json');
-    appendOptionalHeader(headers, 'x-api-key', current.token[service]);
+async function claude(request: TranslationProviderRequest) {
+    const {service} = request;
+    const headers = new Headers({'Content-Type': 'application/json'});
+    appendOptionalHeader(headers, 'x-api-key', service.credential.apiKey);
     headers.append('anthropic-version', '2023-06-01');
     headers.append('anthropic-dangerous-direct-browser-access', 'true');
 
-    const url = current.proxy[service] || urls[services.claude];
+    const resp = await runtimeFetch(service.endpoint || urls[services.claude], {
+        method: method.POST,
+        headers,
+        body: claudeBody(request, requireSingleOrigin(request)),
+    });
+    if (!resp.ok) throw createHttpStatusError(resp);
 
-    try {
-        const resp = await runtimeFetch(url, {
-            method: method.POST,
-            headers,
-            body: claudeMsgTemplate(message.origin, message.pageContext, message.summaryPrompt, message.summarySystemPrompt, service, message.targetLanguage, message.modelOverride, current)
-        });
-
-        if (!resp.ok) {
-            throw createHttpStatusError(resp);
-        }
-
-        const result = await readJsonResponse<any>(resp, 'Claude 返回的不是有效 JSON');
-        return result.content[0].text;
-    } catch (error) {
-        throw error;
-    }
+    const result = await readJsonResponse<any>(resp, 'Claude 返回的不是有效 JSON');
+    return result.content[0].text;
 }
 
 export default claude;
