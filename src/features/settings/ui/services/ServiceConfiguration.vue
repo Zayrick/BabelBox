@@ -204,6 +204,23 @@
       <el-col :span="12"><el-select v-model="instance.deepseekThinkingMode" placeholder="请选择思考模式"><el-option class="select-left" v-for="item in options.deepseekThinkingMode" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-col>
     </el-row>
 
+    <el-row v-if="fields.concurrency" class="margin-bottom margin-left-2em">
+      <el-col :span="12" class="lightblue rounded-corner">
+        <SettingsHelpLabel content="此服务同时进行的请求上限，仍受通用设置中的最大并发数约束；留空表示不单独限制">最大并发数</SettingsHelpLabel>
+      </el-col>
+      <el-col :span="12">
+        <el-input-number
+          v-model="instanceMaxConcurrentRequests"
+          aria-label="此服务最大并发数"
+          :min="1"
+          :step="1"
+          step-strictly
+          controls-position="right"
+          placeholder="跟随通用设置"
+        />
+      </el-col>
+    </el-row>
+
     <template v-if="fields.prompts">
       <div class="custom-template-heading">
         <strong>提示词</strong>
@@ -385,6 +402,12 @@ const instanceModelId = computed({
   get: () => instance.value.modelId,
   set: (value: string) => {
     instance.value.modelId = value.trim()
+  },
+})
+const instanceMaxConcurrentRequests = computed({
+  get: () => instance.value.maxConcurrentRequests || undefined,
+  set: (value: number | null | undefined) => {
+    instance.value.maxConcurrentRequests = value && value >= 1 ? Math.floor(value) : 0
   },
 })
 const instanceEndpoint = computed({

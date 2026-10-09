@@ -16,6 +16,7 @@ export interface ServiceConfigurationFieldVisibility {
   deepseekThinkingMode: boolean
   prompts: boolean
   customBody: boolean
+  concurrency: boolean
 }
 
 export interface ServiceConfigurationPresentation {
@@ -70,6 +71,7 @@ export function createServiceConfigurationPresentation(
     deepseekThinkingMode: external && provider === services.deepseek && options.deepseekApiType !== 'responses',
     prompts: external && isAI && servicesType.isUseAIContext(provider),
     customBody: external && servicesType.isUseCustomBody(provider),
+    concurrency: external && isAI,
   }
 
   const showConnectionConfiguration = canConfigure && Object.values(fields).some(Boolean)

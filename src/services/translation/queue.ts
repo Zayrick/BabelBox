@@ -3,6 +3,7 @@
  * 控制并发翻译任务的数量，避免同时进行过多翻译请求
  */
 
+import {getTranslationServiceInstance} from '@/src/core/config/translationServices';
 import {config} from '@/src/services/config/store';
 
 const DEFAULT_MAX_CONCURRENT_TRANSLATIONS = 6;
@@ -27,6 +28,7 @@ type TranslationQueueSessionState =
 
 interface PendingTranslation {
   session: TranslationQueueSession;
+  serviceId?: string;
   execute: () => Promise<void>;
   cancel: (error: TranslationQueueCancelledError) => void;
 }
@@ -41,6 +43,7 @@ export class TranslationQueueCancelledError extends Error {
 }
 
 let activeTranslations = 0;
+const activeByService = new Map<string, number>();
 let pendingTranslations: PendingTranslation[] = [];
 let queueGeneration = 0;
 const sessionStates = new WeakMap<TranslationQueueSession, TranslationQueueSessionState>();
@@ -71,14 +74,33 @@ function getSessionCancellationError(session: TranslationQueueSession): Translat
   return null;
 }
 
+function isServiceSaturated(serviceId: string | undefined): boolean {
+  if (!serviceId) return false;
+  const limit = getTranslationServiceInstance(config, serviceId)?.maxConcurrentRequests || 0;
+  return limit > 0 && (activeByService.get(serviceId) || 0) >= limit;
+}
+
 function processQueue(): void {
   const maxConcurrent = getMaxConcurrentTranslations();
-  while (activeTranslations < maxConcurrent) {
-    const entry = pendingTranslations.shift();
-    if (!entry) return;
+  // Entries for a saturated service stay queued in order while later entries
+  // for other services may start, so one slow provider cannot block the rest.
+  for (let index = 0; index < pendingTranslations.length && activeTranslations < maxConcurrent;) {
+    const entry = pendingTranslations[index];
+    if (isServiceSaturated(entry.serviceId)) {
+      index += 1;
+      continue;
+    }
+    pendingTranslations.splice(index, 1);
+    const {serviceId} = entry;
     activeTranslations += 1;
+    if (serviceId) activeByService.set(serviceId, (activeByService.get(serviceId) || 0) + 1);
     void entry.execute().finally(() => {
       activeTranslations -= 1;
+      if (serviceId) {
+        const remaining = (activeByService.get(serviceId) || 1) - 1;
+        if (remaining > 0) activeByService.set(serviceId, remaining);
+        else activeByService.delete(serviceId);
+      }
       processQueue();
     });
   }
@@ -112,10 +134,12 @@ export function cancelTranslationQueueSession(session: TranslationQueueSession, 
  * 添加翻译任务到队列。
  * @param translationTask 翻译任务函数，需要返回 Promise
  * @param session 可选的取消会话；默认使用当前全局队列 generation
+ * @param serviceId 任务使用的翻译服务；该服务配置了单独并发上限时同时受其约束
  */
 export function enqueueTranslation<T>(
   translationTask: (lease: TranslationQueueLease) => Promise<T>,
   session: TranslationQueueSession = defaultSession,
+  serviceId?: string,
 ): Promise<T> {
   try {
     const cancellationError = getSessionCancellationError(session);
@@ -127,6 +151,7 @@ export function enqueueTranslation<T>(
   return new Promise<T>((resolve, reject) => {
     const entry: PendingTranslation = {
       session,
+      serviceId,
       cancel: (error) => {
         reject(error);
       },

@@ -178,7 +178,7 @@ export async function translateText(origin: string, context: string = document.t
     );
     const result = unwrapTranslationResponse<string>(response);
     return result;
-  }, queueSession);
+  }, queueSession, selectedService);
 }
 
 /**
@@ -232,7 +232,7 @@ export async function translateTextBatch(
     }
 
     return result;
-  }, queueSession);
+  }, queueSession, selectedService);
 }
 
 /**
@@ -263,7 +263,7 @@ export async function translateVideoText(origin: string): Promise<string> {
       requestTimeoutMs: 19_000,
     }), 20_000, undefined, lease);
     return unwrapTranslationResponse<string>(response);
-  });
+  }, undefined, service);
 }
 
 export function cancelAllTranslations() {

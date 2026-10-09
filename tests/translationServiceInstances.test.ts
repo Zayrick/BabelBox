@@ -84,6 +84,17 @@ describe('translation service instances', () => {
       .toEqual([deepL.id])
   })
 
+  it('keeps a per-service concurrency limit only for AI services', () => {
+    const limited = {...createExternalTranslationService(services.openai), maxConcurrentRequests: 2.7}
+    const invalid = {...createExternalTranslationService(services.openai, [limited]), maxConcurrentRequests: -1}
+    const machine = {...createExternalTranslationService(services.deepL), maxConcurrentRequests: 3}
+
+    const normalized = normalizeTranslationServices([limited, invalid, machine])
+    const limitOf = (id: string) => normalized.find((item) => item.id === id)?.maxConcurrentRequests
+
+    expect([limitOf(limited.id), limitOf(invalid.id), limitOf(machine.id)]).toEqual([2, 0, 0])
+  })
+
   it('drops services that do not follow the instance ID rules', () => {
     const normalized = normalizeTranslationServices([
       {...createExternalTranslationService(services.openai), id: services.openai},
@@ -104,7 +115,7 @@ describe('translation service instances', () => {
     expect(enabled.map((item) => item.id)).toEqual([services.microsoft])
   })
 
-  it('changes page-local cache identity when an instance model or endpoint changes', () => {
+  it('changes page-local cache identity only when request-shaping settings change', () => {
     const instance = createExternalTranslationService(services.openai)
     const config = {translationServices: [instance]}
     const firstKey = getTranslationServiceConfigurationKey(config, instance.id)

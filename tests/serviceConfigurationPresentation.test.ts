@@ -18,10 +18,10 @@ describe('service configuration presentation', () => {
     [services.deepL, ['name', 'endpoint', 'token']],
     [services.deeplx, ['name', 'endpoint', 'token']],
     [services.youdao, ['name', 'endpoint', 'youdaoCredentials']],
-    [services.cozecom, ['name', 'endpoint', 'token', 'robotId', 'prompts', 'customBody']],
-    [services.openai, ['name', 'model', 'endpoint', 'token', 'prompts', 'customBody']],
-    [services.huanYuanTranslation, ['name', 'model', 'endpoint', 'tencentCredentials', 'customBody']],
-    [services.minimax, ['name', 'model', 'token', 'minimaxRegion', 'prompts', 'customBody']],
+    [services.cozecom, ['name', 'endpoint', 'token', 'robotId', 'prompts', 'customBody', 'concurrency']],
+    [services.openai, ['name', 'model', 'endpoint', 'token', 'prompts', 'customBody', 'concurrency']],
+    [services.huanYuanTranslation, ['name', 'model', 'endpoint', 'tencentCredentials', 'customBody', 'concurrency']],
+    [services.minimax, ['name', 'model', 'token', 'minimaxRegion', 'prompts', 'customBody', 'concurrency']],
   ] as const)('shows exactly the fields %s reads', (provider, visible) => {
     const presentation = createServiceConfigurationPresentation(provider)
     const shown = Object.entries(presentation.fields).filter(([, value]) => value).map(([key]) => key)

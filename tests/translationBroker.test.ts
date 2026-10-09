@@ -36,6 +36,7 @@ function instance(id: string, overrides: Partial<TranslationServiceInstance> = {
         systemRole: '',
         userRole: '',
         robotId: '',
+        maxConcurrentRequests: 0,
         deepseekApiType: 'auto',
         deepseekThinkingMode: 'disabled',
         minimaxBillingPlan: 'payg',

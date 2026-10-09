@@ -37,6 +37,8 @@ export interface TranslationServiceInstance {
   systemRole: string
   userRole: string
   robotId: string
+  /** Per-service request concurrency inside the global queue limit; 0 means only the global limit applies. */
+  maxConcurrentRequests: number
   deepseekApiType: DeepSeekApiType
   deepseekThinkingMode: DeepSeekThinkingMode
   minimaxBillingPlan: MiniMaxBillingPlan
@@ -125,6 +127,7 @@ function createInstance(id: string, provider: string): TranslationServiceInstanc
     systemRole: '',
     userRole: '',
     robotId: '',
+    maxConcurrentRequests: 0,
     deepseekApiType: 'auto',
     deepseekThinkingMode: 'disabled',
     minimaxBillingPlan: 'payg',
@@ -169,6 +172,10 @@ function oneOf<T extends string>(value: unknown, allowed: readonly T[], fallback
   return allowed.includes(value as T) ? value as T : fallback
 }
 
+function concurrencyLimit(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 1 ? Math.floor(value) : 0
+}
+
 function isExternalServiceId(id: string, provider: string): boolean {
   return id.startsWith(`${EXTERNAL_SERVICE_ID_PREFIX}${provider}:`)
 }
@@ -193,6 +200,7 @@ function normalizeInstance(value: unknown): TranslationServiceInstance | null {
     systemRole: text(source.systemRole),
     userRole: text(source.userRole),
     robotId: text(source.robotId).trim(),
+    maxConcurrentRequests: instance.kind === 'ai' ? concurrencyLimit(source.maxConcurrentRequests) : 0,
     deepseekApiType: oneOf(source.deepseekApiType, ['auto', 'responses', 'chat'], 'auto'),
     deepseekThinkingMode: oneOf(source.deepseekThinkingMode, ['enabled', 'disabled'], 'disabled'),
     minimaxBillingPlan: oneOf(source.minimaxBillingPlan, ['payg', 'token-plan'], 'payg'),
@@ -314,5 +322,5 @@ export function getTranslationServiceConfigurationKey(
   serviceId: string,
 ): string {
   const instance = getTranslationServiceInstance(config, serviceId)
-  return JSON.stringify(instance ? {...instance, name: undefined, enabled: undefined} : {id: serviceId})
+  return JSON.stringify(instance ? {...instance, name: undefined, enabled: undefined, maxConcurrentRequests: undefined} : {id: serviceId})
 }

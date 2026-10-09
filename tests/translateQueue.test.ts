@@ -1,6 +1,9 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 
-const mockConfig = vi.hoisted(() => ({maxConcurrentTranslations: 2}));
+const mockConfig = vi.hoisted(() => ({
+  maxConcurrentTranslations: 2,
+  translationServices: [] as {id: string; maxConcurrentRequests: number}[],
+}));
 
 vi.mock('@/src/services/config/store', () => ({config: mockConfig}));
 
@@ -24,6 +27,7 @@ function deferred<T>() {
 
 beforeEach(() => {
   mockConfig.maxConcurrentTranslations = 2;
+  mockConfig.translationServices = [];
 });
 
 afterEach(() => {
@@ -55,6 +59,37 @@ describe('translation queue', () => {
     await vi.waitFor(() => expect(started).toEqual([0, 1, 2, 3, 4]));
     controls[4].resolve(4);
     await expect(jobs[4]).resolves.toBe(4);
+  });
+
+  it('服务单独并发上限只限制该服务，其他服务的任务可越过等待项先启动', async () => {
+    mockConfig.maxConcurrentTranslations = 3;
+    mockConfig.translationServices = [{id: 'slow', maxConcurrentRequests: 1}];
+    const controls = Array.from({length: 4}, () => deferred<void>());
+    const started: string[] = [];
+    const enqueue = (label: string, serviceId: string, index: number) => enqueueTranslation(async () => {
+      started.push(label);
+      await controls[index].promise;
+    }, undefined, serviceId);
+
+    const jobs = [
+      enqueue('slow-1', 'slow', 0),
+      enqueue('slow-2', 'slow', 1),
+      enqueue('fast-1', 'fast', 2),
+      enqueue('fast-2', 'fast', 3),
+    ];
+    expect(started).toEqual(['slow-1', 'fast-1', 'fast-2']);
+
+    controls[2].resolve();
+    await jobs[2];
+    await Promise.resolve();
+    expect(started).toEqual(['slow-1', 'fast-1', 'fast-2']);
+
+    controls[0].resolve();
+    await jobs[0];
+    await vi.waitFor(() => expect(started).toEqual(['slow-1', 'fast-1', 'fast-2', 'slow-2']));
+    controls[1].resolve();
+    controls[3].resolve();
+    await Promise.all(jobs);
   });
 
   it('向调用方传播任务错误，并继续处理队列中的下一个任务', async () => {
