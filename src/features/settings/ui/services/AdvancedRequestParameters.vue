@@ -1,23 +1,20 @@
 <template>
   <details class="advanced-request-parameters">
     <summary><ChevronRight class="summary-icon" aria-hidden="true" />高级请求参数</summary>
-    <label class="advanced-request-field">
-      <span>自定义请求体</span>
-      <el-input
+    <div class="advanced-request-field">
+      <CustomBodyEditor
         :model-value="modelValue"
-        type="textarea"
-        :autosize="{ minRows: 3 }"
-        :class="{ 'input-error': invalid }"
-        placeholder='JSON 对象，如 {"temperature":0}'
+        :invalid="invalid"
         @update:model-value="emit('update:modelValue', $event)"
       />
       <small v-if="invalid && invalidMessage" class="error-text">{{ invalidMessage }}</small>
-    </label>
+    </div>
   </details>
 </template>
 
 <script setup lang="ts">
 import { ChevronRight } from '@lucide/vue'
+import CustomBodyEditor from './CustomBodyEditor.vue'
 
 withDefaults(defineProps<{
   modelValue: string
@@ -63,10 +60,6 @@ summary:hover { color: var(--ink); }
   color: var(--ink);
   font-size: var(--font-small);
   font-weight: var(--weight-medium);
-}
-
-.input-error :deep(.el-textarea__inner) {
-  box-shadow: 0 0 0 1px var(--el-color-danger) inset;
 }
 
 .error-text {
