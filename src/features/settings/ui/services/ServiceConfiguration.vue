@@ -90,7 +90,7 @@
 
     <el-row v-if="fields.token" class="margin-bottom margin-left-2em">
       <el-col :span="12" class="lightblue rounded-corner">
-        <SettingsHelpLabel content="加密保存在此设备，可在“配置管理”中改为仅本次会话">访问令牌</SettingsHelpLabel>
+        <SettingsHelpLabel content="保存在此设备的扩展设置中">访问令牌</SettingsHelpLabel>
       </el-col>
       <el-col :span="12"><el-input v-model="apiKey" type="password" show-password placeholder="选填" @change="refreshModelCatalogIfSupported" /></el-col>
     </el-row>
@@ -275,7 +275,7 @@ import { defaultOption, options as optionConfig, services } from '@/src/core/con
 import { isValidCustomBody } from '@/src/core/config/customBody'
 import type {ServiceConfigurationPresentation} from '@/src/features/settings/model/serviceConfiguration'
 import {browser} from 'wxt/browser'
-import { requestConfigSave } from '@/src/services/config/store'
+import { saveSettingsConfig } from '../saveFeedback'
 import { CONNECTION_TEST_MESSAGE, getMimoEndpoint, MINIMAX_ENDPOINTS } from '@/src/core/config/constants'
 import {
   hasDynamicTranslationModelCatalog,
@@ -346,7 +346,7 @@ async function refreshModelCatalog(): Promise<void> {
   modelCatalogError.value = ''
 
   try {
-    await requestConfigSave(config.value, browser.runtime.sendMessage.bind(browser.runtime))
+    await saveSettingsConfig(config.value)
     const response = await browser.runtime.sendMessage({
       type: TRANSLATION_MODEL_CATALOG_MESSAGE,
       service: instance.value.id,
@@ -500,7 +500,7 @@ async function testConnection(): Promise<void> {
   connectionTestMessage.value = '正在发送测试请求…'
 
   try {
-    await requestConfigSave(config.value, browser.runtime.sendMessage.bind(browser.runtime))
+    await saveSettingsConfig(config.value)
     const response = await browser.runtime.sendMessage({
       type: CONNECTION_TEST_MESSAGE,
       service: instance.value.id,

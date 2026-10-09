@@ -1,20 +1,14 @@
 import {normalizeConfig, type Config} from '@/src/core/config/model';
-import {
-    extractConfigCredentials,
-    filterConfigCredentialsForDestination,
-    mergeConfigCredentials,
-    sanitizeConfigCredentials,
-    type PublicConfig,
-} from '@/src/core/config/credentials';
 import {isConfigRecord, parseStoredConfig, serializeConfig} from './schema';
 
 export const CONFIG_HISTORY_LIMIT = 10 as const;
 export const CONFIG_HISTORY_SCHEMA_VERSION = 1 as const;
 
-export const CONFIG_NON_RESTORABLE_FIELDS = ['count'] as const;
+// 历史与自动备份只记录设置项；API 凭据和翻译计数不随撤销或恢复回滚。
+export const CONFIG_NON_RESTORABLE_FIELDS = ['count', 'serviceCredentials'] as const;
 
 export type ConfigNonRestorableField = typeof CONFIG_NON_RESTORABLE_FIELDS[number];
-export type RestorableConfig = Omit<PublicConfig, ConfigNonRestorableField>;
+export type RestorableConfig = Omit<Config, ConfigNonRestorableField>;
 
 export type ConfigHistoryAction = 'undo' | 'redo' | 'restore';
 
@@ -31,30 +25,19 @@ export interface ConfigHistoryState {
     nextVersion: number;
 }
 
-export function toPublicConfig(value: unknown): PublicConfig {
-    return sanitizeConfigCredentials(normalizeConfig(value)) as PublicConfig;
-}
-
-/** 历史和自动备份只保存真正可恢复的用户配置。 */
 export function toRestorableConfig(value: unknown): RestorableConfig {
-    const restorable = {...toPublicConfig(value)} as Record<string, unknown>;
+    const restorable = {...normalizeConfig(value)} as Record<string, unknown>;
     for (const field of CONFIG_NON_RESTORABLE_FIELDS) delete restorable[field];
     return restorable as RestorableConfig;
 }
 
-/** 恢复快照时保留当前凭据与运行时统计。 */
 export function restoreRestorableConfig(value: unknown, currentValue: unknown): Config {
     const current = normalizeConfig(currentValue);
-    const target = normalizeConfig({
+    return normalizeConfig({
         ...toRestorableConfig(value),
         count: current.count,
+        serviceCredentials: current.serviceCredentials,
     });
-    const credentials = filterConfigCredentialsForDestination(
-        extractConfigCredentials(current),
-        current,
-        target,
-    );
-    return normalizeConfig(mergeConfigCredentials(target, credentials));
 }
 
 export function serializeConfigHistory(value: ConfigHistoryState): string {
@@ -76,15 +59,13 @@ export function cloneConfigHistory(value: ConfigHistoryState): ConfigHistoryStat
 
 export function createBaselineConfigHistory(
     value: unknown,
-    persistedRevision: number,
     savedAt = new Date().toISOString(),
 ): ConfigHistoryState {
-    const version = Math.max(1, persistedRevision || 1);
     return {
         schemaVersion: CONFIG_HISTORY_SCHEMA_VERSION,
-        entries: [{version, savedAt, config: toRestorableConfig(value)}],
+        entries: [{version: 1, savedAt, config: toRestorableConfig(value)}],
         cursor: 0,
-        nextVersion: version + 1,
+        nextVersion: 2,
     };
 }
 

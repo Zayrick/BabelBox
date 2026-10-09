@@ -1,9 +1,3 @@
-import {
-  extractConfigCredentials,
-  filterConfigCredentialsForDestination,
-  mergeConfigCredentials,
-  sanitizeConfigCredentials,
-} from './credentials'
 import { normalizeConfig, type Config } from './model'
 import { getTranslationServiceInstance } from './translationServices'
 
@@ -25,29 +19,19 @@ export function isConfigImportValid(value: unknown): value is ConfigRecord {
   return Boolean(getTranslationServiceInstance(normalizeConfig(value), value.service))
 }
 
+/** 导出完整配置（含 API 凭据），只去掉本机统计。 */
 export function sanitizeConfigForExport(value: unknown): ConfigRecord {
   if (!isRecord(value)) throw new Error('配置必须是 JSON 对象')
 
-  const sanitized = sanitizeConfigCredentials(
-    JSON.parse(JSON.stringify(value)),
-  ) as ConfigRecord
-  delete sanitized.__babelboxConfigRevision
-  delete sanitized.count
-  return sanitized
+  const exported = {...normalizeConfig(value)} as ConfigRecord
+  delete exported.count
+  return exported
 }
 
-/** 导入公开配置时只保留目的地未变化的当前凭据。 */
+/** 导入的配置整体替换当前配置，只保留本机翻译计数。 */
 export function prepareConfigForImport(value: unknown, current: unknown): Config {
-  const currentConfig = normalizeConfig(current)
-  const importedConfig = normalizeConfig(sanitizeConfigCredentials(value))
-  const credentials = filterConfigCredentialsForDestination(
-    extractConfigCredentials(currentConfig),
-    currentConfig,
-    importedConfig,
-  )
-
-  return normalizeConfig(mergeConfigCredentials({
-    ...importedConfig,
-    count: currentConfig.count,
-  }, credentials))
+  return normalizeConfig({
+    ...(isRecord(value) ? value : {}),
+    count: normalizeConfig(current).count,
+  })
 }

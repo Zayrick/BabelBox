@@ -503,7 +503,6 @@ import {useDocumentTheme} from '@/src/ui/composables/useDocumentTheme';
 import {
   config as runtimeConfig,
   configReady,
-  saveConfig,
   requestConfigSave,
   subscribeConfig,
 } from '@/src/services/config/store';
@@ -588,7 +587,6 @@ const servicePickerOpen = ref(false);
 const hydrated = ref(false);
 let lastSerialized = '';
 let applyingExternalConfig = false;
-let pageExitSaveStarted = false;
 let noticeTimer: ReturnType<typeof setTimeout> | undefined;
 let pagePendingTimer: ReturnType<typeof setTimeout> | undefined;
 type PopupActionTarget = 'page' | 'site-rule' | 'site-disable' | 'cache';
@@ -789,8 +787,6 @@ onMounted(() => {
   document.addEventListener('keydown', handlePopupKeydown);
 });
 onUnmounted(() => {
-  persistOnPageExit();
-  window.removeEventListener('pagehide', saveOnPageHide);
   unsubscribeConfig();
   document.removeEventListener('pointerdown', closeServicePicker);
   document.removeEventListener('keydown', handlePopupKeydown);
@@ -798,19 +794,6 @@ onUnmounted(() => {
   if (pagePendingTimer) clearTimeout(pagePendingTimer);
   disposeActionFeedback();
 });
-
-function saveOnPageHide() {
-  persistOnPageExit();
-}
-window.addEventListener('pagehide', saveOnPageHide);
-
-// Firefox 可能同时触发 pagehide 和 unmounted；只提交一次最新快照。
-function persistOnPageExit() {
-  if (!hydrated.value || pageExitSaveStarted) return;
-  pageExitSaveStarted = true;
-  void saveConfig(config.value).catch((error) => console.warn('[BabelBox] popup 关闭前本地保存设置失败', error));
-  void persistConfig(config.value).catch((error) => console.warn('[BabelBox] popup 关闭前后台保存设置失败', error));
-}
 
 function showNotice(message: string, type: 'success' | 'error' = 'success') {
   notice.value = message;

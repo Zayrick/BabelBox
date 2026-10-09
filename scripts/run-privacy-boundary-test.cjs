@@ -3,7 +3,7 @@
 // 在临时 Chromium/Edge profile 中验证 BabelBox 的网页隐私边界：
 // 1. 内容脚本不修改宿主站点 localStorage；
 // 2. 扩展 UI 保持 closed Shadow DOM，宿主页面不能访问扩展存储；
-// 3. options 真实消息/UI 路径遵守设备保险库默认、会话模式显式切换、导出脱敏和密文清理。
+// 3. 设置页经后台消息保存的 API 凭据写入 local:config，并在设置页重载后保持不变。
 
 const fs = require('node:fs');
 const http = require('node:http');
@@ -239,97 +239,32 @@ function hasCredentialFields(value) {
 }
 
 async function extensionStorageEvidence(extensionContext, credentialMarker = null) {
-  const snapshot = await extensionContext.evaluate(async () => {
-    const local = await chrome.storage.local.get(null);
-    const sessionSupported = Boolean(chrome.storage.session);
-    const session = sessionSupported ? await chrome.storage.session.get(null) : {};
-    return { local, session, sessionSupported };
-  });
-  const rawConfig = snapshot.local.config ?? snapshot.local['local:config'];
-  const rawHistory = snapshot.local.configHistory ?? snapshot.local['local:configHistory'];
-  const sessionCredentials = snapshot.session.credentials ?? snapshot.session['session:credentials'];
-  const localCredentials = snapshot.local.credentials ?? snapshot.local['local:credentials'];
-  const rawCredentialState = snapshot.local.credentialStorageState
-    ?? snapshot.local['local:credentialStorageState'];
+  const local = await extensionContext.evaluate(() => chrome.storage.local.get(null));
+  const rawConfig = local.config ?? local['local:config'];
+  const rawHistory = local.configHistory ?? local['local:configHistory'];
   const config = typeof rawConfig === 'string' ? JSON.parse(rawConfig) : rawConfig;
   const history = typeof rawHistory === 'string' ? JSON.parse(rawHistory) : rawHistory;
-  const credentialState = typeof rawCredentialState === 'string'
-    ? JSON.parse(rawCredentialState)
-    : rawCredentialState;
   const historyEntries = Array.isArray(history?.entries) ? history.entries : [];
   return {
-    localKeys: Object.keys(snapshot.local).sort(),
-    sessionKeys: Object.keys(snapshot.session).sort(),
-    sessionSupported: snapshot.sessionSupported,
+    localKeys: Object.keys(local).sort(),
     configContainsCredentialFields: hasCredentialFields(config),
     historyContainsCredentialFields: historyEntries.some((entry) => hasCredentialFields(entry?.config)),
     credentialLifecycle: credentialMarker ? {
-      publicConfigContainsSentinel: containsMarker(config, credentialMarker),
-      publicHistoryContainsSentinel: containsMarker(history, credentialMarker),
-      sessionCredentialsPresent: Object.prototype.hasOwnProperty.call(snapshot.session, 'credentials')
-        || Object.prototype.hasOwnProperty.call(snapshot.session, 'session:credentials'),
-      sessionCredentialsContainsSentinel: containsMarker(sessionCredentials, credentialMarker),
-      localCredentialsPresent: Object.prototype.hasOwnProperty.call(snapshot.local, 'credentials')
-        || Object.prototype.hasOwnProperty.call(snapshot.local, 'local:credentials'),
-      localCredentialsContainsSentinel: containsMarker(localCredentials, credentialMarker),
-      credentialStatePresent: Boolean(credentialState),
-      credentialStorageMode: credentialState?.mode || 'device',
-      encryptedCredentialsPresent: Boolean(credentialState?.encryptedCredentials?.ciphertext),
-      encryptedStateContainsSentinel: containsMarker(credentialState, credentialMarker),
-    } : null,
-    configProjection: config ? {
-      autoTranslate: config.autoTranslate,
-      disableFloatingBall: config.disableFloatingBall,
-      selectionTranslatorMode: config.selectionTranslatorMode,
-      disableSelectionTranslator: config.disableSelectionTranslator,
-      selectionAreaEnabled: config.selectionAreaEnabled,
-      disableImageTranslator: config.disableImageTranslator,
+      configContainsSentinel: containsMarker(config?.serviceCredentials, credentialMarker),
+      historyContainsSentinel: containsMarker(history, credentialMarker),
     } : null,
   };
 }
 
-function credentialStateMatches(storageEvidence, expected) {
-  const state = storageEvidence.credentialLifecycle;
-  return Boolean(state)
-    && state.sessionCredentialsPresent === expected.sessionCredentialsPresent
-    && state.sessionCredentialsContainsSentinel === expected.sessionCredentialsContainsSentinel
-    && state.localCredentialsPresent === expected.localCredentialsPresent
-    && state.localCredentialsContainsSentinel === expected.localCredentialsContainsSentinel
-    && state.credentialStatePresent === expected.credentialStatePresent
-    && state.credentialStorageMode === expected.credentialStorageMode
-    && state.encryptedCredentialsPresent === expected.encryptedCredentialsPresent
-    && state.encryptedStateContainsSentinel === false;
-}
-
-async function waitForCredentialStorageState(extensionContext, marker, expected, timeout) {
+async function waitForStoredCredential(extensionContext, marker, timeout) {
   const deadline = Date.now() + timeout;
-  let latest;
+  let latest = null;
   while (Date.now() < deadline) {
     latest = await extensionStorageEvidence(extensionContext, marker);
-    if (credentialStateMatches(latest, expected)) return latest;
+    if (latest.credentialLifecycle.configContainsSentinel) return latest;
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
-  throw new Error(`等待凭据存储状态超时：${JSON.stringify({
-    expected,
-    actual: latest?.credentialLifecycle,
-    credentialStorageMode: latest?.credentialLifecycle?.credentialStorageMode,
-  })}`);
-}
-
-function assertCredentialStorageState(label, storageEvidence, expected) {
-  if (!credentialStateMatches(storageEvidence, expected)) {
-    throw new Error(`${label} 的凭据区域状态不符合预期：${JSON.stringify({
-      expected,
-      actual: storageEvidence.credentialLifecycle,
-      credentialStorageMode: storageEvidence.credentialLifecycle?.credentialStorageMode,
-    })}`);
-  }
-  if (storageEvidence.credentialLifecycle.publicConfigContainsSentinel
-    || storageEvidence.credentialLifecycle.publicHistoryContainsSentinel
-    || storageEvidence.configContainsCredentialFields
-    || storageEvidence.historyContainsCredentialFields) {
-    throw new Error(`${label} 时公开 config/configHistory 泄露了凭据`);
-  }
+  throw new Error(`API 凭据没有写入 local:config：${JSON.stringify(latest?.credentialLifecycle)}`);
 }
 
 async function configurePrivacySurfaces(worker) {
@@ -342,20 +277,9 @@ async function configurePrivacySurfaces(worker) {
         return {};
       }
     };
-    const initializationDeadline = Date.now() + 10_000;
-    let current = {};
-    // A service worker can be observable before configReady has completed its
-    // first migration write. Wait for that revision so a late default snapshot
-    // cannot overwrite the privacy fixture's explicit surface configuration.
-    while (Date.now() < initializationDeadline) {
-      const stored = await chrome.storage.local.get('config');
-      current = parseConfig(stored.config);
-      if (Number.isSafeInteger(current.__babelboxConfigRevision)) break;
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    }
-    if (!Number.isSafeInteger(current.__babelboxConfigRevision)) {
-      throw new Error('background config initialization did not complete');
-    }
+    const stored = await chrome.storage.local.get('config');
+    // 新安装时尚未写入配置；补齐存储层识别配置所需的最小字段。
+    const current = {service: 'microsoft', from: 'auto', to: 'zh-Hans', ...parseConfig(stored.config)};
     const next = {
       ...current,
       autoTranslate: false,
@@ -365,11 +289,9 @@ async function configurePrivacySurfaces(worker) {
       disableSelectionTranslator: false,
       selectionAreaEnabled: true,
       disableImageTranslator: false,
-      __babelboxConfigRevision: current.__babelboxConfigRevision + 1,
     };
     await chrome.storage.local.set({ config: next });
-    const matchesExpectedSurfaces = (value) => value.__babelboxConfigRevision === next.__babelboxConfigRevision
-      && value.disableFloatingBall === false
+    const matchesExpectedSurfaces = (value) => value.disableFloatingBall === false
       && value.disableSelectionTranslator === false
       && value.selectionAreaEnabled === true
       && value.disableImageTranslator === false;
@@ -406,18 +328,6 @@ async function waitForExtensionWorker(context, timeout) {
 
 async function waitForOptionsUi(page, timeout) {
   await page.waitForSelector('#settings-data', { state: 'visible', timeout });
-  const device = page.locator('[data-testid="credential-storage-device"]');
-  const session = page.locator('[data-testid="credential-storage-session"]');
-  await device.waitFor({ state: 'visible', timeout });
-  await session.waitFor({ state: 'visible', timeout });
-  await page.waitForFunction(() => {
-    const choices = [
-      document.querySelector('[data-testid="credential-storage-device"]'),
-      document.querySelector('[data-testid="credential-storage-session"]'),
-    ];
-    return choices.every((element) => ['true', 'false'].includes(element?.getAttribute('aria-checked')));
-  }, null, { timeout });
-  return { device, session };
 }
 
 async function openOptionsPage(createPage, activatePage, extensionId, optionsPath, timeout) {
@@ -430,108 +340,23 @@ async function openOptionsPage(createPage, activatePage, extensionId, optionsPat
   return optionsPage;
 }
 
-async function persistCredentialViaExtensionMessage(optionsPage, marker, clientId) {
-  const result = await optionsPage.evaluate(async ({ credentialMarker, requestClientId }) => {
-    const stored = await chrome.storage.local.get(['config', 'local:config']);
-    let current = stored.config || stored['local:config'] || {};
-    if (typeof current === 'string') {
-      try {
-        current = JSON.parse(current);
-      } catch {
-        current = {};
-      }
-    }
-    const message = {
+async function persistCredentialViaExtensionMessage(optionsPage, marker) {
+  const response = await optionsPage.evaluate((credentialMarker) => new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage({
       type: 'persistConfig',
-      config: {
-        ...current,
-        service: 'openai',
-        token: {
-          ...(current && typeof current.token === 'object' ? current.token : {}),
-          openai: credentialMarker,
+      patch: {
+        serviceCredentials: {
+          microsoft: { apiKey: credentialMarker, appKey: '', appSecret: '', secretId: '', secretKey: '' },
         },
       },
-      clientId: requestClientId,
-      sequence: 1,
-    };
-    const response = await new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage(message, (reply) => {
-        const lastError = chrome.runtime.lastError;
-        if (lastError) {
-          reject(new Error(lastError.message || 'runtime message failed'));
-          return;
-        }
-        resolve(reply);
-      });
+    }, (reply) => {
+      const lastError = chrome.runtime.lastError;
+      if (lastError) reject(new Error(lastError.message || 'runtime message failed'));
+      else resolve(reply);
     });
-    return { acknowledged: response?.success === true };
-  }, { credentialMarker: marker, requestClientId: clientId });
-
-  if (!result.acknowledged) throw new Error('后台未确认可信扩展页发出的凭据保存消息');
-  return result;
-}
-
-async function waitForOptionsRuntimeCredential(optionsPage, marker, timeout) {
-  await optionsPage.waitForFunction((credentialMarker) => {
-    const configuration = document.querySelector('[data-service-configuration-service="openai"]');
-    const tokenInput = configuration?.querySelector('input[placeholder="可选；留空时不发送鉴权信息"]');
-    return tokenInput instanceof HTMLInputElement && tokenInput.value === credentialMarker;
-  }, marker, { timeout });
-  return true;
-}
-
-async function exportConfigViaOptionsUi(optionsPage, marker, timeout) {
-  await optionsPage.getByRole('button', { name: /导出配置/ }).click();
-  const exportTextarea = optionsPage.locator('#settings-data textarea[readonly]').first();
-  await exportTextarea.waitFor({ state: 'visible', timeout });
-
-  const deadline = Date.now() + timeout;
-  let exported = '';
-  while (Date.now() < deadline) {
-    exported = await exportTextarea.inputValue();
-    if (exported.trim()) break;
-    await optionsPage.waitForTimeout(50);
-  }
-  if (!exported.trim()) throw new Error('设置页导出框没有生成配置');
-
-  let parsed;
-  try {
-    parsed = JSON.parse(exported);
-  } catch {
-    throw new Error('设置页导出的配置不是合法 JSON');
-  }
-  return {
-    bytes: Buffer.byteLength(exported, 'utf8'),
-    service: parsed?.service,
-    containsCredentialSentinel: exported.includes(marker),
-    containsCredentialFields: hasCredentialFields(parsed),
-  };
-}
-
-async function switchCredentialStorageToSession(optionsPage, timeout) {
-  const choices = await waitForOptionsUi(optionsPage, timeout);
-  if (await choices.device.getAttribute('aria-checked') !== 'true') {
-    throw new Error('API 凭据默认存储方式不是设备保险库');
-  }
-  await choices.session.click();
-  const confirmButton = optionsPage.getByRole('button', { name: '删除设备副本并切换', exact: true });
-  await confirmButton.waitFor({ state: 'visible', timeout });
-  await confirmButton.click();
-}
-
-async function switchCredentialStorageToDevice(optionsPage, timeout) {
-  const choices = await waitForOptionsUi(optionsPage, timeout);
-  if (await choices.session.getAttribute('aria-checked') !== 'true') {
-    throw new Error('切回设备保险库前不是仅会话模式');
-  }
-  await choices.device.click();
-}
-
-async function waitForCredentialModeUi(optionsPage, mode, timeout) {
-  const testId = mode === 'device' ? 'credential-storage-device' : 'credential-storage-session';
-  await optionsPage.waitForFunction((expectedValue) => (
-    document.querySelector(`[data-testid="${expectedValue}"]`)?.getAttribute('aria-checked') === 'true'
-  ), testId, { timeout });
+  }), marker);
+  if (response?.success !== true) throw new Error('后台未确认设置页发出的凭据保存消息');
+  return { acknowledged: true };
 }
 
 async function pageBoundaryState(page) {
@@ -621,7 +446,6 @@ async function main() {
   const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'babelbox-privacy-boundary-'));
   const credentialSentinel = `${CREDENTIAL_SENTINEL_PREFIX}${randomUUID()}`;
   const credentialSentinelSha256 = createHash('sha256').update(credentialSentinel).digest('hex');
-  const credentialMessageClientId = `privacy-boundary-credential-lifecycle-${randomUUID()}`;
   assertDedicatedTemporaryProfile(profileDir);
   fs.mkdirSync(artifactsDir, { recursive: true });
 
@@ -748,104 +572,20 @@ async function main() {
       }
     });
 
-    const deviceExpected = {
-      sessionCredentialsPresent: true,
-      sessionCredentialsContainsSentinel: true,
-      localCredentialsPresent: false,
-      localCredentialsContainsSentinel: false,
-      credentialStatePresent: true,
-      credentialStorageMode: 'device',
-      encryptedCredentialsPresent: true,
-    };
-    const sessionOnlyExpected = {
-      sessionCredentialsPresent: true,
-      sessionCredentialsContainsSentinel: true,
-      localCredentialsPresent: false,
-      localCredentialsContainsSentinel: false,
-      credentialStatePresent: true,
-      credentialStorageMode: 'session',
-      encryptedCredentialsPresent: false,
-    };
+    const credentialMessage = await persistCredentialViaExtensionMessage(optionsPage, credentialSentinel);
+    const afterSave = await waitForStoredCredential(optionsPage, credentialSentinel, args.timeout);
 
-    const credentialMessage = await persistCredentialViaExtensionMessage(
-      optionsPage,
-      credentialSentinel,
-      credentialMessageClientId,
-    );
-    const deviceAfterMessage = await waitForCredentialStorageState(
-      optionsPage,
-      credentialSentinel,
-      deviceExpected,
-      args.timeout,
-    );
-    assertCredentialStorageState('可信扩展页消息保存后', deviceAfterMessage, deviceExpected);
-    // pagehide 会提交 options 当前 Vue 快照；确认 session watcher 已把凭据合入
-    // 真实 token 输入后再 reload，避免旧页面快照清空刚写入的 session 凭据。
-    const optionsRuntimeHydratedBeforeReload = await waitForOptionsRuntimeCredential(
-      optionsPage,
-      credentialSentinel,
-      args.timeout,
-    );
-
+    // 打开设置页只读取配置；重载后凭据必须仍在 local:config 中。
     await optionsPage.reload({ waitUntil: 'domcontentloaded', timeout: args.timeout });
     await waitForOptionsUi(optionsPage, args.timeout);
-    const optionsRuntimeHydratedAfterReload = await waitForOptionsRuntimeCredential(
-      optionsPage,
-      credentialSentinel,
-      args.timeout,
-    );
-    const deviceAfterReload = await waitForCredentialStorageState(
-      optionsPage,
-      credentialSentinel,
-      deviceExpected,
-      args.timeout,
-    );
-    assertCredentialStorageState('设置页重载后', deviceAfterReload, deviceExpected);
-
-    const exportEvidence = await exportConfigViaOptionsUi(optionsPage, credentialSentinel, args.timeout);
-    if (exportEvidence.containsCredentialSentinel || exportEvidence.containsCredentialFields) {
-      throw new Error(`设置页导出泄露了凭据：${JSON.stringify(exportEvidence)}`);
-    }
-    if (exportEvidence.service !== 'openai') {
-      throw new Error(`设置页导出没有反映可信消息保存的公开配置：${JSON.stringify(exportEvidence)}`);
-    }
-    const deviceScreenshot = path.join(artifactsDir, 'credentials-device-vault.png');
-    await optionsPage.screenshot({ path: deviceScreenshot, fullPage: true });
-    evidence.screenshots.push(deviceScreenshot);
-
-    await switchCredentialStorageToSession(optionsPage, args.timeout);
-    const sessionMode = await waitForCredentialStorageState(
-      optionsPage,
-      credentialSentinel,
-      sessionOnlyExpected,
-      args.timeout,
-    );
-    await waitForCredentialModeUi(optionsPage, 'session', args.timeout);
-    assertCredentialStorageState('切换为仅会话模式后', sessionMode, sessionOnlyExpected);
-    const sessionScreenshot = path.join(artifactsDir, 'credentials-session-only.png');
-    await optionsPage.screenshot({ path: sessionScreenshot, fullPage: true });
-    evidence.screenshots.push(sessionScreenshot);
-
-    await switchCredentialStorageToDevice(optionsPage, args.timeout);
-    const deviceRestored = await waitForCredentialStorageState(
-      optionsPage,
-      credentialSentinel,
-      deviceExpected,
-      args.timeout,
-    );
-    await waitForCredentialModeUi(optionsPage, 'device', args.timeout);
-    assertCredentialStorageState('重新启用设备保险库后', deviceRestored, deviceExpected);
-
-    // 等待防抖历史快照落盘，再重复检查导出/历史不会在稍后泄露凭据。
     await optionsPage.waitForTimeout(600);
-    const credentialFinal = await extensionStorageEvidence(
-      optionsPage,
-      credentialSentinel,
-    );
-    assertCredentialStorageState('凭据生命周期最终状态', credentialFinal, deviceExpected);
-    const credentialFinalScreenshot = path.join(artifactsDir, 'credentials-device-restored.png');
-    await optionsPage.screenshot({ path: credentialFinalScreenshot, fullPage: true });
-    evidence.screenshots.push(credentialFinalScreenshot);
+    const afterReload = await waitForStoredCredential(optionsPage, credentialSentinel, args.timeout);
+    if (afterReload.credentialLifecycle.historyContainsSentinel) {
+      throw new Error('配置历史不应包含 API 凭据');
+    }
+    const credentialScreenshot = path.join(artifactsDir, 'credentials-after-reload.png');
+    await optionsPage.screenshot({ path: credentialScreenshot, fullPage: true });
+    evidence.screenshots.push(credentialScreenshot);
     if (consoleErrors.length > 0) {
       throw new Error(`隔离隐私回归出现控制台错误：${JSON.stringify(consoleErrors)}`);
     }
@@ -873,19 +613,10 @@ async function main() {
         extensionHosts: finalState.extensionHosts,
       },
       credentialLifecycle: {
-        saveTransport: 'chrome.runtime.sendMessage from options extension origin',
+        saveTransport: 'chrome.runtime.sendMessage patch from options extension origin',
         saveAcknowledged: credentialMessage.acknowledged,
-        directStorageWriteUsedForCredentialSave: false,
-        optionsRuntimeHydratedBeforeReload,
-        optionsRuntimeHydratedAfterReload,
-        deviceAfterMessage,
-        deviceAfterOptionsReload: deviceAfterReload,
-        export: exportEvidence,
-        sessionMode,
-        deviceRestored,
-        final: credentialFinal,
-        sessionDeletionConfirmationObserved: true,
-        storageModeTestIds: ['credential-storage-device', 'credential-storage-session'],
+        afterSave,
+        afterOptionsReload: afterReload,
       },
       consoleErrors,
     };

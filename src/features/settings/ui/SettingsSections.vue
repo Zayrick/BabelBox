@@ -262,41 +262,6 @@
     </section>
 
     <section v-show="props.activeSection === 'settings-data'" id="settings-data" class="settings-section">
-      <SettingsGroup title="API 凭据存储">
-        <div class="radio-list" role="radiogroup" aria-label="API 凭据存储方式" :aria-busy="credentialStorageBusy">
-          <button
-            type="button"
-            role="radio"
-            class="radio-row"
-            :aria-checked="credentialStorageMode === 'device'"
-            :disabled="credentialStorageBusy"
-            data-testid="credential-storage-device"
-            @click="setCredentialStorage('device')"
-          >
-            <i class="radio-mark" aria-hidden="true" />
-            <span class="radio-copy">
-              <strong>保存在此设备<em>推荐</em></strong>
-              <small>加密保存，重启浏览器或更新扩展后仍可使用</small>
-            </span>
-          </button>
-          <button
-            type="button"
-            role="radio"
-            class="radio-row"
-            :aria-checked="credentialStorageMode === 'session'"
-            :disabled="credentialStorageBusy"
-            data-testid="credential-storage-session"
-            @click="setCredentialStorage('session')"
-          >
-            <i class="radio-mark" aria-hidden="true" />
-            <span class="radio-copy">
-              <strong>仅本次会话</strong>
-              <small>关闭浏览器或重载、更新扩展后需要重新填写</small>
-            </span>
-          </button>
-        </div>
-      </SettingsGroup>
-
       <SettingsGroup title="配置历史" description="保留最近 10 次修改">
         <template #actions>
           <el-button text :disabled="historyBusy || !canUndo" aria-label="撤销配置恢复" @click="runHistoryAction('undo')"><Undo2 class="button-icon" aria-hidden="true" />撤销</el-button>
@@ -432,26 +397,21 @@ import {TranslationCenter} from '@/src/features/translation-center/public';
 import AlwaysTranslateSites from './AlwaysTranslateSites.vue';
 import TranslationFilterSettings from './TranslationFilterSettings.vue';
 import { parseHotkey } from '@/src/core/hotkey';
+import { notifyConfigSaveFailed, saveSettingsConfig } from './saveFeedback';
 import { isConfigImportValid, prepareConfigForImport, sanitizeConfigForExport } from '@/src/core/config/transfer';
-import {clearTranslationServiceCredentials} from '@/src/core/config/credentials';
 import {ImageOcrSettings} from '@/src/features/image-translation/public';
 import {
   config as runtimeConfig,
   configHistoryReady,
   configReady,
-  getCredentialStorageMode,
   getConfigHistorySnapshot,
-  requestCredentialStorageModeChange,
   requestConfigHistoryAction,
-  requestConfigSave,
-  subscribeCredentialStorageMode,
   subscribeConfigHistory,
   subscribeConfig,
   type ConfigHistoryAction,
   type ConfigHistoryEntry,
   type ConfigHistoryState,
 } from '@/src/services/config/store';
-import type {CredentialStorageMode} from '@/src/core/config/credentialStorage';
 import {
   configAutoBackupsReady,
   getConfigAutoBackupsSnapshot,
@@ -481,11 +441,10 @@ const props = withDefaults(defineProps<{
 
 // 配置信息
 const config = ref(new Config());
-const persistConfig = (value: unknown) => requestConfigSave(value, browser.runtime.sendMessage.bind(browser.runtime));
+const persistConfig = (value: unknown) => saveSettingsConfig(value);
 let lastSerialized = '';
 let hydrated = false;
 let applyingExternalConfig = false;
-let pageExitSaveStarted = false;
 const unsubscribeConfig = subscribeConfig((nextConfig) => {
   const serialized = JSON.stringify(nextConfig);
   if (serialized === lastSerialized) return;
@@ -509,31 +468,12 @@ watch(() => JSON.stringify(config.value), (serialized) => {
   if (!hydrated || applyingExternalConfig) return;
   if (serialized === lastSerialized) return;
   lastSerialized = serialized;
-  const snapshot = normalizeConfig(config.value);
-  void persistConfig(snapshot).catch((error) => {
-    // 失败时释放去重标记，下一次修改或 pagehide 仍能提交最新快照。
+  void persistConfig(normalizeConfig(config.value)).catch((error) => {
+    // 失败时释放去重标记，下一次修改仍能提交最新快照。
     if (lastSerialized === serialized) lastSerialized = '';
-    console.warn('[BabelBox] 保存设置失败', error);
+    notifyConfigSaveFailed(error);
   });
 }, { flush: 'sync' });
-
-// 设置页关闭前提交最新快照，避免 Firefox 销毁页面时丢失最后一次修改。
-// pagehide 和 unmounted 可能连续触发，只提交一次，避免重复写入和重复历史。
-function persistOnPageExit() {
-  if (!hydrated || pageExitSaveStarted) return;
-  pageExitSaveStarted = true;
-  void persistConfig(config.value).catch((error) => console.warn('[BabelBox] 设置页关闭前后台保存失败', error));
-}
-
-onUnmounted(() => {
-  persistOnPageExit();
-  window.removeEventListener('pagehide', saveOnPageHide);
-});
-
-function saveOnPageHide() {
-  persistOnPageExit();
-}
-window.addEventListener('pagehide', saveOnPageHide);
 
 // 设置页左侧列表只切换正在编辑的服务，不改变网页翻译实际使用的默认服务。
 const configurationService = ref<string | null>(null);
@@ -645,7 +585,7 @@ async function removeTranslationService(id: string): Promise<void> {
   }
 
   config.value.translationServices = config.value.translationServices.filter((item) => item.id !== id);
-  clearTranslationServiceCredentials(config.value, id);
+  delete config.value.serviceCredentials[id];
   config.value.translationCenterServices = config.value.translationCenterServices.filter((item) => item !== id);
   reconcileTranslationServiceReferences(config.value);
   const selectableIds = new Set(getSelectableTranslationServices(config.value).map((item) => item.value));
@@ -662,7 +602,6 @@ async function removeTranslationService(id: string): Promise<void> {
 // 组件卸载时清理
 onUnmounted(() => {
   unsubscribeConfig();
-  unsubscribeCredentialStorageMode();
   unsubscribeHistory();
   unsubscribeBackups();
 });
@@ -918,48 +857,6 @@ const showExportBox = ref(false);
 const exportData = ref('');
 const showImportBox = ref(false);
 const importData = ref('');
-const credentialStorageMode = ref<CredentialStorageMode>(getCredentialStorageMode());
-const credentialStorageBusy = ref(false);
-const unsubscribeCredentialStorageMode = subscribeCredentialStorageMode((mode) => {
-  credentialStorageMode.value = mode;
-});
-
-const setCredentialStorage = async (mode: CredentialStorageMode) => {
-  if (mode === credentialStorageMode.value || credentialStorageBusy.value) return;
-
-  if (mode === 'session') {
-    try {
-      await ElMessageBox.confirm(
-        '此设备上保存的凭据将被删除。本次会话仍可使用，关闭浏览器或重载、更新扩展后需要重新填写。',
-        '改为仅本次会话',
-        {
-          confirmButtonText: '删除并切换',
-          confirmButtonType: 'danger',
-          cancelButtonText: '取消',
-          type: 'warning',
-        },
-      );
-    } catch {
-      return;
-    }
-  }
-
-  credentialStorageBusy.value = true;
-  try {
-    credentialStorageMode.value = await requestCredentialStorageModeChange(
-      mode,
-      browser.runtime.sendMessage.bind(browser.runtime),
-    );
-    ElMessage.success(mode === 'device'
-      ? 'API 凭据已保存到此设备'
-      : '已删除设备上的凭据，仅在本次会话中保留');
-  } catch (error) {
-    ElMessage.error(`凭据存储设置失败：${error instanceof Error ? error.message : '请稍后重试'}`);
-  } finally {
-    credentialStorageBusy.value = false;
-  }
-};
-
 const configHistory = ref<ConfigHistoryState>(getConfigHistorySnapshot());
 const configBackups = ref<ConfigAutoBackupState>(getConfigAutoBackupsSnapshot());
 const historyBusy = ref(false);
@@ -1083,28 +980,22 @@ const handleImport = () => {
 };
 
 const saveImport = async () => {
+  let parsedConfig: unknown;
   try {
-    const parsedConfig = JSON.parse(importData.value);
-    if (!isConfigImportValid(parsedConfig)) {
-      ElMessage({
-        message: '配置格式不正确',
-        type: 'error',
-      });
-      return;
-    }
+    parsedConfig = JSON.parse(importData.value);
+  } catch {
+    parsedConfig = null;
+  }
+  if (!isConfigImportValid(parsedConfig)) {
+    ElMessage.error('配置格式不正确');
+    return;
+  }
+  try {
     await persistConfig(prepareConfigForImport(parsedConfig, runtimeConfig));
-    ElMessage({
-      message: '配置已导入',
-      type: 'success',
-    });
     showImportBox.value = false;
     importData.value = '';
-    // Optionally, reload the extension or relevant parts
-  } catch (e) {
-    ElMessage({
-      message: '配置格式不正确',
-      type: 'error',
-    });
+  } catch (error) {
+    notifyConfigSaveFailed(error);
   }
 };
 

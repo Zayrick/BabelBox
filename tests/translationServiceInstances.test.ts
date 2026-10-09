@@ -13,9 +13,7 @@ import {
   normalizeTranslationServices,
   reconcileTranslationServiceReferences,
 } from '@/src/core/config/translationServices'
-import {clearTranslationServiceCredentials, sanitizeConfigCredentials} from '@/src/core/config/credentials'
-import {sanitizeConfigForExport} from '@/src/core/config/transfer'
-import {createBaselineConfigHistory, toPublicConfig} from '@/src/services/config/history'
+import {createBaselineConfigHistory} from '@/src/services/config/history'
 
 function serviceCredential(secret: string): TranslationServiceCredential {
   return {apiKey: secret, appKey: secret, appSecret: secret, secretId: secret, secretKey: secret}
@@ -187,37 +185,13 @@ describe('translation service instances', () => {
     expect(() => normalizeConfig({translationCenterServices: {includes: true}})).not.toThrow()
   })
 
-  it('keeps per-instance credentials out of public config, exports, and history', () => {
+  it('keeps per-instance credentials out of config history', () => {
     const secret = 'translation-service-instance-secret-sentinel'
     const config = normalizeConfig({
       serviceCredentials: {[services.microsoft]: serviceCredential(secret)},
     })
 
-    const sanitized = sanitizeConfigCredentials(config)
-    const exported = sanitizeConfigForExport(config)
-    const publicConfig = toPublicConfig(config)
-    const history = createBaselineConfigHistory(config, 1, 'fixed-time')
-
-    for (const value of [sanitized, exported, publicConfig, history]) {
-      expect(JSON.stringify(value)).not.toContain(secret)
-    }
-    expect(publicConfig).not.toHaveProperty('serviceCredentials')
+    expect(JSON.stringify(createBaselineConfigHistory(config, 'fixed-time'))).not.toContain(secret)
   })
 
-  it('clears only the deleted instance credentials', () => {
-    const deleted = createExternalTranslationService(services.openai)
-    const sibling = createExternalTranslationService(services.openai, [deleted])
-    const config = normalizeConfig({
-      translationServices: [deleted, sibling],
-      serviceCredentials: {
-        [deleted.id]: serviceCredential('deleted-secret'),
-        [sibling.id]: serviceCredential('sibling-secret'),
-      },
-    })
-
-    clearTranslationServiceCredentials(config, deleted.id)
-
-    expect(config.serviceCredentials[deleted.id]).toBeUndefined()
-    expect(config.serviceCredentials[sibling.id]?.apiKey).toBe('sibling-secret')
-  })
 })

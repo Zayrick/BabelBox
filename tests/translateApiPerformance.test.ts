@@ -92,28 +92,7 @@ describe('translation API request lifecycle performance', () => {
     Object.defineProperty(globalThis, 'location', {value: originalLocation, configurable: true});
   });
 
-  it('网页上下文不因无法读取 API Key 而阻止 background 请求', async () => {
-    mocks.config.service = 'mock-ai';
-    mocks.getMissingCredentialMessage.mockReturnValue('DeepSeek 需要 API Key（访问令牌），当前尚未配置');
-    mocks.sendMessage.mockResolvedValue('网页译文');
-
-    await expect(translateText('Readable source', 'Context')).resolves.toBe('网页译文');
-
-    expect(mocks.sendMessage).toHaveBeenCalledTimes(1);
-  });
-
-  it('网页批量翻译不因无法读取 API Key 而被本地拦截', async () => {
-    mocks.config.service = 'mock-ai';
-    mocks.getMissingCredentialMessage.mockReturnValue('DeepSeek 需要 API Key（访问令牌），当前尚未配置');
-    mocks.sendMessage.mockResolvedValue(['网页批量译文']);
-
-    await expect(translateTextBatch(['Readable source'], 'Context'))
-      .resolves.toEqual(['网页批量译文']);
-
-    expect(mocks.sendMessage).toHaveBeenCalledTimes(1);
-  });
-
-  it('扩展页面仍会在本地凭据缺失时快速失败', async () => {
+  it('本地凭据缺失时快速失败', async () => {
     Object.defineProperty(globalThis, 'location', {
       value: {protocol: 'chrome-extension:'},
       configurable: true,

@@ -49,7 +49,6 @@ function bundleUserscriptCss(): Plugin {
 }
 
 export const userscriptAliases = [
-    {find: '@/src/platform/storage/credentialContext', replacement: resolve(root, 'userscript/credentialContext.ts')},
     // app/content 只依赖 feature public contract；在这个边界替换才能保证扩展专属 runtime 不进入产物。
     {find: '@/src/features/area-translation/public', replacement: resolve(root, 'userscript/unsupportedCapabilities.ts')},
     {find: '@/src/features/image-translation/public', replacement: resolve(root, 'userscript/unsupportedCapabilities.ts')},

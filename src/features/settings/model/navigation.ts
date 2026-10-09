@@ -88,7 +88,7 @@ export const navigationGroups: NavigationGroup[] = [
       },
       {
         id: 'settings-data', icon: 'data', label: '配置管理', group: '系统与数据', title: '配置管理',
-        searchDescription: 'API Key、凭据存储、仅本次会话、配置历史、定时备份、恢复、导入导出 JSON',
+        searchDescription: 'API Key、配置历史、定时备份、恢复、导入导出 JSON',
       },
     ],
   },

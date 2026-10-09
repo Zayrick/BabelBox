@@ -6,7 +6,6 @@ import {
   getTranslationServiceProvider,
 } from '@/src/core/config/translationServices';
 import {getMissingCredentialMessage} from '@/src/core/config/validation';
-import {isTrustedCredentialStorageContext} from '@/src/platform/storage/credentialContext';
 import {config, requestConfigCountIncrement} from '@/src/services/config/store';
 import {getTranslationLanguages} from '@/src/services/translation/languages';
 import {getPageTranslationContext} from '@/src/services/translation/context';
@@ -296,13 +295,6 @@ export interface TranslateOptions {
 }
 
 function assertTranslationCredentials(service = config.service): void {
-  // Content scripts intentionally receive only the public configuration and
-  // therefore cannot inspect API credentials. The background request boundary
-  // performs the authoritative check after it has loaded session credentials.
-  // Keep the local fast-fail only for extension pages, where the credentials
-  // are available by design.
-  if (!isTrustedCredentialStorageContext()) return;
-
   const message = getMissingCredentialMessage(service, config);
   if (message) throw new Error(message);
 }

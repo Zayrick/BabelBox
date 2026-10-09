@@ -1,15 +1,5 @@
-export const CONFIG_REVISION_FIELD = '__babelboxConfigRevision' as const;
-
 export function isConfigRecord(value: unknown): value is Record<string, unknown> {
     return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
-
-export function getStoredConfigRevision(value: unknown): number {
-    if (!isConfigRecord(value)) return 0;
-    const revision = value[CONFIG_REVISION_FIELD];
-    return typeof revision === 'number' && Number.isSafeInteger(revision) && revision >= 0
-        ? revision
-        : 0;
 }
 
 export function parseStoredConfig(value: unknown): Record<string, unknown> | null {

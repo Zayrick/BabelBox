@@ -6,7 +6,8 @@ import {
     configReady,
     CONFIG_HISTORY_MESSAGE,
     CONFIG_PERSIST_MESSAGE,
-    saveConfig,
+    incrementConfigCount,
+    persistConfigPatch,
 } from '@/src/services/config/store';
 import {
     CONFIG_COUNT_INCREMENT_MESSAGE,
@@ -42,16 +43,15 @@ export function createPlatformMessageHandler(openSettings: () => void) {
         if (message.type === 'fullPageTranslationState') return {success: true};
 
         if (message.type === CONFIG_PERSIST_MESSAGE) {
-            await saveConfig(message.config, {recordHistory: true});
+            const {count: _count, ...patch} = message.patch || {};
+            await persistConfigPatch(patch, {recordHistory: true});
             return {success: true};
         }
 
         if (message.type === CONFIG_COUNT_INCREMENT_MESSAGE) {
-            if (parseConfigCountIncrement(message.delta) === null) {
-                return {success: false, error: '无效的翻译计数增量'};
-            }
-            await saveConfig(config);
-            return {success: true, count: config.count};
+            const delta = parseConfigCountIncrement(message.delta);
+            if (delta === null) return {success: false, error: '无效的翻译计数增量'};
+            return {success: true, count: await incrementConfigCount(delta)};
         }
 
         if (message.type === CONFIG_HISTORY_MESSAGE) {

@@ -171,7 +171,6 @@ import {Config} from '@/src/core/config/model';
 import {config as runtimeConfig, configReady, saveConfig} from '@/src/services/config/store';
 import {options, services, servicesType} from '@/src/core/config/catalog';
 import {getMissingCredentialMessage} from '@/src/core/config/validation';
-import {clearTranslationServiceCredentials} from '@/src/core/config/credentials';
 import {
   aiTranslationProviders,
   createExternalTranslationService,
@@ -398,7 +397,7 @@ function removeService(instance: TranslationServiceInstance): void {
 
   draft.value.translationServices = draft.value.translationServices
     .filter(item => item.id !== instance.id);
-  clearTranslationServiceCredentials(draft.value, instance.id);
+  delete draft.value.serviceCredentials[instance.id];
   draft.value.translationCenterServices = draft.value.translationCenterServices
     .filter(serviceId => serviceId !== instance.id);
   const fallbackId = remainingEnabled[0]?.id || services.microsoft;

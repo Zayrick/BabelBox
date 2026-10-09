@@ -63,43 +63,6 @@
 .number-field { display: flex; width: 100%; align-items: center; gap: 8px; }
 .input-suffix { flex: none; color: var(--muted); font-family: var(--font-mono); font-size: var(--font-small); }
 
-.radio-list { display: flex; flex-direction: column; }
-.radio-row {
-  display: flex;
-  width: 100%;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 16px 0;
-  border: 0;
-  border-bottom: 1px solid var(--line);
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-}
-.radio-row:disabled { cursor: wait; opacity: .6; }
-.radio-mark {
-  position: relative;
-  width: 18px;
-  height: 18px;
-  flex: none;
-  margin-top: 2px;
-  border: 1.5px solid var(--el-border-color);
-  border-radius: 50%;
-  transition: border-color 140ms ease;
-}
-.radio-row[aria-checked="true"] .radio-mark { border-color: var(--brand); }
-.radio-row[aria-checked="true"] .radio-mark::after {
-  content: "";
-  position: absolute;
-  inset: 3px;
-  border-radius: 50%;
-  background: var(--brand);
-}
-.radio-copy { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
-.radio-copy strong { display: flex; align-items: center; gap: 8px; font-size: var(--font-body); font-weight: var(--weight-medium); }
-.radio-copy em { color: var(--brand-strong); font-size: var(--font-caption); font-style: normal; font-weight: var(--weight-medium); }
-.radio-copy small { color: var(--muted); font-size: var(--font-small); line-height: var(--line-height-body); }
-
 .version-list { display: flex; flex-direction: column; }
 .version-row {
   display: grid;
