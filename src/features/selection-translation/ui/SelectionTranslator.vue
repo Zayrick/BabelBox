@@ -1,5 +1,5 @@
 <template>
-  <div v-show="showIndicator || showTooltip || noticeMessage || copySuccess" class="babelbox-selection-translator-root" :data-display-delay="selectionSettings.delay" @pointerdown.stop>
+  <div v-show="showIndicator || showTooltip || noticeMessage" class="babelbox-selection-translator-root" :data-display-delay="selectionSettings.delay" @pointerdown.stop>
     <button v-if="showIndicator && !showTooltip" class="babelbox-selection-indicator" :class="[`babelbox-selection-indicator--${triggerMode}`, { 'babelbox-static': !animated }]" :style="indicatorStyle" type="button" aria-label="打开划词翻译" title="打开划词翻译" @pointerdown.prevent.stop @click="openTooltip">
       <template v-if="triggerMode !== 'dot'">
         <Languages class="babelbox-selection-indicator-outline" aria-hidden="true" />
@@ -22,12 +22,15 @@
             :aria-pressed="isVocabularySaved"
             @click="saveVocabularyEntry"
           ><Star aria-hidden="true" /></button>
-          <button class="babelbox-action-btn" type="button" title="复制译文" aria-label="复制译文" :disabled="!translationResult" @click="copyTranslation"><Copy aria-hidden="true" /></button>
           <button class="babelbox-action-btn" :class="{ 'babelbox-active': isCurrentAudio('translation') }" type="button" :title="audioLabel('translation')" :aria-label="audioLabel('translation')" :disabled="!translationResult" @click="toggleAudio(translationResult, 'translation')">
             <Pause v-if="isCurrentAudio('translation')" aria-hidden="true" />
             <Volume2 v-else aria-hidden="true" />
           </button>
-          <button class="babelbox-close-btn" type="button" title="关闭" aria-label="关闭翻译结果" @click="closeTooltip"><X aria-hidden="true" /></button>
+          <button class="babelbox-action-btn" :class="{ 'babelbox-active': copySuccess }" type="button" :title="copySuccess ? '已复制' : '复制译文'" :aria-label="copySuccess ? '已复制' : '复制译文'" :disabled="!translationResult" @click="copyTranslation">
+            <Check v-if="copySuccess" aria-hidden="true" />
+            <Copy v-else aria-hidden="true" />
+          </button>
+          <button class="babelbox-action-btn babelbox-close-btn" type="button" title="关闭" aria-label="关闭翻译结果" @click="closeTooltip"><X aria-hidden="true" /></button>
         </div>
       </header>
 
@@ -103,13 +106,12 @@
     </section>
 
     <div v-if="noticeMessage" class="babelbox-action-toast" :class="{ 'babelbox-dark-theme': isDarkTheme }" role="status"><span>{{ noticeMessage }}</span><button v-if="noticeAction === 'open-vocabulary'" type="button" @click="openVocabularyBook">查看</button></div>
-    <div v-else-if="copySuccess" class="babelbox-copy-success-toast" :class="{ 'babelbox-dark-theme': isDarkTheme }" role="status">已复制译文</div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
-import { Copy, Languages, Pause, Star, Volume2, X } from '@lucide/vue';
+import { Check, Copy, Languages, Pause, Star, Volume2, X } from '@lucide/vue';
 import {browser} from 'wxt/browser';
 import { config, subscribeConfig } from '@/src/services/config/store';
 import {resolvesToDarkTheme} from '@/src/ui/theme/theme';
@@ -118,7 +120,7 @@ import {translateText} from '@/src/services/translation/client';
 import { detectlang } from '@/src/core/language/detect';
 import { matchesConfiguredHotkey, matchesModifierOnlyHotkey, resolveConfiguredHotkey } from '@/src/core/hotkey';
 import { isSingleEnglishWord, normalizeEnglishWord, type WordCardData, type WordPronunciation } from '@/src/features/selection-translation/services/wordDictionary';
-import { calculateSelectionIndicatorPosition, calculateSelectionPopupPosition, chooseSelectionRect, getSelectionPresentationDelayRemaining, isSameLanguage, normalizeSelectionText, normalizeSpeechLanguage, reconcileSelectionPresentation, resolveSelectionDictionaryFallback, resolveSelectionVocabularyAnswer, SelectionRequestTokenGate, shouldIgnoreSelection, summarizeSelectionContext, type SelectionAnswerCandidate, type SelectionContentRequest, type SelectionRect } from '@/src/features/selection-translation/core';
+import { calculateSelectionIndicatorLayout, calculateSelectionPopupPosition, chooseSelectionRect, getSelectionPresentationDelayRemaining, isSameLanguage, normalizeSelectionText, normalizeSpeechLanguage, reconcileSelectionPresentation, resolveSelectionDictionaryFallback, SELECTION_INDICATOR_HOVER_SCALE, resolveSelectionVocabularyAnswer, SelectionRequestTokenGate, shouldIgnoreSelection, summarizeSelectionContext, type SelectionAnswerCandidate, type SelectionContentRequest, type SelectionRect } from '@/src/features/selection-translation/core';
 import {
   createSelectionTtsClientRequestId,
 } from '@/src/features/selection-translation/protocol';
@@ -230,8 +232,6 @@ const animated = computed(() => {
   selectionConfigVersion.value;
   return usesAnimatedEffects(config.animationMode);
 });
-// Must match the rendered border-box sizes of the indicator variants in CSS.
-const INDICATOR_ICON_SIZE = 22;
 const INDICATOR_DOT_SIZE = 12;
 const UI_SELECTION_SUPPRESSION_MS = 350;
 const SELECTION_LOSS_GRACE_MS = 160;
@@ -460,9 +460,13 @@ function updatePosition(refreshSelection = true): void {
     : current.anchor;
   if (!anchor) return;
   current.anchor = anchor;
-  const indicatorSize = triggerMode.value === 'dot' ? INDICATOR_DOT_SIZE : INDICATOR_ICON_SIZE;
-  const indicatorPosition = calculateSelectionIndicatorPosition(anchor, indicatorSize, { width: window.innerWidth, height: window.innerHeight });
-  indicatorStyle.value = { left: `${indicatorPosition.left}px`, top: `${indicatorPosition.top}px` };
+  const indicator = calculateSelectionIndicatorLayout(anchor, { width: window.innerWidth, height: window.innerHeight }, triggerMode.value === 'dot' ? INDICATOR_DOT_SIZE : undefined);
+  indicatorStyle.value = {
+    left: `${indicator.left}px`,
+    top: `${indicator.top}px`,
+    '--babelbox-indicator-size': `${indicator.size}px`,
+    '--babelbox-indicator-hover-scale': String(SELECTION_INDICATOR_HOVER_SCALE),
+  };
   if (showTooltip.value) void nextTick(() => {
     const tooltip = tooltipRef.value;
     if (!tooltip || !snapshot.value) return;
@@ -1214,19 +1218,19 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .babelbox-selection-translator-root { position: fixed; inset: 0; z-index: 2147483647; width: 100vw; height: 100vh; pointer-events: none; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #25252a; }
-.babelbox-selection-indicator, .babelbox-translation-tooltip, .babelbox-copy-success-toast, .babelbox-action-toast { pointer-events: auto; }
-.babelbox-selection-indicator { position: fixed; box-sizing: border-box; display: grid; width: 22px; height: 22px; margin: 0; padding: 0; place-items: center; border: 0; background: transparent; color: #ef4b86; filter: drop-shadow(0 1px 2px rgba(35, 33, 43, .28)); cursor: pointer; transform-origin: left bottom; transition: scale .15s ease, color .15s ease; animation: babelbox-indicator-in .18s cubic-bezier(.2, .9, .3, 1.25) both; }
-.babelbox-selection-indicator--dot { width: 12px; height: 12px; border: 2px solid #fff; border-radius: 50%; background: #ef4b86; }
-.babelbox-selection-indicator:hover, .babelbox-selection-indicator:focus-visible { scale: 1.12; color: #e23a77; outline: none; }
+.babelbox-selection-indicator, .babelbox-translation-tooltip, .babelbox-action-toast { pointer-events: auto; }
+.babelbox-selection-indicator { position: fixed; box-sizing: border-box; display: grid; width: var(--babelbox-indicator-size, 22px); height: var(--babelbox-indicator-size, 22px); margin: 0; padding: 0; place-items: center; border: 0; background: transparent; color: #ef4b86; filter: drop-shadow(0 1px 2px rgba(35, 33, 43, .28)); cursor: pointer; transform-origin: center; transition: scale .15s ease, color .15s ease; animation: babelbox-indicator-in .18s cubic-bezier(.2, .9, .3, 1.25) both; }
+.babelbox-selection-indicator--dot { border: 2px solid #fff; border-radius: 50%; background: #ef4b86; }
+.babelbox-selection-indicator:hover, .babelbox-selection-indicator:focus-visible { scale: var(--babelbox-indicator-hover-scale, 1.33); color: #e23a77; outline: none; }
 .babelbox-selection-indicator--dot:hover, .babelbox-selection-indicator--dot:focus-visible { background: #e23a77; }
-.babelbox-selection-indicator:active { scale: .94; }
+.babelbox-selection-indicator:active { scale: calc(var(--babelbox-indicator-hover-scale, 1.33) * .94); }
 /* The white copy sits under the pink glyph with a wider stroke, tracing a white outline around the icon shape. */
-.babelbox-selection-indicator-outline, .babelbox-selection-indicator-glyph { grid-area: 1 / 1; width: 22px; height: 22px; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.babelbox-selection-indicator-outline, .babelbox-selection-indicator-glyph { grid-area: 1 / 1; width: 100%; height: 100%; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 .babelbox-selection-indicator-outline { stroke: #fff; stroke-width: 5.5; }
 .babelbox-selection-indicator-glyph { stroke: currentColor; stroke-width: 2.2; }
 @keyframes babelbox-indicator-in { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
 .babelbox-translation-tooltip, .babelbox-translation-tooltip * { box-sizing: border-box; }
-.babelbox-translation-tooltip, .babelbox-copy-success-toast, .babelbox-action-toast {
+.babelbox-translation-tooltip, .babelbox-action-toast {
   --babelbox-selection-font-caption: 12px;
   --babelbox-selection-font-small: 13px;
   --babelbox-selection-font-body: 14px;
@@ -1286,28 +1290,33 @@ onBeforeUnmount(() => {
 .babelbox-translation-tooltip[data-placement="bottom"] { transform-origin: top left; }
 @keyframes babelbox-tooltip-in { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: scale(1); } }
 .babelbox-selection-indicator.babelbox-static, .babelbox-translation-tooltip.babelbox-static { animation: none; transition: none; }
-.babelbox-tooltip-header { display: flex; align-items: center; justify-content: space-between; padding: 5px 6px 5px 12px; border-bottom: 1px solid var(--babelbox-selection-line); color: var(--babelbox-selection-muted); font-size: var(--babelbox-selection-font-caption); font-weight: var(--babelbox-selection-weight-medium); }
-.babelbox-tooltip-actions { display: flex; align-items: center; gap: 1px; }
-.babelbox-action-btn, .babelbox-close-btn, .babelbox-text-audio-btn, .babelbox-playing-status button { border: 0; background: transparent; color: var(--babelbox-selection-muted); cursor: pointer; }
-.babelbox-action-btn { display: grid; width: 24px; height: 24px; place-items: center; border-radius: 6px; }
-.babelbox-action-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.babelbox-tooltip-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 4px 4px 12px; border-bottom: 1px solid var(--babelbox-selection-line); color: var(--babelbox-selection-muted); font-size: var(--babelbox-selection-font-caption); font-weight: var(--babelbox-selection-weight-medium); }
+.babelbox-tooltip-actions { display: flex; flex-shrink: 0; align-items: center; gap: 2px; }
+.babelbox-action-btn, .babelbox-text-audio-btn, .babelbox-playing-status button { border: 0; background: transparent; color: var(--babelbox-selection-muted); cursor: pointer; }
+/* Icon buttons drop UA padding and line boxes so the svg is the only content being centred. */
+.babelbox-action-btn, .babelbox-text-audio-btn { margin: 0; padding: 0; line-height: 0; }
+.babelbox-action-btn svg, .babelbox-text-audio-btn svg { display: block; flex-shrink: 0; }
+.babelbox-action-btn { display: grid; width: 26px; height: 26px; place-items: center; border-radius: 7px; transition: background-color .12s ease, color .12s ease; }
+.babelbox-action-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 .babelbox-action-btn:hover, .babelbox-action-btn:focus-visible { background: var(--babelbox-selection-hover); color: var(--babelbox-selection-action-hover-ink); outline: none; }
 .babelbox-action-btn:disabled { cursor: not-allowed; opacity: .38; }
 .babelbox-action-btn.babelbox-active { color: var(--babelbox-selection-brand); }
 .babelbox-vocabulary-btn.babelbox-saved { color: var(--babelbox-selection-brand); }
 .babelbox-vocabulary-btn.babelbox-saved svg { fill: currentColor; stroke: currentColor; }
-.babelbox-close-btn { display: grid; width: 24px; height: 24px; place-items: center; border-radius: 6px; }
-.babelbox-close-btn svg { width: 15px; height: 15px; }
-.babelbox-close-btn:hover, .babelbox-close-btn:focus-visible { background: var(--babelbox-selection-hover); color: var(--babelbox-selection-hover-ink); outline: none; }
+.babelbox-close-btn { margin-left: 2px; }
+.babelbox-close-btn:hover, .babelbox-close-btn:focus-visible { color: var(--babelbox-selection-hover-ink); }
 .babelbox-tooltip-content { max-height: min(440px, calc(100vh - 56px)); overflow: auto; padding: 9px 12px 11px; scrollbar-color: rgba(108, 105, 112, .4) transparent; scrollbar-width: thin; }
 .babelbox-loading-state, .babelbox-error-state { display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 56px; color: var(--babelbox-selection-muted); font-size: var(--babelbox-selection-font-body); }
+/* One text line tall, matching the translation that replaces it. */
+.babelbox-loading-state, .babelbox-word-card-loading { gap: 7px; min-height: calc(var(--babelbox-selection-font-body) * 1.55); line-height: 1.55; }
+.babelbox-loading-state .babelbox-loading-spinner, .babelbox-word-card-loading .babelbox-loading-spinner { width: 14px; height: 14px; }
 .babelbox-error-state { flex-direction: column; color: var(--babelbox-selection-danger); }
 .babelbox-error-state button { border: 1px solid currentColor; border-radius: 7px; padding: 4px 10px; background: transparent; color: inherit; cursor: pointer; }
 .babelbox-loading-spinner { width: 18px; height: 18px; border: 2px solid var(--babelbox-selection-spinner-border); border-top-color: var(--babelbox-selection-brand); border-radius: 50%; animation: babelbox-spin .7s linear infinite; }
 .babelbox-loading-spinner.babelbox-static { animation: none; }
 @keyframes babelbox-spin { to { transform: rotate(360deg); } }
 .babelbox-word-learning-card { padding: 1px 1px 0; color: var(--babelbox-selection-ink); }
-.babelbox-word-card-loading { display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 74px; color: var(--babelbox-selection-muted); font-size: var(--babelbox-selection-font-body); }
+.babelbox-word-card-loading { display: flex; align-items: center; justify-content: center; color: var(--babelbox-selection-muted); font-size: var(--babelbox-selection-font-body); }
 .babelbox-word-heading { position: relative; display: flex; align-items: flex-start; justify-content: space-between; min-height: 58px; padding: 4px 34px 14px 1px; border-bottom: 1px solid var(--babelbox-selection-line); }
 .babelbox-word-heading h3 { margin: 0; color: var(--babelbox-selection-heading); font-size: var(--babelbox-selection-font-display); font-weight: var(--babelbox-selection-weight-semibold); letter-spacing: -.035em; line-height: 1.08; }
 .babelbox-word-normalized { display: block; margin-top: 5px; color: var(--babelbox-selection-muted); font-size: var(--babelbox-selection-font-caption); }
@@ -1351,7 +1360,6 @@ onBeforeUnmount(() => {
 .babelbox-text-audio-btn:hover, .babelbox-text-audio-btn:focus-visible { background: var(--babelbox-selection-brand-soft); color: var(--babelbox-selection-brand); outline: none; }
 .babelbox-playing-status { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; color: var(--babelbox-selection-muted); font-size: var(--babelbox-selection-font-small); }
 .babelbox-playing-status button { border: 1px solid var(--babelbox-selection-danger-border); border-radius: 7px; padding: 3px 8px; color: var(--babelbox-selection-danger); }
-.babelbox-copy-success-toast { position: fixed; right: 18px; bottom: 18px; padding: 9px 13px; border-radius: 9px; background: var(--babelbox-selection-toast-surface); color: var(--babelbox-selection-toast-ink); font-size: var(--babelbox-selection-font-small); box-shadow: 0 6px 18px rgba(0, 0, 0, .18); }
 .babelbox-action-toast { position: fixed; right: 18px; bottom: 18px; display: flex; align-items: center; gap: 10px; padding: 9px 13px; border-radius: 9px; background: var(--babelbox-selection-toast-surface); color: var(--babelbox-selection-toast-ink); font-size: var(--babelbox-selection-font-small); box-shadow: 0 6px 18px rgba(0, 0, 0, .18); }
 .babelbox-action-toast button { padding: 0; border: 0; color: var(--babelbox-selection-toast-action); background: transparent; cursor: pointer; font: inherit; font-weight: var(--babelbox-selection-weight-semibold); }
 .babelbox-dark-theme {

@@ -318,23 +318,39 @@ export function calculateSelectionPopupPosition(
     };
 }
 
+/** Icon trigger follows the selected line's height: 60% at rest, 80% on hover. */
+const INDICATOR_LINE_RATIO = 0.6;
+const INDICATOR_HOVER_LINE_RATIO = 0.8;
+/** Keeps the trigger clickable on very small text. */
+const INDICATOR_MIN_SIZE = 12;
+export const SELECTION_INDICATOR_HOVER_SCALE = INDICATOR_HOVER_LINE_RATIO / INDICATOR_LINE_RATIO;
+
+export interface SelectionIndicatorLayout {
+    left: number;
+    top: number;
+    size: number;
+}
+
 /**
  * Place the trigger outside the right edge of the selection's last visual
- * line, dropped slightly below it, so it never covers the selected text.
+ * line, vertically centred on it. The gap includes the hover growth so the
+ * enlarged icon still never covers the selected text.
  */
-export function calculateSelectionIndicatorPosition(
+export function calculateSelectionIndicatorLayout(
     anchor: SelectionRect,
-    size: number,
     viewport: ViewportSize,
+    fixedSize?: number,
     padding = 4,
     gap = 4,
-    drop = 6,
-): { left: number; top: number } {
-    const maxLeft = Math.max(padding, viewport.width - size - padding);
+): SelectionIndicatorLayout {
+    const size = fixedSize ?? Math.max(INDICATOR_MIN_SIZE, Math.round(anchor.height * INDICATOR_LINE_RATIO));
+    const hoverGrowth = size * (SELECTION_INDICATOR_HOVER_SCALE - 1) / 2;
+    const maxLeft = Math.max(padding, viewport.width - size - hoverGrowth - padding);
     const maxTop = Math.max(padding, viewport.height - size - padding);
     return {
-        left: clamp(anchor.right + gap, padding, maxLeft),
-        top: clamp(anchor.bottom - size + drop, padding, maxTop),
+        left: clamp(anchor.right + gap + hoverGrowth, padding, maxLeft),
+        top: clamp(anchor.top + (anchor.height - size) / 2, padding, maxTop),
+        size,
     };
 }
 
