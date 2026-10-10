@@ -21,7 +21,6 @@
           <el-tooltip :content="cacheActionLabel" placement="bottom">
             <button
               class="header-icon-button cache-clear-button"
-              :class="actionFeedbacks.cache?.tone"
               type="button"
               :disabled="clearingCache"
               :aria-busy="clearingCache"
@@ -118,7 +117,7 @@
           <div class="translate-action">
             <button
               class="translate-button"
-              :class="{ translated: pageTranslated, 'has-feedback': actionFeedbacks.page, 'feedback-error': actionFeedbacks.page?.tone === 'error' }"
+              :class="{ translated: pageTranslated }"
               type="button"
               :disabled="translationActionPending || Boolean(selectedServiceUnavailableMessage)"
               :aria-pressed="pageTranslated"
@@ -132,8 +131,6 @@
                   aria-live="polite"
                 >
                   <span v-if="pageActionPresentation.state === 'pending'" class="spinner" aria-hidden="true" />
-                  <X v-else-if="pageActionPresentation.state === 'error'" class="translate-glyph" aria-hidden="true" />
-                  <Check v-else-if="pageActionPresentation.state === 'success'" class="translate-glyph" aria-hidden="true" />
                   <Languages v-else class="translate-glyph" aria-hidden="true" />
                   <span class="translate-label">{{ pageActionPresentation.label }}</span>
                   <kbd
@@ -160,70 +157,43 @@
             </el-tooltip>
           </div>
 
-          <p v-if="notice" class="notice" :class="noticeType">{{ notice }}</p>
         </section>
 
-        <section v-if="currentSiteSupported" class="popup-section site-section" aria-labelledby="popup-site-title">
-          <h2 id="popup-site-title" class="section-title site-title">
-            <span>当前网站</span>
-            <strong :title="currentSiteLabel">{{ currentSiteLabel }}</strong>
-          </h2>
-          <div class="site-rule-list">
+        <section v-if="currentSiteSupported" class="popup-section site-section" aria-label="当前网站">
+          <div class="site-row">
+            <strong class="site-domain" :title="currentSiteLabel">{{ currentSiteLabel }}</strong>
             <button
-              class="site-rule-button"
-              :class="{
-                enabled: currentSiteAlwaysTranslated,
-                'global-enabled': config.autoTranslate,
-                'feedback-success': actionFeedbacks['site-rule']?.tone === 'success',
-                'feedback-error': actionFeedbacks['site-rule']?.tone === 'error',
-              }"
+              class="site-chip"
+              :class="{ 'global-enabled': config.autoTranslate }"
               data-setting="always-translate-site"
               :data-site-domain="currentSiteDomain"
               :data-enabled="currentSiteAlwaysTranslated"
               type="button"
-              role="switch"
-              :aria-checked="currentSiteAlwaysTranslated"
+              :aria-pressed="currentSiteAlwaysTranslated || config.autoTranslate"
+              :aria-busy="activeTranslationAction === 'site-rule'"
               :aria-label="currentSiteSwitchLabel"
+              :title="currentSiteSwitchLabel"
               :disabled="translationActionPending || config.autoTranslate || currentSiteExtensionDisabled"
               @click="setCurrentSiteAlwaysTranslated(!currentSiteAlwaysTranslated)"
-            >
-              <Transition name="action-copy" mode="out-in">
-                <span :key="siteRuleActionLabel" class="site-rule-label" aria-live="polite">{{ siteRuleActionLabel }}</span>
-              </Transition>
-              <i class="site-rule-switch" aria-hidden="true" />
-            </button>
+            >始终翻译</button>
             <button
-              class="site-rule-button site-disable-rule-button"
-              :class="{
-                enabled: currentSiteExtensionDisabled,
-                'feedback-success': actionFeedbacks['site-disable']?.tone === 'success',
-                'feedback-error': actionFeedbacks['site-disable']?.tone === 'error',
-              }"
+              class="site-chip"
               data-setting="disable-extension-site"
               :data-site-domain="currentSiteDomain"
               :data-enabled="currentSiteExtensionDisabled"
               type="button"
-              role="switch"
-              :aria-checked="currentSiteExtensionDisabled"
+              :aria-pressed="currentSiteExtensionDisabled"
               :aria-label="currentSiteExtensionSwitchLabel"
+              :title="currentSiteExtensionSwitchLabel"
               :disabled="translationActionPending"
               @click="setCurrentSiteExtensionDisabled(!currentSiteExtensionDisabled)"
-            >
-              <Transition name="action-copy" mode="out-in">
-                <span :key="siteDisableActionLabel" class="site-rule-label" aria-live="polite">{{ siteDisableActionLabel }}</span>
-              </Transition>
-              <i class="site-rule-switch" aria-hidden="true" />
-            </button>
+            >禁用翻译</button>
             <button
-              class="site-filter-rule-button"
+              class="site-chip"
               type="button"
-              :aria-label="`配置 ${currentSiteDomain} 的内容过滤规则`"
+              :aria-label="`配置 ${currentSiteDomain} 的内容过滤规则${currentSiteFilterRuleCount ? `，已有 ${currentSiteFilterRuleCount} 条` : ''}`"
               @click="openView('filter')"
-            >
-              <span class="site-rule-label">内容过滤规则</span>
-              <span class="site-filter-count">{{ currentSiteFilterRuleCount ? `${currentSiteFilterRuleCount} 条` : '未设置' }}</span>
-              <ChevronRight aria-hidden="true" />
-            </button>
+            >规则<span v-if="currentSiteFilterRuleCount" class="site-chip-count" aria-hidden="true">{{ currentSiteFilterRuleCount }}</span></button>
           </div>
         </section>
 
@@ -525,7 +495,6 @@ import {
   TextSelect,
   TriangleAlert,
   Type,
-  X,
 } from '@lucide/vue';
 import {
   Config,
@@ -545,7 +514,7 @@ import {
 import { getMissingCredentialMessage } from '@/src/core/config/validation';
 import { SELECTION_TTS_VOICE_OPTIONS } from '@/src/core/config/selectionTts';
 import { requestTranslationCacheClear } from './cache';
-import { useActionFeedback } from './actionFeedback';
+import { ElMessage } from 'element-plus';
 import {resolvePopupCurrentSite} from './currentSite';
 import {isBrowserTabId} from '@/src/platform/browser/ids';
 import ServiceIcon from '@/src/ui/components/ServiceIcon.vue';
@@ -578,8 +547,6 @@ const currentTabId = ref<number | null>(null);
 const currentSiteDomain = ref('');
 const currentSiteLabel = ref('无法读取当前页面');
 const clearingCache = ref(false);
-const notice = ref('');
-const noticeType = ref<'success' | 'error'>('success');
 const showCustomMouseHotkeyDialog = ref(false);
 const showCustomSelectionHotkeyDialog = ref(false);
 const servicePicker = ref<HTMLElement | null>(null);
@@ -587,15 +554,7 @@ const servicePickerOpen = ref(false);
 const hydrated = ref(false);
 let lastSerialized = '';
 let applyingExternalConfig = false;
-let noticeTimer: ReturnType<typeof setTimeout> | undefined;
 let pagePendingTimer: ReturnType<typeof setTimeout> | undefined;
-type PopupActionTarget = 'page' | 'site-rule' | 'site-disable' | 'cache';
-const {
-  feedbacks: actionFeedbacks,
-  show: showActionFeedback,
-  clear: clearActionFeedback,
-  dispose: disposeActionFeedback,
-} = useActionFeedback<PopupActionTarget>();
 useDocumentTheme(() => config.value.theme);
 const viewSettingsSection: Record<DetailView, SettingsSection> = {
   hover: 'settings-shortcuts',
@@ -673,28 +632,13 @@ const fullPageHotkey = computed(() => {
   return hotkey && hotkey !== 'none' ? hotkey : '未设置';
 });
 const pageActionPresentation = computed(() => {
-  const feedback = actionFeedbacks.page;
-  if (feedback) {
-    return {
-      key: `feedback-${feedback.tone}-${feedback.message}`,
-      state: feedback.tone,
-      label: feedback.message,
-      showHotkey: false,
-    } as const;
-  }
   const label = pageTranslated.value ? '恢复原文' : '翻译页面';
   if (activeTranslationAction.value === 'page' && pagePendingVisible.value) {
     return { key: `pending-${label}`, state: 'pending', label, showHotkey: false } as const;
   }
   return { key: `idle-${label}`, state: 'idle', label, showHotkey: true } as const;
 });
-const siteRuleActionLabel = computed(() => actionFeedbacks['site-rule']?.message
-  || (activeTranslationAction.value === 'site-rule'
-    ? '正在开启…'
-    : config.value.autoTranslate ? '全局自动翻译' : currentSiteAlwaysTranslated.value ? '始终翻译已开启' : '始终翻译此网站'));
-const siteDisableActionLabel = computed(() => actionFeedbacks['site-disable']?.message
-  || (currentSiteExtensionDisabled.value ? '已禁用扩展' : '在此网站禁用扩展'));
-const cacheActionLabel = computed(() => actionFeedbacks.cache?.message || (clearingCache.value ? '清理中…' : '清除缓存'));
+const cacheActionLabel = computed(() => clearingCache.value ? '清理中…' : '清除缓存');
 const selectionSummary = computed(() => {
   const textSummary = ({ disabled: '已关闭', bilingual: '双语显示', 'translation-only': '仅显示译文' }[config.value.selectionTranslatorMode] || '双语显示');
   const triggerSummary = selectionTriggers.find(item => item.value === config.value.selectionTranslatorTrigger)?.label || '显示图标';
@@ -790,17 +734,8 @@ onUnmounted(() => {
   unsubscribeConfig();
   document.removeEventListener('pointerdown', closeServicePicker);
   document.removeEventListener('keydown', handlePopupKeydown);
-  if (noticeTimer) clearTimeout(noticeTimer);
   if (pagePendingTimer) clearTimeout(pagePendingTimer);
-  disposeActionFeedback();
 });
-
-function showNotice(message: string, type: 'success' | 'error' = 'success') {
-  notice.value = message;
-  noticeType.value = type;
-  if (noticeTimer) clearTimeout(noticeTimer);
-  noticeTimer = setTimeout(() => { notice.value = ''; }, 2200);
-}
 
 async function hydrateCurrentSite() {
   currentTabId.value = null;
@@ -832,28 +767,17 @@ async function setCurrentSiteAlwaysTranslated(enabled: boolean) {
   const domain = currentSiteDomain.value;
   const tabId = currentTabId.value;
   if (!domain || tabId === null) return;
-  clearActionFeedback('site-rule');
-  if (config.value.autoTranslate) {
-    showNotice('已开启自动翻译所有网站，可在设置中关闭');
-    return;
-  }
-  if (currentSiteExtensionDisabled.value) {
-    showNotice(`已在 ${domain} 禁用扩展，请先恢复`);
-    return;
-  }
+  if (config.value.autoTranslate || currentSiteExtensionDisabled.value) return;
 
   const currentDomains = config.value.alwaysTranslateDomains ?? [];
   config.value.alwaysTranslateDomains = enabled
     ? currentDomains.includes(domain) ? currentDomains : [...currentDomains, domain]
     : currentDomains.filter(item => item !== domain);
 
-  if (!enabled) {
-    showActionFeedback('site-rule', '已关闭，当前页不变');
-    return;
-  }
+  if (!enabled) return;
 
   if (credentialWarning.value) {
-    showActionFeedback('site-rule', '已保存，请先配置服务', 'error');
+    ElMessage.error('已开启始终翻译，请先配置翻译服务');
     return;
   }
 
@@ -865,10 +789,9 @@ async function setCurrentSiteAlwaysTranslated(enabled: boolean) {
     }) as { status?: string; isTranslated?: boolean } | undefined;
     if (response?.status !== 'success') throw new Error('Translation failed');
     pageTranslated.value = typeof response.isTranslated === 'boolean' ? response.isTranslated : true;
-    showActionFeedback('site-rule', '已开启并开始翻译');
   } catch (error) {
     console.error(error);
-    showActionFeedback('site-rule', '已保存，请刷新重试', 'error');
+    ElMessage.error('已开启始终翻译，请刷新页面后重试');
   } finally {
     activeTranslationAction.value = null;
   }
@@ -878,7 +801,6 @@ async function setCurrentSiteExtensionDisabled(enabled: boolean) {
   const domain = currentSiteDomain.value;
   const tabId = currentTabId.value;
   if (!domain || tabId === null) return;
-  clearActionFeedback('site-disable');
 
   const currentDomains = config.value.disabledExtensionDomains ?? [];
   config.value.disabledExtensionDomains = enabled
@@ -892,7 +814,6 @@ async function setCurrentSiteExtensionDisabled(enabled: boolean) {
     type: 'updateSiteExtensionDisabled',
     isDisabled: enabled,
   }).catch(() => undefined);
-  showActionFeedback('site-disable', enabled ? '已在此网站禁用' : '已恢复此网站');
 }
 
 async function broadcast(message: Record<string, unknown>) {
@@ -942,9 +863,8 @@ async function openDocumentTranslation() {
 }
 
 async function togglePageTranslation() {
-  clearActionFeedback('page');
   if (credentialWarning.value) {
-    showActionFeedback('page', '请先完成服务配置', 'error');
+    ElMessage.error('请先完成翻译服务配置');
     return;
   }
 
@@ -965,11 +885,10 @@ async function togglePageTranslation() {
       ? response.isTranslated
       : action === 'fullPage';
     finishPagePendingPresentation();
-    showActionFeedback('page', pageTranslated.value ? '已翻译' : '已恢复原文');
   } catch (error) {
     console.error(error);
     finishPagePendingPresentation();
-    showActionFeedback('page', '暂不支持，请刷新重试', 'error');
+    ElMessage.error('当前页面暂不支持翻译，请刷新后重试');
   } finally {
     finishPagePendingPresentation();
     activeTranslationAction.value = null;
@@ -983,14 +902,12 @@ function finishPagePendingPresentation() {
 }
 
 async function clearCache() {
-  clearActionFeedback('cache');
   clearingCache.value = true;
   try {
     await requestTranslationCacheClear((message) => browser.runtime.sendMessage(message));
-    showActionFeedback('cache', '清除成功');
   } catch (error) {
     console.error(error);
-    showActionFeedback('cache', '清除失败，请重试', 'error');
+    ElMessage.error('清除缓存失败，请重试');
   } finally { clearingCache.value = false; }
 }
 
@@ -1017,7 +934,7 @@ function handleSelectionTranslatorDelayChange(value: number | undefined) {
 }
 function setAreaEnabled(enabled: boolean) {
   if (!browserCapabilities.areaTranslation) {
-    showNotice('当前浏览器暂不支持圈选翻译', 'error');
+    ElMessage.error('当前浏览器暂不支持圈选翻译');
     return;
   }
   config.value.selectionAreaEnabled = enabled;
@@ -1025,7 +942,7 @@ function setAreaEnabled(enabled: boolean) {
 }
 function setImageTranslatorEnabled(enabled: boolean) {
   if (!browserCapabilities.imageTranslation) {
-    showNotice('当前浏览器暂不支持图片翻译与 OCR', 'error');
+    ElMessage.error('当前浏览器暂不支持图片翻译与 OCR');
     return;
   }
   config.value.disableImageTranslator = !enabled;
