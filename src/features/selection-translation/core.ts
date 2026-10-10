@@ -318,6 +318,26 @@ export function calculateSelectionPopupPosition(
     };
 }
 
+/**
+ * Place the trigger outside the right edge of the selection's last visual
+ * line, dropped slightly below it, so it never covers the selected text.
+ */
+export function calculateSelectionIndicatorPosition(
+    anchor: SelectionRect,
+    size: number,
+    viewport: ViewportSize,
+    padding = 4,
+    gap = 4,
+    drop = 6,
+): { left: number; top: number } {
+    const maxLeft = Math.max(padding, viewport.width - size - padding);
+    const maxTop = Math.max(padding, viewport.height - size - padding);
+    return {
+        left: clamp(anchor.right + gap, padding, maxLeft),
+        top: clamp(anchor.bottom - size + drop, padding, maxTop),
+    };
+}
+
 export function normalizeSpeechLanguage(language: string | undefined, fallback = 'en-US'): string {
     const normalized = (language ?? '').trim().replace(/_/g, '-');
     const lower = normalized.toLowerCase();

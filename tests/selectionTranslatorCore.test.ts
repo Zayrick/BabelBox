@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+    calculateSelectionIndicatorPosition,
     calculateSelectionPopupPosition,
     chooseSelectionRect,
     getSelectionPresentationDelayRemaining,
@@ -88,6 +89,12 @@ describe('selection translator core geometry', () => {
             top: 130,
             placement: 'top',
         });
+    });
+
+    it('places the trigger outside the lower right of the selected line and keeps it on screen', () => {
+        const line = { top: 100, right: 300, bottom: 120, left: 80, width: 220, height: 20 };
+        expect(calculateSelectionIndicatorPosition(line, 22, { width: 1200, height: 800 })).toEqual({ left: 304, top: 104 });
+        expect(calculateSelectionIndicatorPosition({ ...line, right: 1195 }, 22, { width: 1200, height: 800 })).toEqual({ left: 1174, top: 104 });
     });
 
     it('flips below and clamps to the viewport near the top edge', () => {
