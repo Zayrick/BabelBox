@@ -34,10 +34,12 @@
         </div>
       </header>
 
-      <div class="babelbox-tooltip-content" aria-live="polite">
-        <div v-if="isLoading && !translationResult && !wordCard && !wordCardError" class="babelbox-loading-state"><span :class="['babelbox-loading-spinner', { 'babelbox-static': !animated }]" aria-hidden="true" /><span>正在查询…</span></div>
-        <div v-else-if="error && !translationResult && !wordCard" class="babelbox-error-state"><span>{{ error }}</span><button type="button" @click="retryTranslation">重试</button></div>
-        <div v-else class="babelbox-translation-container">
+      <el-scrollbar ref="content-ref" class="babelbox-tooltip-content" :class="{ 'babelbox-content-animating': contentResizing || contentSwapping }" :style="contentStyle" aria-live="polite" @transitionrun.self="contentResizing = true" @transitionend.self="contentResizing = false" @transitioncancel.self="contentResizing = false">
+        <div ref="content-body-ref" class="babelbox-tooltip-body">
+        <Transition name="babelbox-content-swap" :css="animated" @before-leave="contentSwapping = true" @after-leave="contentSwapping = false" @leave-cancelled="contentSwapping = false">
+        <div v-if="isLoading && !translationResult && !wordCard && !wordCardError" key="loading" class="babelbox-loading-state"><span :class="['babelbox-loading-spinner', { 'babelbox-static': !animated }]" aria-hidden="true" /><span>正在查询…</span></div>
+        <div v-else-if="error && !translationResult && !wordCard" key="error" class="babelbox-error-state"><span>{{ error }}</span><button type="button" @click="retryTranslation">重试</button></div>
+        <div v-else key="result" class="babelbox-translation-container">
           <section v-if="isWordSelection && (wordCard || isWordCardLoading)" class="babelbox-word-learning-card" aria-label="单词学习卡">
             <div v-if="isWordCardLoading && !wordCard" class="babelbox-word-card-loading"><span :class="['babelbox-loading-spinner', { 'babelbox-static': !animated }]" aria-hidden="true" /><span>正在查词…</span></div>
             <template v-else-if="wordCard">
@@ -102,7 +104,9 @@
           <div v-if="error && (translationResult || wordCard)" class="babelbox-inline-error"><span>{{ error }}</span><button type="button" @click="retryTranslation">重试</button></div>
           <div v-if="isPlaying" class="babelbox-playing-status"><span>正在播放{{ currentAudioKind === 'source' ? '原文' : currentAudioKind === 'word' ? '单词' : '译文' }}</span><button type="button" aria-label="停止播放" title="停止播放" @click="stopAudioFromUi">停止</button></div>
         </div>
-      </div>
+        </Transition>
+        </div>
+      </el-scrollbar>
     </section>
 
     <div v-if="noticeMessage" class="babelbox-action-toast" :class="{ 'babelbox-dark-theme': isDarkTheme }" role="status"><span>{{ noticeMessage }}</span><button v-if="noticeAction === 'open-vocabulary'" type="button" @click="openVocabularyBook">查看</button></div>
@@ -112,6 +116,9 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
 import { Check, Copy, Languages, Pause, Star, Volume2, X } from '@lucide/vue';
+import { ElScrollbar } from 'element-plus';
+// Only the component sheet: the shadow root never sees Element Plus' :root tokens, so the tooltip supplies its own scrollbar variables.
+import 'element-plus/theme-chalk/el-scrollbar.css';
 import {browser} from 'wxt/browser';
 import { config, subscribeConfig } from '@/src/services/config/store';
 import {resolvesToDarkTheme} from '@/src/ui/theme/theme';
@@ -133,6 +140,8 @@ type AudioKind = 'source' | 'translation' | 'word';
 interface SelectionSnapshot { text: string; range: Range; anchor: SelectionRect; isForward: boolean; }
 
 const tooltipRef = useTemplateRef<HTMLElement>('tooltip-ref');
+const contentRef = useTemplateRef<InstanceType<typeof ElScrollbar>>('content-ref');
+const contentBodyRef = useTemplateRef<HTMLElement>('content-body-ref');
 const selectedText = ref('');
 const activeContentRequest = ref<SelectionContentRequest | null>(null);
 const translationAnswer = ref<SelectionAnswerCandidate | null>(null);
@@ -147,6 +156,11 @@ const isDarkTheme = ref(false);
 const indicatorStyle = ref<Record<string, string>>({});
 const tooltipStyle = ref<Record<string, string>>({});
 const popupPlacement = ref<'top' | 'bottom'>('top');
+/** Natural height of the tooltip body; the content box transitions toward it so results grow instead of snapping. */
+const contentBodyHeight = ref<number | null>(null);
+const contentResizing = ref(false);
+const contentSwapping = ref(false);
+const contentStyle = computed(() => contentBodyHeight.value === null ? {} : { height: `${contentBodyHeight.value}px` });
 const snapshot = ref<SelectionSnapshot | null>(null);
 const isPlaying = ref(false);
 const currentAudioKind = ref<AudioKind | null>(null);
@@ -196,6 +210,7 @@ let suppressSelectionUntil = 0;
 let systemThemeMedia: MediaQueryList | null = null;
 let unsubscribeConfig: (() => void) | null = null;
 let tooltipResizeObserver: ResizeObserver | null = null;
+let contentBodyResizeObserver: ResizeObserver | null = null;
 const selectionConfigVersion = ref(0);
 
 const selectionShortcutTriggers = new Set(['Control', 'Alt', 'Shift', 'custom']);
@@ -470,11 +485,24 @@ function updatePosition(refreshSelection = true): void {
   if (showTooltip.value) void nextTick(() => {
     const tooltip = tooltipRef.value;
     if (!tooltip || !snapshot.value) return;
-    const rect = tooltip.getBoundingClientRect();
-    const position = calculateSelectionPopupPosition(snapshot.value.anchor, { width: rect.width, height: rect.height }, { width: window.innerWidth, height: window.innerHeight });
-    tooltipStyle.value = { left: `${position.left}px`, top: `${position.top}px`, visibility: 'visible' };
+    const height = settledTooltipHeight(tooltip);
+    const position = calculateSelectionPopupPosition(snapshot.value.anchor, { width: tooltip.offsetWidth, height }, { width: window.innerWidth, height: window.innerHeight });
+    // Above the selection the bottom edge stays pinned, so an animating height grows upward without per-frame repositioning.
+    tooltipStyle.value = position.placement === 'top'
+      ? { left: `${position.left}px`, top: `${position.top + height}px`, translate: '0 -100%', visibility: 'visible' }
+      : { left: `${position.left}px`, top: `${position.top}px`, visibility: 'visible' };
     popupPlacement.value = position.placement;
   });
+}
+
+/** Tooltip height once the content height transition finishes, so placement is decided for the final size. */
+function settledTooltipHeight(tooltip: HTMLElement): number {
+  const content = contentRef.value?.$el as HTMLElement | undefined;
+  const target = contentBodyHeight.value;
+  if (!content || target === null) return tooltip.offsetHeight;
+  const maxHeight = Number.parseFloat(getComputedStyle(content).maxHeight);
+  const settled = Number.isFinite(maxHeight) ? Math.min(target, maxHeight) : target;
+  return tooltip.offsetHeight - content.offsetHeight + settled;
 }
 
 function schedulePositionUpdate(): void {
@@ -1134,6 +1162,21 @@ onMounted(() => {
     tooltipResizeObserver = new ResizeObserver(schedulePositionUpdate);
     tooltipResizeObserver.observe(tooltip);
   }, { flush: 'post' });
+  watch(contentBodyRef, (body) => {
+    contentBodyResizeObserver?.disconnect();
+    contentBodyResizeObserver = null;
+    contentBodyHeight.value = null;
+    contentResizing.value = false;
+    contentSwapping.value = false;
+    if (!body || typeof ResizeObserver === 'undefined') return;
+    contentBodyResizeObserver = new ResizeObserver(([entry]) => {
+      const height = entry?.borderBoxSize?.[0]?.blockSize ?? body.offsetHeight;
+      if (height === contentBodyHeight.value) return;
+      contentBodyHeight.value = height;
+      schedulePositionUpdate();
+    });
+    contentBodyResizeObserver.observe(body);
+  }, { flush: 'post' });
   watch(() => [
     selectionSettings.value.theme,
     selectionSettings.value.trigger,
@@ -1201,6 +1244,8 @@ onBeforeUnmount(() => {
   unsubscribeConfig = null;
   tooltipResizeObserver?.disconnect();
   tooltipResizeObserver = null;
+  contentBodyResizeObserver?.disconnect();
+  contentBodyResizeObserver = null;
   document.removeEventListener('pointerdown', handlePointerDown, true);
   document.removeEventListener('pointerup', handlePointerUp, true);
   document.removeEventListener('pointercancel', handlePointerCancel, true);
@@ -1305,7 +1350,28 @@ onBeforeUnmount(() => {
 .babelbox-vocabulary-btn.babelbox-saved svg { fill: currentColor; stroke: currentColor; }
 .babelbox-close-btn { margin-left: 2px; }
 .babelbox-close-btn:hover, .babelbox-close-btn:focus-visible { color: var(--babelbox-selection-hover-ink); }
-.babelbox-tooltip-content { max-height: min(440px, calc(100vh - 56px)); overflow: auto; padding: 9px 12px 11px; scrollbar-color: rgba(108, 105, 112, .4) transparent; scrollbar-width: thin; }
+.babelbox-tooltip-content {
+  --el-transition-duration: .3s;
+  --el-scrollbar-bg-color: #6c6970;
+  --el-scrollbar-hover-bg-color: #6c6970;
+  --el-scrollbar-opacity: .32;
+  --el-scrollbar-hover-opacity: .55;
+  max-height: min(440px, calc(100vh - 56px));
+  transition: height .5s cubic-bezier(.32, .72, 0, 1);
+}
+.babelbox-dark-theme .babelbox-tooltip-content { --el-scrollbar-bg-color: #d8d2d6; --el-scrollbar-hover-bg-color: #d8d2d6; }
+.babelbox-tooltip-content :deep(.el-scrollbar__bar.is-vertical) { top: 4px; right: 3px; bottom: 4px; width: 5px; }
+.babelbox-tooltip-content :deep(.el-scrollbar__bar.is-horizontal) { display: none; }
+/* Freeze scrolling while the box is mid-resize or still holds the outgoing state, so the thumb never flickers. */
+.babelbox-tooltip-content.babelbox-content-animating :deep(.el-scrollbar__wrap) { overflow: hidden; }
+.babelbox-tooltip-content.babelbox-content-animating :deep(.el-scrollbar__bar) { opacity: 0; }
+.babelbox-translation-tooltip.babelbox-static .babelbox-tooltip-content { transition: none; }
+.babelbox-tooltip-body { position: relative; padding: 9px 12px 11px; }
+.babelbox-content-swap-enter-active { transition: opacity .34s cubic-bezier(.32, .72, 0, 1) .06s, filter .46s cubic-bezier(.32, .72, 0, 1) .06s, transform .5s cubic-bezier(.32, .72, 0, 1) .06s; }
+/* The outgoing state leaves the flow so the body measures only the incoming one and the height animates in parallel. */
+.babelbox-content-swap-leave-active { position: absolute; top: 9px; right: 12px; left: 12px; transition: opacity .2s ease-out, filter .24s ease-out, transform .24s ease-out; }
+.babelbox-content-swap-enter-from { opacity: 0; filter: blur(8px); transform: translateY(6px) scale(.985); }
+.babelbox-content-swap-leave-to { opacity: 0; filter: blur(6px); transform: scale(.985); }
 .babelbox-loading-state, .babelbox-error-state { display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 56px; color: var(--babelbox-selection-muted); font-size: var(--babelbox-selection-font-body); }
 /* One text line tall, matching the translation that replaces it. */
 .babelbox-loading-state, .babelbox-word-card-loading { gap: 7px; min-height: calc(var(--babelbox-selection-font-body) * 1.55); line-height: 1.55; }
@@ -1354,7 +1420,7 @@ onBeforeUnmount(() => {
 .babelbox-original-text { padding: 0 26px 8px 0; margin-bottom: 8px; border-bottom: 1px solid var(--babelbox-selection-line); color: var(--babelbox-selection-original-ink); }
 .babelbox-original-text pre { font-size: var(--babelbox-selection-font-small); }
 .babelbox-translation-result { color: var(--babelbox-selection-result-ink); }
-.babelbox-text-block pre { max-height: 200px; margin: 0; overflow: auto; white-space: pre-wrap; word-break: break-word; font: inherit; font-size: var(--babelbox-selection-font-body); line-height: 1.55; }
+.babelbox-text-block pre { margin: 0; white-space: pre-wrap; word-break: break-word; font: inherit; font-size: var(--babelbox-selection-font-body); line-height: 1.55; }
 .babelbox-text-audio-btn { position: absolute; top: -2px; right: -4px; display: grid; width: 22px; height: 22px; place-items: center; border-radius: 6px; }
 .babelbox-text-audio-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .babelbox-text-audio-btn:hover, .babelbox-text-audio-btn:focus-visible { background: var(--babelbox-selection-brand-soft); color: var(--babelbox-selection-brand); outline: none; }
@@ -1394,5 +1460,5 @@ onBeforeUnmount(() => {
   --babelbox-selection-danger-border: #9d5871;
   --babelbox-selection-spinner-border: #684b58;
 }
-@media (prefers-reduced-motion: reduce) { .babelbox-selection-indicator, .babelbox-loading-spinner { transition: none; animation: none; } }
+@media (prefers-reduced-motion: reduce) { .babelbox-selection-indicator, .babelbox-loading-spinner, .babelbox-tooltip-content { transition: none; animation: none; } }
 </style>
